@@ -1,0 +1,36 @@
+vpn:
+  template: 'default'
+  base_definition:
+    repo: ~
+    traits:
+      version:
+        preprocess:
+          'inject-commit-hash'
+      publish:
+        dockerimages:
+          curator-es:
+            registry: 'gcr-readwrite'
+            image: 'eu.gcr.io/gardener-project/gardener/curator-es'
+            dockerfile: 'curator-es/Dockerfile'
+          elasticsearch-oss:
+            registry: 'gcr-readwrite'
+            image: 'eu.gcr.io/gardener-project/gardener/elasticsearch-oss'
+            dockerfile: 'elasticsearch-oss/Dockerfile'
+          fluentd-es:
+            registry: 'gcr-readwrite'
+            image: 'eu.gcr.io/gardener-project/gardener/fluentd-es'
+            dockerfile: 'fluentd-es/Dockerfile'
+    steps: ~
+  variants:
+    head-update: ~
+    pull-request:
+      traits:
+        pull-request:
+          repo: 'source' # default
+          require_label: 'ok-to-test' # default
+    release:
+      traits:
+        version:
+          preprocess: 'finalise'
+        release:
+          nextversion: 'bump_minor'

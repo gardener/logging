@@ -1,0 +1,12 @@
+cluster.name: ${CLUSTER_NAME}
+
+node.name: ${NODE_NAME}
+node.master: ${NODE_MASTER}
+node.data: ${NODE_DATA}
+
+transport.tcp.port: ${TRANSPORT_PORT}
+http.port: ${HTTP_PORT}
+
+path.data: ${PATH_DATA}
+
+network.host: 0.0.0.0

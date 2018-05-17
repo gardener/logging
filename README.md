@@ -1,0 +1,17 @@
+# logging
+
+This repository contains components needed for Gardener logging.
+
+## What's inside
+
+[Elasticsearch](elasticsearch) - a Docker image with Elasticsearch - based on the original provided by Kubernetes (https://github.com/kubernetes/kubernetes/tree/master/cluster/addons/fluentd-elasticsearch/es-image) with some customizations for Garderner.
+
+[Fluentd for Elasticsearch](fluentd-es) - a Docker image with Fluentd for Elasticsearch - based on the original provided by Kubernetes (https://github.com/kubernetes/kubernetes/tree/master/cluster/addons/fluentd-elasticsearch/fluentd-es-image) with some customizations for Garderner.
+
+[Curator for Elasticsearch](curator-es) - a Docker image with Curator (https://github.com/elastic/curator).
+
+## Local build
+
+```bash
+$ make docker-images
+```
