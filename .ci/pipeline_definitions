@@ -34,3 +34,4 @@ logging:
           preprocess: 'finalise'
         release:
           nextversion: 'bump_minor'
+        component_descriptor: ~
