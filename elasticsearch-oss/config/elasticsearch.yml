@@ -10,3 +10,6 @@ http.port: ${HTTP_PORT}
 path.data: ${PATH_DATA}
 
 network.host: 0.0.0.0
+
+indices.memory.index_buffer_size: 30%
+
