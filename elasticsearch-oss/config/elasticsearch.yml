@@ -13,3 +13,16 @@ network.host: 0.0.0.0
 
 indices.memory.index_buffer_size: 30%
 
+#make the bulk query 50% larger
+thread_pool.index.queue_size: 300
+
+# disable disk allocation
+cluster.routing.allocation.disk.threshold_enabled: false
+# this is the threshold to move shard to other node(which we don't have)
+cluster.routing.allocation.disk.watermark.high : 100%
+#threshold for read only
+cluster.routing.allocation.disk.watermark.flood_stage: 100%
+#allow only primary shard. We don't need replica
+cluster.routing.allocation.enable: primaries
+#check to prevent allocation of multiple instances of the same shard on a single host
+cluster.routing.allocation.same_shard.host: true
