@@ -14,6 +14,7 @@
 
 FROM python:2.7-slim
 
+COPY curator-es/extra_deletion /bin
 RUN pip install elasticsearch-curator==5.5.1
 
 ENTRYPOINT [ "/usr/local/bin/curator" ]
