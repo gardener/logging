@@ -12,9 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+#############      builder       #############
+FROM golang:1.10.3 AS builder
+
+WORKDIR /go/src/github.com/gardener/logging
+COPY . .
+
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go install ./curator-es/extra-deleter/...
+
+############# extra-deleter & curator #############
+
 FROM python:2.7-slim
 
-COPY curator-es/extra_deletion /bin
+COPY --from=builder /go/bin/extra-deleter /bin
 RUN pip install elasticsearch-curator==5.5.1
 
 ENTRYPOINT [ "/usr/local/bin/curator" ]
