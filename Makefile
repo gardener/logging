@@ -31,6 +31,7 @@ docker-images: curator-es-docker-image elasticsearch-oss-docker-image fluentd-es
 
 .PHONY: curator-es-docker-image
 curator-es-docker-image:
+	@go build -o curator-es/extra_deletion curator-es/extra_deletion.go
 	@docker build -t $(CURATOR_ES_IMAGE_REPOSITORY):$(CURATOR_ES_IMAGE_TAG) -f curator-es/Dockerfile --rm .
 
 .PHONY: elasticsearch-oss-docker-image
