@@ -25,9 +25,7 @@ logging:
     head-update: ~
     pull-request:
       traits:
-        pull-request:
-          repo: 'source' # default
-          require_label: 'ok-to-test' # default
+        pull-request: ~
     release:
       traits:
         version:
