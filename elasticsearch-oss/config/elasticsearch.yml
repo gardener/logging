@@ -14,7 +14,7 @@ network.host: 0.0.0.0
 indices.memory.index_buffer_size: 30%
 
 #make the bulk query 50% larger
-thread_pool.index.queue_size: 300
+thread_pool.bulk.queue_size: 300
 
 # disable disk allocation
 cluster.routing.allocation.disk.threshold_enabled: false
