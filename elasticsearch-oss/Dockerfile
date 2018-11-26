@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM docker.elastic.co/elasticsearch/elasticsearch-oss:6.2.4
+FROM docker.elastic.co/elasticsearch/elasticsearch-oss:6.5.1
 
 VOLUME ["/data"]
 EXPOSE 9200 9300
 
 COPY elasticsearch-oss/run.sh bin/
-COPY elasticsearch-oss/config/elasticsearch.yml elasticsearch-oss/config/log4j2.properties config/
+COPY elasticsearch-oss/config/elasticsearch.yml elasticsearch-oss/config/log4j2.properties elasticsearch-oss/config/jvm.options config/
 
 USER root
 RUN chown -R elasticsearch:elasticsearch ./
