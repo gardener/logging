@@ -19,9 +19,9 @@ thread_pool.bulk.queue_size: 400
 # disable disk allocation
 cluster.routing.allocation.disk.threshold_enabled: false
 # this is the threshold to move shard to other node(which we don't have)
-cluster.routing.allocation.disk.watermark.high : 100%
+cluster.routing.allocation.disk.watermark.high : 98%
 #threshold for read only
-cluster.routing.allocation.disk.watermark.flood_stage: 97%
+cluster.routing.allocation.disk.watermark.flood_stage: 98%
 #allow only primary shard. We don't need replica
 cluster.routing.allocation.enable: primaries
 #check to prevent allocation of multiple instances of the same shard on a single host
