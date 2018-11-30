@@ -19,6 +19,7 @@ COPY fluentd-es/Gemfile.gardener /Gemfile.gardener
 RUN BUILD_DEPS="make gcc g++ libc6-dev ruby-dev" \
     && clean-install $BUILD_DEPS \
     && gem install --file Gemfile.gardener \
+    && gem cleanup \
     && apt-get purge -y --auto-remove \
                      -o APT::AutoRemove::RecommendsImportant=false \
                      $BUILD_DEPS \
