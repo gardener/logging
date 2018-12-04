@@ -1,28 +1,58 @@
-cluster.name: ${CLUSTER_NAME}
+node:
+  master: ${NODE_MASTER}
+  name: ${NODE_NAME}
+  data: ${NODE_DATA}
+  ingest: ${NODE_INGEST}
+  max_local_storage_nodes: ${MAX_LOCAL_STORAGE_NODES}
 
-node.name: ${NODE_NAME}
-node.master: ${NODE_MASTER}
-node.data: ${NODE_DATA}
+processors: ${PROCESSORS}
 
-transport.tcp.port: ${TRANSPORT_PORT}
-http.port: ${HTTP_PORT}
+network:
+  host: ${NETWORK_HOST}
 
-path.data: ${PATH_DATA}
+path:
+  data: ${PATH_DATA}
+  logs: ${PATH_DATA}/log
 
-network.host: 0.0.0.0
+http:
+  enabled: ${HTTP_ENABLE}
+  port: ${HTTP_PORT}
+  compression: true
+  cors:
+    enabled: ${HTTP_CORS_ENABLE}
+    allow-origin: ${HTTP_CORS_ALLOW_ORIGIN}
 
-indices.memory.index_buffer_size: 30%
+discovery:
+  zen:
+    ping.unicast.hosts: ${DISCOVERY_SERVICE}
+    minimum_master_nodes: ${NUMBER_OF_MASTERS}
 
-#make the bulk query 50% larger
-thread_pool.bulk.queue_size: 400
+transport:
+  tcp:
+    port: ${TRANSPORT_PORT}
 
-# disable disk allocation
-cluster.routing.allocation.disk.threshold_enabled: false
-# this is the threshold to move shard to other node(which we don't have)
-cluster.routing.allocation.disk.watermark.high : 98%
-#threshold for read only
-cluster.routing.allocation.disk.watermark.flood_stage: 98%
-#allow only primary shard. We don't need replica
-cluster.routing.allocation.enable: primaries
-#check to prevent allocation of multiple instances of the same shard on a single host
-cluster.routing.allocation.same_shard.host: true
+indices:
+  memory:
+    index_buffer_size: ${INDEX_BUFFER_SIZE}
+
+thread_pool:
+  index:
+    queue_size: ${INDEX_QUEUE_SIZE}
+  bulk:
+    queue_size: ${BULK_QUEUE_SIZE}
+
+cluster:
+  name: ${CLUSTER_NAME}
+  routing:
+    allocation:
+      disk:
+        # disable disk allocation
+        threshold_enabled: ${ALLOW_DISK_ALLOCATION}
+        watermark:
+          # this is the threshold to move shard to other node
+          # (which we don't have in single node mode so put it to 100%)
+          high : ${DISK_WATERMARK_HIGHT}
+          #threshold for read only lock
+          flood_stage: ${DISK_WATERMARK_FLOOD_STAGE}
+      #for single node only allow only primary shard. We don't need replica
+      enable: ${SHARD_REBALANCING_FOR}
