@@ -46,6 +46,9 @@ export INDEX_QUEUE_SIZE=${BULK_QUEUE_SIZE:-200}
 export ALLOW_DISK_ALLOCATION=${ALLOW_DISK_ALLOCATION:-true}
 # Elasticsearch will attempt to relocate shards away from a node whose disk usage is above X%
 export DISK_WATERMARK_HIGHT=${DISK_WATERMARK_HIGHT:-"90%"}
+# disk usage point beyond which ES won’t allocate new shards to that node
+export DISK_WATERMARK_HIGHT=${DISK_WATERMARK_LOW:-"85%"}
+
  #threshold for read only lock
 export DISK_WATERMARK_FLOOD_STAGE=${DISK_WATERMARK_FLOOD_STAGE:-"95%"}
 

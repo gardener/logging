@@ -23,10 +23,14 @@ The default index.refresh_interval is 1s, which forces Elasticsearch to create a
 In our case we use curator to set the index.refresh_interval to 60 which reflect as an increased log latency
 That is, each recor stored on ES in this period of time can't be seen in the ES until the time has elapsed.
 
+## Increase the flushing transaction log interval
+Compared to refreshing an index shard, the really expensive operation is flushing its transaction log (which involves a Lucene commit). Elasticsearch performs flushes based on a number of triggers that may be changed at run time. By delaying flushes, or disabling them completely, you can increase indexing throughput. Just be aware that nothing comes for free, and the delayed flush will of course take longer when it eventually happens.
+
 ## Disable refresh and replicas for initial loads
 If you need to load a large amount of data at once, you should disable refresh by setting index.refresh_interval to -1 and set index.number_of_replicas to 0. This will temporarily put your index at risk since the loss of any shard will cause data loss, but at the same time indexing will be faster since documents will be indexed only once. Once the initial loading is finished, you can set index.refresh_interval and index.number_of_replicas back to their original values.
 
 I could not find any setting how to do that with ealsticsearch plugin of fluentd.
+In our case we set replicas to 0 on each 6 hours.
 
 ## Disable swapping
 You should make sure that the operating system is not swapping out the java process by disabling swapping.
@@ -43,7 +47,7 @@ If indexing is I/O bound, you should investigate giving more memory to the files
 
 Stripe your index across multiple SSDs by configuring a RAID 0 array. Remember that it will increase the risk of failure since the failure of any one SSD destroys the index. However this is typically the right tradeoff to make: optimize single shards for maximum performance, and then add replicas across different nodes so there’s redundancy for any node failures. You can also use snapshot and restore to backup the index for further insurance.
 
-TODO: Lear how to spawn ES pod in nodes which are using SSD
+TODO: Lear nhow to spawn ES pod in nodes which are using SSD
 
 ## Indexing buffer size
 If your node is doing only heavy indexing, be sure indices.memory.index_buffer_size is large enough to give at most 512 MB indexing buffer per shard doing heavy indexing (beyond that indexing performance does not typically improve). Elasticsearch takes that setting (a percentage of the java heap or an absolute byte-size), and uses it as a shared buffer across all active shards. Very active shards will naturally use this buffer more than shards that are performing lightweight indexing.
@@ -137,3 +141,74 @@ PUT index
 ```
 **TODO: do we need scores and the number of term appearences?**
 
+
+
+## Navigating Elasticsearch’s allocation-related properties 
+Loggly - Tweet This
+Shard allocation is the process of allocating shards to nodes. This can happen during initial recovery, replica allocation, or rebalancing. Or it can happen when handling nodes that are being added or removed.
+
+The ***cluster.routing.allocation.cluster_concurrent_rebalance*** property determines the number of shards allowed for concurrent rebalance. This property needs to be set appropriately depending on the hardware being used, for example the number of CPUs, IO capacity, etc. If this property is not set appropriately, it can impact the performance of ES indexing.
+
+```cluster.routing.allocation.cluster_concurrent_rebalance:2```
+
+By default the value is set at 2, meaning that at any point in time only 2 shards are allowed to be moving. It is good to set this property low so that the rebalance of shards is throttled and doesn’t affect indexing.
+
+The other shard allocation property is ***cluster.routing.allocation.disk.threshold_enabled***. If this property is set to true (the default), the shard allocation will take free disk space into account while allocating shards to a node. Turning this off can result in ES allocating shards to a node which doesn’t have enough available disk to account for that shards growth.
+
+When enabled, the shard allocation takes two watermark properties into account: low and high.
+
+  - The low watermark defines the disk usage point beyond which ES won’t allocate new shards to that node. (default is 85%)
+  - The high watermark defines the disk usage point beyond which the shards will start moving off the node (default is 90%)
+
+Both of these can be defined as either a percentage of disk used (e.g. “80%” means 80% of the disk has been used, or 20% is free), or as a minimum size of disk available (e.g. “20GB” means there is 20GB of free disk available to the node)
+
+The defaults are fairly conservative if you have a lot of small shards. For example, if you have a 1TB drive, and your shards are typically 10GB in size, then in theory you could put 100 shards on that node. With the default settings, you’ll only be able to put 80 of those shards on the node before ES decides it is full.
+
+To work out what value you should use, you should look at how big your shards are going to get over their lifetime, and work backwards from there, being sure to include a safety factor. In the example above, we might only have 5 shards being written to, so need to make sure we have 50GB available at all times. For a 1TB drive, this translates to a 95% low water mark, with no safety factor. Adding, say, a 50% safety factor, means we should make sure to have 75GB free, or a 92.5% low water mark.
+
+Because we have only one node we can disable that feature, but what will happens with ***cluster.routing.allocation.disk.flood_stage***.
+This setting allow us to automaticaly lock the index in readOnly mode(when we reach critical lack of free space) until the curator free some space.
+If we deside to leave enabled that feature we must set the low watermark prepperly. This can only happens during real time work to analyze the shard size.
+The defaut is 85% which means that it will not allocate new shards fo the new dayly indices if there is not at least 4.5GB of free disk space.
+But we clean no more than 1G so when we reach 25.5GB we would not be able to allocate new shards for the new index which is comming at the start of the new day.
+There will be more then 1GB of free disk space so the curator won't do enything.
+
+**TODO** fix this bug.
+
+## Recovery properties allow for faster restart times
+ES includes several recovery properties which improve both Elasticsearch cluster recovery and restart times. The value that will work best for you depends on the hardware you have in use (disk and network being the usual bottlenecks), and the best advice we can give is to test, test, and test again.
+
+To control how many shards can be simultaneously in recovery on a single node, use:
+
+***cluster.routing.allocation.node_concurrent_recoveries***
+
+Recovering shards is a very IO-intensive operation, so you should adjust this value with real caution. In 5.x releases, this is split into:
+
+***cluster.routing.allocation.node_concurrent_incoming_recoveries***
+
+***cluster.routing.allocation.node_concurrent_outgoing_recoveries***
+
+To control the number of primary shards initialized concurrently on a single node, use:
+
+***cluster.routing.allocation.node_initial_primaries_recoveries***
+
+To control the number of parallel streams to open to support recovery of a shard:
+
+***indices.recovery.concurrent_streams***
+
+Closely tied to the number of streams, is the total network bandwidth available for recovery:
+
+***indices.recovery.max_bytes_per_sec***
+
+With all of these properties, the best values will depend on the hardware you’re using. If you have SSDs and a fast (10G) ethernet fabric, then the values that work best may be very different than if you’re using spinning hard drives and 1G ethernet.
+
+All of the properties described above get used only when the cluster is restarted.
+
+**TODO**: play with these settings
+
+## Switch off the  compound format
+The default segment merge policy, “tiered”, supports a compound format where data is stored in fewer files to reduce the number of open file handles needed. However, the compound format comes along with a performance penalty. There are two settings, ***index.compound_on_flush*** and ***index.compound_format***, that specify whether the compound format should be used for new segments and merged segments, respectively. Making sure that both are set to false may improve indexing performance, at the cost of more file handles.
+
+## Increase the number of threads that may concurrently perform indexing operations on a single shard
+The setting ***index.index_concurrency*** limits the number of threads that may concurrently perform indexing operations on a single shard. Consider increasing the value, especially when there are no other shards on the node (and measure if it pays off).
+We do not use it at that moment

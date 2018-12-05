@@ -52,6 +52,9 @@ cluster:
           # this is the threshold to move shard to other node
           # (which we don't have in single node mode so put it to 100%)
           high : ${DISK_WATERMARK_HIGHT}
+          #The low watermark defines the disk usage point beyond which ES 
+          # won’t allocate new shards to that node.
+          low: ${DISK_WATERMARK_LOW}
           #threshold for read only lock
           flood_stage: ${DISK_WATERMARK_FLOOD_STAGE}
       #for single node only allow only primary shard. We don't need replica
