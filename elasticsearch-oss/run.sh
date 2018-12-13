@@ -24,7 +24,6 @@ export NODE_NAME=${NODE_NAME:-${HOSTNAME}}
 export NODE_MASTER=${NODE_MASTER:-true}
 export NODE_DATA=${NODE_DATA:-true}
 export NODE_INGEST=${NODE_INGEST:-true}
-export HTTP_ENABLE=${HTTP_ENABLE:-true}
 export HTTP_PORT=${HTTP_PORT:-9200}
 export TRANSPORT_PORT=${TRANSPORT_PORT:-9300}
 export HTTP_CORS_ENABLE=${HTTP_CORS_ENABLE:-false}
@@ -38,11 +37,9 @@ export DISCOVERY_SERVICE=${DISCOVERY_SERVICE:-"elasticsearch-logging"}
 #10% of the total heap allocated to a node will be used as 
 #the indexing buffer size shared across all shards.
 export INDEX_BUFFER_SIZE=${INDEX_BUFFER_SIZE:-"10%"}
-#adjust the index query size
-export INDEX_QUEUE_SIZE=${INDEX_QUEUE_SIZE:-200}
-#adjust the bulk query size
-export INDEX_QUEUE_SIZE=${BULK_QUEUE_SIZE:-200}
-#enaable the disk allocation decider.
+#adjust the write queue size
+export WRITE_QUEUE_SIZE=${WRITE_QUEUE_SIZE:-200}
+#enable the disk allocation decider
 export ALLOW_DISK_ALLOCATION=${ALLOW_DISK_ALLOCATION:-true}
 # Elasticsearch will attempt to relocate shards away from a node whose disk usage is above X%
 export DISK_WATERMARK_HIGHT=${DISK_WATERMARK_HIGHT:-"90%"}
