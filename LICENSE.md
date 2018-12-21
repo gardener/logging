@@ -216,6 +216,11 @@ https://github.com/elastic/elasticsearch.
 Copyright 2009-2018 Elasticsearch.  
 Apache 2 license (https://github.com/elastic/elasticsearch/blob/master/LICENSE.txt).  
 
+Fluent-bit.
+https://github.com/fluent/fluent-bit.
+Copyright 2011-2018 Fluentd Authors.
+Apache 2 license (https://github.com/fluent/fluent-bit/blob/master/LICENSE).
+
 Fluentd.  
 https://github.com/fluent/fluentd.  
 Copyright 2011-2018 Fluentd Authors.  
