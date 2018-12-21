@@ -218,7 +218,7 @@ Apache 2 license (https://github.com/elastic/elasticsearch/blob/master/LICENSE.t
 
 Fluent-bit.
 https://github.com/fluent/fluent-bit.
-Copyright 2011-2018 Fluentd Authors.
+Copyright 2011-2018 Fluent-bit Authors.
 Apache 2 license (https://github.com/fluent/fluent-bit/blob/master/LICENSE).
 
 Fluentd.  
