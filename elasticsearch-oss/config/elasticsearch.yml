@@ -15,7 +15,6 @@ path:
   logs: ${PATH_DATA}/log
 
 http:
-  enabled: ${HTTP_ENABLE}
   port: ${HTTP_PORT}
   compression: true
   cors:
@@ -36,10 +35,8 @@ indices:
     index_buffer_size: ${INDEX_BUFFER_SIZE}
 
 thread_pool:
-  index:
-    queue_size: ${INDEX_QUEUE_SIZE}
-  bulk:
-    queue_size: ${BULK_QUEUE_SIZE}
+  write:
+    queue_size: ${WRITE_QUEUE_SIZE}
 
 cluster:
   name: ${CLUSTER_NAME}

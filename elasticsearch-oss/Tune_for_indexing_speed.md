@@ -206,9 +206,6 @@ All of the properties described above get used only when the cluster is restarte
 
 **TODO**: play with these settings
 
-## Switch off the  compound format
-The default segment merge policy, “tiered”, supports a compound format where data is stored in fewer files to reduce the number of open file handles needed. However, the compound format comes along with a performance penalty. There are two settings, ***index.compound_on_flush*** and ***index.compound_format***, that specify whether the compound format should be used for new segments and merged segments, respectively. Making sure that both are set to false may improve indexing performance, at the cost of more file handles.
-
 ## Increase the number of threads that may concurrently perform indexing operations on a single shard
 The setting ***index.index_concurrency*** limits the number of threads that may concurrently perform indexing operations on a single shard. Consider increasing the value, especially when there are no other shards on the node (and measure if it pays off).
 We do not use it at that moment
