@@ -12,10 +12,6 @@ logging:
             registry: 'gcr-readwrite'
             image: 'eu.gcr.io/gardener-project/gardener/curator-es'
             dockerfile: 'curator-es/Dockerfile'
-          elasticsearch-oss:
-            registry: 'gcr-readwrite'
-            image: 'eu.gcr.io/gardener-project/gardener/elasticsearch-oss'
-            dockerfile: 'elasticsearch-oss/Dockerfile'
           fluentd-es:
             registry: 'gcr-readwrite'
             image: 'eu.gcr.io/gardener-project/gardener/fluentd-es'
