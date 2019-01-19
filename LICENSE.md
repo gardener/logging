@@ -211,11 +211,6 @@ This project includes the following subcomponents that are subject to separate l
 Your use of these subcomponents is subject to the separate license terms applicable to
 each subcomponent.
 
-Elastisearch (OSS-only, excluding x-pack).  
-https://github.com/elastic/elasticsearch.  
-Copyright 2009-2018 Elasticsearch.  
-Apache 2 license (https://github.com/elastic/elasticsearch/blob/master/LICENSE.txt).  
-
 Fluent-bit.
 https://github.com/fluent/fluent-bit.
 Copyright 2011-2018 Fluent-bit Authors.
