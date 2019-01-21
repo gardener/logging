@@ -19,12 +19,8 @@ CURATOR_ES_IMAGE_TAG               := $(VERSION)
 FLUENTD_ES_IMAGE_REPOSITORY        := $(REGISTRY)/fluentd-es
 FLUENTD_ES_IMAGE_TAG               := $(VERSION)
 
-PATH                   := $(GOBIN):$(PATH)
-export PATH
-
 .PHONY: docker-images
 docker-images: curator-es-docker-image fluentd-es-docker-image
-
 
 .PHONY: curator-es-docker-image
 curator-es-docker-image:
