@@ -15,6 +15,7 @@
 FROM k8s.gcr.io/fluentd-elasticsearch:v2.4.0
 
 COPY fluentd-es/Gemfile.gardener /Gemfile.gardener
+COPY fluentd-es/plugin/out_elasticsearch_dynamic_fault_tolerant.rb /etc/fluent/plugin/
 
 RUN BUILD_DEPS="make gcc g++ libc6-dev ruby-dev" \
     && clean-install $BUILD_DEPS \
