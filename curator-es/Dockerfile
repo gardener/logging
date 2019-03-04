@@ -13,7 +13,7 @@
 # limitations under the License.
 
 #############      builder       #############
-FROM golang:1.11.5 AS builder
+FROM golang:1.12.0 AS builder
 
 WORKDIR /go/src/github.com/gardener/logging
 COPY . .
