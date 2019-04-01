@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM k8s.gcr.io/fluentd-elasticsearch:v2.4.0
+FROM gcr.io/fluentd-elasticsearch/fluentd:v2.5.0
 
 COPY fluentd-es/Gemfile.gardener /Gemfile.gardener
 COPY fluentd-es/plugin/out_elasticsearch_dynamic_fault_tolerant.rb /etc/fluent/plugin/
