@@ -1,4 +1,4 @@
-# Copyright (c) 2018 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+# Copyright (c) 2019 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,18 +13,18 @@
 # limitations under the License.
 
 #############      builder       #############
-FROM golang:1.12.0 AS builder
+FROM golang:1.12.1 AS builder
 
 WORKDIR /go/src/github.com/gardener/logging
 COPY . .
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go install ./curator-es/extra-deleter/...
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go install ./curator-es/...
 
-############# extra-deleter & curator #############
+############# curator-es & curator #############
 
 FROM python:2.7-slim
 
-COPY --from=builder /go/bin/extra-deleter /bin
+COPY --from=builder /go/bin/curator-es /bin
 RUN pip install elasticsearch-curator==5.6.0
 
 ENTRYPOINT [ "/usr/local/bin/curator" ]

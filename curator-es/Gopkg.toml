@@ -30,5 +30,6 @@
   version = "2.2.1"
 
 [prune]
-  go-tests = true
   unused-packages = true
+  go-tests = true
+  non-go = true
