@@ -22,10 +22,12 @@ import (
 )
 
 type (
+	// CuratorConfig contains configuration for curator.
 	CuratorConfig struct {
 		Client ClientConfig `yaml:"client"`
 	}
 
+	// ClientConfig contains configuration for Elasticsearch client.
 	ClientConfig struct {
 		Hosts    []string `yaml:"hosts"`
 		Port     int32    `yaml:"port"`
@@ -33,6 +35,8 @@ type (
 	}
 )
 
+// ReadConfig reads the yaml config file located at <configPath>
+// and unmarshal the file content into CuratorConfig struct.
 func ReadConfig(configPath string) (*CuratorConfig, error) {
 	if configPath == "" {
 		return nil, errors.New("No configuration path passed")

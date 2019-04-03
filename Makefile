@@ -43,3 +43,7 @@ docker-push:
 	@if ! docker images $(FLUENTD_ES_IMAGE_REPOSITORY) | awk '{ print $$2 }' | grep -q -F $(FLUENTD_ES_IMAGE_TAG); then echo "$(FLUENTD_ES_IMAGE_REPOSITORY) version $(FLUENTD_ES_IMAGE_TAG) is not yet built. Please run 'make fluentd-es-docker-image'"; false; fi
 	@gcloud docker -- push $(CURATOR_ES_IMAGE_REPOSITORY):$(CURATOR_ES_IMAGE_TAG)
 	@gcloud docker -- push $(FLUENTD_ES_IMAGE_REPOSITORY):$(FLUENTD_ES_IMAGE_TAG)
+
+.PHONY: check
+check:
+	@.ci/check
