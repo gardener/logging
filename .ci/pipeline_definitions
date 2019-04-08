@@ -6,6 +6,9 @@ logging:
       version:
         preprocess:
           'inject-commit-hash'
+      steps:
+        check:
+          image: 'golang:1.12.1'
       publish:
         dockerimages:
           curator-es:
