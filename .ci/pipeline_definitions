@@ -6,9 +6,6 @@ logging:
       version:
         preprocess:
           'inject-commit-hash'
-      steps:
-        check:
-          image: 'golang:1.12.1'
       publish:
         dockerimages:
           curator-es:
@@ -19,7 +16,9 @@ logging:
             registry: 'gcr-readwrite'
             image: 'eu.gcr.io/gardener-project/gardener/fluentd-es'
             dockerfile: 'fluentd-es/Dockerfile'
-    steps: ~
+    steps:
+      check:
+        image: 'golang:1.12.1'
   variants:
     head-update: ~
     pull-request:
