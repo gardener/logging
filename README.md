@@ -1,5 +1,7 @@
 # logging
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/gardener/logging)](https://goreportcard.com/report/github.com/gardener/logging)
+
 This repository contains components needed for Gardener logging.
 
 ## What's inside
