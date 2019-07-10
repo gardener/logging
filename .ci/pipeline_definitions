@@ -19,7 +19,7 @@ logging:
     steps:
       check:
         image: 'golang:1.12.1'
-  variants:
+  jobs:
     head-update: ~
     pull-request:
       traits:
