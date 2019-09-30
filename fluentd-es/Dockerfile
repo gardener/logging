@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM gcr.io/fluentd-elasticsearch/fluentd:v2.5.1
+FROM quay.io/fluentd_elasticsearch/fluentd:v2.5.2
 
 COPY fluentd-es/Gemfile.gardener /Gemfile.gardener
 
