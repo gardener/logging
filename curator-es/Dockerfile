@@ -22,9 +22,9 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go install ./curator-es/...
 
 ############# curator-es & curator #############
 
-FROM python:2.7-slim
+FROM python:3.7-slim
 
 COPY --from=builder /go/bin/curator-es /bin
-RUN pip install elasticsearch-curator==5.6.0
+RUN pip install elasticsearch-curator==5.8.1
 
 ENTRYPOINT [ "/usr/local/bin/curator" ]
