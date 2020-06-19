@@ -16,6 +16,10 @@ logging:
             registry: 'gcr-readwrite'
             image: 'eu.gcr.io/gardener-project/gardener/fluentd-es'
             dockerfile: 'fluentd-es/Dockerfile'
+          fluent-bit-to-loki:
+            registry: 'gcr-readwrite'
+            image: 'eu.gcr.io/gardener-project/gardener/fluent-bit-to-loki'
+            dockerfile: 'fluent-bit-to-loki/Dockerfile'
     steps:
       check:
         image: 'golang:1.12.1'

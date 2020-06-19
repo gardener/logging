@@ -1,0 +1,20 @@
+run:
+  concurrency: 4
+  deadline: 10m
+
+  skip-files:
+  - ".*\\.pb\\.go$"
+
+linters-settings:
+  errcheck:
+    exclude: ./exlude_functions.txt
+
+linters:
+  disable:
+  - unused
+
+issues:
+  exclude-rules:
+  - linters:
+    - staticcheck
+    text: "SA1019:" # Excludes messages where deprecated variables are used
