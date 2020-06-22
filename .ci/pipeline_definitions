@@ -23,6 +23,8 @@ logging:
     steps:
       check:
         image: 'golang:1.12.1'
+      verify:
+        image: 'golang:1.14.2'
   jobs:
     head-update: ~
     pull-request:
