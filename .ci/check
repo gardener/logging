@@ -50,3 +50,5 @@ go fmt ${PACKAGES}
 for package in ${LINT_FOLDERS}; do
   golint -set_exit_status $package
 done
+
+

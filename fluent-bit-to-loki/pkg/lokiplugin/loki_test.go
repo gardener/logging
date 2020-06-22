@@ -117,7 +117,7 @@ var _ = Describe("Loki plugin", func() {
 		}
 	)
 
-	logLevel.Set("info")
+	_ = logLevel.Set("info")
 	logger = level.NewFilter(logger, logLevel.Gokit)
 	logger = log.With(logger, "caller", log.Caller(3))
 
