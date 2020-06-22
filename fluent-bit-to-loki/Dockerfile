@@ -4,7 +4,7 @@ FROM golang:1.14.2 AS builder
 WORKDIR /go/src/github.com/gardener/logging
 COPY . .
 
-RUN $(cd fluent-bit-to-loki && make plugin) || make plugin
+RUN  if [ -d "fluent-bit-to-loki" ]; then cd fluent-bit-to-loki; fi; make plugin
 #############      fluent-bit       #############
 FROM fluent/fluent-bit:1.4.4 AS fluent-bit
 
