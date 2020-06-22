@@ -10,7 +10,8 @@ This repository contains components needed for Gardener logging.
 
 [Curator for Elasticsearch](curator-es) - a Docker image with Curator (https://github.com/elastic/curator).
 
-[Fluent-bit with outplugin to loki](fluent-bit-to-loki) - a Docker image with [Fluent-bit](https://github.com/fluent/fluent-bit)
+[Fluent-bit with outplugin to loki](fluent-bit-to-loki) - a Docker image with [Fluent-bit](https://github.com/fluent/fluent-bit) containing pre-build golang plugin
+for sending logs to multiple Loki instances.
 ## Local build
 
 ```bash
