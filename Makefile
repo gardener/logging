@@ -69,3 +69,7 @@ verify:
 .PHONY: revendor
 revendor:
 	@cd fluent-bit-to-loki && $(MAKE) revendor
+
+.PHONY: install-requirements
+install-requirements:
+	@cd fluent-bit-to-loki && $(MAKE) install-requirements

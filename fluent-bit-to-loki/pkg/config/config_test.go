@@ -37,8 +37,8 @@ var _ = Describe("Config", func() {
 	var warnLogLevel logging.Level
 	var infoLogLevel logging.Level
 
-	warnLogLevel.Set("warn")
-	infoLogLevel.Set("info")
+	_ = warnLogLevel.Set("warn")
+	_ = infoLogLevel.Set("info")
 	somewhereURL, _ := ParseURL("http://somewhere.com:3100/loki/api/v1/push")
 	defaultURL, _ := ParseURL("http://localhost:3100/loki/api/v1/push")
 

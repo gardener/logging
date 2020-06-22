@@ -24,7 +24,7 @@ revendor:
 
 .PHONY: check
 check:
-	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/check.sh --golangci-lint-config=./.golangci.yaml ./cmd/...
+	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/check.sh --golangci-lint-config=./.golangci.yaml ./cmd/... ./pkg/...
 
 .PHONY: format
 format:
@@ -34,5 +34,10 @@ format:
 test:
 	@sh $(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/test.sh -r ./pkg/...
 
+.PHONY: install-requirements
+install-requirements:
+	@go install -mod=vendor github.com/onsi/ginkgo/ginkgo
+	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/install-requirements.sh
+
 .PHONY: verify
-verify: check format test
+verify: install-requirements check format test

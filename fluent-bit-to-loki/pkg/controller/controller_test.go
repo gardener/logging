@@ -93,7 +93,7 @@ var _ = Describe("Controller", func() {
 			logLevel logging.Level
 		)
 		defaultURL := flagext.URLValue{}
-		defaultURL.Set("http://loki.garden.svc:3100/loki/api/v1/push")
+		_ = defaultURL.Set("http://loki.garden.svc:3100/loki/api/v1/push")
 		labelSelector := labels.SelectorFromSet(map[string]string{"role": "shoot"})
 		dynamicHostPrefix := "http://loki."
 		dynamicHostSulfix := ".svc:3100/loki/api/v1/push"
