@@ -1,8 +1,8 @@
-
-REGISTRY                           := eu.gcr.io/gardener-project/gardener
-PLUGIN_REPOSITORY         		   := $(REGISTRY)/fluent-bit-to-loki
-IMAGE_TAG                          := $(shell cat VERSION)
 REPO_ROOT                   := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+VERSION                               := $(shell cat VERSION)
+REGISTRY                              := eu.gcr.io/gardener-project/gardener
+FLUENT_BIT_TO_LOKI_IMAGE_REPOSITORY   := $(REGISTRY)/fluent-bit-to-loki
+FLUENT_BIT_TO_LOKI_IMAGE_TAG          := $(VERSION)
 
 .PHONY: plugin
 plugin:
@@ -10,13 +10,12 @@ plugin:
 
 .PHONY: docker-images
 docker-images:
-	@docker build -t $(PLUGIN_REPOSITORY):$(IMAGE_TAG) -t $(PLUGIN_REPOSITORY):latest -f Dockerfile --target fluent-bit .
+	@docker build -t $(FLUENT_BIT_TO_LOKI_IMAGE_REPOSITORY):$(FLUENT_BIT_TO_LOKI_IMAGE_TAG) -t $(FLUENT_BIT_TO_LOKI_IMAGE_REPOSITORY):latest -f Dockerfile --target fluent-bit .
 
 .PHONY: docker-push
 docker-push:
-	@if ! docker images $(PLUGIN_REPOSITORY) | awk '{ print $$2 }' | grep -q -F $(IMAGE_TAG); then echo "$(PLUGIN_REPOSITORY) version $(IMAGE_TAG) is not yet built. Please run 'make docker-images'"; false; fi
-	@gcloud docker -- push $(PLUGIN_REPOSITORY):$(IMAGE_TAG)
-	@if [[ "$(PUSH_LATEST_TAG)" == "true" ]]; then gcloud docker -- push $(PLUGIN_REPOSITORY):latest; fi
+	@if ! docker images $(FLUENT_BIT_TO_LOKI_IMAGE_REPOSITORY) | awk '{ print $$2 }' | grep -q -F $(FLUENT_BIT_TO_LOKI_IMAGE_TAG); then echo "$(FLUENT_BIT_TO_LOKI_IMAGE_REPOSITORY) version $(FLUENT_BIT_TO_LOKI_IMAGE_TAG) is not yet built. Please run 'make docker-images'"; false; fi
+	@gcloud docker -- push $(FLUENT_BIT_TO_LOKI_IMAGE_REPOSITORY):$(FLUENT_BIT_TO_LOKI_IMAGE_TAG)
 
 .PHONY: revendor
 revendor:

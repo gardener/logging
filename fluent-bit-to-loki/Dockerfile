@@ -1,14 +1,14 @@
 #############      builder       #############
 FROM golang:1.14.2 AS builder
 
-WORKDIR /go/src/github.com/vlasilev/fluent-bit-to-loki
+WORKDIR /go/src/github.com/gardener/logging
 COPY . .
 
-RUN make plugin
+RUN $(cd fluent-bit-to-loki && make plugin) || make plugin
 #############      fluent-bit       #############
 FROM fluent/fluent-bit:1.4.4 AS fluent-bit
 
-COPY --from=builder /go/src/github.com/vlasilev/fluent-bit-to-loki/build /fluent-bit/plugins
+COPY --from=builder /go/src/github.com/gardener/logging/fluent-bit-to-loki /fluent-bit/plugins
 
 WORKDIR /
 
