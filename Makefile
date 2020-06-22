@@ -52,6 +52,7 @@ docker-push:
 .PHONY: check
 check:
 	@.ci/check
+	@.ci/verify
 
 .PHONY: format
 format:
