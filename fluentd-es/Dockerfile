@@ -12,15 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM quay.io/fluentd_elasticsearch/fluentd:v2.5.2
+FROM quay.io/fluentd_elasticsearch/fluentd:v3.0.2
 
 COPY fluentd-es/Gemfile.gardener /Gemfile.gardener
 
-RUN BUILD_DEPS="make gcc g++ libc6-dev ruby-dev" \
-    && clean-install $BUILD_DEPS \
+RUN BUILD_DEPS="make build-essential g++ libc6-dev ruby-full" \
+    && apt-get purge $BUILD_DEPS \
+    || apt-get update \
+    && apt-get -y install $BUILD_DEPS \
     && gem install --file Gemfile.gardener \
     && gem cleanup \
     && apt-get purge -y --auto-remove \
                      -o APT::AutoRemove::RecommendsImportant=false \
                      $BUILD_DEPS \
-    && clean-apt
+    && apt-get clean
