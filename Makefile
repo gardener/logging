@@ -12,15 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-VERSION                            := $(shell cat VERSION)
-REGISTRY                           := eu.gcr.io/gardener-project/gardener
-CURATOR_ES_IMAGE_REPOSITORY        := $(REGISTRY)/curator-es
-CURATOR_ES_IMAGE_TAG               := $(VERSION)
-FLUENTD_ES_IMAGE_REPOSITORY        := $(REGISTRY)/fluentd-es
-FLUENTD_ES_IMAGE_TAG               := $(VERSION)
+VERSION                               := $(shell cat VERSION)
+REGISTRY                              := eu.gcr.io/gardener-project/gardener
+CURATOR_ES_IMAGE_REPOSITORY           := $(REGISTRY)/curator-es
+CURATOR_ES_IMAGE_TAG                  := $(VERSION)
+FLUENTD_ES_IMAGE_REPOSITORY           := $(REGISTRY)/fluentd-es
+FLUENTD_ES_IMAGE_TAG                  := $(VERSION)
+FLUENT_BIT_TO_LOKI_IMAGE_REPOSITORY   := $(REGISTRY)/fluent-bit-to-loki
+FLUENT_BIT_TO_LOKI_IMAGE_TAG          := $(VERSION)
 
 .PHONY: docker-images
-docker-images: curator-es-docker-image fluentd-es-docker-image
+docker-images: curator-es-docker-image fluentd-es-docker-image fluent-bit-to-loki
 
 .PHONY: curator-es-docker-image
 curator-es-docker-image:
@@ -29,6 +31,10 @@ curator-es-docker-image:
 .PHONY: fluentd-es-docker-image
 fluentd-es-docker-image:
 	@docker build -t $(FLUENTD_ES_IMAGE_REPOSITORY):$(FLUENTD_ES_IMAGE_TAG) -f fluentd-es/Dockerfile --rm .
+
+.PHONY: fluent-bit-to-loki
+fluent-bit-to-loki:
+	@docker build -t $(FLUENT_BIT_TO_LOKI_IMAGE_REPOSITORY):$(FLUENT_BIT_TO_LOKI_IMAGE_TAG) -f curator-es/Dockerfile --rm .
 
 .PHONY: release
 release: docker-images docker-login docker-push
@@ -41,9 +47,27 @@ docker-login:
 docker-push:
 	@if ! docker images $(CURATOR_ES_IMAGE_REPOSITORY) | awk '{ print $$2 }' | grep -q -F $(CURATOR_ES_IMAGE_TAG); then echo "$(CURATOR_ES_IMAGE_REPOSITORY) version $(CURATOR_ES_IMAGE_TAG) is not yet built. Please run 'make curator-es-docker-image'"; false; fi
 	@if ! docker images $(FLUENTD_ES_IMAGE_REPOSITORY) | awk '{ print $$2 }' | grep -q -F $(FLUENTD_ES_IMAGE_TAG); then echo "$(FLUENTD_ES_IMAGE_REPOSITORY) version $(FLUENTD_ES_IMAGE_TAG) is not yet built. Please run 'make fluentd-es-docker-image'"; false; fi
+	@if ! docker images $(FLUENT_BIT_TO_LOKI_IMAGE_REPOSITORY) | awk '{ print $$2 }' | grep -q -F $(FLUENT_BIT_TO_LOKI_IMAGE_TAG); then echo "$(FLUENT_BIT_TO_LOKI_IMAGE_REPOSITORY) version $(FLUENT_BIT_TO_LOKI_IMAGE_TAG) is not yet built. Please run 'make curator-es-docker-image'"; false; fi
 	@gcloud docker -- push $(CURATOR_ES_IMAGE_REPOSITORY):$(CURATOR_ES_IMAGE_TAG)
 	@gcloud docker -- push $(FLUENTD_ES_IMAGE_REPOSITORY):$(FLUENTD_ES_IMAGE_TAG)
+	@gcloud docker -- push $(FLUENT_BIT_TO_LOKI_IMAGE_REPOSITORY):$(FLUENT_BIT_TO_LOKI_IMAGE_TAG)
 
 .PHONY: check
 check:
 	@.ci/check
+
+.PHONY: format
+format:
+	cd fluent-bit-to-loki && $(MAKE) format
+
+.PHONY: test
+test:
+	cd fluent-bit-to-loki && $(MAKE) test
+
+.PHONY: verify
+verify:
+	cd fluent-bit-to-loki && $(MAKE) verify
+
+.PHONY: revendor
+revendor:
+	cd fluent-bit-to-loki && $(MAKE) revendor
