@@ -32,7 +32,7 @@ fluentd-es-docker-image:
 
 .PHONY: fluent-bit-to-loki-image
 fluent-bit-to-loki-image:
-	@cd fluent-bit-to-loki && $(MAKE) make docker-images
+	@cd fluent-bit-to-loki && $(MAKE) docker-images
 
 .PHONY: release
 release: docker-images docker-login docker-push
