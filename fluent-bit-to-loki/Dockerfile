@@ -8,7 +8,7 @@ RUN  if [ -d "fluent-bit-to-loki" ]; then cd fluent-bit-to-loki; fi; make plugin
 #############      fluent-bit       #############
 FROM fluent/fluent-bit:1.4.4 AS fluent-bit
 
-COPY --from=builder /go/src/github.com/gardener/logging/fluent-bit-to-loki /fluent-bit/plugins
+COPY --from=builder /go/src/github.com/gardener/logging/fluent-bit-to-loki/build /fluent-bit/plugins
 
 WORKDIR /
 
