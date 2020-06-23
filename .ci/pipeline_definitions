@@ -8,14 +8,6 @@ logging:
           'inject-commit-hash'
       publish:
         dockerimages:
-          curator-es:
-            registry: 'gcr-readwrite'
-            image: 'eu.gcr.io/gardener-project/gardener/curator-es'
-            dockerfile: 'curator-es/Dockerfile'
-          fluentd-es:
-            registry: 'gcr-readwrite'
-            image: 'eu.gcr.io/gardener-project/gardener/fluentd-es'
-            dockerfile: 'fluentd-es/Dockerfile'
           fluent-bit-to-loki:
             registry: 'gcr-readwrite'
             image: 'eu.gcr.io/gardener-project/gardener/fluent-bit-to-loki'
