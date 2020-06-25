@@ -37,7 +37,7 @@ fi
 
 ###############################################################################
 
-PACKAGES="$(go list -e ./... | grep -vE '/tmp/|/vendor/')"
+PACKAGES="$(go list -e ./... | grep -vE '/tmp/|/vendor/|/fluent-bit-to-loki/')"
 LINT_FOLDERS="$(echo ${PACKAGES} | sed "s|github.com/gardener/logging|.|g")"
 
 # Execute static code checks.
