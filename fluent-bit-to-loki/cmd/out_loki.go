@@ -53,7 +53,6 @@ func (c *pluginConfig) Get(key string) string {
 }
 
 //export FLBPluginRegister
-// FLBPluginRegister export the plugin
 func FLBPluginRegister(ctx unsafe.Pointer) int {
 	return output.FLBPluginRegister(ctx, "loki", "Ship fluent-bit logs to Grafana Loki")
 }
