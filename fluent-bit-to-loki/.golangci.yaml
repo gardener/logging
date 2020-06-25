@@ -4,7 +4,8 @@ run:
 
   skip-files:
   - ".*\\.pb\\.go$"
-
+  - ".*/out_loki\\.go$"
+  
 linters-settings:
   errcheck:
     exclude: ./exlude_functions.txt
