@@ -53,13 +53,11 @@ func (c *pluginConfig) Get(key string) string {
 }
 
 //export FLBPluginRegister
-// FLBPluginRegister export the plugin
 func FLBPluginRegister(ctx unsafe.Pointer) int {
 	return output.FLBPluginRegister(ctx, "loki", "Ship fluent-bit logs to Grafana Loki")
 }
 
 //export FLBPluginInit
-// FLBPluginInit init each plugin instance
 // (fluentbit will call this)
 // ctx (context) pointer to fluentbit context (state/ c code)
 func FLBPluginInit(ctx unsafe.Pointer) int {
@@ -107,7 +105,6 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 }
 
 //export FLBPluginFlushCtx
-// FLBPluginFlushCtx process a given record
 func FLBPluginFlushCtx(ctx, data unsafe.Pointer, length C.int, _ *C.char) int {
 	plugin := output.FLBPluginGetContext(ctx).(lokiplugin.Loki)
 	if plugin == nil {
@@ -154,7 +151,6 @@ func FLBPluginFlushCtx(ctx, data unsafe.Pointer, length C.int, _ *C.char) int {
 }
 
 //export FLBPluginExit
-// FLBPluginExit cracefuly shut down all of the plugin instances
 func FLBPluginExit() int {
 	for _, plugin := range plugins {
 		plugin.Close()
