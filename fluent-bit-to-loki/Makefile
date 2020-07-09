@@ -22,10 +22,6 @@ revendor:
 	@GO111MODULE=on go mod vendor
 	@GO111MODULE=on go mod tidy
 
-.PHONY: install-requirments
-check:
-	@$(REPO_ROOT)/hack/install-requirments.sh
-
 .PHONY: check
 check:
 	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/check.sh --golangci-lint-config=./.golangci.yaml ./cmd/... ./pkg/...
@@ -43,4 +39,4 @@ install-requirements:
 	@$(REPO_ROOT)/hack/install-requirements.sh
 
 .PHONY: verify
-verify: install-requirments check format test
+verify: install-requirements check format test
