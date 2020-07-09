@@ -36,8 +36,7 @@ test:
 
 .PHONY: install-requirements
 install-requirements:
-	@go install -mod=vendor github.com/onsi/ginkgo/ginkgo
-	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/install-requirements.sh
+	@$(REPO_ROOT)/hack/install-requirements.sh
 
 .PHONY: verify
 verify: install-requirements check format test
