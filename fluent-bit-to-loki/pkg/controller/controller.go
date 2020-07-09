@@ -106,9 +106,7 @@ func (ctl *controller) updateFunc(oldObj interface{}, newObj interface{}) {
 
 	client, ok := ctl.clients[oldNamespace.Name]
 	if ok && client != nil {
-		if ctl.matches(newNamespace) {
-			ctl.createClient(newNamespace)
-		} else {
+		if !ctl.matches(newNamespace) {
 			ctl.deleteClient(newNamespace)
 		}
 	} else {
@@ -159,11 +157,11 @@ func (ctl *controller) createClient(namespace *corev1.Namespace) {
 
 	client, err := lokiclient.New(*clientConf, ctl.logger)
 	if err != nil {
-		level.Error(ctl.logger).Log("failed to make new loki client for namespace", namespace, "error", err.Error())
+		level.Error(ctl.logger).Log("failed to make new loki client for namespace", namespace.Name, "error", err.Error())
 		return
 	}
 
-	level.Info(ctl.logger).Log("Add", "client", "namespace", namespace)
+	level.Info(ctl.logger).Log("Add", "client", "namespace", namespace.Name)
 	ctl.clients[namespace.Name] = client
 }
 
@@ -174,7 +172,7 @@ func (ctl *controller) deleteClient(namespace *corev1.Namespace) {
 	client, ok := ctl.clients[namespace.Name]
 	if ok && client != nil {
 		client.Stop()
-		level.Info(ctl.logger).Log("Delete", "client", "namespace", namespace)
+		level.Info(ctl.logger).Log("Delete", "client", "namespace", namespace.Name)
 		delete(ctl.clients, namespace.Name)
 	}
 }
