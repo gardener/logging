@@ -36,6 +36,7 @@ test:
 
 .PHONY: install-requirements
 install-requirements:
+	@go install -mod=vendor github.com/onsi/ginkgo/ginkgo
 	@$(REPO_ROOT)/hack/install-requirements.sh
 
 .PHONY: verify
