@@ -80,6 +80,7 @@ func (ctl *controller) Stop() {
 }
 
 func (ctl *controller) addFunc(obj interface{}) {
+	fmt.Println("IN ADD FUNCTION")
 	namespace, ok := obj.(*corev1.Namespace)
 	if !ok {
 		level.Error(ctl.logger).Log(fmt.Sprintf("%v", obj), "is not a namespace")
@@ -87,11 +88,13 @@ func (ctl *controller) addFunc(obj interface{}) {
 	}
 
 	if ctl.matches(namespace) {
+		fmt.Println("Create Client")
 		ctl.createClient(namespace)
 	}
 }
 
 func (ctl *controller) updateFunc(oldObj interface{}, newObj interface{}) {
+	fmt.Println("IN FUNCTION UPDATE")
 	oldNamespace, ok := oldObj.(*corev1.Namespace)
 	if !ok {
 		level.Error(ctl.logger).Log(fmt.Sprintf("%v", oldObj), "is not a namespace")
@@ -106,19 +109,19 @@ func (ctl *controller) updateFunc(oldObj interface{}, newObj interface{}) {
 
 	client, ok := ctl.clients[oldNamespace.Name]
 	if ok && client != nil {
-		if ctl.matches(newNamespace) {
-			ctl.createClient(newNamespace)
-		} else {
+		if !ctl.matches(newNamespace) {
 			ctl.deleteClient(newNamespace)
 		}
 	} else {
 		if ctl.matches(newNamespace) {
+			fmt.Println("Create Client")
 			ctl.createClient(newNamespace)
 		}
 	}
 }
 
 func (ctl *controller) delFunc(obj interface{}) {
+	fmt.Println("IN DELETE FUNCTION")
 	namespace, ok := obj.(*corev1.Namespace)
 	if !ok {
 		level.Error(ctl.logger).Log(fmt.Sprintf("%v", obj), "is not a namespace")
