@@ -85,6 +85,7 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 	level.Info(paramLogger).Log("LineFormat", conf.LineFormat)
 	level.Info(paramLogger).Log("DropSingleKey", conf.DropSingleKey)
 	level.Info(paramLogger).Log("LabelMapPath", fmt.Sprintf("%+v", conf.LabelMap))
+	level.Info(paramLogger).Log("LabelSelector", fmt.Sprintf("%+v", conf.LabelSelector))
 	level.Info(paramLogger).Log("DynamicHostPath", fmt.Sprintf("%+v", conf.DynamicHostPath))
 	level.Info(paramLogger).Log("DynamicHostPrefix", fmt.Sprintf("%+v", conf.DynamicHostPrefix))
 	level.Info(paramLogger).Log("DynamicHostSulfix", fmt.Sprintf("%+v", conf.DynamicHostSulfix))
