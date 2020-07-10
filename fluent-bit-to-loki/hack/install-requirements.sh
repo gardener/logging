@@ -24,10 +24,11 @@ export GO111MODULE=on
 curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.27.0
 curl -s "https://raw.githubusercontent.com/helm/helm/v2.16.9/scripts/get" | bash -s -- --version 'v2.13.1'
 
-curl -OL https://github.com/progrium/ginkgo/tarball/master 
+curl -OL https://github.com/progrium/ginkgo/tarball/master
+mkdir ./ginkgo
 tar -xzf master -C ./ginkgo
 python ./ginkgo/setup.py install
-rm -fr ./ginkgo
+rm -fr ./ginkgo master
 
 if [[ "$(uname -s)" == *"Darwin"* ]]; then
   cat <<EOM
