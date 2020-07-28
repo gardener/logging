@@ -1,59 +1,56 @@
----
-title: Logging
-description: "Gardener logging for an effective Kubernetes landscape operation"
-url: /docs/guides/logging
-type: tutorial-page
-level: beginner
-category: Operation
-scope: operator
-publishdate: 2020-03-25
-tags: ["task","operations","logging"]
----
+This guide is about Gardener Logging, how it is organized and how to use the dashboard to view the log data of Kubernetes clusters.
 
-This guide is about Gardener Logging, how it is organized and how to use the dashboard for viewing the Kubernetes clusters log data.
+# Cluster level logging
+Log data is fundamental for the successful operation activities of Kubernetes landscapes. It is used for investigating problems and monitoring cluster activity.
 
-## Cluster level logging
-Log data is fundamental for the successful operation activities of Kubernetes landscapes. It is used for investigating problems and monitoring cluster activity. 
-
-Cluster level logging is the recommended way to collect and store log data for Kubernetes cluster resources. With cluster level logging the log data is externalized 
+Cluster level logging is the recommended way to collect and store log data for Kubernetes cluster components. With cluster level logging the log data is externalized
 in a logging backend where the log lifecycle management is independent from the lifecycle management of the Kubernetes resources.
 
-Cluster level logging is not available by default with [Kubernetes](https://kubernetes.io/docs/concepts/cluster-administration/logging/#cluster-level-logging-architectures) and consumers have to implement it in addition.
-Kubernetes project provides only basic logging capabilities via _kubectl logs_ where the kubelet keeps one terminated container with its logs. 
-When a pod is evicted from the node, all corresponding containers are also evicted, together with their logs. 
-This is why the default log storage solution is considerd shot-lived and not sufficient when one wants to operate properly a Kubernetes environment. 
+Cluster level logging is not available by default with [Kubernetes](https://kubernetes.io/docs/concepts/cluster-administration/logging/#cluster-level-logging-architectures) and consumers have to additionally implement it.
+The Kubernetes project only provides basic logging capabilities via `kubectl logs` where the kubelet keeps one terminated container with its logs.
+When a pod is evicted from the node, all corresponding containers are also evicted, along with their logs.
+This is why the default log storage solution is considered short-lived and not sufficient when you want to properly operate a Kubernetes environment.
 
-Gardener, as an advanced Kubernetes management solution, follows the general recommendations and offers a cluster level logging solution to ensure proper log storage for all managed Kubernetes resources. 
-The log management is setup when the new cluster is created.
-Log collection is organized using [fluent-bit](https://fluentbit.io). 
-Log storage and search is organized using [Loki](https://grafana.com/oss/loki). 
-Log visualization is available using [Grafana](hhttps://grafana.com/grafana) that is deployed with 
-predefined dashboard and  visualization for every shoot cluster.
+Gardener, as an advanced Kubernetes management solution, follows the general recommendations and offers a cluster level logging solution to ensure proper log storage for all managed Kubernetes resources.
+The log management is setup when a new cluster is created.
+Log collection is organized using [fluent-bit](https://fluentbit.io).
+Log storage and search is organized using [Loki](https://grafana.com/oss/loki).
+Log visualization is available using [Grafana](https://grafana.com/grafana) that is deployed with predefined dashboard and visualization for every shoot cluster.
 
 
-Kubernetes operators can benefit from different capabilities like accessing the logs for 
-already terminated containers, perform fast and sophisticated search for investigating long 
-lasting problems or recurring problems based on logs from a long period of time. 
+Using Kubernetes operators can benefit from different capabilities like accessing the logs for
+already terminated containers and performing fast and sophisticated search queries for investigating long-lasting or recurring problems based on logs from a long period of time.
 
-Below in this guide, you will find the procedure how to access the log data for your clsuters.
+In this guide, you will find out how to explore the log data for your clusters.
 
-## Procedure
+## Exploring logs
 
-Use this procedure to view the log data of your Kubernetes cluster.
+The sections below describe how access Grafana and use it to view the log data of your Kubernetes cluster.
 
 ### Accessing Grafana
-1. Open **Gardener dashboard** and navigate to the cluster which log data you want to view
-2. Hover your mouse over cluster name to open and view the details for the cluster. Find the **Logging and Monitoring** section and use the link and credentials to log-in to Grafana.
-
+1. On the Gardener dashboard, choose **CLUSTERS** > [YOUR-CLUSTER] > **OVERVIEW** > **Logging and Monitoring**.
 ![Navigate to Logging and Monitoring Tile](images/gardener-dashboard-logging.png)
+
+2. Use the link in the **Logging and Monitoring** tile to open the Grafana dashboard.
+3. Enter the login credentials shown in the **Logging and Monitoring** tile to log in the Grafana dashboard.
+The default values of the credentials for Grafana are:
+- Username : `admin`
+- Password : `admin`
+![Login Screen](images/login-credentials.png)
+
+Upon successful login you will be asked to changing the default password.
+**Note:** These credentials are shared among all operators. Changing the default password will affect their access. You can safely skip this step.
+![Button to Skip Password Change](images/skip-password-change.png)
 
 ### Using Grafana
 
-There are two ways for tracking log messages in Grafana.
+There are two ways to explore log messages in Grafana.
 
 #### Predefined Dashboards
-The first option is to use the predefined dashboards.
-Go to the **Home** menu and after that you can choose which dashboard to open. The dashboards which contain log visualizations for the different Grafana deployments are:
+The first one is to use the predefined dashboards.
+1. Go to the **Home** tab.
+2. Choose which dashboard to open.
+The dashboards that contain log visualizations for the different Grafana deployments are:
 
   * Garden Grafana
     * Pod Logs
@@ -61,65 +58,29 @@ Go to the **Home** menu and after that you can choose which dashboard to open. T
     * Systemd Logs
   * User Grafana
     * Kubernetes Control Plane Status
-  * Operator Grafana 
+  * Operator Grafana
     * Kubernetes Pods
     * Kubernetes Control Plane Status
 
-![](images/dashboards.png)
+    ![Dashboard Navigator](images/dashboards.png)
 
-#### Explore menu
-The second option is to use the **Explore** menu.
-The first thing for enabling this option is to authenticate in front of the Grafana UI.
-This happens with the button in the bottom left corner
-![](images/login-button.png)
+#### Explore tab
+The second one is to use the **Explore** tab.
 
-The default credentials for the Grafana are:
-`username` : `admin`
-`password` : `admin`
-![](images/login-credentials.png)
+To enable this option you need to authenticate in front of the Grafana UI.
+1. Choose the login button (bottom left corner).
+![Login Button on Grafana Home Screen](images/login-button.png)
 
-On successful login you will be asked for changing the default password. Please ***do not*** do that because these credentials will be used from all of the operators so this step ***should be skipped***.
+2. Log in following the steps described in the [Acccessing Grafana](#accessing-grafana) section.
+3. Choose the ***Explore*** tab (upper left side of the screen).
+![Grafana Explore Tab](images/explore-logs.png)
+You can create a custom log filters based on the predefined labels used in `Loki`.
+The following properties can be managed in the `Explore` tab:
+- `Datasource` (top left corner) should be set on Loki
+- `Timerange` (top right corner) is used to filter logs over a different period of time
+- `Label Selector` (top left corner) is used to filter logs based on the `Loki`'s labels and their values.
+For example:
+`pod_name="kube-apiserver-1234-1234"` or you can use a regular expression (regex): `pod_name=~"kube-apiserver.+"`
+- `Severity` (left side of the screen). This option is used to filter log messages with specific severity.
 
-![](images/skip-password-change.png)
-
-After that just select the ***Explore*** (Left side of the screen) menu.
-
-![](images/explore-logs.png)
-
-There you can create a custom log filters based on the predefined labels used in `Loki`
-
-The following properties can be managed in the `Explore` menu:
-
-1) `Datasource` (top left corner) should be set on Loki
-2) `Timerange` (top right corner) is used to filter logs over a different period of time
-3) `Label Selector` (top left corner) is used to filter logs based on the `Loki`'s labels and their values. 
-For example: 
-`pod_name="kube-apiserver-1234-1234"` or you can use a regex: `pod_name=~"kube-apiserver.+"`
-4) `Severity` (left side of the screen). This option is used to filter log messages with specific severity.
-
-Lastly click on **Run Query** (top right corner) and the log messages which fit on the properties listed above will be displayed.
-
-## Using log data for a problem resolution
-**Sample problem:** 
-
-Kubernetes cluster appears in "Error state" after changing the **admissionPlugins** configuration of the **kubeAPIServer** (for an existing cluster) using the code below:
-   ```bash
-  kubernetes:
-    allowPrivilegedContainers: true
-    kubeAPIServer:
-      admissionPlugins:
-      - name: Initializers
-   ```
-**Problem investigation:**
-
-The operator is looking for error messages in the log data created regarding kubeAPIServer that can explain the error state of the cluster. 
-
-As part of the log data there is an Error message with the following content: 
-   ```
-Error: enable-admission-plugins plugin "Initializers" is unknown
-   ```
-
-Based on this data, the operators finds out that the **admissionPlugins** of the **kubeAPIServer**  is configured with a wrong admission plugin data. 
-Once the configuration is fixed the cluster will be reconciled successfully.
-
-
+4. Click on **Run Query** (top right corner) and the log messages, which fulfil the list of selected properties above, will be displayed.
