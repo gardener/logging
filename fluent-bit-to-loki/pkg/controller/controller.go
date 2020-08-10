@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"sync"
 
-	"k8s.io/apimachinery/pkg/labels"
+	extensioncontroller "github.com/gardener/gardener/extensions/pkg/controller"
+	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
+	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 
 	"github.com/cortexproject/cortex/pkg/util/flagext"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/cache"
 
 	lokiclient "github.com/grafana/loki/pkg/promtail/client"
@@ -26,7 +27,6 @@ type controller struct {
 	lock              sync.RWMutex
 	clients           map[string]lokiclient.Client
 	clientConfig      lokiclient.Config
-	labelSelector     labels.Selector
 	dynamicHostPrefix string
 	dynamicHostSulfix string
 	stopChn           chan struct{}
@@ -34,14 +34,12 @@ type controller struct {
 }
 
 // NewController return Controller interface
-func NewController(informer cache.SharedIndexInformer, clientConfig lokiclient.Config, logger log.Logger, dynamicHostPrefix, dynamicHostSulfix string, l map[string]string) (Controller, error) {
-	labelSelector := labels.SelectorFromSet(l)
+func NewController(informer cache.SharedIndexInformer, clientConfig lokiclient.Config, logger log.Logger, dynamicHostPrefix, dynamicHostSulfix string) (Controller, error) {
 
 	controller := &controller{
 		clients:           make(map[string]lokiclient.Client),
 		stopChn:           make(chan struct{}),
 		clientConfig:      clientConfig,
-		labelSelector:     labelSelector,
 		dynamicHostPrefix: dynamicHostPrefix,
 		dynamicHostSulfix: dynamicHostSulfix,
 		logger:            logger,
@@ -80,50 +78,50 @@ func (ctl *controller) Stop() {
 }
 
 func (ctl *controller) addFunc(obj interface{}) {
-	namespace, ok := obj.(*corev1.Namespace)
+	cluster, ok := obj.(*extensionsv1alpha1.Cluster)
 	if !ok {
-		level.Error(ctl.logger).Log(fmt.Sprintf("%v", obj), "is not a namespace")
+		level.Error(ctl.logger).Log(fmt.Sprintf("%v", obj), "is not a cluster")
 		return
 	}
 
-	if ctl.matches(namespace) {
-		ctl.createClient(namespace)
+	if ctl.matches(cluster) {
+		ctl.createClient(cluster)
 	}
 }
 
 func (ctl *controller) updateFunc(oldObj interface{}, newObj interface{}) {
-	oldNamespace, ok := oldObj.(*corev1.Namespace)
+	oldCluster, ok := oldObj.(*extensionsv1alpha1.Cluster)
 	if !ok {
-		level.Error(ctl.logger).Log(fmt.Sprintf("%v", oldObj), "is not a namespace")
+		level.Error(ctl.logger).Log(fmt.Sprintf("%v", oldObj), "is not a cluster")
 		return
 	}
 
-	newNamespace, ok := newObj.(*corev1.Namespace)
+	newCluster, ok := newObj.(*extensionsv1alpha1.Cluster)
 	if !ok {
-		level.Error(ctl.logger).Log(fmt.Sprintf("%v", newObj), "is not a namespace")
+		level.Error(ctl.logger).Log(fmt.Sprintf("%v", newObj), "is not a cluster")
 		return
 	}
 
-	client, ok := ctl.clients[oldNamespace.Name]
+	client, ok := ctl.clients[oldCluster.Name]
 	if ok && client != nil {
-		if !ctl.matches(newNamespace) {
-			ctl.deleteClient(newNamespace)
+		if !ctl.matches(newCluster) {
+			ctl.deleteClient(newCluster)
 		}
 	} else {
-		if ctl.matches(newNamespace) {
-			ctl.createClient(newNamespace)
+		if ctl.matches(newCluster) {
+			ctl.createClient(newCluster)
 		}
 	}
 }
 
 func (ctl *controller) delFunc(obj interface{}) {
-	namespace, ok := obj.(*corev1.Namespace)
+	cluster, ok := obj.(*extensionsv1alpha1.Cluster)
 	if !ok {
-		level.Error(ctl.logger).Log(fmt.Sprintf("%v", obj), "is not a namespace")
+		level.Error(ctl.logger).Log(fmt.Sprintf("%v", obj), "is not a cluster")
 		return
 	}
 
-	ctl.deleteClient(namespace)
+	ctl.deleteClient(cluster)
 }
 
 func (ctl *controller) getClientConfig(namespaces string) *lokiclient.Config {
@@ -142,37 +140,64 @@ func (ctl *controller) getClientConfig(namespaces string) *lokiclient.Config {
 	return &clientConf
 }
 
-func (ctl *controller) matches(namespace *corev1.Namespace) bool {
-	return ctl.labelSelector.Matches(labels.Set(namespace.Labels))
+func (ctl *controller) matches(cluster *extensionsv1alpha1.Cluster) bool {
+	decoder, err := extensioncontroller.NewGardenDecoder()
+	if err != nil {
+		level.Error(ctl.logger).Log("Can't make decoder for cluster ", fmt.Sprintf("%v", cluster.Name))
+		return false
+	}
+
+	shoot, err := extensioncontroller.ShootFromCluster(decoder, cluster)
+	if err != nil {
+		level.Error(ctl.logger).Log("Can't extract shoot from cluster ", fmt.Sprintf("%v", cluster.Name))
+		return false
+	}
+
+	if isShootInHibernation(shoot) || isTestingShoot(shoot) {
+		return false
+	}
+
+	return true
 }
 
-func (ctl *controller) createClient(namespace *corev1.Namespace) {
+func (ctl *controller) createClient(cluster *extensionsv1alpha1.Cluster) {
 	ctl.lock.Lock()
 	defer ctl.lock.Unlock()
 
-	clientConf := ctl.getClientConfig(namespace.Name)
+	clientConf := ctl.getClientConfig(cluster.Name)
 	if clientConf == nil {
 		return
 	}
 
 	client, err := lokiclient.New(*clientConf, ctl.logger)
 	if err != nil {
-		level.Error(ctl.logger).Log("failed to make new loki client for namespace", namespace.Name, "error", err.Error())
+		level.Error(ctl.logger).Log("failed to make new loki client for cluster", cluster.Name, "error", err.Error())
 		return
 	}
 
-	level.Info(ctl.logger).Log("Add", "client", "namespace", namespace.Name)
-	ctl.clients[namespace.Name] = client
+	level.Info(ctl.logger).Log("Add ", " client", " cluster ", cluster.Name)
+	ctl.clients[cluster.Name] = client
 }
 
-func (ctl *controller) deleteClient(namespace *corev1.Namespace) {
+func (ctl *controller) deleteClient(cluster *extensionsv1alpha1.Cluster) {
 	ctl.lock.Lock()
 	defer ctl.lock.Unlock()
 
-	client, ok := ctl.clients[namespace.Name]
+	client, ok := ctl.clients[cluster.Name]
 	if ok && client != nil {
 		client.Stop()
-		level.Info(ctl.logger).Log("Delete", "client", "namespace", namespace.Name)
-		delete(ctl.clients, namespace.Name)
+		level.Info(ctl.logger).Log("Delete", "client", "namespace", cluster.Name)
+		delete(ctl.clients, cluster.Name)
 	}
+}
+
+func isShootInHibernation(shoot *gardencorev1beta1.Shoot) bool {
+	return shoot != nil &&
+		shoot.Spec.Hibernation != nil &&
+		shoot.Spec.Hibernation.Enabled != nil &&
+		*shoot.Spec.Hibernation.Enabled
+}
+
+func isTestingShoot(shoot *gardencorev1beta1.Shoot) bool {
+	return shoot != nil && shoot.Spec.Purpose != nil && *shoot.Spec.Purpose == "testing"
 }

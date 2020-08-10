@@ -50,7 +50,6 @@ type Config struct {
 	LineFormat           Format
 	DropSingleKey        bool
 	LabelMap             map[string]interface{}
-	LabelSelector        map[string]string
 	DynamicHostPath      map[string]interface{}
 	DynamicHostPrefix    string
 	DynamicHostSulfix    string
@@ -169,19 +168,6 @@ func ParseConfig(cfg Getter) (*Config, error) {
 			return nil, fmt.Errorf("failed to Unmarshal LabelMap file: %s", err)
 		}
 		res.LabelKeys = nil
-	}
-
-	labelSelector := cfg.Get("LabelSelector")
-	if labelSelector != "" {
-		labels := strings.Split(labelSelector, ",")
-		res.LabelSelector = make(map[string]string)
-		for _, label := range labels {
-			splitLabel := strings.Split(label, ":")
-			if len(splitLabel) != 2 {
-				continue
-			}
-			res.LabelSelector[splitLabel[0]] = splitLabel[1]
-		}
 	}
 
 	dynamicHostPath := cfg.Get("DynamicHostPath")

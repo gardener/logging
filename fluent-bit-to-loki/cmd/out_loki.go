@@ -13,11 +13,12 @@ import (
 	"github.com/prometheus/common/version"
 	"github.com/weaveworks/common/logging"
 
+	gardenerclientsetversioned "github.com/gardener/gardener/pkg/client/extensions/clientset/versioned"
+	versioned "github.com/gardener/gardener/pkg/client/extensions/clientset/versioned"
+	gardeninternalcoreinformers "github.com/gardener/gardener/pkg/client/extensions/informers/externalversions"
+
 	"github.com/gardener/logging/fluent-bit-to-loki/pkg/config"
 	"github.com/gardener/logging/fluent-bit-to-loki/pkg/lokiplugin"
-
-	kubeinformers "k8s.io/client-go/informers"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 )
@@ -39,8 +40,8 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubernetesCleint, time.Second*30)
-	informer = kubeInformerFactory.Core().V1().Namespaces().Informer()
+	kubeInformerFactory := gardeninternalcoreinformers.NewSharedInformerFactory(kubernetesCleint, time.Second*30)
+	informer = kubeInformerFactory.Extensions().V1alpha1().Clusters().Informer()
 	kubeInformerFactory.Start(informerStopChan)
 }
 
@@ -166,13 +167,14 @@ func newLogger(logLevel logging.Level) log.Logger {
 	return logger
 }
 
-func getInclusterKubernetsClient() (kubernetes.Interface, error) {
+func getInclusterKubernetsClient() (versioned.Interface, error) {
 	config, err := rest.InClusterConfig()
 	if err != nil {
 		return nil, err
 	}
 	//fake.NewSimpleClientset().
-	return kubernetes.NewForConfig(config)
+	//return kubernetes.NewForConfig(config)
+	return gardenerclientsetversioned.NewForConfig(config)
 }
 
 func main() {}

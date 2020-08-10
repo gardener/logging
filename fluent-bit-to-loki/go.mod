@@ -1,6 +1,6 @@
 module github.com/gardener/logging/fluent-bit-to-loki
 
-go 1.13
+go 1.14
 
 require (
 	github.com/ahmetb/gen-crd-api-reference-docs v0.2.0
@@ -13,14 +13,15 @@ require (
 	github.com/golang/mock v1.4.3
 	github.com/grafana/loki v1.4.1
 	github.com/json-iterator/go v1.1.9
-	github.com/onsi/ginkgo v1.10.3
-	github.com/onsi/gomega v1.7.1
+	github.com/onsi/ginkgo v1.11.0
+	github.com/onsi/gomega v1.8.1
 	github.com/prometheus/common v0.9.1
 	github.com/weaveworks/common v0.0.0-20200429090833-ac38719f57dd
-	k8s.io/api v0.17.0
-	k8s.io/apimachinery v0.17.0
+	k8s.io/api v0.17.9
+	k8s.io/apimachinery v0.17.9
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/code-generator v0.18.3
+	sigs.k8s.io/controller-runtime v0.5.5 // indirect
 )
 
 replace (
@@ -29,8 +30,19 @@ replace (
 	github.com/Azure/go-autorest => github.com/Azure/go-autorest v13.3.0+incompatible
 	github.com/hpcloud/tail => github.com/grafana/tail v0.0.0-20191024143944-0b54ddf21fe7
 
-	golang.org/x/net v0.0.0-20190813000000-74dc4d7220e7 => golang.org/x/net v0.0.0-20190813141303-74dc4d7220e7
+	github.com/prometheus/client_golang => github.com/prometheus/client_golang v0.9.2
 
-	// Override reference that causes an error from Go proxy - see https://github.com/golang/go/issues/33558
-	k8s.io/client-go => k8s.io/client-go v0.0.0-20190620085101-78d2af792bab
+	golang.org/x/net v0.0.0-20190813000000-74dc4d7220e7 => golang.org/x/net v0.0.0-20190813141303-74dc4d7220e7
+	k8s.io/api => k8s.io/api v0.17.9
+	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.17.9
+	k8s.io/apimachinery => k8s.io/apimachinery v0.17.9
+	k8s.io/apiserver => k8s.io/apiserver v0.17.9
+	k8s.io/client-go => k8s.io/client-go v0.17.9
+	k8s.io/cluster-bootstrap => k8s.io/cluster-bootstrap v0.17.9
+	k8s.io/code-generator => k8s.io/code-generator v0.17.9
+	k8s.io/component-base => k8s.io/component-base v0.17.9
+	k8s.io/helm => k8s.io/helm v2.13.1+incompatible
+	k8s.io/kube-aggregator => k8s.io/kube-aggregator v0.17.9
+// Override reference that causes an error from Go proxy - see https://github.com/golang/go/issues/33558
+//k8s.io/client-go => k8s.io/client-go v0.0.0-20190620085101-78d2af792bab
 )
