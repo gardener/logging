@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"time"
@@ -12,13 +13,16 @@ import (
 	"github.com/prometheus/common/model"
 	"github.com/weaveworks/common/logging"
 
+	"github.com/gardener/gardener/pkg/apis/core"
+	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/utils/pointer"
 )
 
 type fakeLokiClient struct {
@@ -94,30 +98,63 @@ var _ = Describe("Controller", func() {
 		)
 		defaultURL := flagext.URLValue{}
 		_ = defaultURL.Set("http://loki.garden.svc:3100/loki/api/v1/push")
-		labelSelector := labels.SelectorFromSet(map[string]string{"role": "shoot"})
 		dynamicHostPrefix := "http://loki."
 		dynamicHostSulfix := ".svc:3100/loki/api/v1/push"
 		_ = logLevel.Set("error")
 		logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
 		logger = level.NewFilter(logger, logLevel.Gokit)
 		shootName := "shoot--dev--logging"
-		realNamespace := &corev1.Namespace{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: shootName,
-				Labels: map[string]string{
-					"role": "shoot",
-				},
+
+		testingPurpuse := core.ShootPurpose("testing")
+		developmentPurpuse := core.ShootPurpose("development")
+		notHibernation := core.Hibernation{Enabled: pointer.BoolPtr(false)}
+		hibernation := core.Hibernation{Enabled: pointer.BoolPtr(true)}
+		shootObjectMeta := v1.ObjectMeta{
+			Name: shootName,
+		}
+		testingShoot := &core.Shoot{
+			ObjectMeta: shootObjectMeta,
+			Spec: core.ShootSpec{
+				Purpose:     &testingPurpuse,
+				Hibernation: &notHibernation,
 			},
 		}
-		noShootName := "shoot--dev--noshoot"
-		fakeNamespace := &corev1.Namespace{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: noShootName,
-				Labels: map[string]string{
-					"role": "noshoot",
-				},
+		testingShootRaw, _ := json.Marshal(testingShoot)
+		developmentShoot := &core.Shoot{
+			ObjectMeta: shootObjectMeta,
+			Spec: core.ShootSpec{
+				Purpose:     &developmentPurpuse,
+				Hibernation: &notHibernation,
 			},
 		}
+		developmentShootRaw, _ := json.Marshal(developmentShoot)
+		hibernatedShoot := &core.Shoot{
+			ObjectMeta: shootObjectMeta,
+			Spec: core.ShootSpec{
+				Purpose:     &developmentPurpuse,
+				Hibernation: &hibernation,
+			},
+		}
+		hibernatedShootRaw, _ := json.Marshal(hibernatedShoot)
+		testingCluster := &extensionsv1alpha1.Cluster{
+			ObjectMeta: shootObjectMeta,
+			Spec: extensionsv1alpha1.ClusterSpec{
+				Shoot: runtime.RawExtension{Raw: testingShootRaw},
+			},
+		}
+		developmentCluster := &extensionsv1alpha1.Cluster{
+			ObjectMeta: shootObjectMeta,
+			Spec: extensionsv1alpha1.ClusterSpec{
+				Shoot: runtime.RawExtension{Raw: developmentShootRaw},
+			},
+		}
+		hibernatedCluster := &extensionsv1alpha1.Cluster{
+			ObjectMeta: shootObjectMeta,
+			Spec: extensionsv1alpha1.ClusterSpec{
+				Shoot: runtime.RawExtension{Raw: hibernatedShootRaw},
+			},
+		}
+
 		BeforeEach(func() {
 			conf = lokiclient.Config{
 				URL:       defaultURL,
@@ -128,7 +165,6 @@ var _ = Describe("Controller", func() {
 				clients:           make(map[string]lokiclient.Client),
 				stopChn:           make(chan struct{}),
 				clientConfig:      conf,
-				labelSelector:     labelSelector,
 				dynamicHostPrefix: dynamicHostPrefix,
 				dynamicHostSulfix: dynamicHostSulfix,
 				logger:            logger,
@@ -136,15 +172,21 @@ var _ = Describe("Controller", func() {
 		})
 
 		Context("#addFunc", func() {
-			It("Should add new client for a namespace with rights labes", func() {
-				ctl.addFunc(realNamespace)
+			It("Should add new client for a cluster with evaluation purpose", func() {
+				ctl.addFunc(developmentCluster)
 				c, ok := ctl.clients[shootName]
 				Expect(c).ToNot(BeNil())
 				Expect(ok).To(BeTrue())
 			})
-			It("Should not add new client for a namespace without wanted labes", func() {
-				ctl.addFunc(fakeNamespace)
-				c, ok := ctl.clients[noShootName]
+			It("Should not add new client for a cluster with testing purpose", func() {
+				ctl.addFunc(testingCluster)
+				c, ok := ctl.clients[shootName]
+				Expect(c).To(BeNil())
+				Expect(ok).To(BeFalse())
+			})
+			It("Should not add new client for a cluster in hibernation", func() {
+				ctl.addFunc(hibernatedCluster)
+				c, ok := ctl.clients[shootName]
 				Expect(c).To(BeNil())
 				Expect(ok).To(BeFalse())
 			})
@@ -153,16 +195,16 @@ var _ = Describe("Controller", func() {
 
 		Context("#updateFunc", func() {
 			type args struct {
-				oldNamespace       *corev1.Namespace
-				newNamespace       *corev1.Namespace
+				oldCluster         *extensionsv1alpha1.Cluster
+				newCluster         *extensionsv1alpha1.Cluster
 				clients            map[string]lokiclient.Client
 				shouldclientExists bool
 			}
 
 			DescribeTable("#updateFunc", func(a args) {
 				ctl.clients = a.clients
-				ctl.updateFunc(a.oldNamespace, a.newNamespace)
-				c, ok := ctl.clients[a.newNamespace.Name]
+				ctl.updateFunc(a.oldCluster, a.newCluster)
+				c, ok := ctl.clients[a.newCluster.Name]
 				if a.shouldclientExists {
 					Expect(c).ToNot(BeNil())
 					Expect(ok).To(BeTrue())
@@ -171,70 +213,63 @@ var _ = Describe("Controller", func() {
 					Expect(ok).To(BeFalse())
 				}
 			},
-				Entry("client exist and after update ns has no lables",
+				Entry("client exists and after update cluster is hibernated",
 					args{
-						oldNamespace: realNamespace,
-						newNamespace: &corev1.Namespace{
-							ObjectMeta: metav1.ObjectMeta{
-								Name: shootName,
-								Labels: map[string]string{
-									"role": "noshoot",
-								},
-							},
-						},
+						oldCluster: developmentCluster,
+						newCluster: hibernatedCluster,
 						clients: map[string]lokiclient.Client{
 							shootName: &fakeLokiClient{},
 						},
 						shouldclientExists: false,
 					},
 				),
-				Entry("client exist and after update ns has the same lables",
+				Entry("client exists and after update cluster has no changes",
 					args{
-						oldNamespace: realNamespace,
-						newNamespace: realNamespace,
+						oldCluster: developmentCluster,
+						newCluster: developmentCluster,
 						clients: map[string]lokiclient.Client{
 							shootName: &fakeLokiClient{},
 						},
 						shouldclientExists: true,
 					},
 				),
-				Entry("client does not exist and after update ns has the same lables",
+				Entry("client does not exist and after update cluster has no changes",
 					args{
-						oldNamespace:       fakeNamespace,
-						newNamespace:       fakeNamespace,
+						oldCluster:         testingCluster,
+						newCluster:         testingCluster,
 						clients:            map[string]lokiclient.Client{},
 						shouldclientExists: false,
 					},
 				),
-				Entry("client does not exist and after update ns has the proper lables",
+				Entry("client does not exist and after update cluster is awake ",
 					args{
-						oldNamespace:       fakeNamespace,
-						newNamespace:       realNamespace,
+						oldCluster:         hibernatedCluster,
+						newCluster:         developmentCluster,
 						clients:            map[string]lokiclient.Client{},
 						shouldclientExists: true,
 					},
-				))
+				),
+				Entry("client does not exist and after update cluster has evaluation purpose ",
+					args{
+						oldCluster:         testingCluster,
+						newCluster:         developmentCluster,
+						clients:            map[string]lokiclient.Client{},
+						shouldclientExists: true,
+					}),
+				Entry("client exists and after update cluster has testing purpose ",
+					args{
+						oldCluster:         developmentCluster,
+						newCluster:         testingCluster,
+						clients:            map[string]lokiclient.Client{},
+						shouldclientExists: false,
+					}),
+			)
 		})
 
 		Context("#deleteFunc", func() {
-			It("should delete namespaces without proper labels", func() {
+			It("should delete cluster client when cluster is deleted", func() {
 				ctl.clients[shootName] = &fakeLokiClient{}
-				ns := &corev1.Namespace{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: shootName,
-						Labels: map[string]string{
-							"role": "noshoot",
-						},
-					},
-				}
-				ctl.delFunc(ns)
-				c, ok := ctl.clients[shootName]
-				Expect(c).To(BeNil())
-				Expect(ok).To(BeFalse())
-			})
-			It("should not delete namespaces without proper labels", func() {
-				ctl.clients[shootName] = &fakeLokiClient{}
-				ctl.delFunc(realNamespace)
+				ctl.delFunc(developmentCluster)
 				c, ok := ctl.clients[shootName]
 				Expect(c).To(BeNil())
 				Expect(ok).To(BeFalse())

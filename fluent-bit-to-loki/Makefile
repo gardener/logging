@@ -6,7 +6,7 @@ FLUENT_BIT_TO_LOKI_IMAGE_TAG          := $(VERSION)
 
 .PHONY: plugin
 plugin:
-	go build -buildmode=c-shared -o build/out_loki.so ./cmd
+	go build -mod=vendor -buildmode=c-shared -o build/out_loki.so ./cmd
 
 .PHONY: docker-images
 docker-images:

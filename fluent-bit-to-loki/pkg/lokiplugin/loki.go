@@ -41,7 +41,7 @@ func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger lo
 
 	if cfg.DynamicHostPath != nil {
 		dynamicHostRegexp = regexp.MustCompile(cfg.DynamicHostRegex)
-		ctl, err = controller.NewController(informer, cfg.ClientConfig, logger, cfg.DynamicHostPrefix, cfg.DynamicHostSulfix, cfg.LabelSelector)
+		ctl, err = controller.NewController(informer, cfg.ClientConfig, logger, cfg.DynamicHostPrefix, cfg.DynamicHostSulfix)
 		if err != nil {
 			return nil, err
 		}
