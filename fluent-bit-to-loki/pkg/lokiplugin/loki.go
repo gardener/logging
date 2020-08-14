@@ -85,7 +85,7 @@ func (l *loki) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 	client := l.getClient(dynamicHostName)
 
 	if client == nil {
-		return fmt.Errorf("could not found client for %s", dynamicHostName)
+		return level.Debug(l.logger).Log("host", dynamicHostName, "issue", "could_not_find_client")
 	}
 
 	if l.cfg.DropSingleKey && len(records) == 1 {
