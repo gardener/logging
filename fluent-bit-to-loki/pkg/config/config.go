@@ -184,5 +184,40 @@ func ParseConfig(cfg Getter) (*Config, error) {
 		res.DynamicHostRegex = "*"
 	}
 
+	maxRetries := cfg.Get("MaxRetries")
+	if maxRetries != "" {
+		res.ClientConfig.BackoffConfig.MaxRetries, err = strconv.Atoi(maxRetries)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse MaxRetries: %s", maxRetries)
+		}
+	}
+
+	timeout := cfg.Get("Timeout")
+	if timeout != "" {
+		t, err := strconv.Atoi(timeout)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse Timeout: %s", timeout)
+		}
+		res.ClientConfig.Timeout = time.Duration(t) * time.Second
+	}
+
+	minBackoff := cfg.Get("MinBackoff")
+	if minBackoff != "" {
+		mib, err := strconv.Atoi(minBackoff)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse MinBackoff: %s", minBackoff)
+		}
+		res.ClientConfig.BackoffConfig.MinBackoff = time.Duration(mib) * time.Second
+	}
+
+	maxBackoff := cfg.Get("MaxBackoff")
+	if maxBackoff != "" {
+		mab, err := strconv.Atoi(minBackoff)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse MaxBackoff: %s", maxBackoff)
+		}
+		res.ClientConfig.BackoffConfig.MaxBackoff = time.Duration(mab) * time.Second
+	}
+
 	return res, nil
 }
