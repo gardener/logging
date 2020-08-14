@@ -34,8 +34,7 @@ var (
 func init() {
 	var logLevel logging.Level
 	_ = logLevel.Set("info")
-	logger = newLogger(logLevel)
-
+	logger = log.With(newLogger(logLevel), "ts", log.DefaultTimestampUTC, "caller", "main")
 	kubernetesCleint, err := getInclusterKubernetsClient()
 	if err != nil {
 		panic(err)
@@ -70,7 +69,7 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 
 	// numeric plugin ID, only used for user-facing purpose (logging, ...)
 	id := len(plugins)
-	logger := log.With(newLogger(conf.LogLevel), "id", id)
+	logger := log.With(newLogger(conf.LogLevel), "ts", log.DefaultTimestampUTC, "id", id)
 
 	level.Info(logger).Log("[flb-go]", "Starting fluent-bit-go-loki", "version", version.Info())
 	paramLogger := log.With(logger, "[flb-go]", "provided parameter")
@@ -90,6 +89,10 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 	level.Info(paramLogger).Log("DynamicHostPrefix", fmt.Sprintf("%+v", conf.DynamicHostPrefix))
 	level.Info(paramLogger).Log("DynamicHostSulfix", fmt.Sprintf("%+v", conf.DynamicHostSulfix))
 	level.Info(paramLogger).Log("DynamicHostRegex", fmt.Sprintf("%+v", conf.DynamicHostRegex))
+	level.Info(paramLogger).Log("Timeout", fmt.Sprintf("%+v", conf.ClientConfig.Timeout))
+	level.Info(paramLogger).Log("MinBackoff", fmt.Sprintf("%+v", conf.ClientConfig.BackoffConfig.MinBackoff))
+	level.Info(paramLogger).Log("MaxBackoff", fmt.Sprintf("%+v", conf.ClientConfig.BackoffConfig.MaxBackoff))
+	level.Info(paramLogger).Log("MaxRetries", fmt.Sprintf("%+v", conf.ClientConfig.BackoffConfig.MaxRetries))
 
 	plugin, err := lokiplugin.NewPlugin(informer, conf, logger)
 	if err != nil {
@@ -139,6 +142,7 @@ func FLBPluginFlushCtx(ctx, data unsafe.Pointer, length C.int, _ *C.char) int {
 
 		err := plugin.SendRecord(record, timestamp)
 		if err != nil {
+			level.Warn(logger).Log("msg", err.Error())
 			return output.FLB_ERROR
 		}
 	}

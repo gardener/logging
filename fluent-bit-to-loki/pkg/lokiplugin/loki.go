@@ -58,6 +58,7 @@ func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger lo
 
 // sendRecord send fluentbit records to loki as an entry.
 func (l *loki) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
+	start := time.Now()
 	records := toStringMap(r)
 	level.Debug(l.logger).Log("msg", "processing records", "records", fmt.Sprintf("%+v", records))
 	lbs := model.LabelSet{}
@@ -89,7 +90,7 @@ func (l *loki) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 
 	if l.cfg.DropSingleKey && len(records) == 1 {
 		for _, v := range records {
-			return client.Handle(lbs, ts, fmt.Sprintf("%v", v))
+			return l.send(client, lbs, ts, fmt.Sprintf("%v", v), start)
 		}
 	}
 
@@ -98,7 +99,7 @@ func (l *loki) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 		return fmt.Errorf("error creating line: %v", err)
 	}
 
-	err = client.Handle(lbs, ts, line)
+	err = l.send(client, lbs, ts, line, start)
 	if err != nil {
 		level.Error(l.logger).Log("msg", "error sending record to Loki", "error", err)
 	}
@@ -108,7 +109,9 @@ func (l *loki) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 
 func (l *loki) Close() {
 	l.defaultClient.Stop()
-	l.controller.Stop()
+	if l.controller != nil {
+		l.controller.Stop()
+	}
 }
 
 func (l *loki) getClient(dynamicHosName string) lokiclient.Client {
@@ -123,4 +126,18 @@ func (l *loki) isDynamicHost(dynamicHostName string) bool {
 	return dynamicHostName != "" &&
 		l.dynamicHostRegexp != nil &&
 		l.dynamicHostRegexp.Match([]byte(dynamicHostName))
+}
+
+func (l *loki) send(client lokiclient.Client, lbs model.LabelSet, ts time.Time, line string, startOfSendind time.Time) error {
+	elapsedBeforeSend := time.Since(startOfSendind)
+	level.Debug(l.logger).Log("Log-Processing-elapsed ", elapsedBeforeSend.String(), "Stream", lbs)
+
+	err := client.Handle(lbs, ts, line)
+
+	if err == nil {
+		elapsedAfterSend := time.Since(startOfSendind)
+		level.Debug(l.logger).Log("Log-Sending-elapsed", elapsedAfterSend.String(), "Stream", lbs)
+	}
+
+	return err
 }

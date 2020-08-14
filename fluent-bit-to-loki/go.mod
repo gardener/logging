@@ -4,23 +4,23 @@ go 1.14
 
 require (
 	github.com/ahmetb/gen-crd-api-reference-docs v0.2.0
-	github.com/cortexproject/cortex v1.0.1-0.20200430170006-3462eb63f324
+	github.com/cortexproject/cortex v1.2.1-0.20200803161316-7014ff11ed70
 	github.com/fluent/fluent-bit-go v0.0.0-20190925192703-ea13c021720c
 	github.com/gardener/gardener v1.5.0
 	github.com/go-kit/kit v0.10.0
 	github.com/go-logfmt/logfmt v0.5.0
 	github.com/gobuffalo/packr/v2 v2.8.0
 	github.com/golang/mock v1.4.3
-	github.com/grafana/loki v1.4.1
-	github.com/json-iterator/go v1.1.9
+	github.com/grafana/loki v1.6.0
+	github.com/json-iterator/go v1.1.10
 	github.com/onsi/ginkgo v1.11.0
 	github.com/onsi/gomega v1.8.1
-	github.com/prometheus/common v0.9.1
-	github.com/weaveworks/common v0.0.0-20200429090833-ac38719f57dd
-	k8s.io/api v0.17.9
-	k8s.io/apimachinery v0.17.9
+	github.com/prometheus/common v0.10.0
+	github.com/weaveworks/common v0.0.0-20200625145055-4b1847531bc9
+	k8s.io/apimachinery v0.18.6
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/code-generator v0.18.3
+	k8s.io/utils v0.0.0-20200414100711-2df71ebbae66
 	sigs.k8s.io/controller-runtime v0.5.5 // indirect
 )
 
@@ -29,8 +29,6 @@ replace (
 
 	github.com/Azure/go-autorest => github.com/Azure/go-autorest v13.3.0+incompatible
 	github.com/hpcloud/tail => github.com/grafana/tail v0.0.0-20191024143944-0b54ddf21fe7
-
-	github.com/prometheus/client_golang => github.com/prometheus/client_golang v0.9.2
 
 	golang.org/x/net v0.0.0-20190813000000-74dc4d7220e7 => golang.org/x/net v0.0.0-20190813141303-74dc4d7220e7
 	k8s.io/api => k8s.io/api v0.17.9

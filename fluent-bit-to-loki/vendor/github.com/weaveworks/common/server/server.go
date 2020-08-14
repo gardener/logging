@@ -31,6 +31,16 @@ import (
 	"github.com/weaveworks/common/signals"
 )
 
+// SignalHandler used by Server.
+type SignalHandler interface {
+	// Starts the signals handler. This method is blocking, and returns only after signal is received,
+	// or "Stop" is called.
+	Loop()
+
+	// Stop blocked "Loop" method.
+	Stop()
+}
+
 // Config for a Server
 type Config struct {
 	MetricsNamespace  string `yaml:"-"`
@@ -66,8 +76,12 @@ type Config struct {
 	GRPCServerTime                  time.Duration `yaml:"grpc_server_keepalive_time"`
 	GRPCServerTimeout               time.Duration `yaml:"grpc_server_keepalive_timeout"`
 
-	LogLevel logging.Level     `yaml:"log_level"`
-	Log      logging.Interface `yaml:"-"`
+	LogFormat logging.Format    `yaml:"log_format"`
+	LogLevel  logging.Level     `yaml:"log_level"`
+	Log       logging.Interface `yaml:"-"`
+
+	// If not set, default signal handler is used.
+	SignalHandler SignalHandler `yaml:"-"`
 
 	PathPrefix string `yaml:"http_path_prefix"`
 }
@@ -104,6 +118,7 @@ func (cfg *Config) RegisterFlags(f *flag.FlagSet) {
 	f.DurationVar(&cfg.GRPCServerTime, "server.grpc.keepalive.time", time.Hour*2, "Duration after which a keepalive probe is sent in case of no activity over the connection., Default: 2h")
 	f.DurationVar(&cfg.GRPCServerTimeout, "server.grpc.keepalive.timeout", time.Second*20, "After having pinged for keepalive check, the duration after which an idle connection should be closed, Default: 20s")
 	f.StringVar(&cfg.PathPrefix, "server.path-prefix", "", "Base path to serve all API routes from (e.g. /v1/)")
+	cfg.LogFormat.RegisterFlags(f)
 	cfg.LogLevel.RegisterFlags(f)
 }
 
@@ -112,7 +127,7 @@ func (cfg *Config) RegisterFlags(f *flag.FlagSet) {
 // Servers will be automatically instrumented for Prometheus metrics.
 type Server struct {
 	cfg          Config
-	handler      *signals.Handler
+	handler      SignalHandler
 	grpcListener net.Listener
 	httpListener net.Listener
 
@@ -258,11 +273,16 @@ func New(cfg Config) (*Server, error) {
 		httpServer.TLSConfig = httpTLSConfig
 	}
 
+	handler := cfg.SignalHandler
+	if handler == nil {
+		handler = signals.NewHandler(log)
+	}
+
 	return &Server{
 		cfg:          cfg,
 		httpListener: httpListener,
 		grpcListener: grpcListener,
-		handler:      signals.NewHandler(log),
+		handler:      handler,
 
 		HTTP:       router,
 		HTTPServer: httpServer,
@@ -277,7 +297,7 @@ func RegisterInstrumentation(router *mux.Router) {
 	router.PathPrefix("/debug/pprof").Handler(http.DefaultServeMux)
 }
 
-// Run the server; blocks until SIGTERM or an error is received.
+// Run the server; blocks until SIGTERM (if signal handling is enabled), an error is received, or Stop() is called.
 func (s *Server) Run() error {
 	errChan := make(chan error, 1)
 
