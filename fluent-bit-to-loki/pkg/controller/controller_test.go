@@ -190,6 +190,15 @@ var _ = Describe("Controller", func() {
 				Expect(c).To(BeNil())
 				Expect(ok).To(BeFalse())
 			})
+			It("Should not overwrite new client for a cluster in hibernation", func() {
+				name := "new-shoot-name"
+				newNameCluster := hibernatedCluster.DeepCopy()
+				newNameCluster.Name = name
+				ctl.addFunc(hibernatedCluster)
+				ctl.addFunc(newNameCluster)
+				Expect(ctl.clientConfig.URL.String()).ToNot(Equal(ctl.dynamicHostPrefix + name + ctl.dynamicHostSulfix))
+				Expect(ctl.clientConfig.URL.String()).ToNot(Equal(ctl.dynamicHostPrefix + hibernatedCluster.Name + ctl.dynamicHostSulfix))
+			})
 
 		})
 
