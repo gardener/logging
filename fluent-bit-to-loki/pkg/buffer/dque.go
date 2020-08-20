@@ -1,3 +1,9 @@
+/*
+This file was copied from the grafana/loki project
+https://github.com/grafana/loki/blob/v1.6.0/cmd/fluent-bit/dque.go
+
+Modifications Copyright (c) 2020 SAP SE or an SAP affiliate company. All rights reserved.
+*/
 package buffer
 
 import (
@@ -10,16 +16,15 @@ import (
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
+	"github.com/grafana/loki/pkg/promtail/client"
 	"github.com/joncrlsn/dque"
 	"github.com/prometheus/common/model"
-
-	"github.com/grafana/loki/pkg/promtail/client"
 )
 
 type dqueEntry struct {
-	Lbs  model.LabelSet
-	Ts   time.Time
-	Line string
+	LabelSet  model.LabelSet
+	TimeStamp time.Time
+	Line      string
 }
 
 func dqueEntryBuilder() interface{} {
@@ -33,8 +38,8 @@ type dqueClient struct {
 	once   sync.Once
 }
 
-// New makes a new dque loki client
-func newDque(cfg *config.Config, logger log.Logger) (client.Client, error) {
+// newDque makes a new dque loki client
+func newDque(cfg *config.Config, logger log.Logger, newClientFunc func(cfg client.Config, logger log.Logger) (client.Client, error)) (client.Client, error) {
 	var err error
 
 	q := &dqueClient{
@@ -43,7 +48,7 @@ func newDque(cfg *config.Config, logger log.Logger) (client.Client, error) {
 
 	err = os.MkdirAll(cfg.BufferConfig.DqueConfig.QueueDir, 0644)
 	if err != nil {
-		return nil, fmt.Errorf("cannot create queue directory: %s", err)
+		return nil, fmt.Errorf("cannot create queue directory, error: %v", err)
 	}
 
 	q.queue, err = dque.NewOrOpen(cfg.BufferConfig.DqueConfig.QueueName, cfg.BufferConfig.DqueConfig.QueueDir, cfg.BufferConfig.DqueConfig.QueueSegmentSize, dqueEntryBuilder)
@@ -55,7 +60,7 @@ func newDque(cfg *config.Config, logger log.Logger) (client.Client, error) {
 		_ = q.queue.TurboOn()
 	}
 
-	q.loki, err = client.New(cfg.ClientConfig, logger)
+	q.loki, err = newClientFunc(cfg.ClientConfig, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -85,9 +90,11 @@ func (c *dqueClient) dequeuer() {
 			continue
 		}
 
-		if err := c.loki.Handle(record.Lbs, record.Ts, record.Line); err != nil {
+		level.Debug(c.logger).Log("msg", "sending record to Loki", "host", c.queue.Name)
+		if err := c.loki.Handle(record.LabelSet, record.TimeStamp, record.Line); err != nil {
 			level.Error(c.logger).Log("msg", "error sending record to Loki", "error", err)
 		}
+		level.Debug(c.logger).Log("msg", "successful sent record to Loki", "host", c.queue.Name)
 	}
 }
 
@@ -100,7 +107,7 @@ func (c *dqueClient) Stop() {
 // Handle implement EntryHandler; adds a new line to the next batch; send is async.
 func (c *dqueClient) Handle(ls model.LabelSet, t time.Time, s string) error {
 	if err := c.queue.Enqueue(&dqueEntry{ls, t, s}); err != nil {
-		return fmt.Errorf("cannot enqueue record %s: %s", s, err)
+		return fmt.Errorf("cannot enqueue record %s: %v", s, err)
 	}
 
 	return nil

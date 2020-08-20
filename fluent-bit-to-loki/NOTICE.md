@@ -1,6 +1,6 @@
 # Notices for Fluent-bit-to-loki output plugin
 
-This content is modification of [Grafana/Loki](https://github.com/grafana/loki) fluent-bit output plugin [v1.5.0](https://github.com/grafana/loki/tree/v1.5.0/cmd/fluent-bit).
+This content is modification of [Grafana/Loki](https://github.com/grafana/loki) fluent-bit output plugin [v1.6.0](https://github.com/grafana/loki/tree/v1.6.0/cmd/fluent-bit).
   and is maintained by SAP.
 
 ## Copyright

@@ -1,3 +1,10 @@
+/*
+This file was copied from the grafana/loki project
+https://github.com/grafana/loki/blob/v1.6.0/cmd/fluent-bit/loki.go
+
+Modifications Copyright (c) 2020 SAP SE or an SAP affiliate company. All rights reserved.
+*/
+
 package lokiplugin
 
 import (
@@ -10,7 +17,7 @@ import (
 	"github.com/prometheus/common/model"
 	"k8s.io/client-go/tools/cache"
 
-	bufferedclient "github.com/gardener/logging/fluent-bit-to-loki/pkg/buffer"
+	bufferedclient "github.com/gardener/logging/fluent-bit-to-loki/pkg/client"
 	"github.com/gardener/logging/fluent-bit-to-loki/pkg/config"
 	controller "github.com/gardener/logging/fluent-bit-to-loki/pkg/controller"
 	lokiclient "github.com/grafana/loki/pkg/promtail/client"
@@ -35,7 +42,7 @@ func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger lo
 	var dynamicHostRegexp *regexp.Regexp
 	var ctl controller.Controller
 
-	defaultLokiClient, err := bufferedclient.NewBuffer(cfg, logger)
+	defaultLokiClient, err := bufferedclient.NewClient(cfg, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +93,8 @@ func (l *loki) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 	client := l.getClient(dynamicHostName)
 
 	if client == nil {
-		return level.Debug(l.logger).Log("host", dynamicHostName, "issue", "could_not_find_client")
+		level.Debug(l.logger).Log("host", dynamicHostName, "issue", "could_not_find_client")
+		return nil
 	}
 
 	if l.cfg.DropSingleKey && len(records) == 1 {

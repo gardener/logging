@@ -1,3 +1,10 @@
+/*
+This file was copied from the grafana/loki project
+https://github.com/grafana/loki/blob/v1.6.0/cmd/fluent-bit/out_loki.go
+
+Modifications Copyright (c) 2020 SAP SE or an SAP affiliate company. All rights reserved.
+*/
+
 package main
 
 import (
@@ -85,14 +92,21 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 	level.Info(paramLogger).Log("LineFormat", conf.LineFormat)
 	level.Info(paramLogger).Log("DropSingleKey", conf.DropSingleKey)
 	level.Info(paramLogger).Log("LabelMapPath", fmt.Sprintf("%+v", conf.LabelMap))
+	level.Info(paramLogger).Log("ReplaceOutOfOrderTS", fmt.Sprintf("%+v", conf.ReplaceOutOfOrderTS))
 	level.Info(paramLogger).Log("DynamicHostPath", fmt.Sprintf("%+v", conf.DynamicHostPath))
 	level.Info(paramLogger).Log("DynamicHostPrefix", fmt.Sprintf("%+v", conf.DynamicHostPrefix))
-	level.Info(paramLogger).Log("DynamicHostSulfix", fmt.Sprintf("%+v", conf.DynamicHostSulfix))
+	level.Info(paramLogger).Log("DynamicHostSuffix", fmt.Sprintf("%+v", conf.DynamicHostSuffix))
 	level.Info(paramLogger).Log("DynamicHostRegex", fmt.Sprintf("%+v", conf.DynamicHostRegex))
 	level.Info(paramLogger).Log("Timeout", fmt.Sprintf("%+v", conf.ClientConfig.Timeout))
 	level.Info(paramLogger).Log("MinBackoff", fmt.Sprintf("%+v", conf.ClientConfig.BackoffConfig.MinBackoff))
 	level.Info(paramLogger).Log("MaxBackoff", fmt.Sprintf("%+v", conf.ClientConfig.BackoffConfig.MaxBackoff))
 	level.Info(paramLogger).Log("MaxRetries", fmt.Sprintf("%+v", conf.ClientConfig.BackoffConfig.MaxRetries))
+	level.Info(paramLogger).Log("Buffer", fmt.Sprintf("%+v", conf.BufferConfig.Buffer))
+	level.Info(paramLogger).Log("BufferType", fmt.Sprintf("%+v", conf.BufferConfig.BufferType))
+	level.Info(paramLogger).Log("QueueDir", fmt.Sprintf("%+v", conf.BufferConfig.DqueConfig.QueueDir))
+	level.Info(paramLogger).Log("QueueSegmentSize", fmt.Sprintf("%+v", conf.BufferConfig.DqueConfig.QueueSegmentSize))
+	level.Info(paramLogger).Log("QueueSync", fmt.Sprintf("%+v", conf.BufferConfig.DqueConfig.QueueSync))
+	level.Info(paramLogger).Log("QueueName", fmt.Sprintf("%+v", conf.BufferConfig.DqueConfig.QueueName))
 
 	plugin, err := lokiplugin.NewPlugin(informer, conf, logger)
 	if err != nil {
