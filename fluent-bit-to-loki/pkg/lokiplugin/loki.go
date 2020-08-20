@@ -10,6 +10,7 @@ import (
 	"github.com/prometheus/common/model"
 	"k8s.io/client-go/tools/cache"
 
+	bufferedclient "github.com/gardener/logging/fluent-bit-to-loki/pkg/buffer"
 	"github.com/gardener/logging/fluent-bit-to-loki/pkg/config"
 	controller "github.com/gardener/logging/fluent-bit-to-loki/pkg/controller"
 	lokiclient "github.com/grafana/loki/pkg/promtail/client"
@@ -34,14 +35,14 @@ func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger lo
 	var dynamicHostRegexp *regexp.Regexp
 	var ctl controller.Controller
 
-	defaultLokiClient, err := lokiclient.New(cfg.ClientConfig, logger)
+	defaultLokiClient, err := bufferedclient.NewBuffer(cfg, logger)
 	if err != nil {
 		return nil, err
 	}
 
 	if cfg.DynamicHostPath != nil {
 		dynamicHostRegexp = regexp.MustCompile(cfg.DynamicHostRegex)
-		ctl, err = controller.NewController(informer, cfg.ClientConfig, logger, cfg.DynamicHostPrefix, cfg.DynamicHostSulfix)
+		ctl, err = controller.NewController(informer, cfg, logger)
 		if err != nil {
 			return nil, err
 		}

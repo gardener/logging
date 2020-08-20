@@ -12,6 +12,7 @@ require (
 	github.com/gobuffalo/packr/v2 v2.8.0
 	github.com/golang/mock v1.4.3
 	github.com/grafana/loki v1.6.0
+	github.com/joncrlsn/dque v2.2.1-0.20200515025108-956d14155fa2+incompatible
 	github.com/json-iterator/go v1.1.10
 	github.com/onsi/ginkgo v1.11.0
 	github.com/onsi/gomega v1.8.1

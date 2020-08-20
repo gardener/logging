@@ -40,9 +40,15 @@ const (
 	KvPairFormat
 )
 
+const (
+	falseStr = "false"
+	trueStr  = "true"
+)
+
 //Config holds all of the needet properties of the loki output plugin
 type Config struct {
 	ClientConfig         client.Config
+	BufferConfig         BufferConfig
 	LogLevel             logging.Level
 	AutoKubernetesLabels bool
 	RemoveKeys           []string
@@ -56,11 +62,40 @@ type Config struct {
 	DynamicHostRegex     string
 }
 
+// BufferConfig contains the buffer settings
+type BufferConfig struct {
+	Buffer     bool
+	BufferType string
+	DqueConfig DqueConfig
+}
+
+// DqueConfig contains the dqueue settings
+type DqueConfig struct {
+	QueueDir         string
+	QueueSegmentSize int
+	QueueSync        bool
+	QueueName        string
+}
+
+var DefaultBufferConfig = BufferConfig{
+	Buffer:     false,
+	BufferType: "dque",
+	DqueConfig: DefaultDqueConfig,
+}
+
+var DefaultDqueConfig = DqueConfig{
+	QueueDir:         "/tmp/flb-storage/loki",
+	QueueSegmentSize: 500,
+	QueueSync:        false,
+	QueueName:        "dque",
+}
+
 // ParseConfig parse a Loki plugin configuration
 func ParseConfig(cfg Getter) (*Config, error) {
 	res := &Config{}
 
 	res.ClientConfig = defaultClientCfg
+	res.BufferConfig = DefaultBufferConfig
 
 	url := cfg.Get("URL")
 	var clientURL flagext.URLValue
@@ -217,6 +252,55 @@ func ParseConfig(cfg Getter) (*Config, error) {
 			return nil, fmt.Errorf("failed to parse MaxBackoff: %s", maxBackoff)
 		}
 		res.ClientConfig.BackoffConfig.MaxBackoff = time.Duration(mab) * time.Second
+	}
+
+	// enable loki plugin buffering
+	buffer := cfg.Get("Buffer")
+	switch buffer {
+	case falseStr, "":
+		res.BufferConfig.Buffer = false
+	case trueStr:
+		res.BufferConfig.Buffer = true
+	default:
+		return nil, fmt.Errorf("invalid boolean Buffer: %v", buffer)
+	}
+
+	// buffering type
+	bufferType := cfg.Get("BufferType")
+	if bufferType != "" {
+		res.BufferConfig.BufferType = bufferType
+	}
+
+	// dque directory
+	queueDir := cfg.Get("DqueDir")
+	if queueDir != "" {
+		res.BufferConfig.DqueConfig.QueueDir = queueDir
+	}
+
+	// dque segment size (queueEntry unit)
+	queueSegmentSize := cfg.Get("DqueSegmentSize")
+	if queueSegmentSize != "" {
+		res.BufferConfig.DqueConfig.QueueSegmentSize, err = strconv.Atoi(queueSegmentSize)
+		if err != nil {
+			return nil, fmt.Errorf("impossible to convert string to integer DqueSegmentSize: %v", queueSegmentSize)
+		}
+	}
+
+	// dque control file change sync to disk as they happen aka dque.turbo mode
+	queueSync := cfg.Get("DqueSync")
+	switch queueSync {
+	case "normal", "":
+		res.BufferConfig.DqueConfig.QueueSync = false
+	case "full":
+		res.BufferConfig.DqueConfig.QueueSync = true
+	default:
+		return nil, fmt.Errorf("invalid string queueSync: %v", queueSync)
+	}
+
+	// dque name
+	queueName := cfg.Get("DqueName")
+	if queueName != "" {
+		res.BufferConfig.DqueConfig.QueueName = queueName
 	}
 
 	return res, nil

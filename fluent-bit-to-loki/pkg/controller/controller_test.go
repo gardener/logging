@@ -6,6 +6,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/gardener/logging/fluent-bit-to-loki/pkg/config"
+
 	"github.com/cortexproject/cortex/pkg/util/flagext"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
@@ -92,7 +94,7 @@ var _ = Describe("Controller", func() {
 	})
 	Describe("Event functions", func() {
 		var (
-			conf     lokiclient.Config
+			conf     *config.Config
 			ctl      *controller
 			logLevel logging.Level
 		)
@@ -156,18 +158,21 @@ var _ = Describe("Controller", func() {
 		}
 
 		BeforeEach(func() {
-			conf = lokiclient.Config{
-				URL:       defaultURL,
-				BatchWait: 5 * time.Second,
-				BatchSize: 1024 * 1024,
+			conf = &config.Config{
+				ClientConfig: lokiclient.Config{
+					URL:       defaultURL,
+					BatchWait: 5 * time.Second,
+					BatchSize: 1024 * 1024,
+				},
+				BufferConfig:      config.DefaultBufferConfig,
+				DynamicHostPrefix: dynamicHostPrefix,
+				DynamicHostSulfix: dynamicHostSulfix,
 			}
 			ctl = &controller{
-				clients:           make(map[string]lokiclient.Client),
-				stopChn:           make(chan struct{}),
-				clientConfig:      conf,
-				dynamicHostPrefix: dynamicHostPrefix,
-				dynamicHostSulfix: dynamicHostSulfix,
-				logger:            logger,
+				clients: make(map[string]lokiclient.Client),
+				stopChn: make(chan struct{}),
+				conf:    conf,
+				logger:  logger,
 			}
 		})
 
@@ -196,8 +201,8 @@ var _ = Describe("Controller", func() {
 				newNameCluster.Name = name
 				ctl.addFunc(hibernatedCluster)
 				ctl.addFunc(newNameCluster)
-				Expect(ctl.clientConfig.URL.String()).ToNot(Equal(ctl.dynamicHostPrefix + name + ctl.dynamicHostSulfix))
-				Expect(ctl.clientConfig.URL.String()).ToNot(Equal(ctl.dynamicHostPrefix + hibernatedCluster.Name + ctl.dynamicHostSulfix))
+				Expect(ctl.conf.ClientConfig.URL.String()).ToNot(Equal(ctl.conf.DynamicHostPrefix + name + ctl.conf.DynamicHostSulfix))
+				Expect(ctl.conf.ClientConfig.URL.String()).ToNot(Equal(ctl.conf.DynamicHostPrefix + hibernatedCluster.Name + ctl.conf.DynamicHostSulfix))
 			})
 
 		})

@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"sync"
 
+	bufferedclient "github.com/gardener/logging/fluent-bit-to-loki/pkg/client"
+	"github.com/gardener/logging/fluent-bit-to-loki/pkg/config"
+
 	extensioncontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
@@ -24,25 +27,21 @@ type Controller interface {
 }
 
 type controller struct {
-	lock              sync.RWMutex
-	clients           map[string]lokiclient.Client
-	clientConfig      lokiclient.Config
-	dynamicHostPrefix string
-	dynamicHostSulfix string
-	stopChn           chan struct{}
-	logger            log.Logger
+	lock    sync.RWMutex
+	clients map[string]lokiclient.Client
+	conf    *config.Config
+	stopChn chan struct{}
+	logger  log.Logger
 }
 
 // NewController return Controller interface
-func NewController(informer cache.SharedIndexInformer, clientConfig lokiclient.Config, logger log.Logger, dynamicHostPrefix, dynamicHostSulfix string) (Controller, error) {
+func NewController(informer cache.SharedIndexInformer, conf *config.Config, logger log.Logger) (Controller, error) {
 
 	controller := &controller{
-		clients:           make(map[string]lokiclient.Client),
-		stopChn:           make(chan struct{}),
-		clientConfig:      clientConfig,
-		dynamicHostPrefix: dynamicHostPrefix,
-		dynamicHostSulfix: dynamicHostSulfix,
-		logger:            logger,
+		clients: make(map[string]lokiclient.Client),
+		stopChn: make(chan struct{}),
+		conf:    conf,
+		logger:  logger,
 	}
 
 	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -124,20 +123,21 @@ func (ctl *controller) delFunc(obj interface{}) {
 	ctl.deleteClient(cluster)
 }
 
-func (ctl *controller) getClientConfig(namespaces string) *lokiclient.Config {
+func (ctl *controller) getClientConfig(namespace string) *config.Config {
 	var clientURL flagext.URLValue
 
-	url := ctl.dynamicHostPrefix + namespaces + ctl.dynamicHostSulfix
+	url := ctl.conf.DynamicHostPrefix + namespace + ctl.conf.DynamicHostSulfix
 	err := clientURL.Set(url)
 	if err != nil {
-		level.Error(ctl.logger).Log("failed to parse client URL", namespaces, "error", err.Error())
+		level.Error(ctl.logger).Log("failed to parse client URL", namespace, "error", err.Error())
 		return nil
 	}
 
-	clientConf := ctl.clientConfig
-	clientConf.URL = clientURL
+	conf := *ctl.conf
+	conf.ClientConfig.URL = clientURL
+	conf.BufferConfig.DqueConfig.QueueName = namespace
 
-	return &clientConf
+	return &conf
 }
 
 func (ctl *controller) matches(cluster *extensionsv1alpha1.Cluster) bool {
@@ -169,7 +169,7 @@ func (ctl *controller) createClient(cluster *extensionsv1alpha1.Cluster) {
 		return
 	}
 
-	client, err := lokiclient.New(*clientConf, ctl.logger)
+	client, err := bufferedclient.NewClient(clientConf, ctl.logger)
 	if err != nil {
 		level.Error(ctl.logger).Log("failed to make new loki client for cluster", cluster.Name, "error", err.Error())
 		return
