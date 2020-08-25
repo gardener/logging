@@ -1,6 +1,0 @@
-source 'https://rubygems.org'
-
-gem 'fluentd', '<=1.4.2'
-gem 'fluent-plugin-elasticsearch', '~>3.4.3'
-gem 'fluent-plugin-rewrite-tag-filter', '~>2.1.0'
-gem 'fluent-plugin-systemd', '~>1.0.2'

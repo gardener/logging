@@ -211,17 +211,6 @@ This project includes the following subcomponents that are subject to separate l
 Your use of these subcomponents is subject to the separate license terms applicable to
 each subcomponent.
 
-Fluent-bit.
-https://github.com/fluent/fluent-bit.
-Copyright 2011-2018 Fluent-bit Authors.
-Apache 2 license (https://github.com/fluent/fluent-bit/blob/master/LICENSE).
-
-Fluentd.  
-https://github.com/fluent/fluentd.  
-Copyright 2011-2018 Fluentd Authors.  
-Apache 2 license (https://github.com/fluent/fluentd/blob/master/LICENSE).  
-
-Curator.  
-https://github.com/elastic/curator.  
-Copyright 2011–2017 Elasticsearch and contributors.  
-Apache 2 license (https://github.com/elastic/curator/blob/master/LICENSE.txt).  
+fluent-bit-to-loki.
+https://github.com/grafana/loki/tree/master/cmd/fluent-bit.
+Apache 2 license (https://github.com/grafana/loki/blob/master/LICENSE).

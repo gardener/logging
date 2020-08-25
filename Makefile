@@ -14,21 +14,9 @@
 
 VERSION                               := $(shell cat VERSION)
 REGISTRY                              := eu.gcr.io/gardener-project/gardener
-CURATOR_ES_IMAGE_REPOSITORY           := $(REGISTRY)/curator-es
-CURATOR_ES_IMAGE_TAG                  := $(VERSION)
-FLUENTD_ES_IMAGE_REPOSITORY           := $(REGISTRY)/fluentd-es
-FLUENTD_ES_IMAGE_TAG                  := $(VERSION)
 
 .PHONY: docker-images
-docker-images: curator-es-docker-image fluentd-es-docker-image fluent-bit-to-loki-image
-
-.PHONY: curator-es-docker-image
-curator-es-docker-image:
-	@docker build -t $(CURATOR_ES_IMAGE_REPOSITORY):$(CURATOR_ES_IMAGE_TAG) -f curator-es/Dockerfile --rm .
-
-.PHONY: fluentd-es-docker-image
-fluentd-es-docker-image:
-	@docker build -t $(FLUENTD_ES_IMAGE_REPOSITORY):$(FLUENTD_ES_IMAGE_TAG) -f fluentd-es/Dockerfile --rm .
+docker-images: fluent-bit-to-loki-image
 
 .PHONY: fluent-bit-to-loki-image
 fluent-bit-to-loki-image:
@@ -43,10 +31,6 @@ docker-login:
 
 .PHONY: docker-push
 docker-push:
-	@if ! docker images $(CURATOR_ES_IMAGE_REPOSITORY) | awk '{ print $$2 }' | grep -q -F $(CURATOR_ES_IMAGE_TAG); then echo "$(CURATOR_ES_IMAGE_REPOSITORY) version $(CURATOR_ES_IMAGE_TAG) is not yet built. Please run 'make curator-es-docker-image'"; false; fi
-	@if ! docker images $(FLUENTD_ES_IMAGE_REPOSITORY) | awk '{ print $$2 }' | grep -q -F $(FLUENTD_ES_IMAGE_TAG); then echo "$(FLUENTD_ES_IMAGE_REPOSITORY) version $(FLUENTD_ES_IMAGE_TAG) is not yet built. Please run 'make fluentd-es-docker-image'"; false; fi
-	@gcloud docker -- push $(CURATOR_ES_IMAGE_REPOSITORY):$(CURATOR_ES_IMAGE_TAG)
-	@gcloud docker -- push $(FLUENTD_ES_IMAGE_REPOSITORY):$(FLUENTD_ES_IMAGE_TAG)
 	cd fluent-bit-to-loki && $(MAKE) docker-push
 
 .PHONY: check
