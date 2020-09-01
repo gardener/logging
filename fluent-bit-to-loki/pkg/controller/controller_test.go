@@ -1,3 +1,17 @@
+// Copyright (c) 2020 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package controller
 
 import (
@@ -6,6 +20,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/gardener/logging/fluent-bit-to-loki/pkg/config"
+
 	"github.com/cortexproject/cortex/pkg/util/flagext"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
@@ -13,6 +29,7 @@ import (
 	"github.com/prometheus/common/model"
 	"github.com/weaveworks/common/logging"
 
+	extensioncontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/pkg/apis/core"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 
@@ -92,7 +109,7 @@ var _ = Describe("Controller", func() {
 	})
 	Describe("Event functions", func() {
 		var (
-			conf     lokiclient.Config
+			conf     *config.Config
 			ctl      *controller
 			logLevel logging.Level
 		)
@@ -156,18 +173,24 @@ var _ = Describe("Controller", func() {
 		}
 
 		BeforeEach(func() {
-			conf = lokiclient.Config{
-				URL:       defaultURL,
-				BatchWait: 5 * time.Second,
-				BatchSize: 1024 * 1024,
+			decoder, err := extensioncontroller.NewGardenDecoder()
+			Expect(err).ToNot(HaveOccurred())
+			conf = &config.Config{
+				ClientConfig: lokiclient.Config{
+					URL:       defaultURL,
+					BatchWait: 5 * time.Second,
+					BatchSize: 1024 * 1024,
+				},
+				BufferConfig:      config.DefaultBufferConfig,
+				DynamicHostPrefix: dynamicHostPrefix,
+				DynamicHostSuffix: dynamicHostSulfix,
 			}
 			ctl = &controller{
-				clients:           make(map[string]lokiclient.Client),
-				stopChn:           make(chan struct{}),
-				clientConfig:      conf,
-				dynamicHostPrefix: dynamicHostPrefix,
-				dynamicHostSulfix: dynamicHostSulfix,
-				logger:            logger,
+				clients: make(map[string]lokiclient.Client),
+				stopChn: make(chan struct{}),
+				conf:    conf,
+				decoder: decoder,
+				logger:  logger,
 			}
 		})
 
@@ -196,8 +219,8 @@ var _ = Describe("Controller", func() {
 				newNameCluster.Name = name
 				ctl.addFunc(hibernatedCluster)
 				ctl.addFunc(newNameCluster)
-				Expect(ctl.clientConfig.URL.String()).ToNot(Equal(ctl.dynamicHostPrefix + name + ctl.dynamicHostSulfix))
-				Expect(ctl.clientConfig.URL.String()).ToNot(Equal(ctl.dynamicHostPrefix + hibernatedCluster.Name + ctl.dynamicHostSulfix))
+				Expect(ctl.conf.ClientConfig.URL.String()).ToNot(Equal(ctl.conf.DynamicHostPrefix + name + ctl.conf.DynamicHostSuffix))
+				Expect(ctl.conf.ClientConfig.URL.String()).ToNot(Equal(ctl.conf.DynamicHostPrefix + hibernatedCluster.Name + ctl.conf.DynamicHostSuffix))
 			})
 
 		})

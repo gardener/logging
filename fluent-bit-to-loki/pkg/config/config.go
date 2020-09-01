@@ -1,3 +1,10 @@
+/*
+This file was copied from the grafana/loki project
+https://github.com/grafana/loki/blob/v1.6.0/cmd/fluent-bit/config.go
+
+Modifications Copyright (c) 2020 SAP SE or an SAP affiliate company. All rights reserved.
+*/
+
 package config
 
 import (
@@ -43,8 +50,10 @@ const (
 //Config holds all of the needet properties of the loki output plugin
 type Config struct {
 	ClientConfig         client.Config
+	BufferConfig         BufferConfig
 	LogLevel             logging.Level
 	AutoKubernetesLabels bool
+	ReplaceOutOfOrderTS  bool
 	RemoveKeys           []string
 	LabelKeys            []string
 	LineFormat           Format
@@ -52,8 +61,36 @@ type Config struct {
 	LabelMap             map[string]interface{}
 	DynamicHostPath      map[string]interface{}
 	DynamicHostPrefix    string
-	DynamicHostSulfix    string
+	DynamicHostSuffix    string
 	DynamicHostRegex     string
+}
+
+// BufferConfig contains the buffer settings
+type BufferConfig struct {
+	Buffer     bool
+	BufferType string
+	DqueConfig DqueConfig
+}
+
+// DqueConfig contains the dqueue settings
+type DqueConfig struct {
+	QueueDir         string
+	QueueSegmentSize int
+	QueueSync        bool
+	QueueName        string
+}
+
+var DefaultBufferConfig = BufferConfig{
+	Buffer:     false,
+	BufferType: "dque",
+	DqueConfig: DefaultDqueConfig,
+}
+
+var DefaultDqueConfig = DqueConfig{
+	QueueDir:         "/tmp/flb-storage/loki",
+	QueueSegmentSize: 500,
+	QueueSync:        false,
+	QueueName:        "dque",
 }
 
 // ParseConfig parse a Loki plugin configuration
@@ -61,6 +98,7 @@ func ParseConfig(cfg Getter) (*Config, error) {
 	res := &Config{}
 
 	res.ClientConfig = defaultClientCfg
+	res.BufferConfig = DefaultBufferConfig
 
 	url := cfg.Get("URL")
 	var clientURL flagext.URLValue
@@ -178,7 +216,7 @@ func ParseConfig(cfg Getter) (*Config, error) {
 	}
 
 	res.DynamicHostPrefix = cfg.Get("DynamicHostPrefix")
-	res.DynamicHostSulfix = cfg.Get("DynamicHostSulfix")
+	res.DynamicHostSuffix = cfg.Get("DynamicHostSuffix")
 	res.DynamicHostRegex = cfg.Get("DynamicHostRegex")
 	if res.DynamicHostRegex == "" {
 		res.DynamicHostRegex = "*"
@@ -212,11 +250,65 @@ func ParseConfig(cfg Getter) (*Config, error) {
 
 	maxBackoff := cfg.Get("MaxBackoff")
 	if maxBackoff != "" {
-		mab, err := strconv.Atoi(minBackoff)
+		mab, err := strconv.Atoi(maxBackoff)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse MaxBackoff: %s", maxBackoff)
 		}
 		res.ClientConfig.BackoffConfig.MaxBackoff = time.Duration(mab) * time.Second
+	}
+
+	// enable loki plugin buffering
+	buffer := cfg.Get("Buffer")
+	if buffer != "" {
+		res.BufferConfig.Buffer, err = strconv.ParseBool(buffer)
+		if err != nil {
+			return nil, fmt.Errorf("invalid value for Buffer, error: %v", err)
+		}
+	}
+
+	// buffering type
+	bufferType := cfg.Get("BufferType")
+	if bufferType != "" {
+		res.BufferConfig.BufferType = bufferType
+	}
+
+	// dque directory
+	queueDir := cfg.Get("QueueDir")
+	if queueDir != "" {
+		res.BufferConfig.DqueConfig.QueueDir = queueDir
+	}
+
+	// dque segment size (queueEntry unit)
+	queueSegmentSize := cfg.Get("QueSegmentSize")
+	if queueSegmentSize != "" {
+		res.BufferConfig.DqueConfig.QueueSegmentSize, err = strconv.Atoi(queueSegmentSize)
+		if err != nil {
+			return nil, fmt.Errorf("cannot convert DqueSegmentSize %v to integer, error: %v", queueSegmentSize, err)
+		}
+	}
+
+	// queueSync control file change sync to disk as they happen aka dque.turbo mode
+	queueSync := cfg.Get("QueueSync")
+	switch queueSync {
+	case "normal", "":
+		res.BufferConfig.DqueConfig.QueueSync = false
+	case "full":
+		res.BufferConfig.DqueConfig.QueueSync = true
+	default:
+		return nil, fmt.Errorf("invalid string queueSync: %v", queueSync)
+	}
+
+	queueName := cfg.Get("QueueName")
+	if queueName != "" {
+		res.BufferConfig.DqueConfig.QueueName = queueName
+	}
+
+	replaceOutOfOrderTS := cfg.Get("ReplaceOutOfOrderTS")
+	if replaceOutOfOrderTS != "" {
+		res.ReplaceOutOfOrderTS, err = strconv.ParseBool(replaceOutOfOrderTS)
+		if err != nil {
+			return nil, fmt.Errorf("invalid string ReplaceOutOfOrderTS: %v", err)
+		}
 	}
 
 	return res, nil

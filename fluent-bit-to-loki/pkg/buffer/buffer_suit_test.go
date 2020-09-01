@@ -12,23 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config_test
+package buffer_test
 
 import (
-	"os"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
-var testFileName string
-
-var _ = AfterSuite(func() {
-	os.Remove(testFileName)
-})
-
 func TestLoki(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Loki Config Suite")
+	RunSpecs(t, "Loki Buffer Suite")
 }

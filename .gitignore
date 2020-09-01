@@ -1,5 +1,5 @@
 *~
 
-fluent-bit-to-loki/build/
+*.so
 
 extra_deletion

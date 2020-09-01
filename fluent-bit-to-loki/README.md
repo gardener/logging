@@ -14,6 +14,10 @@ This plugin is implemented with [Fluent Bit's Go plugin](https://github.com/flue
 | TenantID      | The tenant ID used by default to push logs to Loki. If omitted or empty it assumes Loki is running in single-tenant mode and no `X-Scope-OrgID` header is sent.               | "" |
 | BatchWait     | Time to wait before send a log batch to Loki, full or not. (unit: sec) | 1 second   |
 | BatchSize     | Log batch size to send a log batch to Loki (unit: Bytes).    | 10 KiB (10 * 1024 Bytes) |
+| MaxRetries     | Number of times the loki client will try to send unsuccessful sent record to loki.    | 10 |
+| Timeout     | The duration which loki client will wait for response.   | 10 |
+| MinBackoff     | The first wait after unsuccessful sent log.    | 0.5s |
+| MaxBackoff     | The maximum duration after  unsuccessful sent log.  | 5m |
 | Labels        | labels for API requests.                       | {job="fluent-bit"}                    |
 | LogLevel      | LogLevel for plugin logger.                    | "info"                              |
 | RemoveKeys    | Specify removing keys.                         | none                                |
@@ -22,6 +26,17 @@ This plugin is implemented with [Fluent Bit's Go plugin](https://github.com/flue
 | LineFormat    | Format to use when flattening the record to a log line. Valid values are "json" or "key_value". If set to "json" the log line sent to Loki will be the fluentd record (excluding any keys extracted out as labels) dumped as json. If set to "key_value", the log line will be each item in the record concatenated together (separated by a single space) in the format <key>=<value>. | json |
 | DropSingleKey | If set to true and after extracting label_keys a record only has a single key remaining, the log line sent to Loki will just be the value of the record key.| true |
 | LabelMapPath | Path to a json file defining how to transform nested records. | none
+| DynamicHostPath | Jsonpath in the log labels to the dynamic host. | none
+| DynamicHostPrefix | String to prepend to the dynamic host. | none
+| DynamicHostSuffix | String to append to the dynamic host. | none
+| DynamicHostRegex | Regex to check if the dynamic host is valid. | '*'
+| Buffer | If set to true, a buffered client will be used. | none
+| BufferType | The buffer type to use when using buffered client is unable. "Dque" is the only available. | "dque"
+| QueueDir | Path to a directory where the buffer will store its records. | '/tmp/flb-storage/loki'
+| QueSegmentSize | The number of entries stored into the buffer. | 500
+| QueueName | The name of the file where the log entries will be stored | `dque`
+| ReplaceOutOfOrderTS | If set to true and records with old timestamp appears it rewrites the timestamp with the one of the last entry. | `false`
+
 
 ### Labels
 

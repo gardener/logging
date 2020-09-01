@@ -1,8 +1,25 @@
+// Copyright (c) 2020 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package controller
 
 import (
 	"fmt"
 	"sync"
+
+	client "github.com/gardener/logging/fluent-bit-to-loki/pkg/client"
+	"github.com/gardener/logging/fluent-bit-to-loki/pkg/config"
 
 	extensioncontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
@@ -11,9 +28,14 @@ import (
 	"github.com/cortexproject/cortex/pkg/util/flagext"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/cache"
 
 	lokiclient "github.com/grafana/loki/pkg/promtail/client"
+)
+
+const (
+	expectedActiveClusters = 128
 )
 
 // Controller represent a k8s controller watching for resources and
@@ -24,25 +46,28 @@ type Controller interface {
 }
 
 type controller struct {
-	lock              sync.RWMutex
-	clients           map[string]lokiclient.Client
-	clientConfig      lokiclient.Config
-	dynamicHostPrefix string
-	dynamicHostSulfix string
-	stopChn           chan struct{}
-	logger            log.Logger
+	lock    sync.RWMutex
+	clients map[string]lokiclient.Client
+	conf    *config.Config
+	stopChn chan struct{}
+	decoder runtime.Decoder
+	logger  log.Logger
 }
 
 // NewController return Controller interface
-func NewController(informer cache.SharedIndexInformer, clientConfig lokiclient.Config, logger log.Logger, dynamicHostPrefix, dynamicHostSulfix string) (Controller, error) {
+func NewController(informer cache.SharedIndexInformer, conf *config.Config, logger log.Logger) (Controller, error) {
+	decoder, err := extensioncontroller.NewGardenDecoder()
+	if err != nil {
+		level.Error(logger).Log("msg", "Can't make garden runtime decoder")
+		return nil, err
+	}
 
 	controller := &controller{
-		clients:           make(map[string]lokiclient.Client),
-		stopChn:           make(chan struct{}),
-		clientConfig:      clientConfig,
-		dynamicHostPrefix: dynamicHostPrefix,
-		dynamicHostSulfix: dynamicHostSulfix,
-		logger:            logger,
+		clients: make(map[string]lokiclient.Client, expectedActiveClusters),
+		stopChn: make(chan struct{}),
+		conf:    conf,
+		decoder: decoder,
+		logger:  logger,
 	}
 
 	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -59,8 +84,8 @@ func NewController(informer cache.SharedIndexInformer, clientConfig lokiclient.C
 }
 
 func (ctl *controller) GetClient(name string) lokiclient.Client {
-	ctl.lock.Lock()
-	defer ctl.lock.Unlock()
+	ctl.lock.RLocker().Lock()
+	defer ctl.lock.RLocker().Unlock()
 
 	if client, ok := ctl.clients[name]; ok {
 		return client
@@ -124,30 +149,25 @@ func (ctl *controller) delFunc(obj interface{}) {
 	ctl.deleteClient(cluster)
 }
 
-func (ctl *controller) getClientConfig(namespaces string) *lokiclient.Config {
+func (ctl *controller) getClientConfig(namespace string) *config.Config {
 	var clientURL flagext.URLValue
 
-	url := ctl.dynamicHostPrefix + namespaces + ctl.dynamicHostSulfix
+	url := fmt.Sprintf("%s%s%s", ctl.conf.DynamicHostPrefix, namespace, ctl.conf.DynamicHostSuffix)
 	err := clientURL.Set(url)
 	if err != nil {
-		level.Error(ctl.logger).Log("failed to parse client URL", namespaces, "error", err.Error())
+		level.Error(ctl.logger).Log("failed to parse client URL", namespace, "error", err.Error())
 		return nil
 	}
 
-	clientConf := ctl.clientConfig
-	clientConf.URL = clientURL
+	conf := *ctl.conf
+	conf.ClientConfig.URL = clientURL
+	conf.BufferConfig.DqueConfig.QueueName = namespace
 
-	return &clientConf
+	return &conf
 }
 
 func (ctl *controller) matches(cluster *extensionsv1alpha1.Cluster) bool {
-	decoder, err := extensioncontroller.NewGardenDecoder()
-	if err != nil {
-		level.Error(ctl.logger).Log("Can't make decoder for cluster ", fmt.Sprintf("%v", cluster.Name))
-		return false
-	}
-
-	shoot, err := extensioncontroller.ShootFromCluster(decoder, cluster)
+	shoot, err := extensioncontroller.ShootFromCluster(ctl.decoder, cluster)
 	if err != nil {
 		level.Error(ctl.logger).Log("Can't extract shoot from cluster ", fmt.Sprintf("%v", cluster.Name))
 		return false
@@ -161,34 +181,37 @@ func (ctl *controller) matches(cluster *extensionsv1alpha1.Cluster) bool {
 }
 
 func (ctl *controller) createClient(cluster *extensionsv1alpha1.Cluster) {
-	ctl.lock.Lock()
-	defer ctl.lock.Unlock()
-
 	clientConf := ctl.getClientConfig(cluster.Name)
 	if clientConf == nil {
 		return
 	}
 
-	client, err := lokiclient.New(*clientConf, ctl.logger)
+	client, err := client.NewClient(clientConf, ctl.logger)
 	if err != nil {
 		level.Error(ctl.logger).Log("failed to make new loki client for cluster", cluster.Name, "error", err.Error())
 		return
 	}
 
-	level.Info(ctl.logger).Log("Add ", " client", " cluster ", cluster.Name)
+	level.Info(ctl.logger).Log("Add", "client", "cluster", cluster.Name)
+	ctl.lock.Lock()
+	defer ctl.lock.Unlock()
 	ctl.clients[cluster.Name] = client
 }
 
 func (ctl *controller) deleteClient(cluster *extensionsv1alpha1.Cluster) {
 	ctl.lock.Lock()
-	defer ctl.lock.Unlock()
 
 	client, ok := ctl.clients[cluster.Name]
 	if ok && client != nil {
-		client.Stop()
-		level.Info(ctl.logger).Log("Delete", "client", "namespace", cluster.Name)
 		delete(ctl.clients, cluster.Name)
 	}
+
+	ctl.lock.Unlock()
+	if ok && client != nil {
+		level.Info(ctl.logger).Log("Delete", "client", "cluster", cluster.Name)
+		client.Stop()
+	}
+
 }
 
 func isShootInHibernation(shoot *gardencorev1beta1.Shoot) bool {
