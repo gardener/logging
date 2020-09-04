@@ -45,6 +45,7 @@ func NewClient(cfg *config.Config, logger log.Logger) (client.Client, error) {
 }
 
 type clientWrapper struct {
+	url        string
 	lokiclient client.Client
 	lastTS     map[model.Fingerprint]time.Time
 	logger     log.Logger
@@ -59,6 +60,7 @@ func newTimestampOrderingClient(cfg client.Config, logger log.Logger) (client.Cl
 	}
 
 	return &clientWrapper{
+		url:        cfg.URL.String(),
 		lokiclient: lokiclient,
 		lastTS:     make(map[model.Fingerprint]time.Time),
 		logger:     logger,
@@ -72,14 +74,8 @@ func (c *clientWrapper) Handle(ls model.LabelSet, t time.Time, s string) error {
 	lastTimeStamp, ok := c.lastTS[key]
 	if ok && t.Before(lastTimeStamp) {
 		diff := lastTimeStamp.Sub(t)
+		c.logOutOfOrderDifference(diff, "msg", "log entry out of order. Its timestamp is going to be overwritten", "difference", diff.String(), "LastTimestamp", lastTimeStamp.String(), "IncommingTimestamp", t.String(), "URL", c.url, "Stream", ls.String())
 		t = lastTimeStamp
-		if diff.Seconds() < 1 {
-			level.Debug(c.logger).Log("msg", "out of order timestamp", "difference", diff.String())
-		} else if diff.Seconds() <= 5 {
-			level.Info(c.logger).Log("msg", "out of order timestamp", "difference", diff.String())
-		} else {
-			level.Warn(c.logger).Log("msg", "out of order timestamp", "difference", diff.String())
-		}
 	}
 	c.lastTS[key] = t
 	return c.lokiclient.Handle(ls, t, s)
@@ -89,4 +85,14 @@ func (c *clientWrapper) Handle(ls model.LabelSet, t time.Time, s string) error {
 func (c *clientWrapper) Stop() {
 	c.lastTS = nil
 	c.lokiclient.Stop()
+}
+
+func (c *clientWrapper) logOutOfOrderDifference(timeDiff time.Duration, keyvals ...interface{}) {
+	if timeDiff.Seconds() < 1 {
+		level.Debug(c.logger).Log(keyvals...)
+	} else if timeDiff.Seconds() <= 5 {
+		level.Info(c.logger).Log(keyvals...)
+	} else {
+		level.Warn(c.logger).Log(keyvals...)
+	}
 }
