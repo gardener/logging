@@ -1,10 +1,8 @@
 # Fluent Bit output plugin
 
-[Fluent Bit](https://fluentbit.io/) is a Fast and Lightweight Data Forwarder, it can be configured with the [Loki output plugin](https://fluentbit.io/documentation/0.12/output/) to ship logs to Loki. You can define which log files you want to collect using the [`Tail`](https://fluentbit.io/documentation/0.12/input/tail.html)  [input plugin](https://fluentbit.io/documentation/0.12/getting_started/input.html). Additionally Fluent Bit supports multiple `Filter` and `Parser` plugins (`Kubernetes`, `JSON`, etc..) to structure and alter log lines.
-
-This plugin is implemented with [Fluent Bit's Go plugin](https://github.com/fluent/fluent-bit-go) interface. It pushes logs to Loki using a GRPC connection.
-
-> syslog and systemd input plugin have not been tested yet, feedback appreciated.
+This plugin extends [Grafana,s Fluent Bit output plugin](https://github.com/grafana/loki/tree/master/cmd/fluent-bit) which aims to forward log messages from fluent-bit to Loki.
+Тhe plugin meets the needs of the [Gardener](https://gardener.cloud/) by implementing a logic for dynamically forwarding log messages from one Fluent-bit to multiple Loki instances.
+It also adds additional configurations that aim to improve plugin's performance and user experience.
 
 ## Configuration Options
 
@@ -33,9 +31,14 @@ This plugin is implemented with [Fluent Bit's Go plugin](https://github.com/flue
 | Buffer | If set to true, a buffered client will be used. | none
 | BufferType | The buffer type to use when using buffered client is unable. "Dque" is the only available. | "dque"
 | QueueDir | Path to a directory where the buffer will store its records. | '/tmp/flb-storage/loki'
-| QueSegmentSize | The number of entries stored into the buffer. | 500
+| QueueSegmentSize | The number of entries stored into the buffer. | 500
 | QueueName | The name of the file where the log entries will be stored | `dque`
-| ReplaceOutOfOrderTS | If set to true and records with old timestamp appears it rewrites the timestamp with the one of the last entry. | `false`
+| ReplaceOutOfOrderTS | Overwrites the timestamp of out of order records. Their timestamp will replaced with the timestamp of the last entry. | `false`
+| FallbackToTagWhenMetadataIsMissing | If set the plugin will try to extract the `namespace`, `pod_name` and `container_name` from the tag when the metadata is missing | `false`
+| TagKey | The key of the record which holds the tag. The tag should not be nested | "tag"
+| TagPrefix | The prefix of the tag. In the prefix no metadata will be searched. The prefix must not contain group expression(`()`). | none
+| TagExpression | The regex expression which will be used for matching the metadata retrieved from the tag. It contains 3 group expressions (`()`): `pod name`, `namespace` and the `container name` | "\\.(.*)_(.*)_(.*)-.*\\.log"
+| DropLogEntryWithoutK8sMetadata | When metadata is missing for the log entry, it will be dropped | `false` 
 
 
 ### Labels
@@ -97,27 +100,68 @@ To configure the Loki output plugin add this section to fluent-bit.conf
 ```properties
 [Output]
     Name loki
-    Match *
-    Url http://localhost:3100/loki/api/v1/push
+    Match kubernetes.*
+    Url http://loki.garden.svc:3100/loki/api/v1/push
+    LogLevel info
     BatchWait 1
     # (1sec)
     BatchSize 30720
     # (30KiB)
     Labels {test="fluent-bit-go", lang="Golang"}
-    RemoveKeys key1,key2
-    LabelKeys key3,key4
-    LineFormat key_value
+    LineFormat json
+    ReplaceOutOfOrderTS true
+    DropSingleKey false
+    AutoKubernetesLabels true
+    LabelSelector gardener.cloud/role:shoot
+    RemoveKeys kubernetes,stream,type,time
+    LabelMapPath /fluent-bit/etc/kubernetes_label_map.json
+    DynamicHostPath {"kubernetes": {"namespace_name": "namespace"}}
+    DynamicHostPrefix http://loki.
+    DynamicHostSuffix .svc:3100/loki/api/v1/push
+    DynamicHostRegex shoot--
+    MaxRetries 3
+    Timeout 10
+    MinBackoff 30
+    Buffer true
+    BufferType dque
+    QueueDir  /fluent-bit/buffers
+    QueueSegmentSize 300
+    QueueSync normal
+    QueueName gardener-kubernetes
+    FallbackToTagWhenMetadataIsMissing true
+    TagKey key
+    TagPrefix kubernetes.var.log.containers
+    TagExpression "\\.(.*)_(.*)_(.*)-.*\\.log"
+    DropLogEntryWithoutK8sMetadata true
 ```
 
 ```properties
 [Output]
-    Name loki
-    Match *
-    Url http://localhost:3100/loki/api/v1/push
-    BatchWait 1 # (1sec)
-    BatchSize 30720 # (30KiB)
-    AutoKubernetesLabels true
-    RemoveKeys key1,key2
+        Name loki
+        Match journald.*
+        Url http://loki.garden.svc:3100/loki/api/v1/push
+        LogLevel info
+        BatchWait 1
+        # (1sec)
+        BatchSize 30720
+        # (30KiB)
+        Labels {test="fluent-bit-go", lang="Golang"}
+        LineFormat json
+        ReplaceOutOfOrderTS true
+        DropSingleKey false
+        RemoveKeys kubernetes,stream,hostname,unit
+        LabelMapPath /fluent-bit/etc/systemd_label_map.json
+        MaxRetries 3
+        Timeout 10
+        MinBackoff 30
+        Buffer true
+        BufferType dque
+        QueueDir  /fluent-bit/buffers
+        QueueSegmentSize 300
+        QueueSync normal
+        QueueName gardener-journald
+        FallbackToTagWhenMetadataIsMissing false
+        DropLogEntryWithoutK8sMetadata false
 ```
 A full [example configuration file](fluent-bit.conf) is also available in this repository.
 
@@ -127,16 +171,15 @@ You can run multiple plugin instances in the same fluent-bit process, for exampl
 
 ## Building
 
+```bash
+make -C fluent-bit-to-loki plugin
+```
+
 ## Prerequisites
 
 * Go 1.11+
 * gcc (for cgo)
 
-```bash
-make fluent-bit-plugin
-```
-
-## Usage
 
 ## Local
 
@@ -151,38 +194,4 @@ You can also adapt your plugins.conf, removing the need to change the command li
 ```
 [PLUGINS]
     Path /path/to/built/out_loki.so
-```
-
-## Docker
-
-You can run a Fluent Bit container with Loki output plugin pre-installed using our [docker hub](https://cloud.docker.com/u/grafana/repository/docker/grafana/fluent-bit-plugin-loki) image:
-
-```bash
-docker run -v /var/log:/var/log \
-    -e LOG_PATH="/var/log/*.log" -e LOKI_URL="http://localhost:3100/loki/api/v1/push" \
-    grafana/fluent-bit-plugin-loki:latest
-```
-
-## Kubernetes
-
-You can run Fluent Bit as a [Daemonset](https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/) to collect all your Kubernetes workload logs.
-
-To do so you can use our [Fluent Bit helm chart](../../production/helm/fluent-bit/README.md):
-
-> Make sure [tiller](https://helm.sh/docs/install/) is installed correctly in your cluster
-
-```bash
-helm repo add loki https://grafana.github.io/loki/charts
-helm repo update
-helm upgrade --install fluent-bit loki/fluent-bit \
-    --set loki.serviceName=loki.svc.cluster.local
-```
-
-By default it will collect all containers logs and extract labels from Kubernetes API (`container_name`, `namespace`, etc..).
-
-Alternatively you can install the Loki and Fluent Bit all together using:
-
-```bash
-helm upgrade --install loki-stack loki/loki-stack \
-    --set fluent-bit.enabled=true,promtail.enabled=false
 ```

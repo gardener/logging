@@ -36,6 +36,7 @@ type dqueClient struct {
 	queue  *dque.DQue
 	loki   client.Client
 	once   sync.Once
+	url    string
 }
 
 // newDque makes a new dque loki client
@@ -55,6 +56,8 @@ func newDque(cfg *config.Config, logger log.Logger, newClientFunc func(cfg clien
 	if err != nil {
 		return nil, err
 	}
+
+	q.url = cfg.ClientConfig.URL.String()
 
 	if !cfg.BufferConfig.DqueConfig.QueueSync {
 		_ = q.queue.TurboOn()
@@ -78,7 +81,7 @@ func (c *dqueClient) dequeuer() {
 			case dque.ErrQueueClosed:
 				return
 			default:
-				level.Error(c.logger).Log("msg", "error dequeuing record", "error", err)
+				level.Error(c.logger).Log("msg", "error dequeuing record", "error", err, "queue", c.queue.Name)
 				continue
 			}
 		}
@@ -86,15 +89,15 @@ func (c *dqueClient) dequeuer() {
 		// Assert type of the response to an Item pointer so we can work with it
 		record, ok := entry.(*dqueEntry)
 		if !ok {
-			level.Error(c.logger).Log("msg", "error dequeued record is not an valid type", "error")
+			level.Error(c.logger).Log("msg", "error dequeued record is not an valid type", "queue", c.queue.Name)
 			continue
 		}
 
-		level.Debug(c.logger).Log("msg", "sending record to Loki", "host", c.queue.Name)
+		level.Debug(c.logger).Log("msg", "sending record to Loki", "url", c.url, "record", record.String())
 		if err := c.loki.Handle(record.LabelSet, record.TimeStamp, record.Line); err != nil {
-			level.Error(c.logger).Log("msg", "error sending record to Loki", "error", err)
+			level.Error(c.logger).Log("msg", fmt.Sprintf("error sending record to Loki %s", c.url), "error", err)
 		}
-		level.Debug(c.logger).Log("msg", "successful sent record to Loki", "host", c.queue.Name)
+		level.Debug(c.logger).Log("msg", "successful sent record to Loki", "host", c.url, "record", record.String())
 	}
 }
 
@@ -106,9 +109,14 @@ func (c *dqueClient) Stop() {
 
 // Handle implement EntryHandler; adds a new line to the next batch; send is async.
 func (c *dqueClient) Handle(ls model.LabelSet, t time.Time, s string) error {
-	if err := c.queue.Enqueue(&dqueEntry{ls, t, s}); err != nil {
-		return fmt.Errorf("cannot enqueue record %s: %v", s, err)
+	record := &dqueEntry{ls, t, s}
+	if err := c.queue.Enqueue(record); err != nil {
+		return fmt.Errorf("cannot enqueue record %s: %v", record.String(), err)
 	}
 
 	return nil
+}
+
+func (e *dqueEntry) String() string {
+	return fmt.Sprintf("labels: %+v timestamp: %+v line: %+v", e.LabelSet, e.TimeStamp, e.Line)
 }

@@ -54,12 +54,12 @@ var _ = Describe("Client", func() {
 		},
 		BufferConfig: config.BufferConfig{
 			Buffer:     false,
-			BufferType: "dque",
+			BufferType: config.DefaultBufferConfig.BufferType,
 			DqueConfig: config.DqueConfig{
-				QueueDir:         "/tmp/flb-storage/loki",
-				QueueSegmentSize: 500,
-				QueueSync:        false,
-				QueueName:        "dque",
+				QueueDir:         config.DefaultDqueConfig.QueueDir,
+				QueueSegmentSize: config.DefaultDqueConfig.QueueSegmentSize,
+				QueueSync:        config.DefaultDqueConfig.QueueSync,
+				QueueName:        config.DefaultDqueConfig.QueueName,
 			},
 		},
 		LogLevel:      infoLogLevel,

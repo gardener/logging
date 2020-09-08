@@ -11,6 +11,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -19,6 +20,12 @@ import (
 	"github.com/prometheus/common/model"
 
 	"github.com/gardener/logging/fluent-bit-to-loki/pkg/config"
+)
+
+const (
+	podName       = "pod_name"
+	namespaceName = "namespace_name"
+	containerName = "container_name"
 )
 
 // prevent base64-encoding []byte values (default json.Encoder rule) by
@@ -82,6 +89,26 @@ func autoLabels(records map[string]interface{}, kuberneteslbs model.LabelSet) er
 		default:
 			kuberneteslbs[model.LabelName(k)] = model.LabelValue(fmt.Sprintf("%v", v))
 		}
+	}
+
+	return nil
+}
+
+func extractKubernetesMetadataFromTag(records map[string]interface{}, tagKey string, re *regexp.Regexp) error {
+	tag, ok := records[tagKey].(string)
+	if !ok {
+		return fmt.Errorf("the tag entry for key %q is missing", tagKey)
+	}
+
+	kubernetesMetaData := re.FindStringSubmatch(tag)
+	if len(kubernetesMetaData) != 4 {
+		return fmt.Errorf("invalid format for tag %v. The tag should be in format: %s", tag, re.String())
+	}
+
+	records["kubernetes"] = map[string]interface{}{
+		podName:       kubernetesMetaData[1],
+		namespaceName: kubernetesMetaData[2],
+		containerName: kubernetesMetaData[3],
 	}
 
 	return nil

@@ -16,7 +16,9 @@ package lokiplugin
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
+	"regexp"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -68,6 +70,14 @@ type autoKubernetesLabelsArgs struct {
 	records map[interface{}]interface{}
 	want    model.LabelSet
 	err     error
+}
+type fallbackToTagWhenMetadataIsMissing struct {
+	records   map[string]interface{}
+	tagKey    string
+	tagPrefix string
+	tagRegexp string
+	want      map[string]interface{}
+	err       error
 }
 
 var _ = Describe("Loki plugin utils", func() {
@@ -456,6 +466,60 @@ var _ = Describe("Loki plugin utils", func() {
 				},
 				want: model.LabelSet{},
 				err:  errors.New("kubernetes labels not found, no labels will be added"),
+			},
+		),
+	)
+
+	DescribeTable("#fallbackToTagWhenMetadataIsMissing",
+		func(args fallbackToTagWhenMetadataIsMissing) {
+			re := regexp.MustCompile(args.tagPrefix + args.tagRegexp)
+			err := extractKubernetesMetadataFromTag(args.records, args.tagKey, re)
+			if args.err != nil {
+				Expect(err.Error()).To(Equal(args.err.Error()))
+				return
+			}
+			Expect(err).ToNot(HaveOccurred())
+			Expect(args.records).To(Equal(args.want))
+		},
+		Entry("records with correct tag",
+			fallbackToTagWhenMetadataIsMissing{
+				records: map[string]interface{}{
+					config.DefaultKubernetesMetadataTagKey: "kubernetes.var.log.containers.cluster-autoscaler-65d4ccbb7d-w5kd2_shoot--i355448--local-shoot_cluster-autoscaler-a8bba03512b5dd378c620ab3707aec013f83bdb9abae08d347e1644b064ed35f.log",
+				},
+				tagKey:    config.DefaultKubernetesMetadataTagKey,
+				tagPrefix: config.DefaultKubernetesMetadataTagPrefix,
+				tagRegexp: config.DefaultKubernetesMetadataTagExpression,
+				want: map[string]interface{}{
+					config.DefaultKubernetesMetadataTagKey: "kubernetes.var.log.containers.cluster-autoscaler-65d4ccbb7d-w5kd2_shoot--i355448--local-shoot_cluster-autoscaler-a8bba03512b5dd378c620ab3707aec013f83bdb9abae08d347e1644b064ed35f.log",
+					"kubernetes": map[string]interface{}{
+						podName:       "cluster-autoscaler-65d4ccbb7d-w5kd2",
+						containerName: "cluster-autoscaler",
+						namespaceName: "shoot--i355448--local-shoot",
+					},
+				},
+				err: nil,
+			},
+		),
+		Entry("records with incorrect tag",
+			fallbackToTagWhenMetadataIsMissing{
+				records: map[string]interface{}{
+					config.DefaultKubernetesMetadataTagKey: "kubernetes.var.log.containers.cluster-autoscaler-65d4ccbb7d-w5kd2_shoot--i355448--local-shoot-cluster-autoscaler-a8bba03512b5dd378c620ab3707aec013f83bdb9abae08d347e1644b064ed35f.log",
+				},
+				tagKey:    config.DefaultKubernetesMetadataTagKey,
+				tagPrefix: config.DefaultKubernetesMetadataTagPrefix,
+				tagRegexp: config.DefaultKubernetesMetadataTagExpression,
+				err:       fmt.Errorf("invalid format for tag %v. The tag should be in format: %s", "kubernetes.var.log.containers.cluster-autoscaler-65d4ccbb7d-w5kd2_shoot--i355448--local-shoot-cluster-autoscaler-a8bba03512b5dd378c620ab3707aec013f83bdb9abae08d347e1644b064ed35f.log", "kubernetes\\.var\\.log\\.containers"+config.DefaultKubernetesMetadataTagExpression),
+			},
+		),
+		Entry("records with missing tag",
+			fallbackToTagWhenMetadataIsMissing{
+				records: map[string]interface{}{
+					"missing_tag": "kubernetes.var.log.containers.cluster-autoscaler-65d4ccbb7d-w5kd2_shoot--i355448--local-shoot-cluster-autoscaler-a8bba03512b5dd378c620ab3707aec013f83bdb9abae08d347e1644b064ed35f.log",
+				},
+				tagKey:    config.DefaultKubernetesMetadataTagKey,
+				tagPrefix: config.DefaultKubernetesMetadataTagPrefix,
+				tagRegexp: config.DefaultKubernetesMetadataTagExpression,
+				err:       fmt.Errorf("the tag entry for key %q is missing", config.DefaultKubernetesMetadataTagKey),
 			},
 		),
 	)
