@@ -45,6 +45,14 @@ const (
 	JSONFormat Format = iota
 	// KvPairFormat represents key-value format for log line
 	KvPairFormat
+	// DefaultKubernetesMetadataTagExpression for extracting the kubernetes metadata from tag
+	DefaultKubernetesMetadataTagExpression = "\\.(.+?)_(.+?)_(.+)-.*\\.log"
+
+	// DefaultKubernetesMetadataTagKey represents the key for the tag in the entry
+	DefaultKubernetesMetadataTagKey = "tag"
+
+	// DefaultKubernetesMetadataTagPrefix represents the prefix of the entry's tag
+	DefaultKubernetesMetadataTagPrefix = "kubernetes\\.var\\.log\\.containers"
 )
 
 //Config holds all of the needet properties of the loki output plugin
@@ -63,6 +71,7 @@ type Config struct {
 	DynamicHostPrefix    string
 	DynamicHostSuffix    string
 	DynamicHostRegex     string
+	KubernetesMetadata   KubernetesMetadataExtraction
 }
 
 // BufferConfig contains the buffer settings
@@ -80,12 +89,23 @@ type DqueConfig struct {
 	QueueName        string
 }
 
+// KubernetesMetadataExtraction holds the configurations for retrieving the meta data from a tag
+type KubernetesMetadataExtraction struct {
+	FallbackToTagWhenMetadataIsMissing bool
+	DropLogEntryWithoutK8sMetadata     bool
+	TagKey                             string
+	TagPrefix                          string
+	TagExpression                      string
+}
+
+// DefaultBufferConfig holds the configurations for using output buffer
 var DefaultBufferConfig = BufferConfig{
 	Buffer:     false,
 	BufferType: "dque",
 	DqueConfig: DefaultDqueConfig,
 }
 
+// DefaultDqueConfig holds dque configurations for the buffer
 var DefaultDqueConfig = DqueConfig{
 	QueueDir:         "/tmp/flb-storage/loki",
 	QueueSegmentSize: 500,
@@ -279,11 +299,11 @@ func ParseConfig(cfg Getter) (*Config, error) {
 	}
 
 	// dque segment size (queueEntry unit)
-	queueSegmentSize := cfg.Get("QueSegmentSize")
+	queueSegmentSize := cfg.Get("QueueSegmentSize")
 	if queueSegmentSize != "" {
 		res.BufferConfig.DqueConfig.QueueSegmentSize, err = strconv.Atoi(queueSegmentSize)
 		if err != nil {
-			return nil, fmt.Errorf("cannot convert DqueSegmentSize %v to integer, error: %v", queueSegmentSize, err)
+			return nil, fmt.Errorf("cannot convert QueueSegmentSize %v to integer, error: %v", queueSegmentSize, err)
 		}
 	}
 
@@ -308,6 +328,43 @@ func ParseConfig(cfg Getter) (*Config, error) {
 		res.ReplaceOutOfOrderTS, err = strconv.ParseBool(replaceOutOfOrderTS)
 		if err != nil {
 			return nil, fmt.Errorf("invalid string ReplaceOutOfOrderTS: %v", err)
+		}
+	}
+
+	fallbackToTagWhenMetadataIsMissing := cfg.Get("FallbackToTagWhenMetadataIsMissing")
+	if fallbackToTagWhenMetadataIsMissing != "" {
+		res.KubernetesMetadata.FallbackToTagWhenMetadataIsMissing, err = strconv.ParseBool(fallbackToTagWhenMetadataIsMissing)
+		if err != nil {
+			return nil, fmt.Errorf("invalid value for FallbackToTagWhenMetadataIsMissing, error: %v", err)
+		}
+	}
+
+	tagKey := cfg.Get("TagKey")
+	if tagKey != "" {
+		res.KubernetesMetadata.TagKey = tagKey
+	} else {
+		res.KubernetesMetadata.TagKey = DefaultKubernetesMetadataTagKey
+	}
+
+	tagPrefix := cfg.Get("TagPrefix")
+	if tagPrefix != "" {
+		res.KubernetesMetadata.TagPrefix = tagPrefix
+	} else {
+		res.KubernetesMetadata.TagPrefix = DefaultKubernetesMetadataTagPrefix
+	}
+
+	tagExpression := cfg.Get("TagExpression")
+	if tagExpression != "" {
+		res.KubernetesMetadata.TagExpression = tagExpression
+	} else {
+		res.KubernetesMetadata.TagExpression = DefaultKubernetesMetadataTagExpression
+	}
+
+	dropLogEntryWithoutK8sMetadata := cfg.Get("DropLogEntryWithoutK8sMetadata")
+	if dropLogEntryWithoutK8sMetadata != "" {
+		res.KubernetesMetadata.DropLogEntryWithoutK8sMetadata, err = strconv.ParseBool(dropLogEntryWithoutK8sMetadata)
+		if err != nil {
+			return nil, fmt.Errorf("invalid string DropLogEntryWithoutK8sMetadata: %v", err)
 		}
 	}
 
