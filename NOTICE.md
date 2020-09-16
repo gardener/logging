@@ -1,22 +1,13 @@
-## logging
-Copyright (c) 2018 SAP SE or an SAP affiliate company. All rights reserved.
+# Notices for Fluent-bit-to-loki output plugin
 
-## Seed Source
+This plugin extends [Grafana/Loki](https://github.com/grafana/loki) [fluent-bit output plugin v1.6.0](https://github.com/grafana/loki/tree/v1.6.0/cmd/fluent-bit) which aims to forward log messages from fluent-bit to Loki. It is maintained by SAP.
 
-The source code of this component was seeded based on a copy of the following files from kubernetes/kubernetes. 
+## Copyright
 
-Kubernetes.
-https://github.com/kubernetes/kubernetes/tree/release-1.10
-Copyright 2018 The Kubernetes Authors.   
-Apache 2 license (https://github.com/kubernetes/kubernetes/blob/release-1.10/LICENSE )
+All content is the property of the respective authors or their employers. For
+more information regarding authorship of content, please consult the listed
+source code repository logs.
 
-Release: 1.10.2.
-Commit-ID: e88f22ea631e50377151a73dd495dcb54d1e053b.
-Commit-Message:  Add/Update CHANGELOG-1.10.md for v1.10.2.
-To the left are the list of copied files -> and to the right the current location they are at.  
+## Modifications
 
-	cluster/addons/fluentd-elasticsearch/es-image/Dockerfile -> elasticsearch/Dockerfile
-	cluster/addons/fluentd-elasticsearch/es-image/run.sh -> elasticsearch/run.sh
-	cluster/addons/fluentd-elasticsearch/es-image/config/elasticsearch.yml -> elasticsearch/config/elasticsearch.yml
-	cluster/addons/fluentd-elasticsearch/es-image/config/log4j2.properties -> elasticsearch/config/log4j2.properties
-	cluster/addons/fluentd-elasticsearch/fluentd-es-image/Dockerfile -> fluentd-es/Dockerfile
+After coping the original plugin from [Grafana/Loki](https://github.com/grafana/loki/tree/v1.6.0/cmd/fluent-bit) the files, which was in one single directory, was splitted to different packages. Then a controller package was added. The controller use shared informer to watch for namespaces and process the CREATE, UPDATE, DELETE Events. The `loki.go` file was modified to implement a function for storing the new controller and to search for the dynamic host path in the currently processing log entry. The `config.go` was modified to parse additional properties needed for the new functionality. `loki.go` was split to `loki.go` and `utils.go` to separate methods from helper functions. `out_loki.go` was modified to initialize cluster kubernetes client and make a shared informer which will be passed to each controller.
