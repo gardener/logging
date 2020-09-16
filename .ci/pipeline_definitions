@@ -11,7 +11,7 @@ logging:
           fluent-bit-to-loki:
             registry: 'gcr-readwrite'
             image: 'eu.gcr.io/gardener-project/gardener/fluent-bit-to-loki'
-            dockerfile: 'fluent-bit-to-loki/Dockerfile'
+            dockerfile: './Dockerfile'
     steps:
       check:
         image: 'golang:1.12.1'
