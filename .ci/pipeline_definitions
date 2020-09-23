@@ -13,8 +13,6 @@ logging:
             image: 'eu.gcr.io/gardener-project/gardener/fluent-bit-to-loki'
             dockerfile: './Dockerfile'
     steps:
-      check:
-        image: 'golang:1.12.1'
       verify:
         image: 'golang:1.14.2'
   jobs:
