@@ -23,9 +23,11 @@ import (
 )
 
 const (
-	podName       = "pod_name"
-	namespaceName = "namespace_name"
-	containerName = "container_name"
+	podName            = "pod_name"
+	namespaceName      = "namespace_name"
+	containerName      = "container_name"
+	dockerID           = "docker_id"
+	subExpresionNumber = 5
 )
 
 // prevent base64-encoding []byte values (default json.Encoder rule) by
@@ -83,7 +85,7 @@ func autoLabels(records map[string]interface{}, kuberneteslbs model.LabelSet) er
 			for m, n := range v.(map[string]interface{}) {
 				kuberneteslbs[model.LabelName(replacer.Replace(m))] = model.LabelValue(fmt.Sprintf("%v", n))
 			}
-		case "docker_id", "pod_id", "annotations":
+		case "pod_id", "annotations":
 			// do nothing
 			continue
 		default:
@@ -101,7 +103,7 @@ func extractKubernetesMetadataFromTag(records map[string]interface{}, tagKey str
 	}
 
 	kubernetesMetaData := re.FindStringSubmatch(tag)
-	if len(kubernetesMetaData) != 4 {
+	if len(kubernetesMetaData) != subExpresionNumber {
 		return fmt.Errorf("invalid format for tag %v. The tag should be in format: %s", tag, re.String())
 	}
 
@@ -109,6 +111,7 @@ func extractKubernetesMetadataFromTag(records map[string]interface{}, tagKey str
 		podName:       kubernetesMetaData[1],
 		namespaceName: kubernetesMetaData[2],
 		containerName: kubernetesMetaData[3],
+		dockerID:      kubernetesMetaData[4],
 	}
 
 	return nil

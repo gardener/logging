@@ -495,6 +495,7 @@ var _ = Describe("Loki plugin utils", func() {
 						podName:       "cluster-autoscaler-65d4ccbb7d-w5kd2",
 						containerName: "cluster-autoscaler",
 						namespaceName: "shoot--i355448--local-shoot",
+						dockerID:      "a8bba03512b5dd378c620ab3707aec013f83bdb9abae08d347e1644b064ed35f",
 					},
 				},
 				err: nil,
