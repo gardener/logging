@@ -46,7 +46,7 @@ const (
 	// KvPairFormat represents key-value format for log line
 	KvPairFormat
 	// DefaultKubernetesMetadataTagExpression for extracting the kubernetes metadata from tag
-	DefaultKubernetesMetadataTagExpression = "\\.(.+?)_(.+?)_(.+)-.*\\.log"
+	DefaultKubernetesMetadataTagExpression = "\\.([^_]+)_([^_]+)_(.+)-([a-z0-9]{64})\\.log$"
 
 	// DefaultKubernetesMetadataTagKey represents the key for the tag in the entry
 	DefaultKubernetesMetadataTagKey = "tag"
