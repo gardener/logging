@@ -5,11 +5,9 @@ WORKDIR /go/src/github.com/gardener/logging
 COPY . .
 
 RUN  make plugin
-#############      fluent-bit       #############
-FROM fluent/fluent-bit:1.5.4 AS fluent-bit
+#############      carrier       #############
+FROM alpine:3.12.0 AS carrier
 
-COPY --from=builder /go/src/github.com/gardener/logging/build /fluent-bit/plugins
+COPY --from=builder /go/src/github.com/gardener/logging/build /source/plugins
 
 WORKDIR /
-
-ENTRYPOINT ["/fluent-bit/bin/fluent-bit"]
