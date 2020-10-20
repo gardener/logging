@@ -81,7 +81,7 @@ func (l *loki) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 	// Check if metadata is missing
 	if l.cfg.KubernetesMetadata.FallbackToTagWhenMetadataIsMissing {
 		if _, ok := records["kubernetes"]; !ok {
-			level.Warn(l.logger).Log("msg", fmt.Sprintf("kubernetes metadata is missing. Will try to extract it from the tag %q", l.cfg.KubernetesMetadata.TagKey), "records", fmt.Sprintf("%+v", records))
+			level.Debug(l.logger).Log("msg", fmt.Sprintf("kubernetes metadata is missing. Will try to extract it from the tag %q", l.cfg.KubernetesMetadata.TagKey), "records", fmt.Sprintf("%+v", records))
 			err := extractKubernetesMetadataFromTag(records, l.cfg.KubernetesMetadata.TagKey, l.extractKubernetesMetadataRegexp)
 			if err != nil {
 				level.Error(l.logger).Log("msg", err.Error(), "records", fmt.Sprintf("%+v", records))
