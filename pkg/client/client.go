@@ -97,7 +97,6 @@ func New(cfg client.Config, logger log.Logger) (client.Client, error) {
 }
 
 func (c *sortedClient) run() {
-
 	maxWaitCheckFrequency := c.batchWait / waitCheckFrequencyDelimiter
 	if maxWaitCheckFrequency < minWaitCheckFrequency {
 		maxWaitCheckFrequency = minWaitCheckFrequency

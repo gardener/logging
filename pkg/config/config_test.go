@@ -111,6 +111,10 @@ var _ = Describe("Config", func() {
 					TagPrefix:     DefaultKubernetesMetadataTagPrefix,
 					TagExpression: DefaultKubernetesMetadataTagExpression,
 				},
+				Metrics: MetricsConfig{
+					MetricsTickWindow:   DefaultMetricsTickWindow,
+					MetricsTickInterval: DefaultMetricsTickInterval,
+				},
 			},
 			false},
 		),
@@ -163,6 +167,10 @@ var _ = Describe("Config", func() {
 					TagKey:        DefaultKubernetesMetadataTagKey,
 					TagPrefix:     DefaultKubernetesMetadataTagPrefix,
 					TagExpression: DefaultKubernetesMetadataTagExpression,
+				},
+				Metrics: MetricsConfig{
+					MetricsTickWindow:   DefaultMetricsTickWindow,
+					MetricsTickInterval: DefaultMetricsTickInterval,
 				},
 			},
 			false},
@@ -228,6 +236,10 @@ var _ = Describe("Config", func() {
 					TagPrefix:     DefaultKubernetesMetadataTagPrefix,
 					TagExpression: DefaultKubernetesMetadataTagExpression,
 				},
+				Metrics: MetricsConfig{
+					MetricsTickWindow:   DefaultMetricsTickWindow,
+					MetricsTickInterval: DefaultMetricsTickInterval,
+				},
 			},
 			false},
 		),
@@ -289,6 +301,10 @@ var _ = Describe("Config", func() {
 					TagPrefix:     DefaultKubernetesMetadataTagPrefix,
 					TagExpression: DefaultKubernetesMetadataTagExpression,
 				},
+				Metrics: MetricsConfig{
+					MetricsTickWindow:   DefaultMetricsTickWindow,
+					MetricsTickInterval: DefaultMetricsTickInterval,
+				},
 			},
 			false},
 		),
@@ -345,6 +361,10 @@ var _ = Describe("Config", func() {
 					TagPrefix:     DefaultKubernetesMetadataTagPrefix,
 					TagExpression: DefaultKubernetesMetadataTagExpression,
 				},
+				Metrics: MetricsConfig{
+					MetricsTickWindow:   DefaultMetricsTickWindow,
+					MetricsTickInterval: DefaultMetricsTickInterval,
+				},
 			},
 			false},
 		),
@@ -398,6 +418,10 @@ var _ = Describe("Config", func() {
 					TagKey:        DefaultKubernetesMetadataTagKey,
 					TagPrefix:     DefaultKubernetesMetadataTagPrefix,
 					TagExpression: DefaultKubernetesMetadataTagExpression,
+				},
+				Metrics: MetricsConfig{
+					MetricsTickWindow:   DefaultMetricsTickWindow,
+					MetricsTickInterval: DefaultMetricsTickInterval,
 				},
 			},
 			false},
@@ -456,9 +480,70 @@ var _ = Describe("Config", func() {
 					TagPrefix:                          "testPrefix",
 					TagExpression:                      "testExpression",
 				},
+				Metrics: MetricsConfig{
+					MetricsTickWindow:   DefaultMetricsTickWindow,
+					MetricsTickInterval: DefaultMetricsTickInterval,
+				},
 			},
 			false},
 		),
+		Entry("with metrics  configuration", testArgs{
+			map[string]string{
+				"URL":                 "http://somewhere.com:3100/loki/api/v1/push",
+				"LineFormat":          "key_value",
+				"LogLevel":            "warn",
+				"Labels":              `{app="foo"}`,
+				"BatchWait":           "30",
+				"BatchSize":           "100",
+				"RemoveKeys":          "buzz,fuzz",
+				"LabelKeys":           "foo,bar",
+				"DropSingleKey":       "false",
+				"MetricsTickWindow":   "60",
+				"MetricsTickInterval": "5",
+			},
+			&Config{
+				LineFormat: KvPairFormat,
+				ClientConfig: client.Config{
+					URL:            somewhereURL,
+					TenantID:       "", // empty as not set in fluent-bit plugin config map
+					BatchSize:      100,
+					BatchWait:      30 * time.Second,
+					ExternalLabels: lokiflag.LabelSet{LabelSet: model.LabelSet{"app": "foo"}},
+					BackoffConfig: util.BackoffConfig{
+						MinBackoff: (1 * time.Second) / 2,
+						MaxBackoff: 300 * time.Second,
+						MaxRetries: 10,
+					},
+					Timeout: 10 * time.Second,
+				},
+				LogLevel:      warnLogLevel,
+				LabelKeys:     []string{"foo", "bar"},
+				RemoveKeys:    []string{"buzz", "fuzz"},
+				DropSingleKey: false,
+				BufferConfig: BufferConfig{
+					Buffer:     false,
+					BufferType: DefaultBufferConfig.BufferType,
+					DqueConfig: DqueConfig{
+						QueueDir:         DefaultDqueConfig.QueueDir,
+						QueueSegmentSize: DefaultDqueConfig.QueueSegmentSize,
+						QueueSync:        DefaultDqueConfig.QueueSync,
+						QueueName:        DefaultDqueConfig.QueueName,
+					},
+				},
+				DynamicHostRegex: "*",
+				KubernetesMetadata: KubernetesMetadataExtraction{
+					TagKey:        DefaultKubernetesMetadataTagKey,
+					TagPrefix:     DefaultKubernetesMetadataTagPrefix,
+					TagExpression: DefaultKubernetesMetadataTagExpression,
+				},
+				Metrics: MetricsConfig{
+					MetricsTickWindow:   60,
+					MetricsTickInterval: 5,
+				},
+			},
+			false},
+		),
+
 		Entry("bad url", testArgs{map[string]string{"URL": "::doh.com"}, nil, true}),
 		Entry("bad BatchWait", testArgs{map[string]string{"BatchWait": "a"}, nil, true}),
 		Entry("bad BatchSize", testArgs{map[string]string{"BatchSize": "a"}, nil, true}),
@@ -477,6 +562,8 @@ var _ = Describe("Config", func() {
 		Entry("bad QueueSync", testArgs{map[string]string{"QueueSegmentSize": "test"}, nil, true}),
 		Entry("bad FallbackToTagWhenMetadataIsMissing value", testArgs{map[string]string{"FallbackToTagWhenMetadataIsMissing": "a"}, nil, true}),
 		Entry("bad DropLogEntryWithoutK8sMetadata value", testArgs{map[string]string{"DropLogEntryWithoutK8sMetadata": "a"}, nil, true}),
+		Entry("bad MetricsTickWindow value", testArgs{map[string]string{"MetricsTickWindow": "a"}, nil, true}),
+		Entry("bad MetricsTickInterval value", testArgs{map[string]string{"MetricsTickInterval": "a"}, nil, true}),
 	)
 })
 

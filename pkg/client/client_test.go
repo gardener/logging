@@ -75,6 +75,10 @@ var _ = Describe("Client", func() {
 		DynamicHostPrefix: "http://loki.",
 		DynamicHostSuffix: ".svc:3100/loki/api/v1/push",
 		DynamicHostRegex:  "shoot--",
+		Metrics: config.MetricsConfig{
+			MetricsTickWindow:   60,
+			MetricsTickInterval: 30,
+		},
 	}
 
 	logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))

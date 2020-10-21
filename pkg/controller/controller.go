@@ -20,6 +20,7 @@ import (
 
 	client "github.com/gardener/logging/fluent-bit-to-loki/pkg/client"
 	"github.com/gardener/logging/fluent-bit-to-loki/pkg/config"
+	"github.com/gardener/logging/fluent-bit-to-loki/pkg/metrics"
 
 	extensioncontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
@@ -58,6 +59,9 @@ type controller struct {
 func NewController(informer cache.SharedIndexInformer, conf *config.Config, logger log.Logger) (Controller, error) {
 	decoder, err := extensioncontroller.NewGardenDecoder()
 	if err != nil {
+		if mError := metrics.ErrorsMetric.Add(1, metrics.ErrorCreateDecoder); mError != nil {
+			level.Error(logger).Log(mError)
+		}
 		level.Error(logger).Log("msg", "Can't make garden runtime decoder")
 		return nil, err
 	}
@@ -105,6 +109,9 @@ func (ctl *controller) Stop() {
 func (ctl *controller) addFunc(obj interface{}) {
 	cluster, ok := obj.(*extensionsv1alpha1.Cluster)
 	if !ok {
+		if mError := metrics.ErrorsMetric.Add(1, metrics.ErrorUpdateFuncNewNotACluster); mError != nil {
+			level.Error(ctl.logger).Log(mError)
+		}
 		level.Error(ctl.logger).Log(fmt.Sprintf("%v", obj), "is not a cluster")
 		return
 	}
@@ -117,12 +124,18 @@ func (ctl *controller) addFunc(obj interface{}) {
 func (ctl *controller) updateFunc(oldObj interface{}, newObj interface{}) {
 	oldCluster, ok := oldObj.(*extensionsv1alpha1.Cluster)
 	if !ok {
+		if mError := metrics.ErrorsMetric.Add(1, metrics.ErrorUpdateFuncOldNotACluster); mError != nil {
+			level.Error(ctl.logger).Log(mError)
+		}
 		level.Error(ctl.logger).Log(fmt.Sprintf("%v", oldObj), "is not a cluster")
 		return
 	}
 
 	newCluster, ok := newObj.(*extensionsv1alpha1.Cluster)
 	if !ok {
+		if mError := metrics.ErrorsMetric.Add(1, metrics.ErrorUpdateFuncNewNotACluster); mError != nil {
+			level.Error(ctl.logger).Log(mError)
+		}
 		level.Error(ctl.logger).Log(fmt.Sprintf("%v", newObj), "is not a cluster")
 		return
 	}
@@ -142,6 +155,9 @@ func (ctl *controller) updateFunc(oldObj interface{}, newObj interface{}) {
 func (ctl *controller) delFunc(obj interface{}) {
 	cluster, ok := obj.(*extensionsv1alpha1.Cluster)
 	if !ok {
+		if mError := metrics.ErrorsMetric.Add(1, metrics.ErrorDeleteFuncNotAcluster); mError != nil {
+			level.Error(ctl.logger).Log(mError)
+		}
 		level.Error(ctl.logger).Log(fmt.Sprintf("%v", obj), "is not a cluster")
 		return
 	}
@@ -155,6 +171,9 @@ func (ctl *controller) getClientConfig(namespace string) *config.Config {
 	url := fmt.Sprintf("%s%s%s", ctl.conf.DynamicHostPrefix, namespace, ctl.conf.DynamicHostSuffix)
 	err := clientURL.Set(url)
 	if err != nil {
+		if mError := metrics.ErrorsMetric.Add(1, metrics.ErrorFailedToParseURL); mError != nil {
+			level.Error(ctl.logger).Log(mError)
+		}
 		level.Error(ctl.logger).Log("failed to parse client URL", namespace, "error", err.Error())
 		return nil
 	}
@@ -169,6 +188,9 @@ func (ctl *controller) getClientConfig(namespace string) *config.Config {
 func (ctl *controller) matches(cluster *extensionsv1alpha1.Cluster) bool {
 	shoot, err := extensioncontroller.ShootFromCluster(ctl.decoder, cluster)
 	if err != nil {
+		if mError := metrics.ErrorsMetric.Add(1, metrics.ErrorCanNotExtractShoot); mError != nil {
+			level.Error(ctl.logger).Log(mError)
+		}
 		level.Error(ctl.logger).Log("Can't extract shoot from cluster ", fmt.Sprintf("%v", cluster.Name))
 		return false
 	}
@@ -188,6 +210,9 @@ func (ctl *controller) createClient(cluster *extensionsv1alpha1.Cluster) {
 
 	client, err := client.NewClient(clientConf, ctl.logger)
 	if err != nil {
+		if mError := metrics.ErrorsMetric.Add(1, metrics.ErrorFailedToMakeLokiClient); mError != nil {
+			level.Error(ctl.logger).Log(mError)
+		}
 		level.Error(ctl.logger).Log("failed to make new loki client for cluster", cluster.Name, "error", err.Error())
 		return
 	}

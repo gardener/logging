@@ -53,6 +53,12 @@ const (
 
 	// DefaultKubernetesMetadataTagPrefix represents the prefix of the entry's tag
 	DefaultKubernetesMetadataTagPrefix = "kubernetes\\.var\\.log\\.containers"
+
+	// DefaultMetricsTickWindow is the default metrics tick window
+	DefaultMetricsTickWindow = 3600
+
+	// DefaultMetricsTickInterval is the default metrics tick interval
+	DefaultMetricsTickInterval = 30
 )
 
 //Config holds all of the needet properties of the loki output plugin
@@ -72,6 +78,7 @@ type Config struct {
 	DynamicHostSuffix    string
 	DynamicHostRegex     string
 	KubernetesMetadata   KubernetesMetadataExtraction
+	Metrics              MetricsConfig
 }
 
 // BufferConfig contains the buffer settings
@@ -96,6 +103,12 @@ type KubernetesMetadataExtraction struct {
 	TagKey                             string
 	TagPrefix                          string
 	TagExpression                      string
+}
+
+// MetricsConfig holds the configurations for the metrics
+type MetricsConfig struct {
+	MetricsTickWindow   int
+	MetricsTickInterval int
 }
 
 // DefaultBufferConfig holds the configurations for using output buffer
@@ -366,6 +379,26 @@ func ParseConfig(cfg Getter) (*Config, error) {
 		if err != nil {
 			return nil, fmt.Errorf("invalid string DropLogEntryWithoutK8sMetadata: %v", err)
 		}
+	}
+
+	metricsTickWindow := cfg.Get("MetricsTickWindow")
+	if metricsTickWindow != "" {
+		res.Metrics.MetricsTickWindow, err = strconv.Atoi(metricsTickWindow)
+		if err != nil {
+			return nil, fmt.Errorf("cannot convert MetricsTickWindow %v to integer, error: %v", metricsTickWindow, err)
+		}
+	} else {
+		res.Metrics.MetricsTickWindow = DefaultMetricsTickWindow
+	}
+
+	metricsTickInterval := cfg.Get("MetricsTickInterval")
+	if metricsTickInterval != "" {
+		res.Metrics.MetricsTickInterval, err = strconv.Atoi(metricsTickInterval)
+		if err != nil {
+			return nil, fmt.Errorf("cannot convert MetricsTickInterval %v to integer, error: %v", metricsTickInterval, err)
+		}
+	} else {
+		res.Metrics.MetricsTickInterval = DefaultMetricsTickInterval
 	}
 
 	return res, nil

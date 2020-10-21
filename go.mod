@@ -16,7 +16,8 @@ require (
 	github.com/json-iterator/go v1.1.10
 	github.com/onsi/ginkgo v1.11.0
 	github.com/onsi/gomega v1.8.1
-	github.com/prometheus/common v0.10.0
+	github.com/prometheus/client_golang v1.8.0
+	github.com/prometheus/common v0.14.0
 	github.com/weaveworks/common v0.0.0-20200625145055-4b1847531bc9
 	golang.org/x/tools v0.0.0-20201105001634-bc3cf281b174 // indirect
 	k8s.io/apimachinery v0.18.6
@@ -31,6 +32,7 @@ replace (
 
 	github.com/Azure/go-autorest => github.com/Azure/go-autorest v13.3.0+incompatible
 	github.com/hpcloud/tail => github.com/grafana/tail v0.0.0-20191024143944-0b54ddf21fe7
+	github.com/prometheus/common => github.com/prometheus/common v0.10.0
 
 	golang.org/x/net v0.0.0-20190813000000-74dc4d7220e7 => golang.org/x/net v0.0.0-20190813141303-74dc4d7220e7
 	k8s.io/api => k8s.io/api v0.17.9

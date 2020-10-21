@@ -26,8 +26,14 @@ import (
 
 	"github.com/gardener/logging/fluent-bit-to-loki/pkg/config"
 	"github.com/gardener/logging/fluent-bit-to-loki/pkg/lokiplugin"
+	"github.com/gardener/logging/fluent-bit-to-loki/pkg/metrics"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
+)
+import (
+	"net/http"
+
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 var (
@@ -39,6 +45,12 @@ var (
 )
 
 func init() {
+	// metrics
+	go func() {
+		http.Handle("/metrics", promhttp.Handler())
+		http.ListenAndServe(":2021", nil)
+	}()
+
 	var logLevel logging.Level
 	_ = logLevel.Set("info")
 	logger = log.With(newLogger(logLevel), "ts", log.DefaultTimestampUTC, "caller", "main")
@@ -70,6 +82,9 @@ func FLBPluginRegister(ctx unsafe.Pointer) int {
 func FLBPluginInit(ctx unsafe.Pointer) int {
 	conf, err := config.ParseConfig(&pluginConfig{ctx: ctx})
 	if err != nil {
+		if mError := metrics.ErrorsMetric.Add(1, metrics.ErrorFLBPluginInit); mError != nil {
+			level.Error(logger).Log(mError)
+		}
 		level.Error(logger).Log("[flb-go]", "failed to launch", "error", err)
 		return output.FLB_ERROR
 	}
@@ -112,9 +127,14 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 	level.Info(paramLogger).Log("TagPrefix", fmt.Sprintf("%+v", conf.KubernetesMetadata.TagPrefix))
 	level.Info(paramLogger).Log("TagExpression", fmt.Sprintf("%+v", conf.KubernetesMetadata.TagExpression))
 	level.Info(paramLogger).Log("DropLogEntryWithoutK8sMetadata", fmt.Sprintf("%+v", conf.KubernetesMetadata.DropLogEntryWithoutK8sMetadata))
+	level.Info(paramLogger).Log("MetricsTickWindow", fmt.Sprintf("%+v", conf.Metrics.MetricsTickWindow))
+	level.Info(paramLogger).Log("MetricsTickInterval", fmt.Sprintf("%+v", conf.Metrics.MetricsTickInterval))
 
 	plugin, err := lokiplugin.NewPlugin(informer, conf, logger)
 	if err != nil {
+		if mError := metrics.ErrorsMetric.Add(1, metrics.ErrorNewPlugin); mError != nil {
+			level.Error(logger).Log(mError)
+		}
 		level.Error(logger).Log("newPlugin", err)
 		return output.FLB_ERROR
 	}
@@ -131,6 +151,9 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 func FLBPluginFlushCtx(ctx, data unsafe.Pointer, length C.int, _ *C.char) int {
 	plugin := output.FLBPluginGetContext(ctx).(lokiplugin.Loki)
 	if plugin == nil {
+		if mError := metrics.ErrorsMetric.Add(1, metrics.ErrorFLBPluginFlushCtx); mError != nil {
+			level.Error(logger).Log(mError)
+		}
 		level.Error(logger).Log("[flb-go]", "plugin not initialized")
 		return output.FLB_ERROR
 	}
@@ -180,6 +203,7 @@ func FLBPluginExit() int {
 		plugin.Close()
 	}
 	close(informerStopChan)
+	close(lokiplugin.StopChn)
 	return output.FLB_OK
 }
 
