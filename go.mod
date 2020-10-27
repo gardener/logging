@@ -18,6 +18,7 @@ require (
 	github.com/onsi/gomega v1.8.1
 	github.com/prometheus/common v0.10.0
 	github.com/weaveworks/common v0.0.0-20200625145055-4b1847531bc9
+	golang.org/x/tools v0.0.0-20201105001634-bc3cf281b174 // indirect
 	k8s.io/apimachinery v0.18.6
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/code-generator v0.18.3
