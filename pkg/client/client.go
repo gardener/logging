@@ -15,15 +15,22 @@
 package client
 
 import (
+	"sync"
 	"time"
 
+	"github.com/gardener/logging/fluent-bit-to-loki/pkg/batch"
 	"github.com/gardener/logging/fluent-bit-to-loki/pkg/buffer"
 	"github.com/gardener/logging/fluent-bit-to-loki/pkg/config"
 
 	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/log/level"
+	"github.com/grafana/loki/pkg/logproto"
 	"github.com/grafana/loki/pkg/promtail/client"
 	"github.com/prometheus/common/model"
+)
+
+const (
+	minWaitCheckFrequency       = 10 * time.Millisecond
+	waitCheckFrequencyDelimiter = 10
 )
 
 type newClientFunc func(cfg client.Config, logger log.Logger) (client.Client, error)
@@ -33,7 +40,7 @@ func NewClient(cfg *config.Config, logger log.Logger) (client.Client, error) {
 	var ncf newClientFunc
 
 	if cfg.ReplaceOutOfOrderTS {
-		ncf = newTimestampOrderingClient
+		ncf = New
 	} else {
 		ncf = client.New
 	}
@@ -44,55 +51,154 @@ func NewClient(cfg *config.Config, logger log.Logger) (client.Client, error) {
 	return ncf(cfg.ClientConfig, logger)
 }
 
-type clientWrapper struct {
-	url        string
-	lokiclient client.Client
-	lastTS     map[model.Fingerprint]time.Time
+type sortedClient struct {
 	logger     log.Logger
+	lokiclient client.Client
+	batch      *batch.Batch
+	batchWait  time.Duration
+	batchLock  sync.Mutex
+	batchSize  int
+	batchID    uint64
+	quit       chan struct{}
+	once       sync.Once
+	entries    chan entry
+	wg         sync.WaitGroup
 }
 
-// newTimestampOrderingClient make new promtail client where out of order timestamp
-// are overwritten with the last sent timestamp
-func newTimestampOrderingClient(cfg client.Config, logger log.Logger) (client.Client, error) {
+type entry struct {
+	labels model.LabelSet
+	logproto.Entry
+}
+
+// New makes a new Client.
+func New(cfg client.Config, logger log.Logger) (client.Client, error) {
+	batchWait := cfg.BatchWait
+	cfg.BatchWait = 5 * time.Second
+
 	lokiclient, err := client.New(cfg, logger)
 	if err != nil {
 		return nil, err
 	}
 
-	return &clientWrapper{
-		url:        cfg.URL.String(),
+	c := &sortedClient{
+		logger:     log.With(logger, "component", "client", "host", cfg.URL.Host),
 		lokiclient: lokiclient,
-		lastTS:     make(map[model.Fingerprint]time.Time),
-		logger:     logger,
-	}, nil
+		batchWait:  batchWait,
+		batchSize:  cfg.BatchSize,
+		batchID:    0,
+		batch:      batch.NewBatch(0),
+		quit:       make(chan struct{}),
+		entries:    make(chan entry),
+	}
+
+	c.wg.Add(1)
+	go c.run()
+	return c, nil
+}
+
+func (c *sortedClient) run() {
+
+	maxWaitCheckFrequency := c.batchWait / waitCheckFrequencyDelimiter
+	if maxWaitCheckFrequency < minWaitCheckFrequency {
+		maxWaitCheckFrequency = minWaitCheckFrequency
+	}
+
+	maxWaitCheck := time.NewTicker(maxWaitCheckFrequency)
+
+	defer func() {
+		if c.batch != nil {
+			c.sendBatch()
+		}
+		c.wg.Done()
+	}()
+
+	for {
+		select {
+		case <-c.quit:
+			c.sendBatch()
+			c.wg.Done()
+			return
+
+		case e := <-c.entries:
+
+			// If the batch doesn't exist yet, we create a new one with the entry
+			if c.batch == nil {
+				c.newBatch(e)
+				break
+			}
+
+			// If adding the entry to the batch will increase the size over the max
+			// size allowed, we do send the current batch and then create a new one
+			if c.batch.SizeBytesAfter(e.Line) > c.batchSize {
+				c.sendBatch()
+				c.newBatch(e)
+				break
+			}
+
+			// The max size of the batch isn't reached, so we can add the entry
+			c.addToBatch(e)
+
+		case <-maxWaitCheck.C:
+			// Send batche if max wait time has been reached
+
+			if !c.isBatchWaitExceeded() {
+				continue
+			}
+
+			c.sendBatch()
+		}
+	}
+}
+
+func (c *sortedClient) isBatchWaitExceeded() bool {
+	c.batchLock.Lock()
+	defer c.batchLock.Unlock()
+	return c.batch != nil && c.batch.Age() > c.batchWait
+}
+
+func (c *sortedClient) sendBatch() {
+	c.batchLock.Lock()
+	defer c.batchLock.Unlock()
+
+	if c.batch == nil {
+		return
+	}
+
+	c.batch.Sort()
+	for _, stream := range c.batch.Streams {
+		for _, entry := range stream.Entries {
+			_ = c.lokiclient.Handle(stream.Labels, entry.Timestamp, entry.Line)
+		}
+	}
+	c.batch = nil
+}
+
+func (c *sortedClient) newBatch(e entry) {
+	c.batchLock.Lock()
+	defer c.batchLock.Unlock()
+	if c.batch == nil {
+		c.batchID++
+		c.batch = batch.NewBatch(c.batchID)
+	}
+
+	c.batch.Add(e.labels.Clone(), e.Timestamp, e.Line)
+}
+
+func (c *sortedClient) addToBatch(e entry) {
+	c.newBatch(e)
+}
+
+// Stop the client.
+func (c *sortedClient) Stop() {
+	c.once.Do(func() { close(c.quit) })
+	c.wg.Wait()
 }
 
 // Handle implement EntryHandler; adds a new line to the next batch; send is async.
-// If entry timestamp is out of order it is overwrite with the last sent timestamp
-func (c *clientWrapper) Handle(ls model.LabelSet, t time.Time, s string) error {
-	key := ls.FastFingerprint()
-	lastTimeStamp, ok := c.lastTS[key]
-	if ok && t.Before(lastTimeStamp) {
-		diff := lastTimeStamp.Sub(t)
-		c.logOutOfOrderDifference(diff, "msg", "log entry out of order. Its timestamp is going to be overwritten", "difference", diff.String(), "LastTimestamp", lastTimeStamp.String(), "IncommingTimestamp", t.String(), "URL", c.url, "Stream", ls.String())
-		t = lastTimeStamp
-	}
-	c.lastTS[key] = t
-	return c.lokiclient.Handle(ls, t, s)
-}
-
-// Stop the client
-func (c *clientWrapper) Stop() {
-	c.lastTS = nil
-	c.lokiclient.Stop()
-}
-
-func (c *clientWrapper) logOutOfOrderDifference(timeDiff time.Duration, keyvals ...interface{}) {
-	if timeDiff.Seconds() < 1 {
-		level.Debug(c.logger).Log(keyvals...)
-	} else if timeDiff.Seconds() <= 5 {
-		level.Info(c.logger).Log(keyvals...)
-	} else {
-		level.Warn(c.logger).Log(keyvals...)
-	}
+func (c *sortedClient) Handle(ls model.LabelSet, t time.Time, s string) error {
+	c.entries <- entry{ls, logproto.Entry{
+		Timestamp: t,
+		Line:      s,
+	}}
+	return nil
 }
