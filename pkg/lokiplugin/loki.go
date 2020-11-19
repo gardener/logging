@@ -20,7 +20,12 @@ import (
 	bufferedclient "github.com/gardener/logging/fluent-bit-to-loki/pkg/client"
 	"github.com/gardener/logging/fluent-bit-to-loki/pkg/config"
 	controller "github.com/gardener/logging/fluent-bit-to-loki/pkg/controller"
+	"github.com/gardener/logging/fluent-bit-to-loki/pkg/metrics"
 	lokiclient "github.com/grafana/loki/pkg/promtail/client"
+)
+
+var (
+	StopChn = make(chan struct{})
 )
 
 // Loki plugin interface
@@ -40,9 +45,17 @@ type loki struct {
 
 // NewPlugin returns Loki output plugin
 func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger log.Logger) (Loki, error) {
+
 	var dynamicHostRegexp *regexp.Regexp
 	var extractKubernetesMetadataRegexp *regexp.Regexp
 	var ctl controller.Controller
+
+	// Run metrics
+	metricsInterval := cfg.Metrics.MetricsTickInterval
+	metricsWindow := cfg.Metrics.MetricsTickWindow
+	metricsIntervals := metricsWindow / metricsInterval
+	metrics.RegisterMetrics(metricsIntervals)
+	metrics.NewTimeWindow(StopChn, cfg.Metrics.MetricsTickInterval)
 
 	defaultLokiClient, err := bufferedclient.NewClient(cfg, logger)
 	if err != nil {
@@ -61,14 +74,16 @@ func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger lo
 		extractKubernetesMetadataRegexp = regexp.MustCompile(cfg.KubernetesMetadata.TagPrefix + cfg.KubernetesMetadata.TagExpression)
 	}
 
-	return &loki{
+	loki := &loki{
 		cfg:                             cfg,
 		defaultClient:                   defaultLokiClient,
 		dynamicHostRegexp:               dynamicHostRegexp,
 		extractKubernetesMetadataRegexp: extractKubernetesMetadataRegexp,
 		controller:                      ctl,
 		logger:                          logger,
-	}, nil
+	}
+
+	return loki, nil
 }
 
 // sendRecord send fluentbit records to loki as an entry.
@@ -84,9 +99,15 @@ func (l *loki) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 			level.Debug(l.logger).Log("msg", fmt.Sprintf("kubernetes metadata is missing. Will try to extract it from the tag %q", l.cfg.KubernetesMetadata.TagKey), "records", fmt.Sprintf("%+v", records))
 			err := extractKubernetesMetadataFromTag(records, l.cfg.KubernetesMetadata.TagKey, l.extractKubernetesMetadataRegexp)
 			if err != nil {
+				if mError := metrics.ErrorsMetric.Add(1, metrics.ErrorCanNotExtractMetadataFromTag); mError != nil {
+					level.Error(l.logger).Log(mError)
+				}
 				level.Error(l.logger).Log("msg", err.Error(), "records", fmt.Sprintf("%+v", records))
 				if l.cfg.KubernetesMetadata.DropLogEntryWithoutK8sMetadata {
 					level.Warn(l.logger).Log("msg", "kubernetes metadata is missing and the log entry will be dropped", "records", fmt.Sprintf("%+v", records))
+					if mError := metrics.MissingMetadataMetric.Add(1, metrics.MissingMetadataType); mError != nil {
+						level.Error(l.logger).Log(mError)
+					}
 					return nil
 				}
 			}
@@ -96,6 +117,9 @@ func (l *loki) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 	if l.cfg.AutoKubernetesLabels {
 		err := autoLabels(records, lbs)
 		if err != nil {
+			if mError := metrics.ErrorsMetric.Add(1, metrics.ErrorK8sLabelsNotFound); mError != nil {
+				level.Error(l.logger).Log(mError)
+			}
 			level.Error(l.logger).Log("msg", err.Error(), "records", fmt.Sprintf("%+v", records))
 		}
 	}
@@ -107,9 +131,20 @@ func (l *loki) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 	}
 
 	dynamicHostName := getDynamicHostName(records, l.cfg.DynamicHostPath)
+	host := dynamicHostName
+	if !l.isDynamicHost(host) {
+		host = "garden"
+	}
+
+	if mError := metrics.IncomingLogMetric.Add(1, host); mError != nil {
+		level.Error(l.logger).Log(mError)
+	}
 
 	removeKeys(records, append(l.cfg.LabelKeys, l.cfg.RemoveKeys...))
 	if len(records) == 0 {
+		if mError := metrics.DroptLogMetric.Add(1, host); mError != nil {
+			level.Error(l.logger).Log(mError)
+		}
 		return nil
 	}
 
@@ -117,6 +152,9 @@ func (l *loki) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 
 	if client == nil {
 		level.Debug(l.logger).Log("host", dynamicHostName, "issue", "could_not_find_client")
+		if mError := metrics.DroptLogMetric.Add(1, host); mError != nil {
+			level.Error(l.logger).Log(mError)
+		}
 		return nil
 	}
 
@@ -128,15 +166,28 @@ func (l *loki) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 
 	line, err := createLine(records, l.cfg.LineFormat)
 	if err != nil {
+		if mError := metrics.ErrorsMetric.Add(1, metrics.ErrorCreateLine); mError != nil {
+			level.Error(l.logger).Log(mError)
+		}
+
 		return fmt.Errorf("error creating line: %v", err)
 	}
 
 	err = l.send(client, lbs, ts, line, start)
 	if err != nil {
 		level.Error(l.logger).Log("msg", fmt.Sprintf("error sending record to Loki %v", dynamicHostName), "error", err)
+		if mError := metrics.ErrorsMetric.Add(1, metrics.ErrorSendRecordToLoki); mError != nil {
+			level.Error(l.logger).Log(mError)
+		}
+
+		return err
 	}
 
-	return err
+	if mError := metrics.PastSendRequestMetric.Add(1, host); mError != nil {
+		level.Error(l.logger).Log(mError)
+	}
+
+	return nil
 }
 
 func (l *loki) Close() {
