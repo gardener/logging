@@ -39,8 +39,6 @@ It also adds additional configurations that aim to improve plugin's performance 
 | TagPrefix | The prefix of the tag. In the prefix no metadata will be searched. The prefix must not contain group expression(`()`). | none
 | TagExpression | The regex expression which will be used for matching the metadata retrieved from the tag. It contains 3 group expressions (`()`): `pod name`, `namespace` and the `container name` | "\\.(.*)_(.*)_(.*)-.*\\.log"
 | DropLogEntryWithoutK8sMetadata | When metadata is missing for the log entry, it will be dropped | `false`
-| MetricsTickWindow | The time in which the metrics will be kept in seconds | `3600`
-| MetricsTickInterval | Update time for the metrics in seconds  | `30`
 
 
 ### Labels

@@ -24,7 +24,6 @@ import (
 	"github.com/weaveworks/common/logging"
 
 	"github.com/gardener/logging/fluent-bit-to-loki/pkg/config"
-	"github.com/gardener/logging/fluent-bit-to-loki/pkg/metrics"
 
 	lokiclient "github.com/grafana/loki/pkg/promtail/client"
 
@@ -143,7 +142,6 @@ var _ = Describe("Loki plugin", func() {
 				defaultClient: rec,
 				logger:        logger,
 			}
-			metrics.RegisterMetrics(10)
 			err := l.SendRecord(args.record, now)
 			if args.wantErr {
 				Expect(err).To(HaveOccurred())
