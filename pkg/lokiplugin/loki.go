@@ -50,13 +50,6 @@ func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger lo
 	var extractKubernetesMetadataRegexp *regexp.Regexp
 	var ctl controller.Controller
 
-	// Run metrics
-	metricsInterval := cfg.Metrics.MetricsTickInterval
-	metricsWindow := cfg.Metrics.MetricsTickWindow
-	metricsIntervals := metricsWindow / metricsInterval
-	metrics.RegisterMetrics(metricsIntervals)
-	metrics.NewTimeWindow(StopChn, cfg.Metrics.MetricsTickInterval)
-
 	defaultLokiClient, err := bufferedclient.NewClient(cfg, logger)
 	if err != nil {
 		return nil, err
@@ -99,15 +92,11 @@ func (l *loki) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 			level.Debug(l.logger).Log("msg", fmt.Sprintf("kubernetes metadata is missing. Will try to extract it from the tag %q", l.cfg.KubernetesMetadata.TagKey), "records", fmt.Sprintf("%+v", records))
 			err := extractKubernetesMetadataFromTag(records, l.cfg.KubernetesMetadata.TagKey, l.extractKubernetesMetadataRegexp)
 			if err != nil {
-				if mError := metrics.ErrorsMetric.Add(1, metrics.ErrorCanNotExtractMetadataFromTag); mError != nil {
-					level.Error(l.logger).Log(mError)
-				}
+				metrics.ErrorsCount.WithLabelValues(metrics.ErrorCanNotExtractMetadataFromTag).Inc()
 				level.Error(l.logger).Log("msg", err.Error(), "records", fmt.Sprintf("%+v", records))
 				if l.cfg.KubernetesMetadata.DropLogEntryWithoutK8sMetadata {
 					level.Warn(l.logger).Log("msg", "kubernetes metadata is missing and the log entry will be dropped", "records", fmt.Sprintf("%+v", records))
-					if mError := metrics.MissingMetadataMetric.Add(1, metrics.MissingMetadataType); mError != nil {
-						level.Error(l.logger).Log(mError)
-					}
+					metrics.MissingMetadataLogs.WithLabelValues(metrics.MissingMetadataType).Inc()
 					return nil
 				}
 			}
@@ -117,9 +106,7 @@ func (l *loki) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 	if l.cfg.AutoKubernetesLabels {
 		err := autoLabels(records, lbs)
 		if err != nil {
-			if mError := metrics.ErrorsMetric.Add(1, metrics.ErrorK8sLabelsNotFound); mError != nil {
-				level.Error(l.logger).Log(mError)
-			}
+			metrics.ErrorsCount.WithLabelValues(metrics.ErrorK8sLabelsNotFound).Inc()
 			level.Error(l.logger).Log("msg", err.Error(), "records", fmt.Sprintf("%+v", records))
 		}
 	}
@@ -136,15 +123,11 @@ func (l *loki) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 		host = "garden"
 	}
 
-	if mError := metrics.IncomingLogMetric.Add(1, host); mError != nil {
-		level.Error(l.logger).Log(mError)
-	}
+	metrics.IncomingLogs.WithLabelValues(host).Inc()
 
 	removeKeys(records, append(l.cfg.LabelKeys, l.cfg.RemoveKeys...))
 	if len(records) == 0 {
-		if mError := metrics.DroptLogMetric.Add(1, host); mError != nil {
-			level.Error(l.logger).Log(mError)
-		}
+		metrics.DroptLogs.WithLabelValues(host).Inc()
 		return nil
 	}
 
@@ -152,9 +135,8 @@ func (l *loki) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 
 	if client == nil {
 		level.Debug(l.logger).Log("host", dynamicHostName, "issue", "could_not_find_client")
-		if mError := metrics.DroptLogMetric.Add(1, host); mError != nil {
-			level.Error(l.logger).Log(mError)
-		}
+		metrics.DroptLogs.WithLabelValues(host).Inc()
+
 		return nil
 	}
 
@@ -166,9 +148,7 @@ func (l *loki) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 
 	line, err := createLine(records, l.cfg.LineFormat)
 	if err != nil {
-		if mError := metrics.ErrorsMetric.Add(1, metrics.ErrorCreateLine); mError != nil {
-			level.Error(l.logger).Log(mError)
-		}
+		metrics.ErrorsCount.WithLabelValues(metrics.ErrorCreateLine).Inc()
 
 		return fmt.Errorf("error creating line: %v", err)
 	}
@@ -176,16 +156,11 @@ func (l *loki) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 	err = l.send(client, lbs, ts, line, start)
 	if err != nil {
 		level.Error(l.logger).Log("msg", fmt.Sprintf("error sending record to Loki %v", dynamicHostName), "error", err)
-		if mError := metrics.ErrorsMetric.Add(1, metrics.ErrorSendRecordToLoki); mError != nil {
-			level.Error(l.logger).Log(mError)
-		}
+		metrics.ErrorsCount.WithLabelValues(metrics.ErrorSendRecordToLoki).Inc()
 
 		return err
 	}
-
-	if mError := metrics.PastSendRequestMetric.Add(1, host); mError != nil {
-		level.Error(l.logger).Log(mError)
-	}
+	metrics.PastSendRequests.WithLabelValues(host).Inc()
 
 	return nil
 }

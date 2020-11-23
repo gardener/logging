@@ -20,8 +20,7 @@ import (
 )
 
 var (
-	areMetricsRegistered bool
-	outputPluginNS       = "output_plugin"
+	outputPluginNS = "output_plugin"
 
 	// ErrorsCount is a prometheus which keeps number of the errors
 	ErrorsCount = promauto.NewCounterVec(prometheus.CounterOpts{
@@ -57,56 +56,4 @@ var (
 		Name:      "dropt_logs",
 		Help:      "Number of dropt logs by the output plugin",
 	}, []string{"host"})
-
-	// ErrorsMetric is a custom metric which keeps the errors count
-	ErrorsMetric OneLabelMetric
-
-	// MissingMetadataMetric is a custom metric which keeps missing metadata logs count
-	MissingMetadataMetric OneLabelMetric
-
-	// IncomingLogMetric is a custom metric which keeps the incoming logs count
-	IncomingLogMetric OneLabelMetric
-
-	// PastSendRequestMetric is a custom metric which keeps the past send requests count
-	PastSendRequestMetric OneLabelMetric
-
-	// DroptLogMetric is a custom metric which keeps dropt logs count
-	DroptLogMetric OneLabelMetric
-
-	oneLabelMetrics Metrics
 )
-
-// RegisterMetrics is a singletion function which registers the metrics
-func RegisterMetrics(intervals int) {
-
-	if !areMetricsRegistered {
-		lock.RLock()
-		if !areMetricsRegistered {
-			ErrorsMetric = OneLabelMetric{countVec: ErrorsCount, oneLabelMetric: make(map[string]*oneLabelMetricWrapper), intervals: intervals}
-			MissingMetadataMetric = OneLabelMetric{countVec: MissingMetadataLogs, oneLabelMetric: make(map[string]*oneLabelMetricWrapper), intervals: intervals}
-			IncomingLogMetric = OneLabelMetric{countVec: IncomingLogs, oneLabelMetric: make(map[string]*oneLabelMetricWrapper), intervals: intervals}
-			PastSendRequestMetric = OneLabelMetric{countVec: PastSendRequests, oneLabelMetric: make(map[string]*oneLabelMetricWrapper), intervals: intervals}
-			DroptLogMetric = OneLabelMetric{countVec: DroptLogs, oneLabelMetric: make(map[string]*oneLabelMetricWrapper), intervals: intervals}
-
-			oneLabelMetrics = Metrics{&ErrorsMetric, &MissingMetadataMetric, &IncomingLogMetric, &PastSendRequestMetric, &DroptLogMetric}
-		}
-		areMetricsRegistered = true
-		lock.RUnlock()
-	}
-}
-
-// Metrics is a slice with all custom metrics
-type Metrics []Metric
-
-// Update updates all metrics
-func (m Metrics) Update() {
-	for _, metric := range m {
-		metric.Update()
-	}
-}
-
-// Metric is an interface which all custom metrics should implement
-type Metric interface {
-	Update()
-	Add(logsCount int, labels ...string) error
-}

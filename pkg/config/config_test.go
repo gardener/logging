@@ -111,10 +111,6 @@ var _ = Describe("Config", func() {
 					TagPrefix:     DefaultKubernetesMetadataTagPrefix,
 					TagExpression: DefaultKubernetesMetadataTagExpression,
 				},
-				Metrics: MetricsConfig{
-					MetricsTickWindow:   DefaultMetricsTickWindow,
-					MetricsTickInterval: DefaultMetricsTickInterval,
-				},
 			},
 			false},
 		),
@@ -167,10 +163,6 @@ var _ = Describe("Config", func() {
 					TagKey:        DefaultKubernetesMetadataTagKey,
 					TagPrefix:     DefaultKubernetesMetadataTagPrefix,
 					TagExpression: DefaultKubernetesMetadataTagExpression,
-				},
-				Metrics: MetricsConfig{
-					MetricsTickWindow:   DefaultMetricsTickWindow,
-					MetricsTickInterval: DefaultMetricsTickInterval,
 				},
 			},
 			false},
@@ -236,10 +228,6 @@ var _ = Describe("Config", func() {
 					TagPrefix:     DefaultKubernetesMetadataTagPrefix,
 					TagExpression: DefaultKubernetesMetadataTagExpression,
 				},
-				Metrics: MetricsConfig{
-					MetricsTickWindow:   DefaultMetricsTickWindow,
-					MetricsTickInterval: DefaultMetricsTickInterval,
-				},
 			},
 			false},
 		),
@@ -301,10 +289,6 @@ var _ = Describe("Config", func() {
 					TagPrefix:     DefaultKubernetesMetadataTagPrefix,
 					TagExpression: DefaultKubernetesMetadataTagExpression,
 				},
-				Metrics: MetricsConfig{
-					MetricsTickWindow:   DefaultMetricsTickWindow,
-					MetricsTickInterval: DefaultMetricsTickInterval,
-				},
 			},
 			false},
 		),
@@ -361,10 +345,6 @@ var _ = Describe("Config", func() {
 					TagPrefix:     DefaultKubernetesMetadataTagPrefix,
 					TagExpression: DefaultKubernetesMetadataTagExpression,
 				},
-				Metrics: MetricsConfig{
-					MetricsTickWindow:   DefaultMetricsTickWindow,
-					MetricsTickInterval: DefaultMetricsTickInterval,
-				},
 			},
 			false},
 		),
@@ -418,10 +398,6 @@ var _ = Describe("Config", func() {
 					TagKey:        DefaultKubernetesMetadataTagKey,
 					TagPrefix:     DefaultKubernetesMetadataTagPrefix,
 					TagExpression: DefaultKubernetesMetadataTagExpression,
-				},
-				Metrics: MetricsConfig{
-					MetricsTickWindow:   DefaultMetricsTickWindow,
-					MetricsTickInterval: DefaultMetricsTickInterval,
 				},
 			},
 			false},
@@ -480,10 +456,6 @@ var _ = Describe("Config", func() {
 					TagPrefix:                          "testPrefix",
 					TagExpression:                      "testExpression",
 				},
-				Metrics: MetricsConfig{
-					MetricsTickWindow:   DefaultMetricsTickWindow,
-					MetricsTickInterval: DefaultMetricsTickInterval,
-				},
 			},
 			false},
 		),
@@ -536,10 +508,6 @@ var _ = Describe("Config", func() {
 					TagPrefix:     DefaultKubernetesMetadataTagPrefix,
 					TagExpression: DefaultKubernetesMetadataTagExpression,
 				},
-				Metrics: MetricsConfig{
-					MetricsTickWindow:   60,
-					MetricsTickInterval: 5,
-				},
 			},
 			false},
 		),
@@ -562,8 +530,6 @@ var _ = Describe("Config", func() {
 		Entry("bad QueueSync", testArgs{map[string]string{"QueueSegmentSize": "test"}, nil, true}),
 		Entry("bad FallbackToTagWhenMetadataIsMissing value", testArgs{map[string]string{"FallbackToTagWhenMetadataIsMissing": "a"}, nil, true}),
 		Entry("bad DropLogEntryWithoutK8sMetadata value", testArgs{map[string]string{"DropLogEntryWithoutK8sMetadata": "a"}, nil, true}),
-		Entry("bad MetricsTickWindow value", testArgs{map[string]string{"MetricsTickWindow": "a"}, nil, true}),
-		Entry("bad MetricsTickInterval value", testArgs{map[string]string{"MetricsTickInterval": "a"}, nil, true}),
 	)
 })
 
