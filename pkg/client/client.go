@@ -114,8 +114,6 @@ func (c *sortedClient) run() {
 	for {
 		select {
 		case <-c.quit:
-			c.sendBatch()
-			c.wg.Done()
 			return
 
 		case e := <-c.entries:
