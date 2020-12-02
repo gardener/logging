@@ -59,7 +59,7 @@ type controller struct {
 func NewController(informer cache.SharedIndexInformer, conf *config.Config, logger log.Logger) (Controller, error) {
 	decoder, err := extensioncontroller.NewGardenDecoder()
 	if err != nil {
-		metrics.ErrorsCount.WithLabelValues(metrics.ErrorCreateDecoder).Inc()
+		metrics.Errors.WithLabelValues(metrics.ErrorCreateDecoder).Inc()
 		level.Error(logger).Log("msg", "Can't make garden runtime decoder")
 		return nil, err
 	}
@@ -107,7 +107,7 @@ func (ctl *controller) Stop() {
 func (ctl *controller) addFunc(obj interface{}) {
 	cluster, ok := obj.(*extensionsv1alpha1.Cluster)
 	if !ok {
-		metrics.ErrorsCount.WithLabelValues(metrics.ErrorUpdateFuncNewNotACluster).Inc()
+		metrics.Errors.WithLabelValues(metrics.ErrorAddFuncNotACluster).Inc()
 		level.Error(ctl.logger).Log(fmt.Sprintf("%v", obj), "is not a cluster")
 		return
 	}
@@ -120,14 +120,14 @@ func (ctl *controller) addFunc(obj interface{}) {
 func (ctl *controller) updateFunc(oldObj interface{}, newObj interface{}) {
 	oldCluster, ok := oldObj.(*extensionsv1alpha1.Cluster)
 	if !ok {
-		metrics.ErrorsCount.WithLabelValues(metrics.ErrorUpdateFuncOldNotACluster).Inc()
+		metrics.Errors.WithLabelValues(metrics.ErrorUpdateFuncOldNotACluster).Inc()
 		level.Error(ctl.logger).Log(fmt.Sprintf("%v", oldObj), "is not a cluster")
 		return
 	}
 
 	newCluster, ok := newObj.(*extensionsv1alpha1.Cluster)
 	if !ok {
-		metrics.ErrorsCount.WithLabelValues(metrics.ErrorUpdateFuncNewNotACluster).Inc()
+		metrics.Errors.WithLabelValues(metrics.ErrorUpdateFuncNewNotACluster).Inc()
 		level.Error(ctl.logger).Log(fmt.Sprintf("%v", newObj), "is not a cluster")
 		return
 	}
@@ -147,7 +147,7 @@ func (ctl *controller) updateFunc(oldObj interface{}, newObj interface{}) {
 func (ctl *controller) delFunc(obj interface{}) {
 	cluster, ok := obj.(*extensionsv1alpha1.Cluster)
 	if !ok {
-		metrics.ErrorsCount.WithLabelValues(metrics.ErrorDeleteFuncNotAcluster).Inc()
+		metrics.Errors.WithLabelValues(metrics.ErrorDeleteFuncNotAcluster).Inc()
 		level.Error(ctl.logger).Log(fmt.Sprintf("%v", obj), "is not a cluster")
 		return
 	}
@@ -161,7 +161,7 @@ func (ctl *controller) getClientConfig(namespace string) *config.Config {
 	url := fmt.Sprintf("%s%s%s", ctl.conf.DynamicHostPrefix, namespace, ctl.conf.DynamicHostSuffix)
 	err := clientURL.Set(url)
 	if err != nil {
-		metrics.ErrorsCount.WithLabelValues(metrics.ErrorFailedToParseURL).Inc()
+		metrics.Errors.WithLabelValues(metrics.ErrorFailedToParseURL).Inc()
 		level.Error(ctl.logger).Log("failed to parse client URL", namespace, "error", err.Error())
 		return nil
 	}
@@ -176,7 +176,7 @@ func (ctl *controller) getClientConfig(namespace string) *config.Config {
 func (ctl *controller) matches(cluster *extensionsv1alpha1.Cluster) bool {
 	shoot, err := extensioncontroller.ShootFromCluster(ctl.decoder, cluster)
 	if err != nil {
-		metrics.ErrorsCount.WithLabelValues(metrics.ErrorCanNotExtractShoot).Inc()
+		metrics.Errors.WithLabelValues(metrics.ErrorCanNotExtractShoot).Inc()
 		level.Error(ctl.logger).Log("Can't extract shoot from cluster ", fmt.Sprintf("%v", cluster.Name))
 		return false
 	}
@@ -196,7 +196,7 @@ func (ctl *controller) createClient(cluster *extensionsv1alpha1.Cluster) {
 
 	client, err := client.NewClient(clientConf, ctl.logger)
 	if err != nil {
-		metrics.ErrorsCount.WithLabelValues(metrics.ErrorFailedToMakeLokiClient).Inc()
+		metrics.Errors.WithLabelValues(metrics.ErrorFailedToMakeLokiClient).Inc()
 		level.Error(ctl.logger).Log("failed to make new loki client for cluster", cluster.Name, "error", err.Error())
 		return
 	}
