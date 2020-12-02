@@ -82,7 +82,7 @@ func FLBPluginRegister(ctx unsafe.Pointer) int {
 func FLBPluginInit(ctx unsafe.Pointer) int {
 	conf, err := config.ParseConfig(&pluginConfig{ctx: ctx})
 	if err != nil {
-		metrics.ErrorsCount.WithLabelValues(metrics.ErrorFLBPluginInit).Inc()
+		metrics.Errors.WithLabelValues(metrics.ErrorFLBPluginInit).Inc()
 		level.Error(logger).Log("[flb-go]", "failed to launch", "error", err)
 		return output.FLB_ERROR
 	}
@@ -128,7 +128,7 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 
 	plugin, err := lokiplugin.NewPlugin(informer, conf, logger)
 	if err != nil {
-		metrics.ErrorsCount.WithLabelValues(metrics.ErrorNewPlugin).Inc()
+		metrics.Errors.WithLabelValues(metrics.ErrorNewPlugin).Inc()
 		level.Error(logger).Log("newPlugin", err)
 		return output.FLB_ERROR
 	}
@@ -145,7 +145,7 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 func FLBPluginFlushCtx(ctx, data unsafe.Pointer, length C.int, _ *C.char) int {
 	plugin := output.FLBPluginGetContext(ctx).(lokiplugin.Loki)
 	if plugin == nil {
-		metrics.ErrorsCount.WithLabelValues(metrics.ErrorFLBPluginFlushCtx).Inc()
+		metrics.Errors.WithLabelValues(metrics.ErrorFLBPluginFlushCtx).Inc()
 		level.Error(logger).Log("[flb-go]", "plugin not initialized")
 		return output.FLB_ERROR
 	}

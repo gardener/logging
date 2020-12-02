@@ -82,7 +82,7 @@ func (c *dqueClient) dequeuer() {
 			case dque.ErrQueueClosed:
 				return
 			default:
-				metrics.ErrorsCount.WithLabelValues(metrics.ErrorDequeuer).Inc()
+				metrics.Errors.WithLabelValues(metrics.ErrorDequeuer).Inc()
 				level.Error(c.logger).Log("msg", "error dequeuing record", "error", err, "queue", c.queue.Name)
 				continue
 			}
@@ -91,14 +91,14 @@ func (c *dqueClient) dequeuer() {
 		// Assert type of the response to an Item pointer so we can work with it
 		record, ok := entry.(*dqueEntry)
 		if !ok {
-			metrics.ErrorsCount.WithLabelValues(metrics.ErrorDequeuerNotValidType).Inc()
+			metrics.Errors.WithLabelValues(metrics.ErrorDequeuerNotValidType).Inc()
 			level.Error(c.logger).Log("msg", "error dequeued record is not an valid type", "queue", c.queue.Name)
 			continue
 		}
 
 		level.Debug(c.logger).Log("msg", "sending record to Loki", "url", c.url, "record", record.String())
 		if err := c.loki.Handle(record.LabelSet, record.TimeStamp, record.Line); err != nil {
-			metrics.ErrorsCount.WithLabelValues(metrics.ErrorDequeuerSendRecourd).Inc()
+			metrics.Errors.WithLabelValues(metrics.ErrorDequeuerSendRecord).Inc()
 			level.Error(c.logger).Log("msg", fmt.Sprintf("error sending record to Loki %s", c.url), "error", err)
 		}
 		level.Debug(c.logger).Log("msg", "successful sent record to Loki", "host", c.url, "record", record.String())

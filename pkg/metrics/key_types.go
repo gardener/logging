@@ -19,11 +19,11 @@ const (
 	ErrorFLBPluginInit                = "FLBPluginInit"
 	ErrorNewPlugin                    = "NewPlugin"
 	ErrorFLBPluginFlushCtx            = "FLBPluginFlushCtx"
-	ErrorDequeuer                     = "dequeuer"
+	ErrorDequeuer                     = "Dequeuer"
 	ErrorDequeuerNotValidType         = "DequeuerNotValidType"
-	ErrorDequeuerSendRecourd          = "DequeuerSendRecourd"
+	ErrorDequeuerSendRecord           = "DequeuerSendRecord"
 	ErrorCreateDecoder                = "CreateDecoder"
-	ErrorAddFuncNotACluter            = "AddFuncNotACluter"
+	ErrorAddFuncNotACluster           = "AddFuncNotACluster"
 	ErrorUpdateFuncOldNotACluster     = "UpdateFuncOldNotACluster"
 	ErrorUpdateFuncNewNotACluster     = "AddFuncNewNotACluster"
 	ErrorDeleteFuncNotAcluster        = "DeleteFuncNotAcluster"
@@ -35,5 +35,5 @@ const (
 	ErrorCreateLine                   = "CreateLine"
 	ErrorSendRecordToLoki             = "SendRecordToLoki"
 
-	MissingMetadataType = "kubernetes"
+	MissingMetadataType = "Kubernetes"
 )

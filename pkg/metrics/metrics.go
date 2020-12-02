@@ -20,40 +20,40 @@ import (
 )
 
 var (
-	outputPluginNS = "output_plugin"
+	namespace = "fluentbit_loki_gardener"
 
-	// ErrorsCount is a prometheus which keeps number of the errors
-	ErrorsCount = promauto.NewCounterVec(prometheus.CounterOpts{
-		Namespace: outputPluginNS,
-		Name:      "errors",
-		Help:      "Number of the errors",
+	// Errors is a prometheus which keeps total number of the errors
+	Errors = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: namespace,
+		Name:      "errors_total",
+		Help:      "Total number of the errors",
 	}, []string{"type"})
 
-	// MissingMetadataLogs is a prometheus metric which keeps the number of logs without metadata
-	MissingMetadataLogs = promauto.NewCounterVec(prometheus.CounterOpts{
-		Namespace: outputPluginNS,
-		Name:      "no_metadata",
-		Help:      "Number of logs without metadata",
+	// LogsWithoutMetadata is a prometheus metric which keeps the number of logs without metadata
+	LogsWithoutMetadata = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: namespace,
+		Name:      "logs_without_metadata_total",
+		Help:      "Total numbers of logs without metadata in the Loki Gardener",
 	}, []string{"type"})
 
 	// IncomingLogs is a prometheus metric which keeps the number of incoming logs
 	IncomingLogs = promauto.NewCounterVec(prometheus.CounterOpts{
-		Namespace: outputPluginNS,
-		Name:      "incoming_logs",
-		Help:      "Number of incoming logs",
+		Namespace: namespace,
+		Name:      "incoming_logs_total",
+		Help:      "Total number of incoming logs in the Loki Gardener",
 	}, []string{"host"})
 
-	// PastSendRequests is a prometheus metric which keeps past send requests
-	PastSendRequests = promauto.NewCounterVec(prometheus.CounterOpts{
-		Namespace: outputPluginNS,
-		Name:      "past_send_requests",
-		Help:      "Number of past send requests",
+	// ForwardedLogs is a prometheus metric which keeps forwarded logs to the Promtail Client
+	ForwardedLogs = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: namespace,
+		Name:      "forwarded_logs_total",
+		Help:      "Total number of the forwarded logs to Promtail client",
 	}, []string{"host"})
 
-	// DroptLogs is a prometheus metric which keeps the number of dropt logs by the output plugin
-	DroptLogs = promauto.NewCounterVec(prometheus.CounterOpts{
-		Namespace: outputPluginNS,
-		Name:      "dropt_logs",
-		Help:      "Number of dropt logs by the output plugin",
+	// DroppedLogs is a prometheus metric which keeps the number of dropt logs by the output plugin
+	DroppedLogs = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: namespace,
+		Name:      "dropped_logs_total",
+		Help:      "Total number of dropped logs by the output plugin",
 	}, []string{"host"})
 )
