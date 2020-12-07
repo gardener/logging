@@ -1,3 +1,6 @@
+![Logging Logo](images/logo/logging.png)
+
+
 # Fluent Bit output plugin
 
 This plugin extends [Grafana,s Fluent Bit output plugin](https://github.com/grafana/loki/tree/v1.6.0/cmd/fluent-bit) which aims to forward log messages from fluent-bit to Loki.
