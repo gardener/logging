@@ -99,26 +99,88 @@ To configure the Loki output plugin add this section to fluent-bit.conf
 
 ```properties
 [Output]
-    Name loki
+    Name gardenerloki
     Match kubernetes.*
     Url http://loki.garden.svc:3100/loki/api/v1/push
     LogLevel info
-    BatchWait 1
-    # (1sec)
+    BatchWait 40
     BatchSize 30720
-    # (30KiB)
+    Labels {test="fluent-bit-go"}
+    LineFormat json
+    ReplaceOutOfOrderTS true
+    DropSingleKey false
+    AutoKubernetesLabels false
+    LabelSelector gardener.cloud/role:shoot
+    RemoveKeys kubernetes,stream,time,tag
+    LabelMapPath /fluent-bit/etc/kubernetes_label_map.json
+    DynamicHostPath {"kubernetes": {"namespace_name": "namespace"}}
+    DynamicHostPrefix http://loki.
+    DynamicHostSuffix .svc:3100/loki/api/v1/push
+    DynamicHostRegex ^shoot-
+    MaxRetries 3
+    Timeout 10
+    MinBackoff 30
+    Buffer true
+    BufferType dque
+    QueueDir  /fluent-bit/buffers/operator
+    QueueSegmentSize 300
+    QueueSync normal
+    QueueName gardener-kubernetes-operator
+    FallbackToTagWhenMetadataIsMissing true
+    TagKey tag
+    DropLogEntryWithoutK8sMetadata true
+    TenantID operator
+```
+
+```properties
+[Output]
+    Name gardenerloki
+    Match {{ .Values.exposedComponentsTagPrefix }}.kubernetes.*
+    Url http://loki.garden.svc:3100/loki/api/v1/push
+    LogLevel info
+    BatchWait 40
+    BatchSize 30720
     Labels {test="fluent-bit-go", lang="Golang"}
     LineFormat json
     ReplaceOutOfOrderTS true
     DropSingleKey false
     AutoKubernetesLabels true
     LabelSelector gardener.cloud/role:shoot
-    RemoveKeys kubernetes,stream,type,time
+    RemoveKeys kubernetes,stream,type,time,tag
     LabelMapPath /fluent-bit/etc/kubernetes_label_map.json
     DynamicHostPath {"kubernetes": {"namespace_name": "namespace"}}
     DynamicHostPrefix http://loki.
     DynamicHostSuffix .svc:3100/loki/api/v1/push
-    DynamicHostRegex shoot--
+    DynamicHostRegex ^shoot-
+    MaxRetries 3
+    Timeout 10
+    MinBackoff 30
+    Buffer true
+    BufferType dque
+    QueueDir  /fluent-bit/buffers/user
+    QueueSegmentSize 300
+    QueueSync normal
+    QueueName gardener-kubernetes-user
+    FallbackToTagWhenMetadataIsMissing true
+    TagKey tag
+    DropLogEntryWithoutK8sMetadata true
+    TenantID user
+```
+
+```properties
+[Output]
+    Name gardenerloki
+    Match journald.*
+    Url http://loki.garden.svc:3100/loki/api/v1/push
+    LogLevel info
+    BatchWait 60
+    BatchSize 30720
+    Labels {test="fluent-bit-go"}
+    LineFormat json
+    ReplaceOutOfOrderTS true
+    DropSingleKey false
+    RemoveKeys kubernetes,stream,hostname,unit
+    LabelMapPath /fluent-bit/etc/systemd_label_map.json
     MaxRetries 3
     Timeout 10
     MinBackoff 30
@@ -127,41 +189,7 @@ To configure the Loki output plugin add this section to fluent-bit.conf
     QueueDir  /fluent-bit/buffers
     QueueSegmentSize 300
     QueueSync normal
-    QueueName gardener-kubernetes
-    FallbackToTagWhenMetadataIsMissing true
-    TagKey key
-    TagPrefix kubernetes.var.log.containers
-    TagExpression "\\.(.*)_(.*)_(.*)-.*\\.log"
-    DropLogEntryWithoutK8sMetadata true
-```
-
-```properties
-[Output]
-        Name loki
-        Match journald.*
-        Url http://loki.garden.svc:3100/loki/api/v1/push
-        LogLevel info
-        BatchWait 1
-        # (1sec)
-        BatchSize 30720
-        # (30KiB)
-        Labels {test="fluent-bit-go", lang="Golang"}
-        LineFormat json
-        ReplaceOutOfOrderTS true
-        DropSingleKey false
-        RemoveKeys kubernetes,stream,hostname,unit
-        LabelMapPath /fluent-bit/etc/systemd_label_map.json
-        MaxRetries 3
-        Timeout 10
-        MinBackoff 30
-        Buffer true
-        BufferType dque
-        QueueDir  /fluent-bit/buffers
-        QueueSegmentSize 300
-        QueueSync normal
-        QueueName gardener-journald
-        FallbackToTagWhenMetadataIsMissing false
-        DropLogEntryWithoutK8sMetadata false
+    QueueName gardener-journald
 ```
 A full [example configuration file](example.config) is also available in this repository.
 
