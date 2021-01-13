@@ -27,7 +27,7 @@ var _ = Describe("Batch", func() {
 	Describe("#NewBatch", func() {
 		It("Should create new batch", func() {
 			var id uint64 = 11
-			batch := NewBatch(id)
+			batch := NewBatch(id % 10)
 			Expect(batch).ToNot(BeNil())
 			Expect(batch.Streams).ToNot(BeNil())
 			Expect(batch.Bytes).To(Equal(0))

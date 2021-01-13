@@ -36,13 +36,14 @@ It also adds additional configurations that aim to improve plugin's performance 
 | QueueDir | Path to a directory where the buffer will store its records. | '/tmp/flb-storage/loki'
 | QueueSegmentSize | The number of entries stored into the buffer. | 500
 | QueueName | The name of the file where the log entries will be stored | `dque`
-| ReplaceOutOfOrderTS | Overwrites the timestamp of out of order records. Their timestamp will replaced with the timestamp of the last entry. | `false`
+| SortByTimestamp | Sort the logs by their timestamps. | `false`
 | FallbackToTagWhenMetadataIsMissing | If set the plugin will try to extract the `namespace`, `pod_name` and `container_name` from the tag when the metadata is missing | `false`
 | TagKey | The key of the record which holds the tag. The tag should not be nested | "tag"
 | TagPrefix | The prefix of the tag. In the prefix no metadata will be searched. The prefix must not contain group expression(`()`). | none
 | TagExpression | The regex expression which will be used for matching the metadata retrieved from the tag. It contains 3 group expressions (`()`): `pod name`, `namespace` and the `container name` | "\\.(.*)_(.*)_(.*)-.*\\.log"
 | DropLogEntryWithoutK8sMetadata | When metadata is missing for the log entry, it will be dropped | `false`
-
+| ControllerSyncTimeout | Time to wait for cluster object synchronization | 60 seconds
+| NumberOfBatchIDs | The number of id per batch. This increase the number of loki label streams | 10
 
 ### Labels
 
@@ -110,7 +111,7 @@ To configure the Loki output plugin add this section to fluent-bit.conf
     BatchSize 30720
     Labels {test="fluent-bit-go"}
     LineFormat json
-    ReplaceOutOfOrderTS true
+    SortByTimestamp true
     DropSingleKey false
     AutoKubernetesLabels false
     LabelSelector gardener.cloud/role:shoot
@@ -145,7 +146,7 @@ To configure the Loki output plugin add this section to fluent-bit.conf
     BatchSize 30720
     Labels {test="fluent-bit-go", lang="Golang"}
     LineFormat json
-    ReplaceOutOfOrderTS true
+    SortByTimestamp true
     DropSingleKey false
     AutoKubernetesLabels true
     LabelSelector gardener.cloud/role:shoot
@@ -180,7 +181,7 @@ To configure the Loki output plugin add this section to fluent-bit.conf
     BatchSize 30720
     Labels {test="fluent-bit-go"}
     LineFormat json
-    ReplaceOutOfOrderTS true
+    SortByTimestamp true
     DropSingleKey false
     RemoveKeys kubernetes,stream,hostname,unit
     LabelMapPath /fluent-bit/etc/systemd_label_map.json

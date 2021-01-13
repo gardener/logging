@@ -38,7 +38,7 @@ func NewBatch(id uint64) *Batch {
 		Streams:   make(map[string]*Stream),
 		Bytes:     0,
 		CreatedAt: time.Now(),
-		id:        id % 10,
+		id:        id,
 	}
 
 	return b

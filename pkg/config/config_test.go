@@ -73,7 +73,7 @@ var _ = Describe("Config", func() {
 				Expect(args.want.LineFormat).To(Equal(got.LineFormat))
 				//Expect(args.want.LogLevel).To(Equal(got.LogLevel))
 				Expect(args.want.RemoveKeys).To(Equal(got.RemoveKeys))
-				Expect(args.want.ReplaceOutOfOrderTS).To(Equal(got.ReplaceOutOfOrderTS))
+				Expect(args.want.SortByTimestamp).To(Equal(got.SortByTimestamp))
 				Expect(args.want.KubernetesMetadata).To(Equal(got.KubernetesMetadata))
 			}
 		},
@@ -116,17 +116,17 @@ var _ = Describe("Config", func() {
 		),
 		Entry("setting values", testArgs{
 			map[string]string{
-				"URL":                 "http://somewhere.com:3100/loki/api/v1/push",
-				"TenantID":            "my-tenant-id",
-				"LineFormat":          "key_value",
-				"LogLevel":            "warn",
-				"Labels":              `{app="foo"}`,
-				"BatchWait":           "30",
-				"BatchSize":           "100",
-				"RemoveKeys":          "buzz,fuzz",
-				"LabelKeys":           "foo,bar",
-				"DropSingleKey":       "false",
-				"ReplaceOutOfOrderTS": "true",
+				"URL":             "http://somewhere.com:3100/loki/api/v1/push",
+				"TenantID":        "my-tenant-id",
+				"LineFormat":      "key_value",
+				"LogLevel":        "warn",
+				"Labels":          `{app="foo"}`,
+				"BatchWait":       "30",
+				"BatchSize":       "100",
+				"RemoveKeys":      "buzz,fuzz",
+				"LabelKeys":       "foo,bar",
+				"DropSingleKey":   "false",
+				"SortByTimestamp": "true",
 			},
 			&Config{
 				LineFormat: KvPairFormat,
@@ -153,12 +153,12 @@ var _ = Describe("Config", func() {
 						QueueName:        DefaultDqueConfig.QueueName,
 					},
 				},
-				ReplaceOutOfOrderTS: true,
-				LogLevel:            warnLogLevel,
-				LabelKeys:           []string{"foo", "bar"},
-				RemoveKeys:          []string{"buzz", "fuzz"},
-				DropSingleKey:       false,
-				DynamicHostRegex:    "*",
+				SortByTimestamp:  true,
+				LogLevel:         warnLogLevel,
+				LabelKeys:        []string{"foo", "bar"},
+				RemoveKeys:       []string{"buzz", "fuzz"},
+				DropSingleKey:    false,
+				DynamicHostRegex: "*",
 				KubernetesMetadata: KubernetesMetadataExtraction{
 					TagKey:        DefaultKubernetesMetadataTagKey,
 					TagPrefix:     DefaultKubernetesMetadataTagPrefix,
@@ -522,7 +522,7 @@ var _ = Describe("Config", func() {
 		Entry("bad labelmap file", testArgs{map[string]string{"LabelMapPath": "a"}, nil, true}),
 		Entry("bad Dynamic Host Path", testArgs{map[string]string{"DynamicHostPath": "a"}, nil, true}),
 		Entry("bad Buffer ", testArgs{map[string]string{"Buffer": "a"}, nil, true}),
-		Entry("bad ReplaceOutOfOrderTS value", testArgs{map[string]string{"ReplaceOutOfOrderTS": "3"}, nil, true}),
+		Entry("bad SortByTimestamp value", testArgs{map[string]string{"SortByTimestamp": "3"}, nil, true}),
 		Entry("bad MaxRetries value", testArgs{map[string]string{"MaxRetries": "a"}, nil, true}),
 		Entry("bad Timeout value", testArgs{map[string]string{"Timeout": "a"}, nil, true}),
 		Entry("bad MinBackoff value", testArgs{map[string]string{"MinBackoff": "a"}, nil, true}),

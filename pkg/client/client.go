@@ -39,8 +39,10 @@ type newClientFunc func(cfg client.Config, logger log.Logger) (client.Client, er
 func NewClient(cfg *config.Config, logger log.Logger) (client.Client, error) {
 	var ncf newClientFunc
 
-	if cfg.ReplaceOutOfOrderTS {
-		ncf = New
+	if cfg.SortByTimestamp {
+		ncf = func(c client.Config, logger log.Logger) (client.Client, error) {
+			return New(c, cfg.NumberOfBatchIDs, logger)
+		}
 	} else {
 		ncf = client.New
 	}
@@ -52,17 +54,18 @@ func NewClient(cfg *config.Config, logger log.Logger) (client.Client, error) {
 }
 
 type sortedClient struct {
-	logger     log.Logger
-	lokiclient client.Client
-	batch      *batch.Batch
-	batchWait  time.Duration
-	batchLock  sync.Mutex
-	batchSize  int
-	batchID    uint64
-	quit       chan struct{}
-	once       sync.Once
-	entries    chan entry
-	wg         sync.WaitGroup
+	logger           log.Logger
+	lokiclient       client.Client
+	batch            *batch.Batch
+	batchWait        time.Duration
+	batchLock        sync.Mutex
+	batchSize        int
+	batchID          uint64
+	numberOfBatchIDs uint64
+	quit             chan struct{}
+	once             sync.Once
+	entries          chan entry
+	wg               sync.WaitGroup
 }
 
 type entry struct {
@@ -71,7 +74,7 @@ type entry struct {
 }
 
 // New makes a new Client.
-func New(cfg client.Config, logger log.Logger) (client.Client, error) {
+func New(cfg client.Config, numberOfBatchIds uint64, logger log.Logger) (client.Client, error) {
 	batchWait := cfg.BatchWait
 	cfg.BatchWait = 5 * time.Second
 
@@ -81,14 +84,15 @@ func New(cfg client.Config, logger log.Logger) (client.Client, error) {
 	}
 
 	c := &sortedClient{
-		logger:     log.With(logger, "component", "client", "host", cfg.URL.Host),
-		lokiclient: lokiclient,
-		batchWait:  batchWait,
-		batchSize:  cfg.BatchSize,
-		batchID:    0,
-		batch:      batch.NewBatch(0),
-		quit:       make(chan struct{}),
-		entries:    make(chan entry),
+		logger:           log.With(logger, "component", "client", "host", cfg.URL.Host),
+		lokiclient:       lokiclient,
+		batchWait:        batchWait,
+		batchSize:        cfg.BatchSize,
+		batchID:          0,
+		numberOfBatchIDs: numberOfBatchIds,
+		batch:            batch.NewBatch(0),
+		quit:             make(chan struct{}),
+		entries:          make(chan entry),
 	}
 
 	c.wg.Add(1)
@@ -175,7 +179,7 @@ func (c *sortedClient) newBatch(e entry) {
 	defer c.batchLock.Unlock()
 	if c.batch == nil {
 		c.batchID++
-		c.batch = batch.NewBatch(c.batchID)
+		c.batch = batch.NewBatch(c.batchID % c.numberOfBatchIDs)
 	}
 
 	c.batch.Add(e.labels.Clone(), e.Timestamp, e.Line)
