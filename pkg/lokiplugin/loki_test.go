@@ -74,11 +74,11 @@ type fakeController struct {
 	clients map[string]lokiclient.Client
 }
 
-func (ctl *fakeController) GetClient(name string) lokiclient.Client {
+func (ctl *fakeController) GetClient(name string) (lokiclient.Client, bool) {
 	if client, ok := ctl.clients[name]; ok {
-		return client
+		return client, false
 	}
-	return nil
+	return nil, false
 }
 
 func (ctl *fakeController) Stop() {}

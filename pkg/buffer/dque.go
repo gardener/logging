@@ -107,8 +107,11 @@ func (c *dqueClient) dequeuer() {
 
 // Stop the client
 func (c *dqueClient) Stop() {
-	c.once.Do(func() { c.queue.Close() })
-	c.loki.Stop()
+	c.once.Do(func() {
+		c.queue.Close()
+		c.loki.Stop()
+	})
+
 }
 
 // Handle implement EntryHandler; adds a new line to the next batch; send is async.

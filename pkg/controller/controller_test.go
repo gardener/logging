@@ -66,45 +66,36 @@ var _ = Describe("Controller", func() {
 		}
 
 		It("Should return existing client", func() {
-			c := ctl.GetClient("shoot--dev--test1")
+			c, _ := ctl.GetClient("shoot--dev--test1")
 			Expect(c).ToNot(BeNil())
 		})
 
-		It("Sould return nil when client name is empty", func() {
-			c := ctl.GetClient("")
+		It("Should return nil when client name is empty", func() {
+			c, _ := ctl.GetClient("")
 			Expect(c).To(BeNil())
 		})
 
-		It("Sould not return client for not existing one", func() {
-			c := ctl.GetClient("shoot--dev--notexists")
+		It("Should not return client for not existing one", func() {
+			c, _ := ctl.GetClient("shoot--dev--notexists")
 			Expect(c).To(BeNil())
 		})
 	})
 
 	Describe("#Stop", func() {
+		shootDevTest1 := &fakeLokiClient{}
+		shootDevTest2 := &fakeLokiClient{}
 		ctl := &controller{
 			clients: map[string]lokiclient.Client{
-				"shoot--dev--test1": &fakeLokiClient{},
-				"shoot--dev--test2": &fakeLokiClient{},
+				"shoot--dev--test1": shootDevTest1,
+				"shoot--dev--test2": shootDevTest2,
 			},
-			stopChn: make(chan struct{}),
 		}
-		//errorChan := make(chan struct{})
+
 		It("Should stops propperly ", func() {
 			ctl.Stop()
-
-			select {
-			case <-ctl.stopChn:
-				for k, v := range ctl.clients {
-					err := v.Handle(nil, time.Time{}, k)
-					Expect(err).To(HaveOccurred())
-				}
-				return
-			default:
-				err := fmt.Errorf("Stop controller was not triggered")
-				Expect(err).ToNot(HaveOccurred())
-				return
-			}
+			Expect(ctl.clients).To(BeNil())
+			Expect(shootDevTest1.isStopped).To(BeTrue())
+			Expect(shootDevTest2.isStopped).To(BeTrue())
 		})
 	})
 	Describe("Event functions", func() {
@@ -187,7 +178,6 @@ var _ = Describe("Controller", func() {
 			}
 			ctl = &controller{
 				clients: make(map[string]lokiclient.Client),
-				stopChn: make(chan struct{}),
 				conf:    conf,
 				decoder: decoder,
 				logger:  logger,

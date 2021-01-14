@@ -24,10 +24,6 @@ import (
 	lokiclient "github.com/grafana/loki/pkg/promtail/client"
 )
 
-var (
-	StopChn = make(chan struct{})
-)
-
 // Loki plugin interface
 type Loki interface {
 	SendRecord(r map[interface{}]interface{}, ts time.Time) error
@@ -174,7 +170,10 @@ func (l *loki) Close() {
 
 func (l *loki) getClient(dynamicHosName string) lokiclient.Client {
 	if l.isDynamicHost(dynamicHosName) && l.controller != nil {
-		return l.controller.GetClient(dynamicHosName)
+		if c, isStopped := l.controller.GetClient(dynamicHosName); !isStopped {
+			return c
+		}
+		return nil
 	}
 
 	return l.defaultClient

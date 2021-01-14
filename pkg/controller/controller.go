@@ -17,6 +17,7 @@ package controller
 import (
 	"fmt"
 	"sync"
+	"time"
 
 	client "github.com/gardener/logging/fluent-bit-to-loki/pkg/client"
 	"github.com/gardener/logging/fluent-bit-to-loki/pkg/config"
@@ -42,15 +43,14 @@ const (
 // Controller represent a k8s controller watching for resources and
 // create Loki clients base on them
 type Controller interface {
-	GetClient(name string) lokiclient.Client
+	GetClient(name string) (lokiclient.Client, bool)
 	Stop()
 }
-
 type controller struct {
 	lock    sync.RWMutex
 	clients map[string]lokiclient.Client
 	conf    *config.Config
-	stopChn chan struct{}
+	once    sync.Once
 	decoder runtime.Decoder
 	logger  log.Logger
 }
@@ -66,7 +66,6 @@ func NewController(informer cache.SharedIndexInformer, conf *config.Config, logg
 
 	controller := &controller{
 		clients: make(map[string]lokiclient.Client, expectedActiveClusters),
-		stopChn: make(chan struct{}),
 		conf:    conf,
 		decoder: decoder,
 		logger:  logger,
@@ -78,37 +77,51 @@ func NewController(informer cache.SharedIndexInformer, conf *config.Config, logg
 		UpdateFunc: controller.updateFunc,
 	})
 
-	if !cache.WaitForCacheSync(controller.stopChn, informer.HasSynced) {
+	stopChan := make(chan struct{})
+	time.AfterFunc(conf.CtlSyncTimeout, func() {
+		close(stopChan)
+	})
+
+	if !cache.WaitForCacheSync(stopChan, informer.HasSynced) {
 		return nil, fmt.Errorf("failed to wait for caches to sync")
 	}
 
 	return controller, nil
 }
 
-func (ctl *controller) GetClient(name string) lokiclient.Client {
+// GetClient search a client with <name> and returned if found.
+// In case the controller is closed it returns true as second return value.
+func (ctl *controller) GetClient(name string) (lokiclient.Client, bool) {
 	ctl.lock.RLocker().Lock()
 	defer ctl.lock.RLocker().Unlock()
 
-	if client, ok := ctl.clients[name]; ok {
-		return client
+	if ctl.isStopped() {
+		return nil, true
 	}
-	return nil
+
+	if client, ok := ctl.clients[name]; ok {
+		return client, false
+	}
+
+	return nil, false
 }
 
 func (ctl *controller) Stop() {
-	ctl.lock.Lock()
-	defer ctl.lock.Unlock()
-	close(ctl.stopChn)
-	for _, client := range ctl.clients {
-		client.Stop()
-	}
+	ctl.once.Do(func() {
+		ctl.lock.Lock()
+		defer ctl.lock.Unlock()
+		for _, client := range ctl.clients {
+			client.Stop()
+		}
+		ctl.clients = nil
+	})
 }
 
 func (ctl *controller) addFunc(obj interface{}) {
 	cluster, ok := obj.(*extensionsv1alpha1.Cluster)
 	if !ok {
 		metrics.Errors.WithLabelValues(metrics.ErrorAddFuncNotACluster).Inc()
-		level.Error(ctl.logger).Log(fmt.Sprintf("%v", obj), "is not a cluster")
+		level.Error(ctl.logger).Log("msg", fmt.Sprintf("%v is not a cluster", obj))
 		return
 	}
 
@@ -121,14 +134,14 @@ func (ctl *controller) updateFunc(oldObj interface{}, newObj interface{}) {
 	oldCluster, ok := oldObj.(*extensionsv1alpha1.Cluster)
 	if !ok {
 		metrics.Errors.WithLabelValues(metrics.ErrorUpdateFuncOldNotACluster).Inc()
-		level.Error(ctl.logger).Log(fmt.Sprintf("%v", oldObj), "is not a cluster")
+		level.Error(ctl.logger).Log("msg", fmt.Sprintf("%v is not a cluster", oldCluster))
 		return
 	}
 
 	newCluster, ok := newObj.(*extensionsv1alpha1.Cluster)
 	if !ok {
 		metrics.Errors.WithLabelValues(metrics.ErrorUpdateFuncNewNotACluster).Inc()
-		level.Error(ctl.logger).Log(fmt.Sprintf("%v", newObj), "is not a cluster")
+		level.Error(ctl.logger).Log("msg", fmt.Sprintf("%v is not a cluster", newCluster))
 		return
 	}
 
@@ -148,7 +161,7 @@ func (ctl *controller) delFunc(obj interface{}) {
 	cluster, ok := obj.(*extensionsv1alpha1.Cluster)
 	if !ok {
 		metrics.Errors.WithLabelValues(metrics.ErrorDeleteFuncNotAcluster).Inc()
-		level.Error(ctl.logger).Log(fmt.Sprintf("%v", obj), "is not a cluster")
+		level.Error(ctl.logger).Log("msg", fmt.Sprintf("%v is not a cluster", obj))
 		return
 	}
 
@@ -162,7 +175,7 @@ func (ctl *controller) getClientConfig(namespace string) *config.Config {
 	err := clientURL.Set(url)
 	if err != nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorFailedToParseURL).Inc()
-		level.Error(ctl.logger).Log("failed to parse client URL", namespace, "error", err.Error())
+		level.Error(ctl.logger).Log("msg", fmt.Sprintf("failed to parse client URL  for %v", namespace), "error", err.Error())
 		return nil
 	}
 
@@ -177,7 +190,7 @@ func (ctl *controller) matches(cluster *extensionsv1alpha1.Cluster) bool {
 	shoot, err := extensioncontroller.ShootFromCluster(ctl.decoder, cluster)
 	if err != nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorCanNotExtractShoot).Inc()
-		level.Error(ctl.logger).Log("Can't extract shoot from cluster ", fmt.Sprintf("%v", cluster.Name))
+		level.Error(ctl.logger).Log("msg", fmt.Sprintf("can't extract shoot from cluster %v", cluster.Name))
 		return false
 	}
 
@@ -197,18 +210,27 @@ func (ctl *controller) createClient(cluster *extensionsv1alpha1.Cluster) {
 	client, err := client.NewClient(clientConf, ctl.logger)
 	if err != nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorFailedToMakeLokiClient).Inc()
-		level.Error(ctl.logger).Log("failed to make new loki client for cluster", cluster.Name, "error", err.Error())
+		level.Error(ctl.logger).Log("msg", fmt.Sprintf("failed to make new loki client for cluster %v", cluster.Name), "error", err.Error())
 		return
 	}
 
-	level.Info(ctl.logger).Log("Add", "client", "cluster", cluster.Name)
+	level.Info(ctl.logger).Log("msg", fmt.Sprintf("Add client for cluster %v", cluster.Name))
 	ctl.lock.Lock()
 	defer ctl.lock.Unlock()
+
+	if ctl.isStopped() {
+		return
+	}
 	ctl.clients[cluster.Name] = client
 }
 
 func (ctl *controller) deleteClient(cluster *extensionsv1alpha1.Cluster) {
 	ctl.lock.Lock()
+
+	if ctl.isStopped() {
+		ctl.lock.Unlock()
+		return
+	}
 
 	client, ok := ctl.clients[cluster.Name]
 	if ok && client != nil {
@@ -217,10 +239,14 @@ func (ctl *controller) deleteClient(cluster *extensionsv1alpha1.Cluster) {
 
 	ctl.lock.Unlock()
 	if ok && client != nil {
-		level.Info(ctl.logger).Log("Delete", "client", "cluster", cluster.Name)
+		level.Info(ctl.logger).Log("msg", fmt.Sprintf("Delete client for cluster %v", cluster.Name))
 		client.Stop()
 	}
 
+}
+
+func (ctl *controller) isStopped() bool {
+	return ctl.clients == nil
 }
 
 func isShootInHibernation(shoot *gardencorev1beta1.Shoot) bool {

@@ -60,8 +60,10 @@ type Config struct {
 	ClientConfig         client.Config
 	BufferConfig         BufferConfig
 	LogLevel             logging.Level
+	CtlSyncTimeout       time.Duration
 	AutoKubernetesLabels bool
-	ReplaceOutOfOrderTS  bool
+	SortByTimestamp      bool
+	NumberOfBatchIDs     uint64
 	RemoveKeys           []string
 	LabelKeys            []string
 	LineFormat           Format
@@ -140,7 +142,12 @@ func ParseConfig(cfg Getter) (*Config, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse BatchWait: %s", batchWait)
 		}
-		res.ClientConfig.BatchWait = time.Duration(batchWaitValue) * time.Second
+		if batchWaitValue > 0 {
+			res.ClientConfig.BatchWait = time.Duration(batchWaitValue) * time.Second
+		} else {
+			return nil, fmt.Errorf("Invalid value for BatchWait: %s", batchWait)
+		}
+
 	}
 
 	batchSize := cfg.Get("BatchSize")
@@ -150,6 +157,22 @@ func ParseConfig(cfg Getter) (*Config, error) {
 			return nil, fmt.Errorf("failed to parse BatchSize: %s", batchSize)
 		}
 		res.ClientConfig.BatchSize = batchSizeValue
+	}
+
+	ctlSyncTimeout := cfg.Get("ControllerSyncTimeout")
+	if ctlSyncTimeout != "" {
+		ctlSyncTimeoutValue, err := strconv.Atoi(ctlSyncTimeout)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse ControllerSyncTimeout: %s", ctlSyncTimeout)
+		}
+		if ctlSyncTimeoutValue > 20 {
+			res.CtlSyncTimeout = time.Duration(ctlSyncTimeoutValue) * time.Second
+		} else {
+			res.CtlSyncTimeout = 20 * time.Second
+		}
+
+	} else {
+		res.CtlSyncTimeout = 60 * time.Second
 	}
 
 	labels := cfg.Get("Labels")
@@ -323,12 +346,27 @@ func ParseConfig(cfg Getter) (*Config, error) {
 		res.BufferConfig.DqueConfig.QueueName = queueName
 	}
 
-	replaceOutOfOrderTS := cfg.Get("ReplaceOutOfOrderTS")
-	if replaceOutOfOrderTS != "" {
-		res.ReplaceOutOfOrderTS, err = strconv.ParseBool(replaceOutOfOrderTS)
+	sortByTimestamp := cfg.Get("SortByTimestamp")
+	if sortByTimestamp != "" {
+		res.SortByTimestamp, err = strconv.ParseBool(sortByTimestamp)
 		if err != nil {
-			return nil, fmt.Errorf("invalid string ReplaceOutOfOrderTS: %v", err)
+			return nil, fmt.Errorf("invalid string SortByTimestamp: %v", err)
 		}
+	}
+
+	numberOfBatchIDs := cfg.Get("NumberOfBatchIDs")
+	if numberOfBatchIDs != "" {
+		numberOfBatchIDsValue, err := strconv.Atoi(numberOfBatchIDs)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse NumberOfBatchIDs: %s", numberOfBatchIDs)
+		}
+		if numberOfBatchIDsValue <= 0 {
+			res.NumberOfBatchIDs = 10
+		} else {
+			res.NumberOfBatchIDs = uint64(numberOfBatchIDsValue)
+		}
+	} else {
+		res.NumberOfBatchIDs = 10
 	}
 
 	fallbackToTagWhenMetadataIsMissing := cfg.Get("FallbackToTagWhenMetadataIsMissing")

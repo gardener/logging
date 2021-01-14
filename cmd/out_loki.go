@@ -32,6 +32,7 @@ import (
 )
 import (
 	"net/http"
+	"sync"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -42,6 +43,7 @@ var (
 	logger           log.Logger
 	informer         cache.SharedIndexInformer
 	informerStopChan chan struct{}
+	once             sync.Once
 )
 
 func init() {
@@ -60,6 +62,7 @@ func init() {
 	}
 	kubeInformerFactory := gardeninternalcoreinformers.NewSharedInformerFactory(kubernetesCleint, time.Second*30)
 	informer = kubeInformerFactory.Extensions().V1alpha1().Clusters().Informer()
+	informerStopChan = make(chan struct{})
 	kubeInformerFactory.Start(informerStopChan)
 }
 
@@ -105,7 +108,7 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 	level.Info(paramLogger).Log("LineFormat", conf.LineFormat)
 	level.Info(paramLogger).Log("DropSingleKey", conf.DropSingleKey)
 	level.Info(paramLogger).Log("LabelMapPath", fmt.Sprintf("%+v", conf.LabelMap))
-	level.Info(paramLogger).Log("ReplaceOutOfOrderTS", fmt.Sprintf("%+v", conf.ReplaceOutOfOrderTS))
+	level.Info(paramLogger).Log("SortByTimestamp", fmt.Sprintf("%+v", conf.SortByTimestamp))
 	level.Info(paramLogger).Log("DynamicHostPath", fmt.Sprintf("%+v", conf.DynamicHostPath))
 	level.Info(paramLogger).Log("DynamicHostPrefix", fmt.Sprintf("%+v", conf.DynamicHostPrefix))
 	level.Info(paramLogger).Log("DynamicHostSuffix", fmt.Sprintf("%+v", conf.DynamicHostSuffix))
@@ -125,6 +128,7 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 	level.Info(paramLogger).Log("TagPrefix", fmt.Sprintf("%+v", conf.KubernetesMetadata.TagPrefix))
 	level.Info(paramLogger).Log("TagExpression", fmt.Sprintf("%+v", conf.KubernetesMetadata.TagExpression))
 	level.Info(paramLogger).Log("DropLogEntryWithoutK8sMetadata", fmt.Sprintf("%+v", conf.KubernetesMetadata.DropLogEntryWithoutK8sMetadata))
+	level.Info(paramLogger).Log("NumberOfBatchIDs", fmt.Sprintf("%+v", conf.NumberOfBatchIDs))
 
 	plugin, err := lokiplugin.NewPlugin(informer, conf, logger)
 	if err != nil {
@@ -191,11 +195,12 @@ func FLBPluginFlushCtx(ctx, data unsafe.Pointer, length C.int, _ *C.char) int {
 
 //export FLBPluginExit
 func FLBPluginExit() int {
-	for _, plugin := range plugins {
-		plugin.Close()
-	}
-	close(informerStopChan)
-	close(lokiplugin.StopChn)
+	once.Do(func() {
+		for _, plugin := range plugins {
+			plugin.Close()
+		}
+		close(informerStopChan)
+	})
 	return output.FLB_OK
 }
 
