@@ -1,4 +1,4 @@
-# Notices for Fluent-bit-to-loki output plugin
+# Notices for GardenerLoki output plugin
 
 This plugin extends [Grafana/Loki](https://github.com/grafana/loki) [fluent-bit output plugin v1.6.0](https://github.com/grafana/loki/tree/v1.6.0/cmd/fluent-bit) which aims to forward log messages from fluent-bit to Loki. It is maintained by SAP.
 

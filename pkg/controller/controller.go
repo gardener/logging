@@ -19,9 +19,9 @@ import (
 	"sync"
 	"time"
 
-	client "github.com/gardener/logging/fluent-bit-to-loki/pkg/client"
-	"github.com/gardener/logging/fluent-bit-to-loki/pkg/config"
-	"github.com/gardener/logging/fluent-bit-to-loki/pkg/metrics"
+	client "github.com/gardener/logging/pkg/client"
+	"github.com/gardener/logging/pkg/config"
+	"github.com/gardener/logging/pkg/metrics"
 
 	extensioncontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"

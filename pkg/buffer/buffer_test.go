@@ -18,7 +18,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/gardener/logging/fluent-bit-to-loki/pkg/config"
+	"github.com/gardener/logging/pkg/config"
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"

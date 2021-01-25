@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gardener/logging/fluent-bit-to-loki/pkg/config"
-	"github.com/gardener/logging/fluent-bit-to-loki/pkg/metrics"
+	"github.com/gardener/logging/pkg/config"
+	"github.com/gardener/logging/pkg/metrics"
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
