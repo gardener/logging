@@ -136,16 +136,22 @@ func (l *loki) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 		return nil
 	}
 
+	metrics.IncomingLogsWithEndpoint.WithLabelValues(host).Inc()
+
 	if l.cfg.DropSingleKey && len(records) == 1 {
 		for _, v := range records {
-			return l.send(client, lbs, ts, fmt.Sprintf("%v", v), start)
+			err := l.send(client, lbs, ts, fmt.Sprintf("%v", v), start)
+			if err != nil {
+				level.Error(l.logger).Log("msg", fmt.Sprintf("error sending record to Loki %v", dynamicHostName), "error", err)
+				metrics.Errors.WithLabelValues(metrics.ErrorSendRecordToLoki).Inc()
+			}
+			return err
 		}
 	}
 
 	line, err := createLine(records, l.cfg.LineFormat)
 	if err != nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorCreateLine).Inc()
-
 		return fmt.Errorf("error creating line: %v", err)
 	}
 
@@ -156,7 +162,6 @@ func (l *loki) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 
 		return err
 	}
-	metrics.ForwardedLogs.WithLabelValues(host).Inc()
 
 	return nil
 }

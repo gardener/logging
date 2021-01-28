@@ -43,6 +43,13 @@ var (
 		Help:      "Total number of incoming logs in the Loki Gardener",
 	}, []string{"host"})
 
+	// IncomingLogsWithEndpoint is a prometheus metric which keeps the number of incoming logs with endpoint
+	IncomingLogsWithEndpoint = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: namespace,
+		Name:      "incoming_logs_with_endpoint_total",
+		Help:      "Total number of incoming logs with endpoint in the Loki Gardener",
+	}, []string{"host"})
+
 	// ForwardedLogs is a prometheus metric which keeps forwarded logs to the Promtail Client
 	ForwardedLogs = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: namespace,
