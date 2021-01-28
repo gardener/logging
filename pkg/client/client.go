@@ -21,6 +21,7 @@ import (
 	"github.com/gardener/logging/fluent-bit-to-loki/pkg/batch"
 	"github.com/gardener/logging/fluent-bit-to-loki/pkg/buffer"
 	"github.com/gardener/logging/fluent-bit-to-loki/pkg/config"
+	"github.com/gardener/logging/fluent-bit-to-loki/pkg/metrics"
 
 	"github.com/go-kit/kit/log"
 	"github.com/grafana/loki/pkg/logproto"
@@ -44,7 +45,7 @@ func NewClient(cfg *config.Config, logger log.Logger) (client.Client, error) {
 			return New(c, cfg.NumberOfBatchIDs, logger)
 		}
 	} else {
-		ncf = client.New
+		ncf = NewPromtailClient
 	}
 
 	if cfg.BufferConfig.Buffer {
@@ -78,7 +79,7 @@ func New(cfg client.Config, numberOfBatchIds uint64, logger log.Logger) (client.
 	batchWait := cfg.BatchWait
 	cfg.BatchWait = 5 * time.Second
 
-	lokiclient, err := client.New(cfg, logger)
+	lokiclient, err := NewPromtailClient(cfg, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -202,4 +203,35 @@ func (c *sortedClient) Handle(ls model.LabelSet, t time.Time, s string) error {
 		Line:      s,
 	}}
 	return nil
+}
+
+type promtailClientWithForwardedLogsMetricCounter struct {
+	lokiclient client.Client
+	host       string
+}
+
+// NewPromtailClient return promtail client which increments the ForwardedLogs counter on
+// successful call of the Handle function
+func NewPromtailClient(cfg client.Config, logger log.Logger) (client.Client, error) {
+	c, err := client.New(cfg, logger)
+	if err != nil {
+		return nil, err
+	}
+	return &promtailClientWithForwardedLogsMetricCounter{
+		lokiclient: c,
+		host:       cfg.URL.Hostname(),
+	}, nil
+}
+
+func (c *promtailClientWithForwardedLogsMetricCounter) Handle(ls model.LabelSet, t time.Time, s string) error {
+	if err := c.lokiclient.Handle(ls, t, s); err != nil {
+		return err
+	}
+	metrics.ForwardedLogs.WithLabelValues(c.host).Inc()
+	return nil
+}
+
+// Stop the client.
+func (c *promtailClientWithForwardedLogsMetricCounter) Stop() {
+	c.lokiclient.Stop()
 }
