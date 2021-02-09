@@ -9,7 +9,7 @@ package buffer
 import (
 	"fmt"
 
-	"github.com/gardener/logging/fluent-bit-to-loki/pkg/config"
+	"github.com/gardener/logging/pkg/config"
 
 	"github.com/go-kit/kit/log"
 	"github.com/grafana/loki/pkg/promtail/client"

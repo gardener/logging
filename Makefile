@@ -16,20 +16,32 @@ REPO_ROOT                   := $(shell dirname $(realpath $(lastword $(MAKEFILE_
 VERSION                               := $(shell cat VERSION)
 REGISTRY                              := eu.gcr.io/gardener-project/gardener
 FLUENT_BIT_TO_LOKI_IMAGE_REPOSITORY   := $(REGISTRY)/fluent-bit-to-loki
-FLUENT_BIT_TO_LOKI_IMAGE_TAG          := $(VERSION)
+LOKI_CURATOR_IMAGE_REPOSITORY         := $(REGISTRY)/loki-curator
+IMAGE_TAG                             := $(VERSION)
 
 .PHONY: plugin
 plugin:
-	go build -mod=vendor -buildmode=c-shared -o build/out_loki.so ./cmd
+	go build -mod=vendor -buildmode=c-shared -o build/out_loki.so ./cmd/fluent-bit-loki-plugin
+
+.PHONY: curator
+curator:
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on \
+	  go build -mod=vendor -o build/curator ./cmd/loki-curator
+
+.PHONY: build
+build: plugin curator
 
 .PHONY: docker-images
 docker-images:
-	@docker build -t $(FLUENT_BIT_TO_LOKI_IMAGE_REPOSITORY):$(FLUENT_BIT_TO_LOKI_IMAGE_TAG) -t $(FLUENT_BIT_TO_LOKI_IMAGE_REPOSITORY):latest -f Dockerfile --target carrier .
+	@docker build -t $(FLUENT_BIT_TO_LOKI_IMAGE_REPOSITORY):$(IMAGE_TAG) -t $(FLUENT_BIT_TO_LOKI_IMAGE_REPOSITORY):latest -f Dockerfile --target fluent-bit-plugin .
+	@docker build -t $(LOKI_CURATOR_IMAGE_REPOSITORY):$(IMAGE_TAG) -t $(LOKI_CURATOR_IMAGE_REPOSITORY):latest -f Dockerfile --target curator .
 
 .PHONY: docker-push
 docker-push:
-	@if ! docker images $(FLUENT_BIT_TO_LOKI_IMAGE_REPOSITORY) | awk '{ print $$2 }' | grep -q -F $(FLUENT_BIT_TO_LOKI_IMAGE_TAG); then echo "$(FLUENT_BIT_TO_LOKI_IMAGE_REPOSITORY) version $(FLUENT_BIT_TO_LOKI_IMAGE_TAG) is not yet built. Please run 'make docker-images'"; false; fi
-	@gcloud docker -- push $(FLUENT_BIT_TO_LOKI_IMAGE_REPOSITORY):$(FLUENT_BIT_TO_LOKI_IMAGE_TAG)
+	@if ! docker images $(FLUENT_BIT_TO_LOKI_IMAGE_REPOSITORY) | awk '{ print $$2 }' | grep -q -F $(IMAGE_TAG); then echo "$(FLUENT_BIT_TO_LOKI_IMAGE_REPOSITORY) version $(IMAGE_TAG) is not yet built. Please run 'make docker-images'"; false; fi
+	@gcloud docker -- push $(FLUENT_BIT_TO_LOKI_IMAGE_REPOSITORY):$(IMAGE_TAG)
+	@if ! docker images $(LOKI_CURATOR_IMAGE_REPOSITORY) | awk '{ print $$2 }' | grep -q -F $(IMAGE_TAG); then echo "$(LOKI_CURATOR_IMAGE_REPOSITORY) version $(IMAGE_TAG) is not yet built. Please run 'make docker-images'"; false; fi
+	@gcloud docker -- push $(LOKI_CURATOR_IMAGE_REPOSITORY):$(IMAGE_TAG)
 
 .PHONY: revendor
 revendor:

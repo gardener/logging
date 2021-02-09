@@ -23,7 +23,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/weaveworks/common/logging"
 
-	"github.com/gardener/logging/fluent-bit-to-loki/pkg/config"
+	"github.com/gardener/logging/pkg/config"
 
 	lokiclient "github.com/grafana/loki/pkg/promtail/client"
 

@@ -19,7 +19,7 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"github.com/prometheus/common/model"
 
-	"github.com/gardener/logging/fluent-bit-to-loki/pkg/config"
+	"github.com/gardener/logging/pkg/config"
 )
 
 const (

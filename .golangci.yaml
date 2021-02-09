@@ -8,7 +8,7 @@ run:
   
 linters-settings:
   errcheck:
-    exclude: ./exlude_functions.txt
+    exclude: ./exclude_functions.txt
   
 linters:
   disable:

@@ -1,5 +1,8 @@
+/build
+*.test
+*.coverprofile
+*.html
+.vscode
+.idea
+.DS_Store
 *~
-
-*.so
-
-extra_deletion

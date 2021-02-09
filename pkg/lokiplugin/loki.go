@@ -17,10 +17,10 @@ import (
 	"github.com/prometheus/common/model"
 	"k8s.io/client-go/tools/cache"
 
-	bufferedclient "github.com/gardener/logging/fluent-bit-to-loki/pkg/client"
-	"github.com/gardener/logging/fluent-bit-to-loki/pkg/config"
-	controller "github.com/gardener/logging/fluent-bit-to-loki/pkg/controller"
-	"github.com/gardener/logging/fluent-bit-to-loki/pkg/metrics"
+	bufferedclient "github.com/gardener/logging/pkg/client"
+	"github.com/gardener/logging/pkg/config"
+	controller "github.com/gardener/logging/pkg/controller"
+	"github.com/gardener/logging/pkg/metrics"
 	lokiclient "github.com/grafana/loki/pkg/promtail/client"
 )
 

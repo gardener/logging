@@ -1,4 +1,4 @@
-module github.com/gardener/logging/fluent-bit-to-loki
+module github.com/gardener/logging
 
 go 1.14
 
@@ -16,15 +16,15 @@ require (
 	github.com/json-iterator/go v1.1.10
 	github.com/onsi/ginkgo v1.11.0
 	github.com/onsi/gomega v1.8.1
+	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.8.0
 	github.com/prometheus/common v0.14.0
 	github.com/weaveworks/common v0.0.0-20200625145055-4b1847531bc9
-	golang.org/x/tools v0.0.0-20201105001634-bc3cf281b174 // indirect
+	gopkg.in/yaml.v2 v2.3.0
 	k8s.io/apimachinery v0.18.6
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/code-generator v0.18.3
 	k8s.io/utils v0.0.0-20200414100711-2df71ebbae66
-	sigs.k8s.io/controller-runtime v0.5.5 // indirect
 )
 
 replace (

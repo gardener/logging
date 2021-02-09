@@ -12,6 +12,12 @@ logging:
             registry: 'gcr-readwrite'
             image: 'eu.gcr.io/gardener-project/gardener/fluent-bit-to-loki'
             dockerfile: './Dockerfile'
+            target: fluent-bit-plugin
+          loki-curator:
+            registry: 'gcr-readwrite'
+            image: 'eu.gcr.io/gardener-project/gardener/loki-curator'
+            dockerfile: './Dockerfile'
+            target: curator
     steps:
       verify:
         image: 'golang:1.14.2'

@@ -24,7 +24,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	"github.com/gardener/logging/fluent-bit-to-loki/pkg/config"
+	"github.com/gardener/logging/pkg/config"
 
 	jsoniter "github.com/json-iterator/go"
 	"github.com/prometheus/common/model"
