@@ -33,3 +33,9 @@ logging:
         release:
           nextversion: 'bump_minor'
         component_descriptor: ~
+        slack:
+          default_channel: "internal_scp_workspace"
+          channel_cfgs:
+            internal_scp_workspace:
+              channel_name: "G0179C1JBA6" #gardener-logging
+              slack_cfg_name: "ti_workspace"
