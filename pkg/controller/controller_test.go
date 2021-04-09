@@ -167,14 +167,18 @@ var _ = Describe("Controller", func() {
 			decoder, err := extensioncontroller.NewGardenDecoder()
 			Expect(err).ToNot(HaveOccurred())
 			conf = &config.Config{
-				ClientConfig: lokiclient.Config{
-					URL:       defaultURL,
-					BatchWait: 5 * time.Second,
-					BatchSize: 1024 * 1024,
+				ClientConfig: config.ClientConfig{
+					GrafanaLokiConfig: lokiclient.Config{
+						URL:       defaultURL,
+						BatchWait: 5 * time.Second,
+						BatchSize: 1024 * 1024,
+					},
+					BufferConfig: config.DefaultBufferConfig,
 				},
-				BufferConfig:      config.DefaultBufferConfig,
-				DynamicHostPrefix: dynamicHostPrefix,
-				DynamicHostSuffix: dynamicHostSulfix,
+				ControllerConfig: config.ControllerConfig{
+					DynamicHostPrefix: dynamicHostPrefix,
+					DynamicHostSuffix: dynamicHostSulfix,
+				},
 			}
 			ctl = &controller{
 				clients: make(map[string]lokiclient.Client),
@@ -209,10 +213,9 @@ var _ = Describe("Controller", func() {
 				newNameCluster.Name = name
 				ctl.addFunc(hibernatedCluster)
 				ctl.addFunc(newNameCluster)
-				Expect(ctl.conf.ClientConfig.URL.String()).ToNot(Equal(ctl.conf.DynamicHostPrefix + name + ctl.conf.DynamicHostSuffix))
-				Expect(ctl.conf.ClientConfig.URL.String()).ToNot(Equal(ctl.conf.DynamicHostPrefix + hibernatedCluster.Name + ctl.conf.DynamicHostSuffix))
+				Expect(ctl.conf.ClientConfig.GrafanaLokiConfig.URL.String()).ToNot(Equal(ctl.conf.ControllerConfig.DynamicHostPrefix + name + ctl.conf.ControllerConfig.DynamicHostSuffix))
+				Expect(ctl.conf.ClientConfig.GrafanaLokiConfig.URL.String()).ToNot(Equal(ctl.conf.ControllerConfig.DynamicHostPrefix + hibernatedCluster.Name + ctl.conf.ControllerConfig.DynamicHostSuffix))
 			})
-
 		})
 
 		Context("#updateFunc", func() {

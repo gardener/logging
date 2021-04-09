@@ -40,14 +40,16 @@ var _ = Describe("Buffer", func() {
 	Describe("NewBuffer", func() {
 		BeforeEach(func() {
 			conf = &config.Config{
-				BufferConfig: config.BufferConfig{
-					Buffer:     false,
-					BufferType: "dque",
-					DqueConfig: config.DqueConfig{
-						QueueDir:         "/tmp/",
-						QueueSegmentSize: 500,
-						QueueSync:        false,
-						QueueName:        "dque",
+				ClientConfig: config.ClientConfig{
+					BufferConfig: config.BufferConfig{
+						Buffer:     false,
+						BufferType: "dque",
+						DqueConfig: config.DqueConfig{
+							QueueDir:         "/tmp/",
+							QueueSegmentSize: 500,
+							QueueSync:        false,
+							QueueName:        "dque",
+						},
 					},
 				},
 			}
@@ -57,7 +59,7 @@ var _ = Describe("Buffer", func() {
 		})
 		It("should create a buffered client when buffer is set", func() {
 			conf := conf
-			conf.BufferConfig.Buffer = true
+			conf.ClientConfig.BufferConfig.Buffer = true
 			c, err := NewBuffer(conf, logger, newFakeLokiClient)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(c).ToNot(BeNil())
@@ -65,7 +67,7 @@ var _ = Describe("Buffer", func() {
 
 		It("should not create a buffered client when buffer type is wrong", func() {
 			conf := conf
-			conf.BufferConfig.BufferType = "wrong-buffer"
+			conf.ClientConfig.BufferConfig.BufferType = "wrong-buffer"
 			c, err := NewBuffer(conf, logger, newFakeLokiClient)
 			Expect(err).To(HaveOccurred())
 			Expect(c).To(BeNil())
@@ -78,14 +80,16 @@ var _ = Describe("Buffer", func() {
 		BeforeEach(func() {
 			var err error
 			conf = &config.Config{
-				BufferConfig: config.BufferConfig{
-					Buffer:     false,
-					BufferType: "dque",
-					DqueConfig: config.DqueConfig{
-						QueueDir:         "/tmp/",
-						QueueSegmentSize: 500,
-						QueueSync:        false,
-						QueueName:        "gardener",
+				ClientConfig: config.ClientConfig{
+					BufferConfig: config.BufferConfig{
+						Buffer:     false,
+						BufferType: "dque",
+						DqueConfig: config.DqueConfig{
+							QueueDir:         "/tmp/",
+							QueueSegmentSize: 500,
+							QueueSync:        false,
+							QueueName:        "gardener",
+						},
 					},
 				},
 			}

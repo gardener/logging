@@ -17,10 +17,10 @@ import (
 
 // NewBuffer makes a new buffered Client.
 func NewBuffer(cfg *config.Config, logger log.Logger, newClientFunc func(cfg client.Config, logger log.Logger) (client.Client, error)) (client.Client, error) {
-	switch cfg.BufferConfig.BufferType {
+	switch cfg.ClientConfig.BufferConfig.BufferType {
 	case "dque":
 		return newDque(cfg, logger, newClientFunc)
 	default:
-		return nil, fmt.Errorf("failed to parse bufferType: %s", cfg.BufferConfig.BufferType)
+		return nil, fmt.Errorf("failed to parse bufferType: %s", cfg.ClientConfig.BufferConfig.BufferType)
 	}
 }

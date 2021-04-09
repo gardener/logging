@@ -153,14 +153,18 @@ var _ = Describe("Loki plugin", func() {
 		},
 		Entry("map to JSON",
 			sendRecordArgs{
-				cfg:     &config.Config{LabelKeys: []string{"A"}, LineFormat: config.JSONFormat},
+				cfg: &config.Config{
+					PluginConfig: config.PluginConfig{LabelKeys: []string{"A"}, LineFormat: config.JSONFormat},
+				},
 				record:  mapRecordFixture,
 				want:    &entry{model.LabelSet{"A": "A"}, `{"B":"B","C":"C","D":"D","E":"E","F":"F","G":"G","H":"H"}`, now},
 				wantErr: false,
 			}),
 		Entry("map to kvPairFormat",
 			sendRecordArgs{
-				cfg:     &config.Config{LabelKeys: []string{"A"}, LineFormat: config.KvPairFormat},
+				cfg: &config.Config{
+					PluginConfig: config.PluginConfig{LabelKeys: []string{"A"}, LineFormat: config.KvPairFormat},
+				},
 				record:  mapRecordFixture,
 				want:    &entry{model.LabelSet{"A": "A"}, `B=B C=C D=D E=E F=F G=G H=H`, now},
 				wantErr: false,
@@ -168,63 +172,81 @@ var _ = Describe("Loki plugin", func() {
 		Entry(
 			"not enough records",
 			sendRecordArgs{
-				cfg:     &config.Config{LabelKeys: []string{"foo"}, LineFormat: config.JSONFormat, RemoveKeys: []string{"bar", "error"}},
+				cfg: &config.Config{
+					PluginConfig: config.PluginConfig{LabelKeys: []string{"foo"}, LineFormat: config.JSONFormat, RemoveKeys: []string{"bar", "error"}},
+				},
 				record:  simpleRecordFixture,
 				want:    nil,
 				wantErr: false,
 			}),
 		Entry("labels",
 			sendRecordArgs{
-				cfg:     &config.Config{LabelKeys: []string{"bar", "fake"}, LineFormat: config.JSONFormat, RemoveKeys: []string{"fuzz", "error"}},
+				cfg: &config.Config{
+					PluginConfig: config.PluginConfig{LabelKeys: []string{"bar", "fake"}, LineFormat: config.JSONFormat, RemoveKeys: []string{"fuzz", "error"}},
+				},
 				record:  simpleRecordFixture,
 				want:    &entry{model.LabelSet{"bar": "500"}, `{"foo":"bar"}`, now},
 				wantErr: false,
 			}),
 		Entry("remove key",
 			sendRecordArgs{
-				cfg:     &config.Config{LabelKeys: []string{"fake"}, LineFormat: config.JSONFormat, RemoveKeys: []string{"foo", "error", "fake"}},
+				cfg: &config.Config{
+					PluginConfig: config.PluginConfig{LabelKeys: []string{"fake"}, LineFormat: config.JSONFormat, RemoveKeys: []string{"foo", "error", "fake"}},
+				},
 				record:  simpleRecordFixture,
 				want:    &entry{model.LabelSet{}, `{"bar":500}`, now},
 				wantErr: false,
 			}),
 		Entry("error",
 			sendRecordArgs{
-				cfg:     &config.Config{LabelKeys: []string{"fake"}, LineFormat: config.JSONFormat, RemoveKeys: []string{"foo"}},
+				cfg: &config.Config{
+					PluginConfig: config.PluginConfig{LabelKeys: []string{"fake"}, LineFormat: config.JSONFormat, RemoveKeys: []string{"foo"}},
+				},
 				record:  simpleRecordFixture,
 				want:    nil,
 				wantErr: true,
 			}),
 		Entry("key value",
 			sendRecordArgs{
-				cfg:     &config.Config{LabelKeys: []string{"fake"}, LineFormat: config.KvPairFormat, RemoveKeys: []string{"foo", "error", "fake"}},
+				cfg: &config.Config{
+					PluginConfig: config.PluginConfig{LabelKeys: []string{"fake"}, LineFormat: config.KvPairFormat, RemoveKeys: []string{"foo", "error", "fake"}},
+				},
 				record:  simpleRecordFixture,
 				want:    &entry{model.LabelSet{}, `bar=500`, now},
 				wantErr: false,
 			}),
 		Entry("single",
 			sendRecordArgs{
-				cfg:     &config.Config{LabelKeys: []string{"fake"}, DropSingleKey: true, LineFormat: config.KvPairFormat, RemoveKeys: []string{"foo", "error", "fake"}},
+				cfg: &config.Config{
+					PluginConfig: config.PluginConfig{LabelKeys: []string{"fake"}, DropSingleKey: true, LineFormat: config.KvPairFormat, RemoveKeys: []string{"foo", "error", "fake"}},
+				},
 				record:  simpleRecordFixture,
 				want:    &entry{model.LabelSet{}, `500`, now},
 				wantErr: false,
 			}),
 		Entry("labelmap",
 			sendRecordArgs{
-				cfg:     &config.Config{LabelMap: map[string]interface{}{"bar": "other"}, LineFormat: config.JSONFormat, RemoveKeys: []string{"bar", "error"}},
+				cfg: &config.Config{
+					PluginConfig: config.PluginConfig{LabelMap: map[string]interface{}{"bar": "other"}, LineFormat: config.JSONFormat, RemoveKeys: []string{"bar", "error"}},
+				},
 				record:  simpleRecordFixture,
 				want:    &entry{model.LabelSet{"other": "500"}, `{"foo":"bar"}`, now},
 				wantErr: false,
 			}),
 		Entry("byte array",
 			sendRecordArgs{
-				cfg:     &config.Config{LabelKeys: []string{"label"}, LineFormat: config.JSONFormat},
+				cfg: &config.Config{
+					PluginConfig: config.PluginConfig{LabelKeys: []string{"label"}, LineFormat: config.JSONFormat},
+				},
 				record:  byteArrayRecordFixture,
 				want:    &entry{model.LabelSet{"label": "label"}, `{"map":{"inner":"bar"},"outer":"foo"}`, now},
 				wantErr: false,
 			}),
 		Entry("mixed types",
 			sendRecordArgs{
-				cfg:     &config.Config{LabelKeys: []string{"label"}, LineFormat: config.JSONFormat},
+				cfg: &config.Config{
+					PluginConfig: config.PluginConfig{LabelKeys: []string{"label"}, LineFormat: config.JSONFormat},
+				},
 				record:  mixedTypesRecordFixture,
 				want:    &entry{model.LabelSet{"label": "label"}, `{"array":[42,42.42,"foo"],"float":42.42,"int":42,"map":{"nested":{"foo":"bar","invalid":"a\ufffdz"}}}`, now},
 				wantErr: false,

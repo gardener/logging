@@ -13,6 +13,8 @@ COPY --from=builder /go/src/github.com/gardener/logging/build /source/plugins
 
 WORKDIR /
 
+ENTRYPOINT ["cp","/source/plugins/.","/plugins", "-fr"]
+
 #############      curator       #############
 FROM eu.gcr.io/gardener-project/3rd/alpine:3.12.3 AS curator
 

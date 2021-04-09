@@ -39,18 +39,18 @@ type newClientFunc func(cfg client.Config, logger log.Logger) (client.Client, er
 func NewClient(cfg *config.Config, logger log.Logger) (client.Client, error) {
 	var ncf newClientFunc
 
-	if cfg.SortByTimestamp {
+	if cfg.ClientConfig.SortByTimestamp {
 		ncf = func(c client.Config, logger log.Logger) (client.Client, error) {
-			return New(c, cfg.NumberOfBatchIDs, logger)
+			return New(c, cfg.ClientConfig.NumberOfBatchIDs, logger)
 		}
 	} else {
 		ncf = NewPromtailClient
 	}
 
-	if cfg.BufferConfig.Buffer {
+	if cfg.ClientConfig.BufferConfig.Buffer {
 		return buffer.NewBuffer(cfg, logger, ncf)
 	}
-	return ncf(cfg.ClientConfig, logger)
+	return ncf(cfg.ClientConfig.GrafanaLokiConfig, logger)
 }
 
 type sortedClient struct {
