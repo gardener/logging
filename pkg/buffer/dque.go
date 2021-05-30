@@ -45,26 +45,26 @@ func newDque(cfg *config.Config, logger log.Logger, newClientFunc func(cfg clien
 	var err error
 
 	q := &dqueClient{
-		logger: log.With(logger, "component", "queue", "name", cfg.BufferConfig.DqueConfig.QueueName),
+		logger: log.With(logger, "component", "queue", "name", cfg.ClientConfig.BufferConfig.DqueConfig.QueueName),
 	}
 
-	err = os.MkdirAll(cfg.BufferConfig.DqueConfig.QueueDir, 0644)
+	err = os.MkdirAll(cfg.ClientConfig.BufferConfig.DqueConfig.QueueDir, 0644)
 	if err != nil {
 		return nil, fmt.Errorf("cannot create queue directory, error: %v", err)
 	}
 
-	q.queue, err = dque.NewOrOpen(cfg.BufferConfig.DqueConfig.QueueName, cfg.BufferConfig.DqueConfig.QueueDir, cfg.BufferConfig.DqueConfig.QueueSegmentSize, dqueEntryBuilder)
+	q.queue, err = dque.NewOrOpen(cfg.ClientConfig.BufferConfig.DqueConfig.QueueName, cfg.ClientConfig.BufferConfig.DqueConfig.QueueDir, cfg.ClientConfig.BufferConfig.DqueConfig.QueueSegmentSize, dqueEntryBuilder)
 	if err != nil {
 		return nil, err
 	}
 
-	q.url = cfg.ClientConfig.URL.String()
+	q.url = cfg.ClientConfig.GrafanaLokiConfig.URL.String()
 
-	if !cfg.BufferConfig.DqueConfig.QueueSync {
+	if !cfg.ClientConfig.BufferConfig.DqueConfig.QueueSync {
 		_ = q.queue.TurboOn()
 	}
 
-	q.loki, err = newClientFunc(cfg.ClientConfig, logger)
+	q.loki, err = newClientFunc(cfg.ClientConfig.GrafanaLokiConfig, logger)
 	if err != nil {
 		return nil, err
 	}

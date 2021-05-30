@@ -19,6 +19,7 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/gardener/logging/pkg/config"
 	. "github.com/gardener/logging/pkg/config"
 
 	"github.com/cortexproject/cortex/pkg/util"
@@ -60,57 +61,61 @@ var _ = Describe("Config", func() {
 				Expect(err).To(HaveOccurred())
 			} else {
 				Expect(err).ToNot(HaveOccurred())
-				Expect(args.want.AutoKubernetesLabels).To(Equal(got.AutoKubernetesLabels))
-				Expect(args.want.BufferConfig).To(Equal(got.BufferConfig))
-				Expect(args.want.ClientConfig).To(Equal(got.ClientConfig))
-				Expect(args.want.DropSingleKey).To(Equal(got.DropSingleKey))
-				Expect(args.want.DynamicHostPath).To(Equal(got.DynamicHostPath))
-				Expect(args.want.DynamicHostPrefix).To(Equal(got.DynamicHostPrefix))
-				Expect(args.want.DynamicHostRegex).To(Equal(got.DynamicHostRegex))
-				Expect(args.want.DynamicHostSuffix).To(Equal(got.DynamicHostSuffix))
-				Expect(args.want.LabelKeys).To(Equal(got.LabelKeys))
-				Expect(args.want.LabelMap).To(Equal(got.LabelMap))
-				Expect(args.want.LineFormat).To(Equal(got.LineFormat))
+				Expect(args.want.PluginConfig.AutoKubernetesLabels).To(Equal(got.PluginConfig.AutoKubernetesLabels))
+				Expect(args.want.ClientConfig.BufferConfig).To(Equal(got.ClientConfig.BufferConfig))
+				Expect(args.want.ClientConfig.GrafanaLokiConfig).To(Equal(got.ClientConfig.GrafanaLokiConfig))
+				Expect(args.want.PluginConfig.DropSingleKey).To(Equal(got.PluginConfig.DropSingleKey))
+				Expect(args.want.PluginConfig.DynamicHostPath).To(Equal(got.PluginConfig.DynamicHostPath))
+				Expect(args.want.ControllerConfig.DynamicHostPrefix).To(Equal(got.ControllerConfig.DynamicHostPrefix))
+				Expect(args.want.PluginConfig.DynamicHostRegex).To(Equal(got.PluginConfig.DynamicHostRegex))
+				Expect(args.want.ControllerConfig.DynamicHostSuffix).To(Equal(got.ControllerConfig.DynamicHostSuffix))
+				Expect(args.want.PluginConfig.LabelKeys).To(Equal(got.PluginConfig.LabelKeys))
+				Expect(args.want.PluginConfig.LabelMap).To(Equal(got.PluginConfig.LabelMap))
+				Expect(args.want.PluginConfig.LineFormat).To(Equal(got.PluginConfig.LineFormat))
 				//Expect(args.want.LogLevel).To(Equal(got.LogLevel))
-				Expect(args.want.RemoveKeys).To(Equal(got.RemoveKeys))
-				Expect(args.want.SortByTimestamp).To(Equal(got.SortByTimestamp))
-				Expect(args.want.KubernetesMetadata).To(Equal(got.KubernetesMetadata))
+				Expect(args.want.PluginConfig.RemoveKeys).To(Equal(got.PluginConfig.RemoveKeys))
+				Expect(args.want.ClientConfig.SortByTimestamp).To(Equal(got.ClientConfig.SortByTimestamp))
+				Expect(args.want.PluginConfig.KubernetesMetadata).To(Equal(got.PluginConfig.KubernetesMetadata))
 			}
 		},
 		Entry("default values", testArgs{
 			map[string]string{},
 			&Config{
-				LineFormat: JSONFormat,
-				ClientConfig: client.Config{
-					URL:            defaultURL,
-					BatchSize:      100 * 1024,
-					BatchWait:      1 * time.Second,
-					ExternalLabels: lokiflag.LabelSet{LabelSet: model.LabelSet{"job": "fluent-bit"}},
-					BackoffConfig: util.BackoffConfig{
-						MinBackoff: (1 * time.Second) / 2,
-						MaxBackoff: 300 * time.Second,
-						MaxRetries: 10,
+				PluginConfig: config.PluginConfig{
+					LineFormat: JSONFormat,
+					KubernetesMetadata: KubernetesMetadataExtraction{
+						TagKey:        DefaultKubernetesMetadataTagKey,
+						TagPrefix:     DefaultKubernetesMetadataTagPrefix,
+						TagExpression: DefaultKubernetesMetadataTagExpression,
 					},
-					Timeout: 10 * time.Second,
+					DropSingleKey:    true,
+					DynamicHostRegex: "*",
 				},
-				BufferConfig: BufferConfig{
-					Buffer:     false,
-					BufferType: DefaultBufferConfig.BufferType,
-					DqueConfig: DqueConfig{
-						QueueDir:         DefaultDqueConfig.QueueDir,
-						QueueSegmentSize: 500,
-						QueueSync:        false,
-						QueueName:        DefaultDqueConfig.QueueName,
+				ClientConfig: config.ClientConfig{
+					GrafanaLokiConfig: client.Config{
+						URL:            defaultURL,
+						BatchSize:      100 * 1024,
+						BatchWait:      1 * time.Second,
+						ExternalLabels: lokiflag.LabelSet{LabelSet: model.LabelSet{"job": "fluent-bit"}},
+						BackoffConfig: util.BackoffConfig{
+							MinBackoff: (1 * time.Second) / 2,
+							MaxBackoff: 300 * time.Second,
+							MaxRetries: 10,
+						},
+						Timeout: 10 * time.Second,
+					},
+					BufferConfig: BufferConfig{
+						Buffer:     false,
+						BufferType: DefaultBufferConfig.BufferType,
+						DqueConfig: DqueConfig{
+							QueueDir:         DefaultDqueConfig.QueueDir,
+							QueueSegmentSize: 500,
+							QueueSync:        false,
+							QueueName:        DefaultDqueConfig.QueueName,
+						},
 					},
 				},
-				LogLevel:         infoLogLevel,
-				DropSingleKey:    true,
-				DynamicHostRegex: "*",
-				KubernetesMetadata: KubernetesMetadataExtraction{
-					TagKey:        DefaultKubernetesMetadataTagKey,
-					TagPrefix:     DefaultKubernetesMetadataTagPrefix,
-					TagExpression: DefaultKubernetesMetadataTagExpression,
-				},
+				LogLevel: infoLogLevel,
 			},
 			false},
 		),
@@ -121,7 +126,7 @@ var _ = Describe("Config", func() {
 				"LineFormat":      "key_value",
 				"LogLevel":        "warn",
 				"Labels":          `{app="foo"}`,
-				"BatchWait":       "30",
+				"BatchWait":       "30s",
 				"BatchSize":       "100",
 				"RemoveKeys":      "buzz,fuzz",
 				"LabelKeys":       "foo,bar",
@@ -129,41 +134,46 @@ var _ = Describe("Config", func() {
 				"SortByTimestamp": "true",
 			},
 			&Config{
-				LineFormat: KvPairFormat,
-				ClientConfig: client.Config{
-					URL:            somewhereURL,
-					TenantID:       "my-tenant-id",
-					BatchSize:      100,
-					BatchWait:      30 * time.Second,
-					ExternalLabels: lokiflag.LabelSet{LabelSet: model.LabelSet{"app": "foo"}},
-					BackoffConfig: util.BackoffConfig{
-						MinBackoff: (1 * time.Second) / 2,
-						MaxBackoff: 300 * time.Second,
-						MaxRetries: 10,
-					},
-					Timeout: 10 * time.Second,
-				},
-				BufferConfig: BufferConfig{
-					Buffer:     false,
-					BufferType: DefaultBufferConfig.BufferType,
-					DqueConfig: DqueConfig{
-						QueueDir:         DefaultDqueConfig.QueueDir,
-						QueueSegmentSize: DefaultDqueConfig.QueueSegmentSize,
-						QueueSync:        DefaultDqueConfig.QueueSync,
-						QueueName:        DefaultDqueConfig.QueueName,
+				PluginConfig: config.PluginConfig{
+					LineFormat:       KvPairFormat,
+					LabelKeys:        []string{"foo", "bar"},
+					RemoveKeys:       []string{"buzz", "fuzz"},
+					DropSingleKey:    false,
+					DynamicHostRegex: "*",
+					KubernetesMetadata: KubernetesMetadataExtraction{
+						TagKey:        DefaultKubernetesMetadataTagKey,
+						TagPrefix:     DefaultKubernetesMetadataTagPrefix,
+						TagExpression: DefaultKubernetesMetadataTagExpression,
 					},
 				},
-				SortByTimestamp:  true,
-				LogLevel:         warnLogLevel,
-				LabelKeys:        []string{"foo", "bar"},
-				RemoveKeys:       []string{"buzz", "fuzz"},
-				DropSingleKey:    false,
-				DynamicHostRegex: "*",
-				KubernetesMetadata: KubernetesMetadataExtraction{
-					TagKey:        DefaultKubernetesMetadataTagKey,
-					TagPrefix:     DefaultKubernetesMetadataTagPrefix,
-					TagExpression: DefaultKubernetesMetadataTagExpression,
+
+				ClientConfig: config.ClientConfig{
+					GrafanaLokiConfig: client.Config{
+						URL:            somewhereURL,
+						TenantID:       "my-tenant-id",
+						BatchSize:      100,
+						BatchWait:      30 * time.Second,
+						ExternalLabels: lokiflag.LabelSet{LabelSet: model.LabelSet{"app": "foo"}},
+						BackoffConfig: util.BackoffConfig{
+							MinBackoff: (1 * time.Second) / 2,
+							MaxBackoff: 300 * time.Second,
+							MaxRetries: 10,
+						},
+						Timeout: 10 * time.Second,
+					},
+					BufferConfig: BufferConfig{
+						Buffer:     false,
+						BufferType: DefaultBufferConfig.BufferType,
+						DqueConfig: DqueConfig{
+							QueueDir:         DefaultDqueConfig.QueueDir,
+							QueueSegmentSize: DefaultDqueConfig.QueueSegmentSize,
+							QueueSync:        DefaultDqueConfig.QueueSync,
+							QueueName:        DefaultDqueConfig.QueueName,
+						},
+					},
+					SortByTimestamp: true,
 				},
+				LogLevel: warnLogLevel,
 			},
 			false},
 		),
@@ -173,7 +183,7 @@ var _ = Describe("Config", func() {
 				"LineFormat":    "key_value",
 				"LogLevel":      "warn",
 				"Labels":        `{app="foo"}`,
-				"BatchWait":     "30",
+				"BatchWait":     "30s",
 				"BatchSize":     "100",
 				"RemoveKeys":    "buzz,fuzz",
 				"LabelKeys":     "foo,bar",
@@ -181,53 +191,57 @@ var _ = Describe("Config", func() {
 				"LabelMapPath":  getTestFileName(),
 			},
 			&Config{
-				LineFormat: KvPairFormat,
-				ClientConfig: client.Config{
-					URL:            somewhereURL,
-					TenantID:       "", // empty as not set in fluent-bit plugin config map
-					BatchSize:      100,
-					BatchWait:      30 * time.Second,
-					ExternalLabels: lokiflag.LabelSet{LabelSet: model.LabelSet{"app": "foo"}},
-					BackoffConfig: util.BackoffConfig{
-						MinBackoff: (1 * time.Second) / 2,
-						MaxBackoff: 300 * time.Second,
-						MaxRetries: 10,
+				PluginConfig: PluginConfig{
+					LineFormat:    KvPairFormat,
+					LabelKeys:     nil,
+					RemoveKeys:    []string{"buzz", "fuzz"},
+					DropSingleKey: false,
+					LabelMap: map[string]interface{}{
+						"kubernetes": map[string]interface{}{
+							"container_name": "container",
+							"host":           "host",
+							"namespace_name": "namespace",
+							"pod_name":       "instance",
+							"labels": map[string]interface{}{
+								"component": "component",
+								"tier":      "tier",
+							},
+						},
+						"stream": "stream",
 					},
-					Timeout: 10 * time.Second,
-				},
-				BufferConfig: BufferConfig{
-					Buffer:     false,
-					BufferType: DefaultBufferConfig.BufferType,
-					DqueConfig: DqueConfig{
-						QueueDir:         DefaultDqueConfig.QueueDir,
-						QueueSegmentSize: DefaultDqueConfig.QueueSegmentSize,
-						QueueSync:        DefaultDqueConfig.QueueSync,
-						QueueName:        DefaultDqueConfig.QueueName,
+					DynamicHostRegex: "*",
+					KubernetesMetadata: KubernetesMetadataExtraction{
+						TagKey:        DefaultKubernetesMetadataTagKey,
+						TagPrefix:     DefaultKubernetesMetadataTagPrefix,
+						TagExpression: DefaultKubernetesMetadataTagExpression,
 					},
 				},
-				LogLevel:      warnLogLevel,
-				LabelKeys:     nil,
-				RemoveKeys:    []string{"buzz", "fuzz"},
-				DropSingleKey: false,
-				LabelMap: map[string]interface{}{
-					"kubernetes": map[string]interface{}{
-						"container_name": "container",
-						"host":           "host",
-						"namespace_name": "namespace",
-						"pod_name":       "instance",
-						"labels": map[string]interface{}{
-							"component": "component",
-							"tier":      "tier",
+				ClientConfig: config.ClientConfig{
+					GrafanaLokiConfig: client.Config{
+						URL:            somewhereURL,
+						TenantID:       "", // empty as not set in fluent-bit plugin config map
+						BatchSize:      100,
+						BatchWait:      30 * time.Second,
+						ExternalLabels: lokiflag.LabelSet{LabelSet: model.LabelSet{"app": "foo"}},
+						BackoffConfig: util.BackoffConfig{
+							MinBackoff: (1 * time.Second) / 2,
+							MaxBackoff: 300 * time.Second,
+							MaxRetries: 10,
+						},
+						Timeout: 10 * time.Second,
+					},
+					BufferConfig: BufferConfig{
+						Buffer:     false,
+						BufferType: DefaultBufferConfig.BufferType,
+						DqueConfig: DqueConfig{
+							QueueDir:         DefaultDqueConfig.QueueDir,
+							QueueSegmentSize: DefaultDqueConfig.QueueSegmentSize,
+							QueueSync:        DefaultDqueConfig.QueueSync,
+							QueueName:        DefaultDqueConfig.QueueName,
 						},
 					},
-					"stream": "stream",
 				},
-				DynamicHostRegex: "*",
-				KubernetesMetadata: KubernetesMetadataExtraction{
-					TagKey:        DefaultKubernetesMetadataTagKey,
-					TagPrefix:     DefaultKubernetesMetadataTagPrefix,
-					TagExpression: DefaultKubernetesMetadataTagExpression,
-				},
+				LogLevel: warnLogLevel,
 			},
 			false},
 		),
@@ -237,7 +251,7 @@ var _ = Describe("Config", func() {
 				"LineFormat":        "key_value",
 				"LogLevel":          "warn",
 				"Labels":            `{app="foo"}`,
-				"BatchWait":         "30",
+				"BatchWait":         "30s",
 				"BatchSize":         "100",
 				"RemoveKeys":        "buzz,fuzz",
 				"LabelKeys":         "foo,bar",
@@ -248,47 +262,53 @@ var _ = Describe("Config", func() {
 				"DynamicHostRegex":  "shoot--",
 			},
 			&Config{
-				LineFormat: KvPairFormat,
-				ClientConfig: client.Config{
-					URL:            somewhereURL,
-					TenantID:       "", // empty as not set in fluent-bit plugin config map
-					BatchSize:      100,
-					BatchWait:      30 * time.Second,
-					ExternalLabels: lokiflag.LabelSet{LabelSet: model.LabelSet{"app": "foo"}},
-					BackoffConfig: util.BackoffConfig{
-						MinBackoff: (1 * time.Second) / 2,
-						MaxBackoff: 300 * time.Second,
-						MaxRetries: 10,
+				PluginConfig: PluginConfig{
+					LineFormat:    KvPairFormat,
+					LabelKeys:     []string{"foo", "bar"},
+					RemoveKeys:    []string{"buzz", "fuzz"},
+					DropSingleKey: false,
+					DynamicHostPath: map[string]interface{}{
+						"kubernetes": map[string]interface{}{
+							"namespace_name": "namespace",
+						},
 					},
-					Timeout: 10 * time.Second,
-				},
-				BufferConfig: BufferConfig{
-					Buffer:     false,
-					BufferType: DefaultBufferConfig.BufferType,
-					DqueConfig: DqueConfig{
-						QueueDir:         DefaultDqueConfig.QueueDir,
-						QueueSegmentSize: DefaultDqueConfig.QueueSegmentSize,
-						QueueSync:        DefaultDqueConfig.QueueSync,
-						QueueName:        DefaultDqueConfig.QueueName,
+					DynamicHostRegex: "shoot--",
+					KubernetesMetadata: KubernetesMetadataExtraction{
+						TagKey:        DefaultKubernetesMetadataTagKey,
+						TagPrefix:     DefaultKubernetesMetadataTagPrefix,
+						TagExpression: DefaultKubernetesMetadataTagExpression,
 					},
 				},
-				LogLevel:      warnLogLevel,
-				LabelKeys:     []string{"foo", "bar"},
-				RemoveKeys:    []string{"buzz", "fuzz"},
-				DropSingleKey: false,
-				DynamicHostPath: map[string]interface{}{
-					"kubernetes": map[string]interface{}{
-						"namespace_name": "namespace",
+				ClientConfig: ClientConfig{
+					GrafanaLokiConfig: client.Config{
+						URL:            somewhereURL,
+						TenantID:       "", // empty as not set in fluent-bit plugin config map
+						BatchSize:      100,
+						BatchWait:      30 * time.Second,
+						ExternalLabels: lokiflag.LabelSet{LabelSet: model.LabelSet{"app": "foo"}},
+						BackoffConfig: util.BackoffConfig{
+							MinBackoff: (1 * time.Second) / 2,
+							MaxBackoff: 300 * time.Second,
+							MaxRetries: 10,
+						},
+						Timeout: 10 * time.Second,
+					},
+					BufferConfig: BufferConfig{
+						Buffer:     false,
+						BufferType: DefaultBufferConfig.BufferType,
+						DqueConfig: DqueConfig{
+							QueueDir:         DefaultDqueConfig.QueueDir,
+							QueueSegmentSize: DefaultDqueConfig.QueueSegmentSize,
+							QueueSync:        DefaultDqueConfig.QueueSync,
+							QueueName:        DefaultDqueConfig.QueueName,
+						},
 					},
 				},
-				DynamicHostPrefix: "http://loki.",
-				DynamicHostSuffix: ".svc:3100/loki/api/v1/push",
-				DynamicHostRegex:  "shoot--",
-				KubernetesMetadata: KubernetesMetadataExtraction{
-					TagKey:        DefaultKubernetesMetadataTagKey,
-					TagPrefix:     DefaultKubernetesMetadataTagPrefix,
-					TagExpression: DefaultKubernetesMetadataTagExpression,
+				ControllerConfig: ControllerConfig{
+					DynamicHostPrefix: "http://loki.",
+					DynamicHostSuffix: ".svc:3100/loki/api/v1/push",
 				},
+				LogLevel: warnLogLevel,
 			},
 			false},
 		),
@@ -298,7 +318,7 @@ var _ = Describe("Config", func() {
 				"LineFormat":       "key_value",
 				"LogLevel":         "warn",
 				"Labels":           `{app="foo"}`,
-				"BatchWait":        "30",
+				"BatchWait":        "30s",
 				"BatchSize":        "100",
 				"RemoveKeys":       "buzz,fuzz",
 				"LabelKeys":        "foo,bar",
@@ -311,40 +331,44 @@ var _ = Describe("Config", func() {
 				"QueueName":        "buzz",
 			},
 			&Config{
-				LineFormat: KvPairFormat,
-				ClientConfig: client.Config{
-					URL:            somewhereURL,
-					TenantID:       "", // empty as not set in fluent-bit plugin config map
-					BatchSize:      100,
-					BatchWait:      30 * time.Second,
-					ExternalLabels: lokiflag.LabelSet{LabelSet: model.LabelSet{"app": "foo"}},
-					BackoffConfig: util.BackoffConfig{
-						MinBackoff: (1 * time.Second) / 2,
-						MaxBackoff: 300 * time.Second,
-						MaxRetries: 10,
+				PluginConfig: PluginConfig{
+					LineFormat:    KvPairFormat,
+					LabelKeys:     []string{"foo", "bar"},
+					RemoveKeys:    []string{"buzz", "fuzz"},
+					DropSingleKey: false,
+					KubernetesMetadata: KubernetesMetadataExtraction{
+						TagKey:        DefaultKubernetesMetadataTagKey,
+						TagPrefix:     DefaultKubernetesMetadataTagPrefix,
+						TagExpression: DefaultKubernetesMetadataTagExpression,
 					},
-					Timeout: 10 * time.Second,
+					DynamicHostRegex: "*",
 				},
-				LogLevel:      warnLogLevel,
-				LabelKeys:     []string{"foo", "bar"},
-				RemoveKeys:    []string{"buzz", "fuzz"},
-				DropSingleKey: false,
-				BufferConfig: BufferConfig{
-					Buffer:     true,
-					BufferType: DefaultBufferConfig.BufferType,
-					DqueConfig: DqueConfig{
-						QueueDir:         "/foo/bar",
-						QueueSegmentSize: DefaultDqueConfig.QueueSegmentSize,
-						QueueSync:        true,
-						QueueName:        "buzz",
+				ClientConfig: ClientConfig{
+					GrafanaLokiConfig: client.Config{
+						URL:            somewhereURL,
+						TenantID:       "", // empty as not set in fluent-bit plugin config map
+						BatchSize:      100,
+						BatchWait:      30 * time.Second,
+						ExternalLabels: lokiflag.LabelSet{LabelSet: model.LabelSet{"app": "foo"}},
+						BackoffConfig: util.BackoffConfig{
+							MinBackoff: (1 * time.Second) / 2,
+							MaxBackoff: 300 * time.Second,
+							MaxRetries: 10,
+						},
+						Timeout: 10 * time.Second,
+					},
+					BufferConfig: BufferConfig{
+						Buffer:     true,
+						BufferType: DefaultBufferConfig.BufferType,
+						DqueConfig: DqueConfig{
+							QueueDir:         "/foo/bar",
+							QueueSegmentSize: DefaultDqueConfig.QueueSegmentSize,
+							QueueSync:        true,
+							QueueName:        "buzz",
+						},
 					},
 				},
-				DynamicHostRegex: "*",
-				KubernetesMetadata: KubernetesMetadataExtraction{
-					TagKey:        DefaultKubernetesMetadataTagKey,
-					TagPrefix:     DefaultKubernetesMetadataTagPrefix,
-					TagExpression: DefaultKubernetesMetadataTagExpression,
-				},
+				LogLevel: warnLogLevel,
 			},
 			false},
 		),
@@ -354,51 +378,56 @@ var _ = Describe("Config", func() {
 				"LineFormat":    "key_value",
 				"LogLevel":      "warn",
 				"Labels":        `{app="foo"}`,
-				"BatchWait":     "30",
+				"BatchWait":     "30s",
 				"BatchSize":     "100",
 				"RemoveKeys":    "buzz,fuzz",
 				"LabelKeys":     "foo,bar",
 				"DropSingleKey": "false",
-				"Timeout":       "20",
-				"MinBackoff":    "30",
-				"MaxBackoff":    "120",
+				"Timeout":       "20s",
+				"MinBackoff":    "30s",
+				"MaxBackoff":    "120s",
 				"MaxRetries":    "3",
 			},
 			&Config{
-				LineFormat: KvPairFormat,
-				ClientConfig: client.Config{
-					URL:            somewhereURL,
-					TenantID:       "", // empty as not set in fluent-bit plugin config map
-					BatchSize:      100,
-					BatchWait:      30 * time.Second,
-					ExternalLabels: lokiflag.LabelSet{LabelSet: model.LabelSet{"app": "foo"}},
-					Timeout:        time.Second * 20,
-					BackoffConfig: util.BackoffConfig{
-						MinBackoff: 30 * time.Second,
-						MaxBackoff: 120 * time.Second,
-						MaxRetries: 3,
+				PluginConfig: PluginConfig{
+					LineFormat:       KvPairFormat,
+					LabelKeys:        []string{"foo", "bar"},
+					RemoveKeys:       []string{"buzz", "fuzz"},
+					DropSingleKey:    false,
+					DynamicHostRegex: "*",
+					KubernetesMetadata: KubernetesMetadataExtraction{
+						TagKey:        DefaultKubernetesMetadataTagKey,
+						TagPrefix:     DefaultKubernetesMetadataTagPrefix,
+						TagExpression: DefaultKubernetesMetadataTagExpression,
 					},
 				},
-				LogLevel:      warnLogLevel,
-				LabelKeys:     []string{"foo", "bar"},
-				RemoveKeys:    []string{"buzz", "fuzz"},
-				DropSingleKey: false,
-				BufferConfig: BufferConfig{
-					Buffer:     false,
-					BufferType: DefaultBufferConfig.BufferType,
-					DqueConfig: DqueConfig{
-						QueueDir:         DefaultDqueConfig.QueueDir,
-						QueueSegmentSize: DefaultDqueConfig.QueueSegmentSize,
-						QueueSync:        DefaultDqueConfig.QueueSync,
-						QueueName:        DefaultDqueConfig.QueueName,
+				ClientConfig: ClientConfig{
+					GrafanaLokiConfig: client.Config{
+						URL:            somewhereURL,
+						TenantID:       "", // empty as not set in fluent-bit plugin config map
+						BatchSize:      100,
+						BatchWait:      30 * time.Second,
+						ExternalLabels: lokiflag.LabelSet{LabelSet: model.LabelSet{"app": "foo"}},
+						Timeout:        time.Second * 20,
+						BackoffConfig: util.BackoffConfig{
+							MinBackoff: 30 * time.Second,
+							MaxBackoff: 120 * time.Second,
+							MaxRetries: 3,
+						},
+					},
+					BufferConfig: BufferConfig{
+						Buffer:     false,
+						BufferType: DefaultBufferConfig.BufferType,
+						DqueConfig: DqueConfig{
+							QueueDir:         DefaultDqueConfig.QueueDir,
+							QueueSegmentSize: DefaultDqueConfig.QueueSegmentSize,
+							QueueSync:        DefaultDqueConfig.QueueSync,
+							QueueName:        DefaultDqueConfig.QueueName,
+						},
 					},
 				},
-				DynamicHostRegex: "*",
-				KubernetesMetadata: KubernetesMetadataExtraction{
-					TagKey:        DefaultKubernetesMetadataTagKey,
-					TagPrefix:     DefaultKubernetesMetadataTagPrefix,
-					TagExpression: DefaultKubernetesMetadataTagExpression,
-				},
+
+				LogLevel: warnLogLevel,
 			},
 			false},
 		),
@@ -408,7 +437,7 @@ var _ = Describe("Config", func() {
 				"LineFormat":                         "key_value",
 				"LogLevel":                           "warn",
 				"Labels":                             `{app="foo"}`,
-				"BatchWait":                          "30",
+				"BatchWait":                          "30s",
 				"BatchSize":                          "100",
 				"RemoveKeys":                         "buzz,fuzz",
 				"LabelKeys":                          "foo,bar",
@@ -420,42 +449,46 @@ var _ = Describe("Config", func() {
 				"DropLogEntryWithoutK8sMetadata":     "true",
 			},
 			&Config{
-				LineFormat: KvPairFormat,
-				ClientConfig: client.Config{
-					URL:            somewhereURL,
-					TenantID:       "", // empty as not set in fluent-bit plugin config map
-					BatchSize:      100,
-					BatchWait:      30 * time.Second,
-					ExternalLabels: lokiflag.LabelSet{LabelSet: model.LabelSet{"app": "foo"}},
-					BackoffConfig: util.BackoffConfig{
-						MinBackoff: (1 * time.Second) / 2,
-						MaxBackoff: 300 * time.Second,
-						MaxRetries: 10,
-					},
-					Timeout: 10 * time.Second,
-				},
-				LogLevel:      warnLogLevel,
-				LabelKeys:     []string{"foo", "bar"},
-				RemoveKeys:    []string{"buzz", "fuzz"},
-				DropSingleKey: false,
-				BufferConfig: BufferConfig{
-					Buffer:     false,
-					BufferType: DefaultBufferConfig.BufferType,
-					DqueConfig: DqueConfig{
-						QueueDir:         DefaultDqueConfig.QueueDir,
-						QueueSegmentSize: DefaultDqueConfig.QueueSegmentSize,
-						QueueSync:        DefaultDqueConfig.QueueSync,
-						QueueName:        DefaultDqueConfig.QueueName,
+				PluginConfig: PluginConfig{
+					LineFormat:       KvPairFormat,
+					LabelKeys:        []string{"foo", "bar"},
+					RemoveKeys:       []string{"buzz", "fuzz"},
+					DropSingleKey:    false,
+					DynamicHostRegex: "*",
+					KubernetesMetadata: KubernetesMetadataExtraction{
+						FallbackToTagWhenMetadataIsMissing: true,
+						DropLogEntryWithoutK8sMetadata:     true,
+						TagKey:                             "testKey",
+						TagPrefix:                          "testPrefix",
+						TagExpression:                      "testExpression",
 					},
 				},
-				DynamicHostRegex: "*",
-				KubernetesMetadata: KubernetesMetadataExtraction{
-					FallbackToTagWhenMetadataIsMissing: true,
-					DropLogEntryWithoutK8sMetadata:     true,
-					TagKey:                             "testKey",
-					TagPrefix:                          "testPrefix",
-					TagExpression:                      "testExpression",
+				ClientConfig: ClientConfig{
+					GrafanaLokiConfig: client.Config{
+						URL:            somewhereURL,
+						TenantID:       "", // empty as not set in fluent-bit plugin config map
+						BatchSize:      100,
+						BatchWait:      30 * time.Second,
+						ExternalLabels: lokiflag.LabelSet{LabelSet: model.LabelSet{"app": "foo"}},
+						BackoffConfig: util.BackoffConfig{
+							MinBackoff: (1 * time.Second) / 2,
+							MaxBackoff: 300 * time.Second,
+							MaxRetries: 10,
+						},
+						Timeout: 10 * time.Second,
+					},
+					BufferConfig: BufferConfig{
+						Buffer:     false,
+						BufferType: DefaultBufferConfig.BufferType,
+						DqueConfig: DqueConfig{
+							QueueDir:         DefaultDqueConfig.QueueDir,
+							QueueSegmentSize: DefaultDqueConfig.QueueSegmentSize,
+							QueueSync:        DefaultDqueConfig.QueueSync,
+							QueueName:        DefaultDqueConfig.QueueName,
+						},
+					},
 				},
+				LogLevel: warnLogLevel,
 			},
 			false},
 		),
@@ -465,7 +498,7 @@ var _ = Describe("Config", func() {
 				"LineFormat":          "key_value",
 				"LogLevel":            "warn",
 				"Labels":              `{app="foo"}`,
-				"BatchWait":           "30",
+				"BatchWait":           "30s",
 				"BatchSize":           "100",
 				"RemoveKeys":          "buzz,fuzz",
 				"LabelKeys":           "foo,bar",
@@ -474,40 +507,47 @@ var _ = Describe("Config", func() {
 				"MetricsTickInterval": "5",
 			},
 			&Config{
-				LineFormat: KvPairFormat,
-				ClientConfig: client.Config{
-					URL:            somewhereURL,
-					TenantID:       "", // empty as not set in fluent-bit plugin config map
-					BatchSize:      100,
-					BatchWait:      30 * time.Second,
-					ExternalLabels: lokiflag.LabelSet{LabelSet: model.LabelSet{"app": "foo"}},
-					BackoffConfig: util.BackoffConfig{
-						MinBackoff: (1 * time.Second) / 2,
-						MaxBackoff: 300 * time.Second,
-						MaxRetries: 10,
-					},
-					Timeout: 10 * time.Second,
-				},
-				LogLevel:      warnLogLevel,
-				LabelKeys:     []string{"foo", "bar"},
-				RemoveKeys:    []string{"buzz", "fuzz"},
-				DropSingleKey: false,
-				BufferConfig: BufferConfig{
-					Buffer:     false,
-					BufferType: DefaultBufferConfig.BufferType,
-					DqueConfig: DqueConfig{
-						QueueDir:         DefaultDqueConfig.QueueDir,
-						QueueSegmentSize: DefaultDqueConfig.QueueSegmentSize,
-						QueueSync:        DefaultDqueConfig.QueueSync,
-						QueueName:        DefaultDqueConfig.QueueName,
+				PluginConfig: PluginConfig{
+					LineFormat:    KvPairFormat,
+					LabelKeys:     []string{"foo", "bar"},
+					RemoveKeys:    []string{"buzz", "fuzz"},
+					DropSingleKey: false,
+
+					DynamicHostRegex: "*",
+					KubernetesMetadata: KubernetesMetadataExtraction{
+						TagKey:        DefaultKubernetesMetadataTagKey,
+						TagPrefix:     DefaultKubernetesMetadataTagPrefix,
+						TagExpression: DefaultKubernetesMetadataTagExpression,
 					},
 				},
-				DynamicHostRegex: "*",
-				KubernetesMetadata: KubernetesMetadataExtraction{
-					TagKey:        DefaultKubernetesMetadataTagKey,
-					TagPrefix:     DefaultKubernetesMetadataTagPrefix,
-					TagExpression: DefaultKubernetesMetadataTagExpression,
+
+				ClientConfig: ClientConfig{
+					GrafanaLokiConfig: client.Config{
+						URL:            somewhereURL,
+						TenantID:       "", // empty as not set in fluent-bit plugin config map
+						BatchSize:      100,
+						BatchWait:      30 * time.Second,
+						ExternalLabels: lokiflag.LabelSet{LabelSet: model.LabelSet{"app": "foo"}},
+						BackoffConfig: util.BackoffConfig{
+							MinBackoff: (1 * time.Second) / 2,
+							MaxBackoff: 300 * time.Second,
+							MaxRetries: 10,
+						},
+						Timeout: 10 * time.Second,
+					},
+					BufferConfig: BufferConfig{
+						Buffer:     false,
+						BufferType: DefaultBufferConfig.BufferType,
+						DqueConfig: DqueConfig{
+							QueueDir:         DefaultDqueConfig.QueueDir,
+							QueueSegmentSize: DefaultDqueConfig.QueueSegmentSize,
+							QueueSync:        DefaultDqueConfig.QueueSync,
+							QueueName:        DefaultDqueConfig.QueueName,
+						},
+					},
 				},
+
+				LogLevel: warnLogLevel,
 			},
 			false},
 		),

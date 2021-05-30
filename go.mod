@@ -11,16 +11,24 @@ require (
 	github.com/go-logfmt/logfmt v0.5.0
 	github.com/gobuffalo/packr/v2 v2.8.0
 	github.com/golang/mock v1.4.3
+	github.com/google/go-cmp v0.5.1 // indirect
 	github.com/grafana/loki v1.6.0
 	github.com/joncrlsn/dque v2.2.1-0.20200515025108-956d14155fa2+incompatible
 	github.com/json-iterator/go v1.1.10
+	github.com/mattn/go-colorable v0.1.8 // indirect
 	github.com/onsi/ginkgo v1.11.0
 	github.com/onsi/gomega v1.8.1
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.8.0
 	github.com/prometheus/common v0.14.0
+	github.com/russross/blackfriday/v2 v2.1.0 // indirect
+	github.com/sirupsen/logrus v1.8.1 // indirect
+	github.com/spf13/cobra v1.1.3 // indirect
 	github.com/weaveworks/common v0.0.0-20200625145055-4b1847531bc9
-	gopkg.in/yaml.v2 v2.3.0
+	golang.org/x/sys v0.0.0-20210403161142-5e06dd20ab57 // indirect
+	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
+	google.golang.org/protobuf v1.25.0 // indirect
+	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/apimachinery v0.18.6
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/code-generator v0.18.3

@@ -44,7 +44,9 @@ It also adds additional configurations that aim to improve plugin's performance 
 | DropLogEntryWithoutK8sMetadata | When metadata is missing for the log entry, it will be dropped | `false`
 | ControllerSyncTimeout | Time to wait for cluster object synchronization | 60 seconds
 | NumberOfBatchIDs | The number of id per batch. This increase the number of loki label streams | 10
-
+| SendDeletedClustersLogsToDefaultClient | When cluster is marked for deletion the logs will be send to the default url `URL` | `false`
+| DeletedClientTimeExpiration | The time duration after a client for deleted cluster will be considered for expired | 1 hour
+| CleanExpiredClientsPeriod | Clean the expired clients every `CleanExpiredClientsPeriod` | 24 hours
 ### Labels
 
 Labels are used to [query logs](https://github.com/grafana/loki/blob/v1.5.0/docs/logql.md) `{container_name="nginx", cluster="us-west1"}`, they are usually metadata about the workload producing the log stream (`instance`, `container_name`, `region`, `cluster`, `level`).  In Loki labels are indexed consequently you should be cautious when choosing them (high cardinality label values can have performance drastic impact).

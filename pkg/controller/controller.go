@@ -19,7 +19,6 @@ import (
 	"sync"
 	"time"
 
-	client "github.com/gardener/logging/pkg/client"
 	"github.com/gardener/logging/pkg/config"
 	"github.com/gardener/logging/pkg/metrics"
 
@@ -47,16 +46,21 @@ type Controller interface {
 	Stop()
 }
 type controller struct {
-	lock    sync.RWMutex
-	clients map[string]lokiclient.Client
-	conf    *config.Config
-	once    sync.Once
-	decoder runtime.Decoder
-	logger  log.Logger
+	defaultClient      lokiclient.Client
+	conf               *config.Config
+	lock               sync.RWMutex
+	clients            map[string]lokiclient.Client
+	deletedClientsLock sync.RWMutex
+	deletedClients     map[string]deletionTimestamp
+	once               sync.Once
+	done               chan bool
+	wg                 sync.WaitGroup
+	decoder            runtime.Decoder
+	logger             log.Logger
 }
 
 // NewController return Controller interface
-func NewController(informer cache.SharedIndexInformer, conf *config.Config, logger log.Logger) (Controller, error) {
+func NewController(informer cache.SharedIndexInformer, conf *config.Config, defaultClient lokiclient.Client, logger log.Logger) (Controller, error) {
 	decoder, err := extensioncontroller.NewGardenDecoder()
 	if err != nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorCreateDecoder).Inc()
@@ -71,6 +75,12 @@ func NewController(informer cache.SharedIndexInformer, conf *config.Config, logg
 		logger:  logger,
 	}
 
+	if conf.ControllerConfig.SendDeletedClustersLogsToDefaultClient {
+		controller.defaultClient = defaultClient
+		controller.deletedClients = make(map[string]deletionTimestamp)
+		controller.done = make(chan bool)
+	}
+
 	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    controller.addFunc,
 		DeleteFunc: controller.delFunc,
@@ -78,12 +88,20 @@ func NewController(informer cache.SharedIndexInformer, conf *config.Config, logg
 	})
 
 	stopChan := make(chan struct{})
-	time.AfterFunc(conf.CtlSyncTimeout, func() {
+	time.AfterFunc(conf.ControllerConfig.CtlSyncTimeout, func() {
 		close(stopChan)
 	})
 
 	if !cache.WaitForCacheSync(stopChan, informer.HasSynced) {
 		return nil, fmt.Errorf("failed to wait for caches to sync")
+	}
+
+	if conf.ControllerConfig.SendDeletedClustersLogsToDefaultClient {
+		controller.defaultClient = defaultClient
+		controller.deletedClients = make(map[string]deletionTimestamp)
+		controller.done = make(chan bool)
+		controller.wg.Add(1)
+		go controller.cleanExpiredClients()
 	}
 
 	return controller, nil
@@ -92,18 +110,16 @@ func NewController(informer cache.SharedIndexInformer, conf *config.Config, logg
 // GetClient search a client with <name> and returned if found.
 // In case the controller is closed it returns true as second return value.
 func (ctl *controller) GetClient(name string) (lokiclient.Client, bool) {
-	ctl.lock.RLocker().Lock()
-	defer ctl.lock.RLocker().Unlock()
 
-	if ctl.isStopped() {
-		return nil, true
+	client, closed := ctl.getClientForActiveCluster(name)
+	if closed {
+		return client, closed
 	}
-
-	if client, ok := ctl.clients[name]; ok {
+	if client != nil {
 		return client, false
 	}
 
-	return nil, false
+	return ctl.getClientForClusterInDeletionState(name)
 }
 
 func (ctl *controller) Stop() {
@@ -114,6 +130,11 @@ func (ctl *controller) Stop() {
 			client.Stop()
 		}
 		ctl.clients = nil
+		if ctl.done != nil {
+			ctl.done <- true
+			ctl.wg.Wait()
+			ctl.deletedClients = nil
+		}
 	})
 }
 
@@ -125,8 +146,11 @@ func (ctl *controller) addFunc(obj interface{}) {
 		return
 	}
 
-	if ctl.matches(cluster) {
-		ctl.createClient(cluster)
+	if ctl.matches(cluster) && !ctl.isDeletedShoot(cluster) {
+		ctl.createClientForActiveCluster(cluster)
+		if ctl.conf.ControllerConfig.SendDeletedClustersLogsToDefaultClient {
+			ctl.createClientForClusterInDeletionState(cluster)
+		}
 	}
 }
 
@@ -145,14 +169,17 @@ func (ctl *controller) updateFunc(oldObj interface{}, newObj interface{}) {
 		return
 	}
 
-	client, ok := ctl.clients[oldCluster.Name]
-	if ok && client != nil {
+	_, ok = ctl.clients[oldCluster.Name]
+	if ok {
+		// The shoot is not applicable for logging
 		if !ctl.matches(newCluster) {
+			ctl.deleteClient(newCluster)
+		} else if ctl.isDeletedShoot(newCluster) {
 			ctl.deleteClient(newCluster)
 		}
 	} else {
-		if ctl.matches(newCluster) {
-			ctl.createClient(newCluster)
+		if ctl.matches(newCluster) && !ctl.isDeletedShoot(newCluster) {
+			ctl.createClientForActiveCluster(newCluster)
 		}
 	}
 }
@@ -171,7 +198,7 @@ func (ctl *controller) delFunc(obj interface{}) {
 func (ctl *controller) getClientConfig(namespace string) *config.Config {
 	var clientURL flagext.URLValue
 
-	url := fmt.Sprintf("%s%s%s", ctl.conf.DynamicHostPrefix, namespace, ctl.conf.DynamicHostSuffix)
+	url := fmt.Sprintf("%s%s%s", ctl.conf.ControllerConfig.DynamicHostPrefix, namespace, ctl.conf.ControllerConfig.DynamicHostSuffix)
 	err := clientURL.Set(url)
 	if err != nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorFailedToParseURL).Inc()
@@ -180,8 +207,8 @@ func (ctl *controller) getClientConfig(namespace string) *config.Config {
 	}
 
 	conf := *ctl.conf
-	conf.ClientConfig.URL = clientURL
-	conf.BufferConfig.DqueConfig.QueueName = namespace
+	conf.ClientConfig.GrafanaLokiConfig.URL = clientURL
+	conf.ClientConfig.BufferConfig.DqueConfig.QueueName = namespace
 
 	return &conf
 }
@@ -201,48 +228,15 @@ func (ctl *controller) matches(cluster *extensionsv1alpha1.Cluster) bool {
 	return true
 }
 
-func (ctl *controller) createClient(cluster *extensionsv1alpha1.Cluster) {
-	clientConf := ctl.getClientConfig(cluster.Name)
-	if clientConf == nil {
-		return
-	}
-
-	client, err := client.NewClient(clientConf, ctl.logger)
+func (ctl *controller) isDeletedShoot(cluster *extensionsv1alpha1.Cluster) bool {
+	shoot, err := extensioncontroller.ShootFromCluster(ctl.decoder, cluster)
 	if err != nil {
-		metrics.Errors.WithLabelValues(metrics.ErrorFailedToMakeLokiClient).Inc()
-		level.Error(ctl.logger).Log("msg", fmt.Sprintf("failed to make new loki client for cluster %v", cluster.Name), "error", err.Error())
-		return
+		metrics.Errors.WithLabelValues(metrics.ErrorCanNotExtractShoot).Inc()
+		level.Error(ctl.logger).Log("msg", fmt.Sprintf("can't extract shoot from cluster %v", cluster.Name))
+		return false
 	}
 
-	level.Info(ctl.logger).Log("msg", fmt.Sprintf("Add client for cluster %v", cluster.Name))
-	ctl.lock.Lock()
-	defer ctl.lock.Unlock()
-
-	if ctl.isStopped() {
-		return
-	}
-	ctl.clients[cluster.Name] = client
-}
-
-func (ctl *controller) deleteClient(cluster *extensionsv1alpha1.Cluster) {
-	ctl.lock.Lock()
-
-	if ctl.isStopped() {
-		ctl.lock.Unlock()
-		return
-	}
-
-	client, ok := ctl.clients[cluster.Name]
-	if ok && client != nil {
-		delete(ctl.clients, cluster.Name)
-	}
-
-	ctl.lock.Unlock()
-	if ok && client != nil {
-		level.Info(ctl.logger).Log("msg", fmt.Sprintf("Delete client for cluster %v", cluster.Name))
-		client.Stop()
-	}
-
+	return shoot != nil && shoot.DeletionTimestamp != nil
 }
 
 func (ctl *controller) isStopped() bool {

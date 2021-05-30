@@ -57,23 +57,65 @@ const (
 
 //Config holds all of the needet properties of the loki output plugin
 type Config struct {
-	ClientConfig         client.Config
-	BufferConfig         BufferConfig
-	LogLevel             logging.Level
-	CtlSyncTimeout       time.Duration
+	ClientConfig     ClientConfig
+	ControllerConfig ControllerConfig
+	PluginConfig     PluginConfig
+	LogLevel         logging.Level
+}
+
+// ClientConfig holds configuration for the clients
+type ClientConfig struct {
+	// GrafanaLokiConfig holds the configuration for the grafana/loki client
+	GrafanaLokiConfig client.Config
+	// BufferConfig holds the configuration for the buffered client
+	BufferConfig BufferConfig
+	// SortByTimestamp indicates whether the logs should be sorted ot not
+	SortByTimestamp bool
+	// NumberOfBatchIDs is number of id per batch.
+	// This increase the number of loki label streams
+	NumberOfBatchIDs uint64
+}
+
+// ControllerConfig hold the configuration fot the Loki client controller
+type ControllerConfig struct {
+	// CtlSyncTimeout for resource synchronization
+	CtlSyncTimeout time.Duration
+	// DynamicHostPrefix is the prefix of the dynamic host endpoint
+	DynamicHostPrefix string
+	// DynamicHostSuffix is the suffix of the dynamic host endpoint
+	DynamicHostSuffix string
+	// SendDeletedClustersLogsToDefaultClient indicates whether the logs from
+	// shoot in deleting state should be save in the default url or not
+	SendDeletedClustersLogsToDefaultClient bool
+	// DeletedClientTimeExpiration is the time after a client for
+	// deleted shoot should be cosidered for removal
+	DeletedClientTimeExpiration time.Duration
+	// CleanExpiredClientsPeriod is the period of deletion of expired clients
+	CleanExpiredClientsPeriod time.Duration
+}
+
+// PluginConfig contains the configuration mostly related to the Loki plugin
+type PluginConfig struct {
+	// AutoKubernetesLabels extact all key/values from the kubernetes field
 	AutoKubernetesLabels bool
-	SortByTimestamp      bool
-	NumberOfBatchIDs     uint64
-	RemoveKeys           []string
-	LabelKeys            []string
-	LineFormat           Format
-	DropSingleKey        bool
-	LabelMap             map[string]interface{}
-	DynamicHostPath      map[string]interface{}
-	DynamicHostPrefix    string
-	DynamicHostSuffix    string
-	DynamicHostRegex     string
-	KubernetesMetadata   KubernetesMetadataExtraction
+	// RemoveKeys specify removing keys
+	RemoveKeys []string
+	// LabelKeys is comma separated list of keys to use as stream labels
+	LabelKeys []string
+	// LineFormat is the format to use when flattening the record to a log line
+	LineFormat Format
+	// DropSingleKey if set to true and after extracting label_keys a record only
+	// has a single key remaining, the log line sent to Loki will just be
+	// the value of the record key
+	DropSingleKey bool
+	// LabelMap is path to a json file defining how to transform nested records
+	LabelMap map[string]interface{}
+	// DynamicHostPath is jsonpath in the log labels to the dynamic host
+	DynamicHostPath map[string]interface{}
+	// DynamicHostRegex is regex to check if the dynamic host is valid
+	DynamicHostRegex string
+	// KubernetesMetadata holds the configurations for retrieving the meta data from a tag
+	KubernetesMetadata KubernetesMetadataExtraction
 }
 
 // BufferConfig contains the buffer settings
@@ -119,76 +161,6 @@ var DefaultDqueConfig = DqueConfig{
 func ParseConfig(cfg Getter) (*Config, error) {
 	res := &Config{}
 
-	res.ClientConfig = defaultClientCfg
-	res.BufferConfig = DefaultBufferConfig
-
-	url := cfg.Get("URL")
-	var clientURL flagext.URLValue
-	if url == "" {
-		url = "http://localhost:3100/loki/api/v1/push"
-	}
-	err := clientURL.Set(url)
-	if err != nil {
-		return nil, errors.New("failed to parse client URL")
-	}
-	res.ClientConfig.URL = clientURL
-
-	// cfg.Get will return empty string if not set, which is handled by the client library as no tenant
-	res.ClientConfig.TenantID = cfg.Get("TenantID")
-
-	batchWait := cfg.Get("BatchWait")
-	if batchWait != "" {
-		batchWaitValue, err := strconv.Atoi(batchWait)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse BatchWait: %s", batchWait)
-		}
-		if batchWaitValue > 0 {
-			res.ClientConfig.BatchWait = time.Duration(batchWaitValue) * time.Second
-		} else {
-			return nil, fmt.Errorf("Invalid value for BatchWait: %s", batchWait)
-		}
-
-	}
-
-	batchSize := cfg.Get("BatchSize")
-	if batchSize != "" {
-		batchSizeValue, err := strconv.Atoi(batchSize)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse BatchSize: %s", batchSize)
-		}
-		res.ClientConfig.BatchSize = batchSizeValue
-	}
-
-	ctlSyncTimeout := cfg.Get("ControllerSyncTimeout")
-	if ctlSyncTimeout != "" {
-		ctlSyncTimeoutValue, err := strconv.Atoi(ctlSyncTimeout)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse ControllerSyncTimeout: %s", ctlSyncTimeout)
-		}
-		if ctlSyncTimeoutValue > 20 {
-			res.CtlSyncTimeout = time.Duration(ctlSyncTimeoutValue) * time.Second
-		} else {
-			res.CtlSyncTimeout = 20 * time.Second
-		}
-
-	} else {
-		res.CtlSyncTimeout = 60 * time.Second
-	}
-
-	labels := cfg.Get("Labels")
-	if labels == "" {
-		labels = `{job="fluent-bit"}`
-	}
-	matchers, err := logql.ParseMatchers(labels)
-	if err != nil {
-		return nil, err
-	}
-	labelSet := make(model.LabelSet)
-	for _, m := range matchers {
-		labelSet[model.LabelName(m.Name)] = model.LabelValue(m.Value)
-	}
-	res.ClientConfig.ExternalLabels = lokiflag.LabelSet{LabelSet: labelSet}
-
 	logLevel := cfg.Get("LogLevel")
 	if logLevel == "" {
 		logLevel = "info"
@@ -199,134 +171,127 @@ func ParseConfig(cfg Getter) (*Config, error) {
 	}
 	res.LogLevel = level
 
-	autoKubernetesLabels := cfg.Get("AutoKubernetesLabels")
-	switch autoKubernetesLabels {
-	case "false", "":
-		res.AutoKubernetesLabels = false
-	case "true":
-		res.AutoKubernetesLabels = true
-	default:
-		return nil, fmt.Errorf("invalid boolean AutoKubernetesLabels: %v", autoKubernetesLabels)
+	if err := initClientConfig(cfg, res); err != nil {
+		return nil, err
+	}
+	if err := initControllerConfig(cfg, res); err != nil {
+		return nil, err
+	}
+	if err := initPluginConfig(cfg, res); err != nil {
+		return nil, err
 	}
 
-	removeKey := cfg.Get("RemoveKeys")
-	if removeKey != "" {
-		res.RemoveKeys = strings.Split(removeKey, ",")
-	}
+	return res, nil
+}
 
-	labelKeys := cfg.Get("LabelKeys")
-	if labelKeys != "" {
-		res.LabelKeys = strings.Split(labelKeys, ",")
-	}
+func initClientConfig(cfg Getter, res *Config) error {
+	res.ClientConfig.GrafanaLokiConfig = defaultClientCfg
+	res.ClientConfig.BufferConfig = DefaultBufferConfig
 
-	dropSingleKey := cfg.Get("DropSingleKey")
-	switch dropSingleKey {
-	case "false":
-		res.DropSingleKey = false
-	case "true", "":
-		res.DropSingleKey = true
-	default:
-		return nil, fmt.Errorf("invalid boolean DropSingleKey: %v", dropSingleKey)
+	url := cfg.Get("URL")
+	var clientURL flagext.URLValue
+	if url == "" {
+		url = "http://localhost:3100/loki/api/v1/push"
 	}
-
-	lineFormat := cfg.Get("LineFormat")
-	switch lineFormat {
-	case "json", "":
-		res.LineFormat = JSONFormat
-	case "key_value":
-		res.LineFormat = KvPairFormat
-	default:
-		return nil, fmt.Errorf("invalid format: %s", lineFormat)
+	err := clientURL.Set(url)
+	if err != nil {
+		return errors.New("failed to parse client URL")
 	}
+	res.ClientConfig.GrafanaLokiConfig.URL = clientURL
 
-	labelMapPath := cfg.Get("LabelMapPath")
-	if labelMapPath != "" {
-		content, err := ioutil.ReadFile(labelMapPath)
+	// cfg.Get will return empty string if not set, which is handled by the client library as no tenant
+	res.ClientConfig.GrafanaLokiConfig.TenantID = cfg.Get("TenantID")
+
+	batchWait := cfg.Get("BatchWait")
+	if batchWait != "" {
+		res.ClientConfig.GrafanaLokiConfig.BatchWait, err = time.ParseDuration(batchWait)
 		if err != nil {
-			return nil, fmt.Errorf("failed to open LabelMap file: %s", err)
-		}
-		if err := json.Unmarshal(content, &res.LabelMap); err != nil {
-			return nil, fmt.Errorf("failed to Unmarshal LabelMap file: %s", err)
-		}
-		res.LabelKeys = nil
-	}
-
-	dynamicHostPath := cfg.Get("DynamicHostPath")
-	if dynamicHostPath != "" {
-		if err := json.Unmarshal([]byte(dynamicHostPath), &res.DynamicHostPath); err != nil {
-			return nil, fmt.Errorf("failed to Unmarshal DynamicHostPath json: %s", err)
+			return fmt.Errorf("failed to parse BatchWait: %s :%v", batchWait, err)
 		}
 	}
 
-	res.DynamicHostPrefix = cfg.Get("DynamicHostPrefix")
-	res.DynamicHostSuffix = cfg.Get("DynamicHostSuffix")
-	res.DynamicHostRegex = cfg.Get("DynamicHostRegex")
-	if res.DynamicHostRegex == "" {
-		res.DynamicHostRegex = "*"
+	batchSize := cfg.Get("BatchSize")
+	if batchSize != "" {
+		batchSizeValue, err := strconv.Atoi(batchSize)
+		if err != nil {
+			return fmt.Errorf("failed to parse BatchSize: %s", batchSize)
+		}
+		res.ClientConfig.GrafanaLokiConfig.BatchSize = batchSizeValue
 	}
+
+	labels := cfg.Get("Labels")
+	if labels == "" {
+		labels = `{job="fluent-bit"}`
+	}
+	matchers, err := logql.ParseMatchers(labels)
+	if err != nil {
+		return err
+	}
+	labelSet := make(model.LabelSet)
+	for _, m := range matchers {
+		labelSet[model.LabelName(m.Name)] = model.LabelValue(m.Value)
+	}
+	res.ClientConfig.GrafanaLokiConfig.ExternalLabels = lokiflag.LabelSet{LabelSet: labelSet}
 
 	maxRetries := cfg.Get("MaxRetries")
 	if maxRetries != "" {
-		res.ClientConfig.BackoffConfig.MaxRetries, err = strconv.Atoi(maxRetries)
+		res.ClientConfig.GrafanaLokiConfig.BackoffConfig.MaxRetries, err = strconv.Atoi(maxRetries)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse MaxRetries: %s", maxRetries)
+			return fmt.Errorf("failed to parse MaxRetries: %s", maxRetries)
 		}
 	}
 
 	timeout := cfg.Get("Timeout")
 	if timeout != "" {
-		t, err := strconv.Atoi(timeout)
+		res.ClientConfig.GrafanaLokiConfig.Timeout, err = time.ParseDuration(timeout)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse Timeout: %s", timeout)
+			return fmt.Errorf("failed to parse Timeout: %s : %v", timeout, err)
 		}
-		res.ClientConfig.Timeout = time.Duration(t) * time.Second
 	}
 
 	minBackoff := cfg.Get("MinBackoff")
 	if minBackoff != "" {
-		mib, err := strconv.Atoi(minBackoff)
+		res.ClientConfig.GrafanaLokiConfig.BackoffConfig.MinBackoff, err = time.ParseDuration(minBackoff)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse MinBackoff: %s", minBackoff)
+			return fmt.Errorf("failed to parse MinBackoff: %s : %v", minBackoff, err)
 		}
-		res.ClientConfig.BackoffConfig.MinBackoff = time.Duration(mib) * time.Second
 	}
 
 	maxBackoff := cfg.Get("MaxBackoff")
 	if maxBackoff != "" {
-		mab, err := strconv.Atoi(maxBackoff)
+		res.ClientConfig.GrafanaLokiConfig.BackoffConfig.MaxBackoff, err = time.ParseDuration(maxBackoff)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse MaxBackoff: %s", maxBackoff)
+			return fmt.Errorf("failed to parse MaxBackoff: %s : %v", maxBackoff, err)
 		}
-		res.ClientConfig.BackoffConfig.MaxBackoff = time.Duration(mab) * time.Second
 	}
 
 	// enable loki plugin buffering
 	buffer := cfg.Get("Buffer")
 	if buffer != "" {
-		res.BufferConfig.Buffer, err = strconv.ParseBool(buffer)
+		res.ClientConfig.BufferConfig.Buffer, err = strconv.ParseBool(buffer)
 		if err != nil {
-			return nil, fmt.Errorf("invalid value for Buffer, error: %v", err)
+			return fmt.Errorf("invalid value for Buffer, error: %v", err)
 		}
 	}
 
 	// buffering type
 	bufferType := cfg.Get("BufferType")
 	if bufferType != "" {
-		res.BufferConfig.BufferType = bufferType
+		res.ClientConfig.BufferConfig.BufferType = bufferType
 	}
 
 	// dque directory
 	queueDir := cfg.Get("QueueDir")
 	if queueDir != "" {
-		res.BufferConfig.DqueConfig.QueueDir = queueDir
+		res.ClientConfig.BufferConfig.DqueConfig.QueueDir = queueDir
 	}
 
 	// dque segment size (queueEntry unit)
 	queueSegmentSize := cfg.Get("QueueSegmentSize")
 	if queueSegmentSize != "" {
-		res.BufferConfig.DqueConfig.QueueSegmentSize, err = strconv.Atoi(queueSegmentSize)
+		res.ClientConfig.BufferConfig.DqueConfig.QueueSegmentSize, err = strconv.Atoi(queueSegmentSize)
 		if err != nil {
-			return nil, fmt.Errorf("cannot convert QueueSegmentSize %v to integer, error: %v", queueSegmentSize, err)
+			return fmt.Errorf("cannot convert QueueSegmentSize %v to integer, error: %v", queueSegmentSize, err)
 		}
 	}
 
@@ -334,23 +299,23 @@ func ParseConfig(cfg Getter) (*Config, error) {
 	queueSync := cfg.Get("QueueSync")
 	switch queueSync {
 	case "normal", "":
-		res.BufferConfig.DqueConfig.QueueSync = false
+		res.ClientConfig.BufferConfig.DqueConfig.QueueSync = false
 	case "full":
-		res.BufferConfig.DqueConfig.QueueSync = true
+		res.ClientConfig.BufferConfig.DqueConfig.QueueSync = true
 	default:
-		return nil, fmt.Errorf("invalid string queueSync: %v", queueSync)
+		return fmt.Errorf("invalid string queueSync: %v", queueSync)
 	}
 
 	queueName := cfg.Get("QueueName")
 	if queueName != "" {
-		res.BufferConfig.DqueConfig.QueueName = queueName
+		res.ClientConfig.BufferConfig.DqueConfig.QueueName = queueName
 	}
 
 	sortByTimestamp := cfg.Get("SortByTimestamp")
 	if sortByTimestamp != "" {
-		res.SortByTimestamp, err = strconv.ParseBool(sortByTimestamp)
+		res.ClientConfig.SortByTimestamp, err = strconv.ParseBool(sortByTimestamp)
 		if err != nil {
-			return nil, fmt.Errorf("invalid string SortByTimestamp: %v", err)
+			return fmt.Errorf("invalid string SortByTimestamp: %v", err)
 		}
 	}
 
@@ -358,53 +323,166 @@ func ParseConfig(cfg Getter) (*Config, error) {
 	if numberOfBatchIDs != "" {
 		numberOfBatchIDsValue, err := strconv.Atoi(numberOfBatchIDs)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse NumberOfBatchIDs: %s", numberOfBatchIDs)
+			return fmt.Errorf("failed to parse NumberOfBatchIDs: %s", numberOfBatchIDs)
 		}
 		if numberOfBatchIDsValue <= 0 {
-			res.NumberOfBatchIDs = 10
+			return fmt.Errorf("NumberOfBatchIDs can't be zero or negative value: %s", numberOfBatchIDs)
 		} else {
-			res.NumberOfBatchIDs = uint64(numberOfBatchIDsValue)
+			res.ClientConfig.NumberOfBatchIDs = uint64(numberOfBatchIDsValue)
 		}
 	} else {
-		res.NumberOfBatchIDs = 10
+		res.ClientConfig.NumberOfBatchIDs = 10
+	}
+
+	return nil
+}
+
+func initControllerConfig(cfg Getter, res *Config) error {
+	var err error
+	ctlSyncTimeout := cfg.Get("ControllerSyncTimeout")
+	if ctlSyncTimeout != "" {
+		res.ControllerConfig.CtlSyncTimeout, err = time.ParseDuration(ctlSyncTimeout)
+		if err != nil {
+			return fmt.Errorf("failed to parse ControllerSyncTimeout: %s : %v", ctlSyncTimeout, err)
+		}
+	} else {
+		res.ControllerConfig.CtlSyncTimeout = 60 * time.Second
+	}
+
+	res.ControllerConfig.DynamicHostPrefix = cfg.Get("DynamicHostPrefix")
+	res.ControllerConfig.DynamicHostSuffix = cfg.Get("DynamicHostSuffix")
+
+	sendDeletedClustersLogsToDefaultClient := cfg.Get("SendDeletedClustersLogsToDefaultClient")
+	if sendDeletedClustersLogsToDefaultClient != "" {
+		res.ControllerConfig.SendDeletedClustersLogsToDefaultClient, err = strconv.ParseBool(sendDeletedClustersLogsToDefaultClient)
+		if err != nil {
+			return fmt.Errorf("invalid string SendDeletedClustersLogsToDefaultClient: %v", err)
+		}
+	}
+
+	deletedClientTimeExpiration := cfg.Get("DeletedClientTimeExpiration")
+	if deletedClientTimeExpiration != "" {
+		res.ControllerConfig.DeletedClientTimeExpiration, err = time.ParseDuration(deletedClientTimeExpiration)
+		if err != nil {
+			return fmt.Errorf("failed to parse DeletedClientTimeExpiration: %s", deletedClientTimeExpiration)
+		}
+	} else {
+		res.ControllerConfig.DeletedClientTimeExpiration = time.Hour
+	}
+
+	cleanExpiredClientsPeriod := cfg.Get("CleanExpiredClientsPeriod")
+	if cleanExpiredClientsPeriod != "" {
+		res.ControllerConfig.CleanExpiredClientsPeriod, err = time.ParseDuration(cleanExpiredClientsPeriod)
+		if err != nil {
+			return fmt.Errorf("failed to parse CleanExpiredClientsPeriod: %s", cleanExpiredClientsPeriod)
+		}
+	} else {
+		res.ControllerConfig.CleanExpiredClientsPeriod = 24 * time.Hour
+	}
+
+	return nil
+}
+
+func initPluginConfig(cfg Getter, res *Config) error {
+	var err error
+	autoKubernetesLabels := cfg.Get("AutoKubernetesLabels")
+	if autoKubernetesLabels != "" {
+		res.PluginConfig.AutoKubernetesLabels, err = strconv.ParseBool(autoKubernetesLabels)
+		if err != nil {
+			return fmt.Errorf("invalid boolean for AutoKubernetesLabels, error: %v", err)
+		}
+	}
+
+	dropSingleKey := cfg.Get("DropSingleKey")
+	if dropSingleKey != "" {
+		res.PluginConfig.DropSingleKey, err = strconv.ParseBool(dropSingleKey)
+		if err != nil {
+			return fmt.Errorf("invalid boolean DropSingleKey: %v", dropSingleKey)
+		}
+	} else {
+		res.PluginConfig.DropSingleKey = true
+	}
+
+	removeKey := cfg.Get("RemoveKeys")
+	if removeKey != "" {
+		res.PluginConfig.RemoveKeys = strings.Split(removeKey, ",")
+	}
+
+	labelKeys := cfg.Get("LabelKeys")
+	if labelKeys != "" {
+		res.PluginConfig.LabelKeys = strings.Split(labelKeys, ",")
+	}
+
+	lineFormat := cfg.Get("LineFormat")
+	switch lineFormat {
+	case "json", "":
+		res.PluginConfig.LineFormat = JSONFormat
+	case "key_value":
+		res.PluginConfig.LineFormat = KvPairFormat
+	default:
+		return fmt.Errorf("invalid format: %s", lineFormat)
+	}
+
+	labelMapPath := cfg.Get("LabelMapPath")
+	if labelMapPath != "" {
+		content, err := ioutil.ReadFile(labelMapPath)
+		if err != nil {
+			return fmt.Errorf("failed to open LabelMap file: %s", err)
+		}
+		if err := json.Unmarshal(content, &res.PluginConfig.LabelMap); err != nil {
+			return fmt.Errorf("failed to Unmarshal LabelMap file: %s", err)
+		}
+		res.PluginConfig.LabelKeys = nil
+	}
+
+	dynamicHostPath := cfg.Get("DynamicHostPath")
+	if dynamicHostPath != "" {
+		if err := json.Unmarshal([]byte(dynamicHostPath), &res.PluginConfig.DynamicHostPath); err != nil {
+			return fmt.Errorf("failed to Unmarshal DynamicHostPath json: %s", err)
+		}
+	}
+
+	res.PluginConfig.DynamicHostRegex = cfg.Get("DynamicHostRegex")
+	if res.PluginConfig.DynamicHostRegex == "" {
+		res.PluginConfig.DynamicHostRegex = "*"
 	}
 
 	fallbackToTagWhenMetadataIsMissing := cfg.Get("FallbackToTagWhenMetadataIsMissing")
 	if fallbackToTagWhenMetadataIsMissing != "" {
-		res.KubernetesMetadata.FallbackToTagWhenMetadataIsMissing, err = strconv.ParseBool(fallbackToTagWhenMetadataIsMissing)
+		res.PluginConfig.KubernetesMetadata.FallbackToTagWhenMetadataIsMissing, err = strconv.ParseBool(fallbackToTagWhenMetadataIsMissing)
 		if err != nil {
-			return nil, fmt.Errorf("invalid value for FallbackToTagWhenMetadataIsMissing, error: %v", err)
+			return fmt.Errorf("invalid value for FallbackToTagWhenMetadataIsMissing, error: %v", err)
 		}
 	}
 
 	tagKey := cfg.Get("TagKey")
 	if tagKey != "" {
-		res.KubernetesMetadata.TagKey = tagKey
+		res.PluginConfig.KubernetesMetadata.TagKey = tagKey
 	} else {
-		res.KubernetesMetadata.TagKey = DefaultKubernetesMetadataTagKey
+		res.PluginConfig.KubernetesMetadata.TagKey = DefaultKubernetesMetadataTagKey
 	}
 
 	tagPrefix := cfg.Get("TagPrefix")
 	if tagPrefix != "" {
-		res.KubernetesMetadata.TagPrefix = tagPrefix
+		res.PluginConfig.KubernetesMetadata.TagPrefix = tagPrefix
 	} else {
-		res.KubernetesMetadata.TagPrefix = DefaultKubernetesMetadataTagPrefix
+		res.PluginConfig.KubernetesMetadata.TagPrefix = DefaultKubernetesMetadataTagPrefix
 	}
 
 	tagExpression := cfg.Get("TagExpression")
 	if tagExpression != "" {
-		res.KubernetesMetadata.TagExpression = tagExpression
+		res.PluginConfig.KubernetesMetadata.TagExpression = tagExpression
 	} else {
-		res.KubernetesMetadata.TagExpression = DefaultKubernetesMetadataTagExpression
+		res.PluginConfig.KubernetesMetadata.TagExpression = DefaultKubernetesMetadataTagExpression
 	}
 
 	dropLogEntryWithoutK8sMetadata := cfg.Get("DropLogEntryWithoutK8sMetadata")
 	if dropLogEntryWithoutK8sMetadata != "" {
-		res.KubernetesMetadata.DropLogEntryWithoutK8sMetadata, err = strconv.ParseBool(dropLogEntryWithoutK8sMetadata)
+		res.PluginConfig.KubernetesMetadata.DropLogEntryWithoutK8sMetadata, err = strconv.ParseBool(dropLogEntryWithoutK8sMetadata)
 		if err != nil {
-			return nil, fmt.Errorf("invalid string DropLogEntryWithoutK8sMetadata: %v", err)
+			return fmt.Errorf("invalid string DropLogEntryWithoutK8sMetadata: %v", err)
 		}
 	}
 
-	return res, nil
+	return nil
 }

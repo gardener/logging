@@ -39,42 +39,48 @@ var _ = Describe("Client", func() {
 	var infoLogLevel logging.Level
 	_ = infoLogLevel.Set("info")
 	conf := &config.Config{
-		LineFormat: config.KvPairFormat,
-		ClientConfig: client.Config{
-			URL:            defaultURL,
-			TenantID:       "", // empty as not set in fluent-bit plugin config map
-			BatchSize:      100,
-			BatchWait:      30 * time.Second,
-			ExternalLabels: lokiflag.LabelSet{LabelSet: model.LabelSet{"app": "foo"}},
-			BackoffConfig: util.BackoffConfig{
-				MinBackoff: (1 * time.Second),
-				MaxBackoff: 300 * time.Second,
-				MaxRetries: 10,
+		ClientConfig: config.ClientConfig{
+			GrafanaLokiConfig: client.Config{
+				URL:            defaultURL,
+				TenantID:       "", // empty as not set in fluent-bit plugin config map
+				BatchSize:      100,
+				BatchWait:      30 * time.Second,
+				ExternalLabels: lokiflag.LabelSet{LabelSet: model.LabelSet{"app": "foo"}},
+				BackoffConfig: util.BackoffConfig{
+					MinBackoff: (1 * time.Second),
+					MaxBackoff: 300 * time.Second,
+					MaxRetries: 10,
+				},
+				Timeout: 10 * time.Second,
 			},
-			Timeout: 10 * time.Second,
-		},
-		BufferConfig: config.BufferConfig{
-			Buffer:     false,
-			BufferType: config.DefaultBufferConfig.BufferType,
-			DqueConfig: config.DqueConfig{
-				QueueDir:         config.DefaultDqueConfig.QueueDir,
-				QueueSegmentSize: config.DefaultDqueConfig.QueueSegmentSize,
-				QueueSync:        config.DefaultDqueConfig.QueueSync,
-				QueueName:        config.DefaultDqueConfig.QueueName,
-			},
-		},
-		LogLevel:      infoLogLevel,
-		LabelKeys:     []string{"foo", "bar"},
-		RemoveKeys:    []string{"buzz", "fuzz"},
-		DropSingleKey: false,
-		DynamicHostPath: map[string]interface{}{
-			"kubernetes": map[string]interface{}{
-				"namespace_name": "namespace",
+			BufferConfig: config.BufferConfig{
+				Buffer:     false,
+				BufferType: config.DefaultBufferConfig.BufferType,
+				DqueConfig: config.DqueConfig{
+					QueueDir:         config.DefaultDqueConfig.QueueDir,
+					QueueSegmentSize: config.DefaultDqueConfig.QueueSegmentSize,
+					QueueSync:        config.DefaultDqueConfig.QueueSync,
+					QueueName:        config.DefaultDqueConfig.QueueName,
+				},
 			},
 		},
-		DynamicHostPrefix: "http://loki.",
-		DynamicHostSuffix: ".svc:3100/loki/api/v1/push",
-		DynamicHostRegex:  "shoot--",
+		PluginConfig: config.PluginConfig{
+			LabelKeys:     []string{"foo", "bar"},
+			RemoveKeys:    []string{"buzz", "fuzz"},
+			DropSingleKey: false,
+			DynamicHostPath: map[string]interface{}{
+				"kubernetes": map[string]interface{}{
+					"namespace_name": "namespace",
+				},
+			},
+			DynamicHostRegex: "shoot--",
+			LineFormat:       config.KvPairFormat,
+		},
+		LogLevel: infoLogLevel,
+		ControllerConfig: config.ControllerConfig{
+			DynamicHostPrefix: "http://loki.",
+			DynamicHostSuffix: ".svc:3100/loki/api/v1/push",
+		},
 	}
 
 	logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
