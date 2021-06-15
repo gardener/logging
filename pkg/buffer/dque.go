@@ -9,11 +9,14 @@ package buffer
 import (
 	"fmt"
 	"os"
+	"path"
 	"sync"
 	"time"
 
 	"github.com/gardener/logging/pkg/config"
 	"github.com/gardener/logging/pkg/metrics"
+
+	"runtime/pprof"
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
@@ -21,6 +24,8 @@ import (
 	"github.com/joncrlsn/dque"
 	"github.com/prometheus/common/model"
 )
+
+var newDqueProfile = pprof.NewProfile("NewDqueProfile")
 
 type dqueEntry struct {
 	LabelSet  model.LabelSet
@@ -33,11 +38,12 @@ func dqueEntryBuilder() interface{} {
 }
 
 type dqueClient struct {
-	logger log.Logger
-	queue  *dque.DQue
-	loki   client.Client
-	once   sync.Once
-	url    string
+	logger        log.Logger
+	queue         *dque.DQue
+	loki          client.Client
+	once          sync.Once
+	url           string
+	queueFullPath string
 }
 
 // newDque makes a new dque loki client
@@ -58,6 +64,8 @@ func newDque(cfg *config.Config, logger log.Logger, newClientFunc func(cfg clien
 		return nil, err
 	}
 
+	q.queueFullPath = path.Join(cfg.ClientConfig.BufferConfig.DqueConfig.QueueDir, cfg.ClientConfig.BufferConfig.DqueConfig.QueueName)
+
 	q.url = cfg.ClientConfig.GrafanaLokiConfig.URL.String()
 
 	if !cfg.ClientConfig.BufferConfig.DqueConfig.QueueSync {
@@ -70,6 +78,7 @@ func newDque(cfg *config.Config, logger log.Logger, newClientFunc func(cfg clien
 	}
 
 	go q.dequeuer()
+	newDqueProfile.Add(q, 1)
 	return q, nil
 }
 
@@ -110,6 +119,8 @@ func (c *dqueClient) Stop() {
 	c.once.Do(func() {
 		c.queue.Close()
 		c.loki.Stop()
+		_ = os.RemoveAll(c.queueFullPath)
+		newDqueProfile.Remove(c)
 	})
 
 }
