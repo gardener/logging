@@ -32,6 +32,7 @@ import (
 )
 import (
 	"net/http"
+	"runtime"
 	"sync"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -47,6 +48,8 @@ var (
 )
 
 func init() {
+	runtime.SetMutexProfileFraction(5)
+	runtime.SetBlockProfileRate(1)
 	// metrics
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
