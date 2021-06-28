@@ -21,6 +21,7 @@ import (
 
 	"github.com/gardener/logging/pkg/config"
 	"github.com/gardener/logging/pkg/metrics"
+	"github.com/gardener/logging/pkg/types"
 
 	extensioncontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
@@ -31,8 +32,6 @@ import (
 	"github.com/go-kit/kit/log/level"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/cache"
-
-	lokiclient "github.com/grafana/loki/pkg/promtail/client"
 )
 
 const (
@@ -42,14 +41,14 @@ const (
 // Controller represent a k8s controller watching for resources and
 // create Loki clients base on them
 type Controller interface {
-	GetClient(name string) (lokiclient.Client, bool)
+	GetClient(name string) (types.LokiClient, bool)
 	Stop()
 }
 type controller struct {
-	defaultClient      lokiclient.Client
+	defaultClient      types.LokiClient
 	conf               *config.Config
 	lock               sync.RWMutex
-	clients            map[string]lokiclient.Client
+	clients            map[string]types.LokiClient
 	deletedClientsLock sync.RWMutex
 	deletedClients     map[string]deletionTimestamp
 	once               sync.Once
@@ -60,7 +59,7 @@ type controller struct {
 }
 
 // NewController return Controller interface
-func NewController(informer cache.SharedIndexInformer, conf *config.Config, defaultClient lokiclient.Client, logger log.Logger) (Controller, error) {
+func NewController(informer cache.SharedIndexInformer, conf *config.Config, defaultClient types.LokiClient, logger log.Logger) (Controller, error) {
 	decoder, err := extensioncontroller.NewGardenDecoder()
 	if err != nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorCreateDecoder).Inc()
@@ -69,7 +68,7 @@ func NewController(informer cache.SharedIndexInformer, conf *config.Config, defa
 	}
 
 	controller := &controller{
-		clients: make(map[string]lokiclient.Client, expectedActiveClusters),
+		clients: make(map[string]types.LokiClient, expectedActiveClusters),
 		conf:    conf,
 		decoder: decoder,
 		logger:  logger,
@@ -109,7 +108,7 @@ func NewController(informer cache.SharedIndexInformer, conf *config.Config, defa
 
 // GetClient search a client with <name> and returned if found.
 // In case the controller is closed it returns true as second return value.
-func (ctl *controller) GetClient(name string) (lokiclient.Client, bool) {
+func (ctl *controller) GetClient(name string) (types.LokiClient, bool) {
 
 	client, closed := ctl.getClientForActiveCluster(name)
 	if closed {
