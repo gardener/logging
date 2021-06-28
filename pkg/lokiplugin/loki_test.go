@@ -24,8 +24,7 @@ import (
 	"github.com/weaveworks/common/logging"
 
 	"github.com/gardener/logging/pkg/config"
-
-	lokiclient "github.com/grafana/loki/pkg/promtail/client"
+	"github.com/gardener/logging/pkg/types"
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
@@ -53,7 +52,8 @@ func (r *recorder) Handle(labels model.LabelSet, time time.Time, e string) error
 
 func (r *recorder) toEntry() *entry { return r.entry }
 
-func (r *recorder) Stop() {}
+func (r *recorder) Stop()     {}
+func (r *recorder) StopWait() {}
 
 type sendRecordArgs struct {
 	cfg     *config.Config
@@ -68,13 +68,14 @@ func (c *fakeLokiClient) Handle(labels model.LabelSet, time time.Time, entry str
 	return nil
 }
 
-func (c *fakeLokiClient) Stop() {}
+func (c *fakeLokiClient) Stop()     {}
+func (c *fakeLokiClient) StopWait() {}
 
 type fakeController struct {
-	clients map[string]lokiclient.Client
+	clients map[string]types.LokiClient
 }
 
-func (ctl *fakeController) GetClient(name string) (lokiclient.Client, bool) {
+func (ctl *fakeController) GetClient(name string) (types.LokiClient, bool) {
 	if client, ok := ctl.clients[name]; ok {
 		return client, false
 	}
@@ -256,7 +257,7 @@ var _ = Describe("Loki plugin", func() {
 
 	Describe("#getClient", func() {
 		fc := fakeController{
-			clients: map[string]lokiclient.Client{
+			clients: map[string]types.LokiClient{
 				"shoot--dev--test1": &fakeLokiClient{},
 				"shoot--dev--test2": &fakeLokiClient{},
 			},
