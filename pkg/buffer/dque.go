@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"runtime/pprof"
 	"sync"
 	"time"
 
@@ -24,6 +25,9 @@ import (
 	"github.com/joncrlsn/dque"
 	"github.com/prometheus/common/model"
 )
+
+var openDQueProfile = pprof.NewProfile("openedDQue")
+var openDQueFilesProfile = pprof.NewProfile("openedDQueFiles")
 
 type dqueEntry struct {
 	LabelSet model.LabelSet
@@ -78,6 +82,8 @@ func newDque(cfg *config.Config, logger log.Logger, newClientFunc func(cfg clien
 
 	q.wg.Add(1)
 	go q.dequeuer()
+	openDQueProfile.Add(path.Join(q.queue.DirPath, q.queue.Name), 3)
+	openDQueFilesProfile.Add(path.Join(q.queue.DirPath, q.queue.Name), 3)
 	return q, nil
 }
 
@@ -172,14 +178,17 @@ func (c *dqueClient) sendQueStopSignal() error {
 }
 
 func (c *dqueClient) closeQue(cleanUnderlyingFileBuffer bool) error {
+
 	if err := c.queue.Close(); err != nil {
 		return fmt.Errorf("cannot close %s buffer: %v", c.queue.Name, err)
 	}
+	openDQueProfile.Remove(path.Join(c.queue.DirPath, c.queue.Name))
 
 	if cleanUnderlyingFileBuffer {
 		if err := os.RemoveAll(path.Join(c.queue.DirPath, c.queue.Name)); err != nil {
 			return fmt.Errorf("cannot close %s buffer: %v", c.queue.Name, err)
 		}
+		openDQueFilesProfile.Remove(path.Join(c.queue.DirPath, c.queue.Name))
 	}
 
 	return nil
