@@ -144,6 +144,7 @@ var _ = Describe("Loki plugin", func() {
 				logger:        logger,
 			}
 			err := l.SendRecord(args.record, now)
+			time.Sleep(time.Second)
 			if args.wantErr {
 				Expect(err).To(HaveOccurred())
 				return

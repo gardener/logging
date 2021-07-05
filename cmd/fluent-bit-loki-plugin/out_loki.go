@@ -51,15 +51,20 @@ var (
 func init() {
 	runtime.SetMutexProfileFraction(5)
 	runtime.SetBlockProfileRate(1)
-	// metrics
-	go func() {
-		http.Handle("/metrics", promhttp.Handler())
-		http.ListenAndServe(":2021", nil)
-	}()
 
 	var logLevel logging.Level
 	_ = logLevel.Set("info")
 	logger = log.With(newLogger(logLevel), "ts", log.DefaultTimestampUTC, "caller", "main")
+
+	// metrics
+	go func() {
+		level.Info(logger).Log("GardenerPlugin", "Start Server On 2021 port")
+		http.Handle("/metrics", promhttp.Handler())
+		err := http.ListenAndServe(":2021", nil)
+		if err != nil {
+			level.Error(logger).Log("GardenerPlugin", err.Error())
+		}
+	}()
 
 	kubernetesCleint, err := getInclusterKubernetsClient()
 	if err != nil {

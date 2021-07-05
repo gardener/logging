@@ -194,12 +194,12 @@ func (l *loki) send(client types.LokiClient, lbs model.LabelSet, ts time.Time, l
 	elapsedBeforeSend := time.Since(startOfSendind)
 	level.Debug(l.logger).Log("Log-Processing-elapsed ", elapsedBeforeSend.String(), "Stream", lbs)
 
-	err := client.Handle(lbs, ts, line)
+	go func() {
+		_ = client.Handle(lbs, ts, line)
+	}()
 
-	if err == nil {
-		elapsedAfterSend := time.Since(startOfSendind)
-		level.Debug(l.logger).Log("Log-Sending-elapsed", elapsedAfterSend.String(), "Stream", lbs)
-	}
+	elapsedAfterSend := time.Since(startOfSendind)
+	level.Debug(l.logger).Log("Log-Sending-elapsed", elapsedAfterSend.String(), "Stream", lbs)
 
-	return err
+	return nil
 }

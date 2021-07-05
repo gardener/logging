@@ -47,6 +47,8 @@ type dqueClient struct {
 	wg                        sync.WaitGroup
 	url                       string
 	cleanUnderlyingFileBuffer bool
+	// clientMutex               sync.Mutex
+	// serverMutex               sync.Mutex
 }
 
 // newDque makes a new dque loki client
@@ -88,9 +90,13 @@ func newDque(cfg *config.Config, logger log.Logger, newClientFunc func(cfg clien
 }
 
 func (c *dqueClient) dequeuer() {
-	defer c.wg.Done()
 
+	defer c.wg.Done()
+	// c.serverMutex.Lock()
+	// defer c.serverMutex.Unlock()
 	for {
+		// c.clientMutex.Lock()
+
 		// Dequeue the next item in the queue
 		entry, err := c.queue.DequeueBlock()
 		if err != nil {
@@ -123,6 +129,7 @@ func (c *dqueClient) dequeuer() {
 			level.Error(c.logger).Log("msg", fmt.Sprintf("error sending record to Loki %s", c.url), "error", err)
 		}
 		level.Debug(c.logger).Log("msg", "successful sent record to Loki", "host", c.url, "record", record.String())
+		// c.clientMutex.Unlock()
 	}
 }
 
@@ -151,11 +158,16 @@ func (c *dqueClient) StopWait() {
 
 // Handle implement EntryHandler; adds a new line to the next batch; send is async.
 func (c *dqueClient) Handle(ls model.LabelSet, t time.Time, s string) error {
-
+	// c.clientMutex.Lock()
+	// time.Sleep(10 * time.Second)
 	record := &dqueEntry{LabelSet: ls, Entry: logproto.Entry{Timestamp: t, Line: s}}
 	if err := c.queue.Enqueue(record); err != nil {
 		return fmt.Errorf("cannot enqueue record %s: %v", record.String(), err)
 	}
+
+	// c.serverMutex.Lock()
+	// c.clientMutex.Unlock()
+	// c.serverMutex.Unlock()
 
 	return nil
 }

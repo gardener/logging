@@ -81,6 +81,7 @@ func (c *sortedClient) run() {
 		if c.batch != nil {
 			c.sendBatch()
 		}
+		maxWaitCheck.Stop()
 		c.wg.Done()
 	}()
 
