@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/gardener/logging/pkg/config"
+	"github.com/gardener/logging/pkg/types"
 
 	"github.com/cortexproject/cortex/pkg/util/flagext"
 	"github.com/go-kit/kit/log"
@@ -48,7 +49,7 @@ type fakeLokiClient struct {
 
 func (c *fakeLokiClient) Handle(labels model.LabelSet, time time.Time, entry string) error {
 	if c.isStopped {
-		return fmt.Errorf("client has been stoped")
+		return fmt.Errorf("client has been stopped")
 	}
 	return nil
 }
@@ -57,10 +58,14 @@ func (c *fakeLokiClient) Stop() {
 	c.isStopped = true
 }
 
+func (c *fakeLokiClient) StopWait() {
+	c.isStopped = true
+}
+
 var _ = Describe("Controller", func() {
 	Describe("#GetClient", func() {
 		ctl := &controller{
-			clients: map[string]lokiclient.Client{
+			clients: map[string]types.LokiClient{
 				"shoot--dev--test1": &fakeLokiClient{},
 			},
 		}
@@ -85,7 +90,7 @@ var _ = Describe("Controller", func() {
 		shootDevTest1 := &fakeLokiClient{}
 		shootDevTest2 := &fakeLokiClient{}
 		ctl := &controller{
-			clients: map[string]lokiclient.Client{
+			clients: map[string]types.LokiClient{
 				"shoot--dev--test1": shootDevTest1,
 				"shoot--dev--test2": shootDevTest2,
 			},
@@ -181,7 +186,7 @@ var _ = Describe("Controller", func() {
 				},
 			}
 			ctl = &controller{
-				clients: make(map[string]lokiclient.Client),
+				clients: make(map[string]types.LokiClient),
 				conf:    conf,
 				decoder: decoder,
 				logger:  logger,
@@ -222,7 +227,7 @@ var _ = Describe("Controller", func() {
 			type args struct {
 				oldCluster         *extensionsv1alpha1.Cluster
 				newCluster         *extensionsv1alpha1.Cluster
-				clients            map[string]lokiclient.Client
+				clients            map[string]types.LokiClient
 				shouldclientExists bool
 			}
 
@@ -242,7 +247,7 @@ var _ = Describe("Controller", func() {
 					args{
 						oldCluster: developmentCluster,
 						newCluster: hibernatedCluster,
-						clients: map[string]lokiclient.Client{
+						clients: map[string]types.LokiClient{
 							shootName: &fakeLokiClient{},
 						},
 						shouldclientExists: false,
@@ -252,7 +257,7 @@ var _ = Describe("Controller", func() {
 					args{
 						oldCluster: developmentCluster,
 						newCluster: developmentCluster,
-						clients: map[string]lokiclient.Client{
+						clients: map[string]types.LokiClient{
 							shootName: &fakeLokiClient{},
 						},
 						shouldclientExists: true,
@@ -262,7 +267,7 @@ var _ = Describe("Controller", func() {
 					args{
 						oldCluster:         testingCluster,
 						newCluster:         testingCluster,
-						clients:            map[string]lokiclient.Client{},
+						clients:            map[string]types.LokiClient{},
 						shouldclientExists: false,
 					},
 				),
@@ -270,7 +275,7 @@ var _ = Describe("Controller", func() {
 					args{
 						oldCluster:         hibernatedCluster,
 						newCluster:         developmentCluster,
-						clients:            map[string]lokiclient.Client{},
+						clients:            map[string]types.LokiClient{},
 						shouldclientExists: true,
 					},
 				),
@@ -278,14 +283,14 @@ var _ = Describe("Controller", func() {
 					args{
 						oldCluster:         testingCluster,
 						newCluster:         developmentCluster,
-						clients:            map[string]lokiclient.Client{},
+						clients:            map[string]types.LokiClient{},
 						shouldclientExists: true,
 					}),
 				Entry("client exists and after update cluster has testing purpose ",
 					args{
 						oldCluster:         developmentCluster,
 						newCluster:         testingCluster,
-						clients:            map[string]lokiclient.Client{},
+						clients:            map[string]types.LokiClient{},
 						shouldclientExists: false,
 					}),
 			)

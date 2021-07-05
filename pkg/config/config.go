@@ -127,10 +127,11 @@ type BufferConfig struct {
 
 // DqueConfig contains the dqueue settings
 type DqueConfig struct {
-	QueueDir         string
-	QueueSegmentSize int
-	QueueSync        bool
-	QueueName        string
+	QueueDir                  string
+	QueueSegmentSize          int
+	QueueSync                 bool
+	QueueName                 string
+	CleanUnderlyingFileBuffer bool
 }
 
 // KubernetesMetadataExtraction holds the configurations for retrieving the meta data from a tag

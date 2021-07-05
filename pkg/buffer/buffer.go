@@ -10,13 +10,14 @@ import (
 	"fmt"
 
 	"github.com/gardener/logging/pkg/config"
+	"github.com/gardener/logging/pkg/types"
 
 	"github.com/go-kit/kit/log"
 	"github.com/grafana/loki/pkg/promtail/client"
 )
 
 // NewBuffer makes a new buffered Client.
-func NewBuffer(cfg *config.Config, logger log.Logger, newClientFunc func(cfg client.Config, logger log.Logger) (client.Client, error)) (client.Client, error) {
+func NewBuffer(cfg *config.Config, logger log.Logger, newClientFunc func(cfg client.Config, logger log.Logger) (types.LokiClient, error)) (types.LokiClient, error) {
 	switch cfg.ClientConfig.BufferConfig.BufferType {
 	case "dque":
 		return newDque(cfg, logger, newClientFunc)

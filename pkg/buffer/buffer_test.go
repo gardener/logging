@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/gardener/logging/pkg/config"
+	"github.com/gardener/logging/pkg/types"
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
@@ -75,7 +76,7 @@ var _ = Describe("Buffer", func() {
 	})
 
 	Describe("newDque", func() {
-		var lokiclient client.Client
+		var lokiclient types.LokiClient
 
 		BeforeEach(func() {
 			var err error
@@ -118,6 +119,18 @@ var _ = Describe("Buffer", func() {
 			Expect(log.labelSet).To(Equal(ls))
 			Expect(log.timestamp).To(Equal(ts))
 			Expect(log.line).To(Equal(line))
+			lokiclient.StopWait()
+		})
+		It("should gracefully stop correctly", func() {
+			lokiclient.StopWait()
+			dQueCleint, ok := lokiclient.(*dqueClient)
+			Expect(ok).To(BeTrue())
+			fakeLoki, ok := dQueCleint.loki.(*fakeLokiclient)
+			Expect(ok).To(BeTrue())
+			time.Sleep(2 * time.Second)
+			Expect(fakeLoki.stopped).To(BeTrue())
+			_, err := os.Stat("/tmp/gardener")
+			Expect(os.IsNotExist(err)).To(BeTrue())
 		})
 		It("should stop correctly", func() {
 			lokiclient.Stop()
@@ -127,6 +140,8 @@ var _ = Describe("Buffer", func() {
 			Expect(ok).To(BeTrue())
 			time.Sleep(2 * time.Second)
 			Expect(fakeLoki.stopped).To(BeTrue())
+			_, err := os.Stat("/tmp/gardener")
+			Expect(os.IsNotExist(err)).To(BeFalse())
 		})
 	})
 
@@ -137,7 +152,7 @@ type fakeLokiclient struct {
 	sentLogs []logEntry
 }
 
-func newFakeLokiClient(c client.Config, logger log.Logger) (client.Client, error) {
+func newFakeLokiClient(c client.Config, logger log.Logger) (types.LokiClient, error) {
 	return &fakeLokiclient{}, nil
 }
 
@@ -147,6 +162,10 @@ func (c *fakeLokiclient) Handle(labels model.LabelSet, time time.Time, entry str
 }
 
 func (c *fakeLokiclient) Stop() {
+	c.stopped = true
+}
+
+func (c *fakeLokiclient) StopWait() {
 	c.stopped = true
 }
 

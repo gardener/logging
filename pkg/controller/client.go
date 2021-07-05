@@ -19,12 +19,13 @@ import (
 	"time"
 
 	client "github.com/gardener/logging/pkg/client"
+	"github.com/gardener/logging/pkg/types"
+
 	"github.com/gardener/logging/pkg/metrics"
 
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 
 	"github.com/go-kit/kit/log/level"
-	lokiclient "github.com/grafana/loki/pkg/promtail/client"
 )
 
 type deletionTimestamp struct {
@@ -45,7 +46,7 @@ func (ctl *controller) createClientForClusterInDeletionState(cluster *extensions
 	}
 }
 
-func (ctl *controller) getClientForClusterInDeletionState(name string) (lokiclient.Client, bool) {
+func (ctl *controller) getClientForClusterInDeletionState(name string) (types.LokiClient, bool) {
 	ctl.deletedClientsLock.RLock()
 	defer ctl.deletedClientsLock.RUnlock()
 
@@ -87,7 +88,7 @@ func (ctl *controller) cleanExpiredClients() {
 	}
 }
 
-func (ctl *controller) getClientForActiveCluster(name string) (lokiclient.Client, bool) {
+func (ctl *controller) getClientForActiveCluster(name string) (types.LokiClient, bool) {
 	ctl.lock.RLocker().Lock()
 	defer ctl.lock.RLocker().Unlock()
 
@@ -141,7 +142,7 @@ func (ctl *controller) deleteClientForActiveCluster(cluster *extensionsv1alpha1.
 	ctl.lock.Unlock()
 	if ok && client != nil {
 		level.Info(ctl.logger).Log("msg", fmt.Sprintf("Delete client for cluster %v", cluster.Name))
-		client.Stop()
+		client.StopWait()
 	}
 }
 
