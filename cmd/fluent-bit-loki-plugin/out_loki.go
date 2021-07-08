@@ -47,15 +47,17 @@ var (
 )
 
 func init() {
-	// metrics
-	go func() {
-		http.Handle("/metrics", promhttp.Handler())
-		http.ListenAndServe(":2021", nil)
-	}()
-
 	var logLevel logging.Level
 	_ = logLevel.Set("info")
 	logger = log.With(newLogger(logLevel), "ts", log.DefaultTimestampUTC, "caller", "main")
+
+	// metrics
+	go func() {
+		http.Handle("/metrics", promhttp.Handler())
+		if err := http.ListenAndServe(":2021", nil); err != nil {
+			level.Error(logger).Log("Fluent-bit-gardener-output-plugin", err.Error())
+		}
+	}()
 
 	kubernetesCleint, err := getInclusterKubernetsClient()
 	if err != nil {

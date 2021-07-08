@@ -21,7 +21,7 @@ import (
 	"github.com/gardener/logging/pkg/config"
 	controller "github.com/gardener/logging/pkg/controller"
 	"github.com/gardener/logging/pkg/metrics"
-	lokiclient "github.com/grafana/loki/pkg/promtail/client"
+	"github.com/gardener/logging/pkg/types"
 )
 
 // Loki plugin interface
@@ -32,7 +32,7 @@ type Loki interface {
 
 type loki struct {
 	cfg                             *config.Config
-	defaultClient                   lokiclient.Client
+	defaultClient                   types.LokiClient
 	dynamicHostRegexp               *regexp.Regexp
 	extractKubernetesMetadataRegexp *regexp.Regexp
 	controller                      controller.Controller
@@ -173,7 +173,7 @@ func (l *loki) Close() {
 	}
 }
 
-func (l *loki) getClient(dynamicHosName string) lokiclient.Client {
+func (l *loki) getClient(dynamicHosName string) types.LokiClient {
 	if l.isDynamicHost(dynamicHosName) && l.controller != nil {
 		if c, isStopped := l.controller.GetClient(dynamicHosName); !isStopped {
 			return c
@@ -190,7 +190,7 @@ func (l *loki) isDynamicHost(dynamicHostName string) bool {
 		l.dynamicHostRegexp.Match([]byte(dynamicHostName))
 }
 
-func (l *loki) send(client lokiclient.Client, lbs model.LabelSet, ts time.Time, line string, startOfSendind time.Time) error {
+func (l *loki) send(client types.LokiClient, lbs model.LabelSet, ts time.Time, line string, startOfSendind time.Time) error {
 	elapsedBeforeSend := time.Since(startOfSendind)
 	level.Debug(l.logger).Log("Log-Processing-elapsed ", elapsedBeforeSend.String(), "Stream", lbs)
 
