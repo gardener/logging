@@ -38,7 +38,7 @@ func dqueEntryBuilder() interface{} {
 type dqueClient struct {
 	logger    log.Logger
 	queue     *dque.DQue
-	loki      client.Client
+	loki      types.LokiClient
 	once      sync.Once
 	wg        sync.WaitGroup
 	url       string
