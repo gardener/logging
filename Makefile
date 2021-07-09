@@ -17,6 +17,7 @@ VERSION                               := $(shell cat VERSION)
 REGISTRY                              := eu.gcr.io/gardener-project/gardener
 FLUENT_BIT_TO_LOKI_IMAGE_REPOSITORY   := $(REGISTRY)/fluent-bit-to-loki
 LOKI_CURATOR_IMAGE_REPOSITORY         := $(REGISTRY)/loki-curator
+TELEGRAF_IMAGE_REPOSITORY             := $(REGISTRY)/telegraf-iptables
 IMAGE_TAG                             := $(VERSION)
 
 .PHONY: plugin
@@ -35,6 +36,7 @@ build: plugin curator
 docker-images:
 	@docker build -t $(FLUENT_BIT_TO_LOKI_IMAGE_REPOSITORY):$(IMAGE_TAG) -t $(FLUENT_BIT_TO_LOKI_IMAGE_REPOSITORY):latest -f Dockerfile --target fluent-bit-plugin .
 	@docker build -t $(LOKI_CURATOR_IMAGE_REPOSITORY):$(IMAGE_TAG) -t $(LOKI_CURATOR_IMAGE_REPOSITORY):latest -f Dockerfile --target curator .
+	@docker build -t $(TELEGRAF_IMAGE_REPOSITORY):$(IMAGE_TAG) -t $(TELEGRAF_IMAGE_REPOSITORY):latest -f Dockerfile --target telegraf .
 
 .PHONY: docker-push
 docker-push:
@@ -42,6 +44,8 @@ docker-push:
 	@gcloud docker -- push $(FLUENT_BIT_TO_LOKI_IMAGE_REPOSITORY):$(IMAGE_TAG)
 	@if ! docker images $(LOKI_CURATOR_IMAGE_REPOSITORY) | awk '{ print $$2 }' | grep -q -F $(IMAGE_TAG); then echo "$(LOKI_CURATOR_IMAGE_REPOSITORY) version $(IMAGE_TAG) is not yet built. Please run 'make docker-images'"; false; fi
 	@gcloud docker -- push $(LOKI_CURATOR_IMAGE_REPOSITORY):$(IMAGE_TAG)
+	@if ! docker images $(TELEGRAF_IMAGE_REPOSITORY) | awk '{ print $$2 }' | grep -q -F $(IMAGE_TAG); then echo "$(TELEGRAF_IMAGE_REPOSITORY) version $(IMAGE_TAG) is not yet built. Please run 'make docker-images'"; false; fi
+	@gcloud docker -- push $(TELEGRAF_IMAGE_REPOSITORY):$(IMAGE_TAG)
 
 .PHONY: revendor
 revendor:

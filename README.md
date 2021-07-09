@@ -47,6 +47,8 @@ It also adds additional configurations that aim to improve plugin's performance 
 | SendDeletedClustersLogsToDefaultClient | When cluster is marked for deletion the logs will be send to the default url `URL` | `false`
 | DeletedClientTimeExpiration | The time duration after a client for deleted cluster will be considered for expired | 1 hour
 | CleanExpiredClientsPeriod | Clean the expired clients every `CleanExpiredClientsPeriod` | 24 hours
+| DynamicTenant | When set the value is split on space delimiter to 3 tokens. The first token is the tenant to use, the second one is the field to search for matching. The third is the regex to match token 2. | none
+| RemoveTenantIdWhenSendingToDefaultURL | When `DynamicTenant` is set this flag decide whether to remove the record with dynamic tenant or not when sending them to the default `URL` | true
 ### Labels
 
 Labels are used to [query logs](https://github.com/grafana/loki/blob/v1.5.0/docs/logql.md) `{container_name="nginx", cluster="us-west1"}`, they are usually metadata about the workload producing the log stream (`instance`, `container_name`, `region`, `cluster`, `level`).  In Loki labels are indexed consequently you should be cautious when choosing them (high cardinality label values can have performance drastic impact).
@@ -123,6 +125,7 @@ To configure the Loki output plugin add this section to fluent-bit.conf
     DynamicHostPrefix http://loki.
     DynamicHostSuffix .svc:3100/loki/api/v1/push
     DynamicHostRegex ^shoot-
+    DynamicTenant user gardener user
     MaxRetries 3
     Timeout 10
     MinBackoff 30
@@ -136,41 +139,6 @@ To configure the Loki output plugin add this section to fluent-bit.conf
     TagKey tag
     DropLogEntryWithoutK8sMetadata true
     TenantID operator
-```
-
-```properties
-[Output]
-    Name gardenerloki
-    Match {{ .Values.exposedComponentsTagPrefix }}.kubernetes.*
-    Url http://loki.garden.svc:3100/loki/api/v1/push
-    LogLevel info
-    BatchWait 40
-    BatchSize 30720
-    Labels {test="fluent-bit-go", lang="Golang"}
-    LineFormat json
-    SortByTimestamp true
-    DropSingleKey false
-    AutoKubernetesLabels true
-    LabelSelector gardener.cloud/role:shoot
-    RemoveKeys kubernetes,stream,type,time,tag
-    LabelMapPath /fluent-bit/etc/kubernetes_label_map.json
-    DynamicHostPath {"kubernetes": {"namespace_name": "namespace"}}
-    DynamicHostPrefix http://loki.
-    DynamicHostSuffix .svc:3100/loki/api/v1/push
-    DynamicHostRegex ^shoot-
-    MaxRetries 3
-    Timeout 10
-    MinBackoff 30
-    Buffer true
-    BufferType dque
-    QueueDir  /fluent-bit/buffers/user
-    QueueSegmentSize 300
-    QueueSync normal
-    QueueName gardener-kubernetes-user
-    FallbackToTagWhenMetadataIsMissing true
-    TagKey tag
-    DropLogEntryWithoutK8sMetadata true
-    TenantID user
 ```
 
 ```properties

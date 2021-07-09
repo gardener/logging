@@ -87,3 +87,29 @@ func (c *promtailClientWithForwardedLogsMetricCounter) Stop() {
 func (c *promtailClientWithForwardedLogsMetricCounter) StopWait() {
 	c.lokiclient.Stop()
 }
+
+type removeTenantIdClient struct {
+	lokiclient types.LokiClient
+}
+
+// NewRemoveTenantIdClient return loki client wich removes the __tenant_id__ value fro the label set
+func NewRemoveTenantIdClient(clientToWrap types.LokiClient) types.LokiClient {
+	return &removeTenantIdClient{clientToWrap}
+}
+
+func (c *removeTenantIdClient) Handle(ls model.LabelSet, t time.Time, s string) error {
+	if _, ok := ls[client.ReservedLabelTenantID]; ok {
+		return nil
+	}
+	return c.lokiclient.Handle(ls, t, s)
+}
+
+// Stop the client.
+func (c *removeTenantIdClient) Stop() {
+	c.lokiclient.Stop()
+}
+
+// StopWait stops the client waiting all saved logs to be sent.
+func (c *removeTenantIdClient) StopWait() {
+	c.lokiclient.Stop()
+}

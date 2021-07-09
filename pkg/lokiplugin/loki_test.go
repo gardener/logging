@@ -304,4 +304,109 @@ var _ = Describe("Loki plugin", func() {
 				}),
 		)
 	})
+
+	Describe("#setDynamicTenant", func() {
+		type setDynamicTenantArgs struct {
+			lokiplugin loki
+			labelSet   model.LabelSet
+			records    map[string]interface{}
+			want       struct {
+				labelSet model.LabelSet
+				records  map[string]interface{}
+			}
+		}
+
+		DescribeTable("#setDynamicTenant",
+			func(args setDynamicTenantArgs) {
+				args.lokiplugin.setDynamicTenant(args.records, args.labelSet)
+				Expect(args.want.records).To(Equal(args.records))
+				Expect(args.want.labelSet).To(Equal(args.labelSet))
+			},
+			Entry("Existing field with maching regex",
+				setDynamicTenantArgs{
+					lokiplugin: loki{
+						dynamicTenantRegexp: regexp.MustCompile("user-exposed.kubernetes"),
+						dynamicTenant:       "test-user",
+						dynamicTenantField:  "tag",
+						defaultClient:       &fakeLokiClient{},
+					},
+					labelSet: model.LabelSet{
+						"foo": "bar",
+					},
+					records: map[string]interface{}{
+						"log": "The most important log in the world",
+						"tag": "user-exposed.kubernetes.var.log.containers.super-secret-pod_super-secret-namespace_ultra-sicret-container_1234567890.log",
+					},
+					want: struct {
+						labelSet model.LabelSet
+						records  map[string]interface{}
+					}{
+						labelSet: model.LabelSet{
+							"foo":           "bar",
+							"__tenant_id__": "test-user",
+						},
+						records: map[string]interface{}{
+							"log": "The most important log in the world",
+							"tag": "user-exposed.kubernetes.var.log.containers.super-secret-pod_super-secret-namespace_ultra-sicret-container_1234567890.log",
+						},
+					},
+				}),
+			Entry("Existing field with no maching regex",
+				setDynamicTenantArgs{
+					lokiplugin: loki{
+						dynamicTenantRegexp: regexp.MustCompile("user-exposed.kubernetes"),
+						dynamicTenant:       "test-user",
+						dynamicTenantField:  "tag",
+						defaultClient:       &fakeLokiClient{},
+					},
+					labelSet: model.LabelSet{
+						"foo": "bar",
+					},
+					records: map[string]interface{}{
+						"log": "The most important log in the world",
+						"tag": "operator-exposed.kubernetes.var.log.containers.super-secret-pod_super-secret-namespace_ultra-sicret-container_1234567890.log",
+					},
+					want: struct {
+						labelSet model.LabelSet
+						records  map[string]interface{}
+					}{
+						labelSet: model.LabelSet{
+							"foo": "bar",
+						},
+						records: map[string]interface{}{
+							"log": "The most important log in the world",
+							"tag": "operator-exposed.kubernetes.var.log.containers.super-secret-pod_super-secret-namespace_ultra-sicret-container_1234567890.log",
+						},
+					},
+				}),
+			Entry("Not Existing field with maching regex",
+				setDynamicTenantArgs{
+					lokiplugin: loki{
+						dynamicTenantRegexp: regexp.MustCompile("user-exposed.kubernetes"),
+						dynamicTenant:       "test-user",
+						dynamicTenantField:  "tag",
+						defaultClient:       &fakeLokiClient{},
+					},
+					labelSet: model.LabelSet{
+						"foo": "bar",
+					},
+					records: map[string]interface{}{
+						"log":     "The most important log in the world",
+						"not-tag": "user-exposed.kubernetes.var.log.containers.super-secret-pod_super-secret-namespace_ultra-sicret-container_1234567890.log",
+					},
+					want: struct {
+						labelSet model.LabelSet
+						records  map[string]interface{}
+					}{
+						labelSet: model.LabelSet{
+							"foo": "bar",
+						},
+						records: map[string]interface{}{
+							"log":     "The most important log in the world",
+							"not-tag": "user-exposed.kubernetes.var.log.containers.super-secret-pod_super-secret-namespace_ultra-sicret-container_1234567890.log",
+						},
+					},
+				}),
+		)
+	})
 })
