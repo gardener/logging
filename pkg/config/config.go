@@ -116,6 +116,7 @@ type PluginConfig struct {
 	DynamicHostRegex string
 	// KubernetesMetadata holds the configurations for retrieving the meta data from a tag
 	KubernetesMetadata KubernetesMetadataExtraction
+	DynamicTenant      DynamicTenant
 }
 
 // BufferConfig contains the buffer settings
@@ -140,6 +141,12 @@ type KubernetesMetadataExtraction struct {
 	TagKey                             string
 	TagPrefix                          string
 	TagExpression                      string
+}
+
+type DynamicTenant struct {
+	Tenant string
+	Field  string
+	Regex  string
 }
 
 // DefaultBufferConfig holds the configurations for using output buffer
@@ -482,6 +489,18 @@ func initPluginConfig(cfg Getter, res *Config) error {
 		if err != nil {
 			return fmt.Errorf("invalid string DropLogEntryWithoutK8sMetadata: %v", err)
 		}
+	}
+
+	dynamicTenant := cfg.Get("DynamicTenant")
+	dynamicTenant = strings.Trim(dynamicTenant, " ")
+	if dynamicTenant != "" {
+		dynamicTenantValues := strings.SplitN(dynamicTenant, " ", 3)
+		if len(dynamicTenantValues) != 3 {
+			return fmt.Errorf("failed to parse DynamicTenant. Should consist of <tenant-name>\" \"<field-for-regex>\" \"<regex>. Found %d elements", len(dynamicTenantValues))
+		}
+		res.PluginConfig.DynamicTenant.Tenant = dynamicTenantValues[0]
+		res.PluginConfig.DynamicTenant.Field = dynamicTenantValues[1]
+		res.PluginConfig.DynamicTenant.Regex = dynamicTenantValues[2]
 	}
 
 	return nil
