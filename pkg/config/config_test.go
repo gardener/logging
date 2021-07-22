@@ -61,21 +61,10 @@ var _ = Describe("Config", func() {
 				Expect(err).To(HaveOccurred())
 			} else {
 				Expect(err).ToNot(HaveOccurred())
-				Expect(args.want.PluginConfig.AutoKubernetesLabels).To(Equal(got.PluginConfig.AutoKubernetesLabels))
-				Expect(args.want.ClientConfig.BufferConfig).To(Equal(got.ClientConfig.BufferConfig))
-				Expect(args.want.ClientConfig.GrafanaLokiConfig).To(Equal(got.ClientConfig.GrafanaLokiConfig))
-				Expect(args.want.PluginConfig.DropSingleKey).To(Equal(got.PluginConfig.DropSingleKey))
-				Expect(args.want.PluginConfig.DynamicHostPath).To(Equal(got.PluginConfig.DynamicHostPath))
-				Expect(args.want.ControllerConfig.DynamicHostPrefix).To(Equal(got.ControllerConfig.DynamicHostPrefix))
-				Expect(args.want.PluginConfig.DynamicHostRegex).To(Equal(got.PluginConfig.DynamicHostRegex))
-				Expect(args.want.ControllerConfig.DynamicHostSuffix).To(Equal(got.ControllerConfig.DynamicHostSuffix))
-				Expect(args.want.PluginConfig.LabelKeys).To(Equal(got.PluginConfig.LabelKeys))
-				Expect(args.want.PluginConfig.LabelMap).To(Equal(got.PluginConfig.LabelMap))
-				Expect(args.want.PluginConfig.LineFormat).To(Equal(got.PluginConfig.LineFormat))
-				//Expect(args.want.LogLevel).To(Equal(got.LogLevel))
-				Expect(args.want.PluginConfig.RemoveKeys).To(Equal(got.PluginConfig.RemoveKeys))
-				Expect(args.want.ClientConfig.SortByTimestamp).To(Equal(got.ClientConfig.SortByTimestamp))
-				Expect(args.want.PluginConfig.KubernetesMetadata).To(Equal(got.PluginConfig.KubernetesMetadata))
+				Expect(args.want.ClientConfig).To(Equal(got.ClientConfig))
+				Expect(args.want.ControllerConfig).To(Equal(got.ControllerConfig))
+				Expect(args.want.PluginConfig).To(Equal(got.PluginConfig))
+				Expect(args.want.LogLevel.String()).To(Equal(got.LogLevel.String()))
 			}
 		},
 		Entry("default values", testArgs{
@@ -114,6 +103,12 @@ var _ = Describe("Config", func() {
 							QueueName:        DefaultDqueConfig.QueueName,
 						},
 					},
+					NumberOfBatchIDs: 10,
+				},
+				ControllerConfig: config.ControllerConfig{
+					CtlSyncTimeout:              60000000000,
+					DeletedClientTimeExpiration: 3600000000000,
+					CleanExpiredClientsPeriod:   86400000000000,
 				},
 				LogLevel: infoLogLevel,
 			},
@@ -171,7 +166,13 @@ var _ = Describe("Config", func() {
 							QueueName:        DefaultDqueConfig.QueueName,
 						},
 					},
-					SortByTimestamp: true,
+					NumberOfBatchIDs: 10,
+					SortByTimestamp:  true,
+				},
+				ControllerConfig: config.ControllerConfig{
+					CtlSyncTimeout:              60000000000,
+					DeletedClientTimeExpiration: 3600000000000,
+					CleanExpiredClientsPeriod:   86400000000000,
 				},
 				LogLevel: warnLogLevel,
 			},
@@ -240,6 +241,12 @@ var _ = Describe("Config", func() {
 							QueueName:        DefaultDqueConfig.QueueName,
 						},
 					},
+					NumberOfBatchIDs: 10,
+				},
+				ControllerConfig: config.ControllerConfig{
+					CtlSyncTimeout:              60000000000,
+					DeletedClientTimeExpiration: 3600000000000,
+					CleanExpiredClientsPeriod:   86400000000000,
 				},
 				LogLevel: warnLogLevel,
 			},
@@ -303,10 +310,14 @@ var _ = Describe("Config", func() {
 							QueueName:        DefaultDqueConfig.QueueName,
 						},
 					},
+					NumberOfBatchIDs: 10,
 				},
 				ControllerConfig: ControllerConfig{
-					DynamicHostPrefix: "http://loki.",
-					DynamicHostSuffix: ".svc:3100/loki/api/v1/push",
+					DynamicHostPrefix:           "http://loki.",
+					DynamicHostSuffix:           ".svc:3100/loki/api/v1/push",
+					CtlSyncTimeout:              60000000000,
+					DeletedClientTimeExpiration: 3600000000000,
+					CleanExpiredClientsPeriod:   86400000000000,
 				},
 				LogLevel: warnLogLevel,
 			},
@@ -367,6 +378,12 @@ var _ = Describe("Config", func() {
 							QueueName:        "buzz",
 						},
 					},
+					NumberOfBatchIDs: 10,
+				},
+				ControllerConfig: config.ControllerConfig{
+					CtlSyncTimeout:              60000000000,
+					DeletedClientTimeExpiration: 3600000000000,
+					CleanExpiredClientsPeriod:   86400000000000,
 				},
 				LogLevel: warnLogLevel,
 			},
@@ -425,8 +442,13 @@ var _ = Describe("Config", func() {
 							QueueName:        DefaultDqueConfig.QueueName,
 						},
 					},
+					NumberOfBatchIDs: 10,
 				},
-
+				ControllerConfig: config.ControllerConfig{
+					CtlSyncTimeout:              60000000000,
+					DeletedClientTimeExpiration: 3600000000000,
+					CleanExpiredClientsPeriod:   86400000000000,
+				},
 				LogLevel: warnLogLevel,
 			},
 			false},
@@ -487,6 +509,12 @@ var _ = Describe("Config", func() {
 							QueueName:        DefaultDqueConfig.QueueName,
 						},
 					},
+					NumberOfBatchIDs: 10,
+				},
+				ControllerConfig: config.ControllerConfig{
+					CtlSyncTimeout:              60000000000,
+					DeletedClientTimeExpiration: 3600000000000,
+					CleanExpiredClientsPeriod:   86400000000000,
 				},
 				LogLevel: warnLogLevel,
 			},
@@ -545,13 +573,182 @@ var _ = Describe("Config", func() {
 							QueueName:        DefaultDqueConfig.QueueName,
 						},
 					},
+					NumberOfBatchIDs: 10,
 				},
-
+				ControllerConfig: config.ControllerConfig{
+					CtlSyncTimeout:              60000000000,
+					DeletedClientTimeExpiration: 3600000000000,
+					CleanExpiredClientsPeriod:   86400000000000,
+				},
 				LogLevel: warnLogLevel,
 			},
 			false},
 		),
-
+		Entry("With dynamic tenant values", testArgs{
+			map[string]string{
+				"DynamicTenant": "  user tag user-exposed.kubernetes.*   ",
+			},
+			&Config{
+				PluginConfig: config.PluginConfig{
+					LineFormat: JSONFormat,
+					KubernetesMetadata: KubernetesMetadataExtraction{
+						TagKey:        DefaultKubernetesMetadataTagKey,
+						TagPrefix:     DefaultKubernetesMetadataTagPrefix,
+						TagExpression: DefaultKubernetesMetadataTagExpression,
+					},
+					DropSingleKey:    true,
+					DynamicHostRegex: "*",
+					DynamicTenant: DynamicTenant{
+						Tenant:                                "user",
+						Field:                                 "tag",
+						Regex:                                 "user-exposed.kubernetes.*",
+						RemoveTenantIdWhenSendingToDefaultURL: true,
+					},
+				},
+				ClientConfig: config.ClientConfig{
+					GrafanaLokiConfig: client.Config{
+						URL:            defaultURL,
+						BatchSize:      100 * 1024,
+						BatchWait:      1 * time.Second,
+						ExternalLabels: lokiflag.LabelSet{LabelSet: model.LabelSet{"job": "fluent-bit"}},
+						BackoffConfig: util.BackoffConfig{
+							MinBackoff: (1 * time.Second) / 2,
+							MaxBackoff: 300 * time.Second,
+							MaxRetries: 10,
+						},
+						Timeout: 10 * time.Second,
+					},
+					BufferConfig: BufferConfig{
+						Buffer:     false,
+						BufferType: DefaultBufferConfig.BufferType,
+						DqueConfig: DqueConfig{
+							QueueDir:         DefaultDqueConfig.QueueDir,
+							QueueSegmentSize: 500,
+							QueueSync:        false,
+							QueueName:        DefaultDqueConfig.QueueName,
+						},
+					},
+					NumberOfBatchIDs: 10,
+				},
+				ControllerConfig: config.ControllerConfig{
+					CtlSyncTimeout:              60000000000,
+					DeletedClientTimeExpiration: 3600000000000,
+					CleanExpiredClientsPeriod:   86400000000000,
+				},
+				LogLevel: infoLogLevel,
+			},
+			false},
+		),
+		Entry("With only two fields for dynamic tenant values", testArgs{
+			map[string]string{
+				"DynamicTenant": "   user tag    ",
+			},
+			&Config{
+				PluginConfig: config.PluginConfig{
+					LineFormat: JSONFormat,
+					KubernetesMetadata: KubernetesMetadataExtraction{
+						TagKey:        DefaultKubernetesMetadataTagKey,
+						TagPrefix:     DefaultKubernetesMetadataTagPrefix,
+						TagExpression: DefaultKubernetesMetadataTagExpression,
+					},
+					DropSingleKey:    true,
+					DynamicHostRegex: "*",
+					DynamicTenant: DynamicTenant{
+						Tenant:                                "user",
+						Field:                                 "tag",
+						Regex:                                 "user-exposed.kubernetes.*",
+						RemoveTenantIdWhenSendingToDefaultURL: true,
+					},
+				},
+				ClientConfig: config.ClientConfig{
+					GrafanaLokiConfig: client.Config{
+						URL:            defaultURL,
+						BatchSize:      100 * 1024,
+						BatchWait:      1 * time.Second,
+						ExternalLabels: lokiflag.LabelSet{LabelSet: model.LabelSet{"job": "fluent-bit"}},
+						BackoffConfig: util.BackoffConfig{
+							MinBackoff: (1 * time.Second) / 2,
+							MaxBackoff: 300 * time.Second,
+							MaxRetries: 10,
+						},
+						Timeout: 10 * time.Second,
+					},
+					BufferConfig: BufferConfig{
+						Buffer:     false,
+						BufferType: DefaultBufferConfig.BufferType,
+						DqueConfig: DqueConfig{
+							QueueDir:         DefaultDqueConfig.QueueDir,
+							QueueSegmentSize: 500,
+							QueueSync:        false,
+							QueueName:        DefaultDqueConfig.QueueName,
+						},
+					},
+					NumberOfBatchIDs: 10,
+				},
+				ControllerConfig: config.ControllerConfig{
+					CtlSyncTimeout:              60000000000,
+					DeletedClientTimeExpiration: 3600000000000,
+					CleanExpiredClientsPeriod:   86400000000000,
+				},
+				LogLevel: infoLogLevel,
+			},
+			true},
+		),
+		Entry("With more than 3 fields for dynamic tenant values", testArgs{
+			map[string]string{
+				"DynamicTenant": "  user tag regex with spaces   ",
+			},
+			&Config{
+				PluginConfig: config.PluginConfig{
+					LineFormat: JSONFormat,
+					KubernetesMetadata: KubernetesMetadataExtraction{
+						TagKey:        DefaultKubernetesMetadataTagKey,
+						TagPrefix:     DefaultKubernetesMetadataTagPrefix,
+						TagExpression: DefaultKubernetesMetadataTagExpression,
+					},
+					DropSingleKey:    true,
+					DynamicHostRegex: "*",
+					DynamicTenant: DynamicTenant{
+						Tenant:                                "user",
+						Field:                                 "tag",
+						Regex:                                 "regex with spaces",
+						RemoveTenantIdWhenSendingToDefaultURL: true,
+					},
+				},
+				ClientConfig: config.ClientConfig{
+					GrafanaLokiConfig: client.Config{
+						URL:            defaultURL,
+						BatchSize:      100 * 1024,
+						BatchWait:      1 * time.Second,
+						ExternalLabels: lokiflag.LabelSet{LabelSet: model.LabelSet{"job": "fluent-bit"}},
+						BackoffConfig: util.BackoffConfig{
+							MinBackoff: (1 * time.Second) / 2,
+							MaxBackoff: 300 * time.Second,
+							MaxRetries: 10,
+						},
+						Timeout: 10 * time.Second,
+					},
+					BufferConfig: BufferConfig{
+						Buffer:     false,
+						BufferType: DefaultBufferConfig.BufferType,
+						DqueConfig: DqueConfig{
+							QueueDir:         DefaultDqueConfig.QueueDir,
+							QueueSegmentSize: 500,
+							QueueSync:        false,
+							QueueName:        DefaultDqueConfig.QueueName,
+						},
+					},
+					NumberOfBatchIDs: 10,
+				},
+				ControllerConfig: config.ControllerConfig{
+					CtlSyncTimeout:              60000000000,
+					DeletedClientTimeExpiration: 3600000000000,
+					CleanExpiredClientsPeriod:   86400000000000,
+				},
+				LogLevel: infoLogLevel,
+			},
+			false},
+		),
 		Entry("bad url", testArgs{map[string]string{"URL": "::doh.com"}, nil, true}),
 		Entry("bad BatchWait", testArgs{map[string]string{"BatchWait": "a"}, nil, true}),
 		Entry("bad BatchSize", testArgs{map[string]string{"BatchSize": "a"}, nil, true}),

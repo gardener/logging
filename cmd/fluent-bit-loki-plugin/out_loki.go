@@ -135,6 +135,9 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 	level.Info(paramLogger).Log("SendDeletedClustersLogsToDefaultClient", fmt.Sprintf("%+v", conf.ControllerConfig.SendDeletedClustersLogsToDefaultClient))
 	level.Info(paramLogger).Log("DeletedClientTimeExpiration", fmt.Sprintf("%+v", conf.ControllerConfig.DeletedClientTimeExpiration))
 	level.Info(paramLogger).Log("CleanExpiredClientsPeriod", fmt.Sprintf("%+v", conf.ControllerConfig.CleanExpiredClientsPeriod))
+	level.Info(paramLogger).Log("DynamicTenant", fmt.Sprintf("%+v", conf.PluginConfig.DynamicTenant.Tenant))
+	level.Info(paramLogger).Log("DynamicField", fmt.Sprintf("%+v", conf.PluginConfig.DynamicTenant.Field))
+	level.Info(paramLogger).Log("DynamicRegex", fmt.Sprintf("%+v", conf.PluginConfig.DynamicTenant.Regex))
 
 	plugin, err := lokiplugin.NewPlugin(informer, conf, logger)
 	if err != nil {

@@ -12,16 +12,17 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/log/level"
-	"github.com/prometheus/common/model"
-	"k8s.io/client-go/tools/cache"
-
-	bufferedclient "github.com/gardener/logging/pkg/client"
+	client "github.com/gardener/logging/pkg/client"
 	"github.com/gardener/logging/pkg/config"
 	controller "github.com/gardener/logging/pkg/controller"
 	"github.com/gardener/logging/pkg/metrics"
 	"github.com/gardener/logging/pkg/types"
+
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
+	grafanalokiclient "github.com/grafana/loki/pkg/promtail/client"
+	"github.com/prometheus/common/model"
+	"k8s.io/client-go/tools/cache"
 )
 
 // Loki plugin interface
@@ -34,6 +35,9 @@ type loki struct {
 	cfg                             *config.Config
 	defaultClient                   types.LokiClient
 	dynamicHostRegexp               *regexp.Regexp
+	dynamicTenantRegexp             *regexp.Regexp
+	dynamicTenant                   string
+	dynamicTenantField              string
 	extractKubernetesMetadataRegexp *regexp.Regexp
 	controller                      controller.Controller
 	logger                          log.Logger
@@ -41,35 +45,34 @@ type loki struct {
 
 // NewPlugin returns Loki output plugin
 func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger log.Logger) (Loki, error) {
+	var err error
+	loki := &loki{cfg: cfg, logger: logger}
 
-	var dynamicHostRegexp *regexp.Regexp
-	var extractKubernetesMetadataRegexp *regexp.Regexp
-	var ctl controller.Controller
-
-	defaultLokiClient, err := bufferedclient.NewClient(cfg, logger)
+	loki.defaultClient, err = client.NewClient(cfg, logger)
 	if err != nil {
 		return nil, err
 	}
 
+	if cfg.PluginConfig.DynamicTenant.RemoveTenantIdWhenSendingToDefaultURL {
+		loki.defaultClient = client.NewRemoveTenantIdClient(loki.defaultClient)
+	}
+
 	if cfg.PluginConfig.DynamicHostPath != nil {
-		dynamicHostRegexp = regexp.MustCompile(cfg.PluginConfig.DynamicHostRegex)
-		ctl, err = controller.NewController(informer, cfg, defaultLokiClient, logger)
+		loki.dynamicHostRegexp = regexp.MustCompile(cfg.PluginConfig.DynamicHostRegex)
+		loki.controller, err = controller.NewController(informer, cfg, loki.defaultClient, logger)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	if cfg.PluginConfig.KubernetesMetadata.FallbackToTagWhenMetadataIsMissing {
-		extractKubernetesMetadataRegexp = regexp.MustCompile(cfg.PluginConfig.KubernetesMetadata.TagPrefix + cfg.PluginConfig.KubernetesMetadata.TagExpression)
+		loki.extractKubernetesMetadataRegexp = regexp.MustCompile(cfg.PluginConfig.KubernetesMetadata.TagPrefix + cfg.PluginConfig.KubernetesMetadata.TagExpression)
 	}
 
-	loki := &loki{
-		cfg:                             cfg,
-		defaultClient:                   defaultLokiClient,
-		dynamicHostRegexp:               dynamicHostRegexp,
-		extractKubernetesMetadataRegexp: extractKubernetesMetadataRegexp,
-		controller:                      ctl,
-		logger:                          logger,
+	if cfg.PluginConfig.DynamicTenant.Tenant != "" && cfg.PluginConfig.DynamicTenant.Field != "" && cfg.PluginConfig.DynamicTenant.Regex != "" {
+		loki.dynamicTenantRegexp = regexp.MustCompile(cfg.PluginConfig.DynamicTenant.Regex)
+		loki.dynamicTenant = cfg.PluginConfig.DynamicTenant.Tenant
+		loki.dynamicTenantField = cfg.PluginConfig.DynamicTenant.Field
 	}
 
 	return loki, nil
@@ -117,6 +120,8 @@ func (l *loki) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 	host := dynamicHostName
 	if !l.isDynamicHost(host) {
 		host = "garden"
+	} else {
+		lbs = l.setDynamicTenant(records, lbs)
 	}
 
 	metrics.IncomingLogs.WithLabelValues(host).Inc()
@@ -132,7 +137,6 @@ func (l *loki) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 	if client == nil {
 		level.Debug(l.logger).Log("host", dynamicHostName, "issue", "could_not_find_client")
 		metrics.DroppedLogs.WithLabelValues(host).Inc()
-
 		return nil
 	}
 
@@ -187,7 +191,22 @@ func (l *loki) getClient(dynamicHosName string) types.LokiClient {
 func (l *loki) isDynamicHost(dynamicHostName string) bool {
 	return dynamicHostName != "" &&
 		l.dynamicHostRegexp != nil &&
-		l.dynamicHostRegexp.Match([]byte(dynamicHostName))
+		l.dynamicHostRegexp.MatchString(dynamicHostName)
+}
+
+func (l *loki) setDynamicTenant(record map[string]interface{}, lbs model.LabelSet) model.LabelSet {
+	if l.dynamicTenantRegexp == nil {
+		return lbs
+	}
+	dynamicTenantFieldValue, ok := record[l.dynamicTenantField]
+	if !ok {
+		return lbs
+	}
+	s, ok := dynamicTenantFieldValue.(string)
+	if ok && l.dynamicTenantRegexp.MatchString(s) {
+		lbs[grafanalokiclient.ReservedLabelTenantID] = model.LabelValue(l.dynamicTenant)
+	}
+	return lbs
 }
 
 func (l *loki) send(client types.LokiClient, lbs model.LabelSet, ts time.Time, line string, startOfSendind time.Time) error {

@@ -23,3 +23,8 @@ COPY --from=builder /go/src/github.com/gardener/logging/build/curator /curator
 WORKDIR /
 
 ENTRYPOINT [ "/curator" ]
+
+#############      telegraf       #############
+FROM telegraf:1.18.0-alpine AS telegraf
+
+RUN apk add --update bash iptables su-exec sudo && rm -rf /var/cache/apk/*
