@@ -61,6 +61,7 @@ type Config struct {
 	ControllerConfig ControllerConfig
 	PluginConfig     PluginConfig
 	LogLevel         logging.Level
+	Pprof            bool
 }
 
 // ClientConfig holds configuration for the clients
@@ -167,6 +168,7 @@ var DefaultDqueConfig = DqueConfig{
 
 // ParseConfig parse a Loki plugin configuration
 func ParseConfig(cfg Getter) (*Config, error) {
+	var err error
 	res := &Config{}
 
 	logLevel := cfg.Get("LogLevel")
@@ -178,6 +180,14 @@ func ParseConfig(cfg Getter) (*Config, error) {
 		return nil, fmt.Errorf("invalid log level: %v", logLevel)
 	}
 	res.LogLevel = level
+
+	pprof := cfg.Get("Pprof")
+	if pprof != "" {
+		res.Pprof, err = strconv.ParseBool(pprof)
+		if err != nil {
+			return nil, fmt.Errorf("invalid value for Pprof, error: %v", err)
+		}
+	}
 
 	if err := initClientConfig(cfg, res); err != nil {
 		return nil, err

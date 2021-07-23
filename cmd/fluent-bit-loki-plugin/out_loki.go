@@ -10,31 +10,30 @@ package main
 import (
 	"C"
 	"fmt"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
+	"runtime"
+	"sync"
 	"time"
 	"unsafe"
 
-	"github.com/fluent/fluent-bit-go/output"
-	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/log/level"
-	"github.com/prometheus/common/version"
-	"github.com/weaveworks/common/logging"
+	"github.com/gardener/logging/pkg/config"
+	"github.com/gardener/logging/pkg/lokiplugin"
+	"github.com/gardener/logging/pkg/metrics"
 
 	gardenerclientsetversioned "github.com/gardener/gardener/pkg/client/extensions/clientset/versioned"
 	versioned "github.com/gardener/gardener/pkg/client/extensions/clientset/versioned"
 	gardeninternalcoreinformers "github.com/gardener/gardener/pkg/client/extensions/informers/externalversions"
 
-	"github.com/gardener/logging/pkg/config"
-	"github.com/gardener/logging/pkg/lokiplugin"
-	"github.com/gardener/logging/pkg/metrics"
+	"github.com/fluent/fluent-bit-go/output"
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/prometheus/common/version"
+	"github.com/weaveworks/common/logging"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
-)
-import (
-	"net/http"
-	"sync"
-
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 var (
@@ -44,6 +43,7 @@ var (
 	informer         cache.SharedIndexInformer
 	informerStopChan chan struct{}
 	once             sync.Once
+	pprofOnce        sync.Once
 )
 
 func init() {
@@ -69,6 +69,13 @@ func init() {
 	kubeInformerFactory.Start(informerStopChan)
 }
 
+func setPprofProfile() {
+	pprofOnce.Do(func() {
+		runtime.SetMutexProfileFraction(5)
+		runtime.SetBlockProfileRate(1)
+	})
+}
+
 type pluginConfig struct {
 	ctx unsafe.Pointer
 }
@@ -91,6 +98,10 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 		metrics.Errors.WithLabelValues(metrics.ErrorFLBPluginInit).Inc()
 		level.Error(logger).Log("[flb-go]", "failed to launch", "error", err)
 		return output.FLB_ERROR
+	}
+
+	if conf.Pprof {
+		setPprofProfile()
 	}
 
 	// numeric plugin ID, only used for user-facing purpose (logging, ...)
@@ -138,6 +149,7 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 	level.Info(paramLogger).Log("DynamicTenant", fmt.Sprintf("%+v", conf.PluginConfig.DynamicTenant.Tenant))
 	level.Info(paramLogger).Log("DynamicField", fmt.Sprintf("%+v", conf.PluginConfig.DynamicTenant.Field))
 	level.Info(paramLogger).Log("DynamicRegex", fmt.Sprintf("%+v", conf.PluginConfig.DynamicTenant.Regex))
+	level.Info(paramLogger).Log("Pprof", fmt.Sprintf("%+v", conf.Pprof))
 
 	plugin, err := lokiplugin.NewPlugin(informer, conf, logger)
 	if err != nil {

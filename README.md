@@ -49,6 +49,7 @@ It also adds additional configurations that aim to improve plugin's performance 
 | CleanExpiredClientsPeriod | Clean the expired clients every `CleanExpiredClientsPeriod` | 24 hours
 | DynamicTenant | When set the value is split on space delimiter to 3 tokens. The first token is the tenant to use, the second one is the field to search for matching. The third is the regex to match token 2. | none
 | RemoveTenantIdWhenSendingToDefaultURL | When `DynamicTenant` is set this flag decide whether to remove the record with dynamic tenant or not when sending them to the default `URL` | true
+| Pprof | Activating the pprof packeg for debugging purpose | false
 ### Labels
 
 Labels are used to [query logs](https://github.com/grafana/loki/blob/v1.5.0/docs/logql.md) `{container_name="nginx", cluster="us-west1"}`, they are usually metadata about the workload producing the log stream (`instance`, `container_name`, `region`, `cluster`, `level`).  In Loki labels are indexed consequently you should be cautious when choosing them (high cardinality label values can have performance drastic impact).
