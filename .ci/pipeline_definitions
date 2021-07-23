@@ -18,6 +18,11 @@ logging:
             image: 'eu.gcr.io/gardener-project/gardener/loki-curator'
             dockerfile: './Dockerfile'
             target: curator
+          telegraf-iptables:
+            registry: 'gcr-readwrite'
+            image: 'eu.gcr.io/gardener-project/gardener/telegraf-iptables'
+            dockerfile: './Dockerfile'
+            target: telegraf
     steps:
       verify:
         image: 'golang:1.14.2'
