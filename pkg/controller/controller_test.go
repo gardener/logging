@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"github.com/gardener/logging/pkg/config"
-	"github.com/gardener/logging/pkg/types"
 
 	"github.com/cortexproject/cortex/pkg/util/flagext"
 	"github.com/go-kit/kit/log"
@@ -62,10 +61,16 @@ func (c *fakeLokiClient) StopWait() {
 	c.isStopped = true
 }
 
+func (c *fakeLokiClient) SetState(state clusterState) {}
+
+func (c *fakeLokiClient) GetState() clusterState {
+	return clusterStateReady
+}
+
 var _ = Describe("Controller", func() {
 	Describe("#GetClient", func() {
 		ctl := &controller{
-			clients: map[string]types.LokiClient{
+			clients: map[string]ControllerClient{
 				"shoot--dev--test1": &fakeLokiClient{},
 			},
 		}
@@ -90,7 +95,7 @@ var _ = Describe("Controller", func() {
 		shootDevTest1 := &fakeLokiClient{}
 		shootDevTest2 := &fakeLokiClient{}
 		ctl := &controller{
-			clients: map[string]types.LokiClient{
+			clients: map[string]ControllerClient{
 				"shoot--dev--test1": shootDevTest1,
 				"shoot--dev--test2": shootDevTest2,
 			},
@@ -186,7 +191,7 @@ var _ = Describe("Controller", func() {
 				},
 			}
 			ctl = &controller{
-				clients: make(map[string]types.LokiClient),
+				clients: make(map[string]ControllerClient),
 				conf:    conf,
 				decoder: decoder,
 				logger:  logger,
@@ -206,12 +211,6 @@ var _ = Describe("Controller", func() {
 				Expect(c).To(BeNil())
 				Expect(ok).To(BeFalse())
 			})
-			It("Should not add new client for a cluster in hibernation", func() {
-				ctl.addFunc(hibernatedCluster)
-				c, ok := ctl.clients[shootName]
-				Expect(c).To(BeNil())
-				Expect(ok).To(BeFalse())
-			})
 			It("Should not overwrite new client for a cluster in hibernation", func() {
 				name := "new-shoot-name"
 				newNameCluster := hibernatedCluster.DeepCopy()
@@ -227,15 +226,15 @@ var _ = Describe("Controller", func() {
 			type args struct {
 				oldCluster         *extensionsv1alpha1.Cluster
 				newCluster         *extensionsv1alpha1.Cluster
-				clients            map[string]types.LokiClient
-				shouldclientExists bool
+				clients            map[string]ControllerClient
+				shouldClientExists bool
 			}
 
 			DescribeTable("#updateFunc", func(a args) {
 				ctl.clients = a.clients
 				ctl.updateFunc(a.oldCluster, a.newCluster)
 				c, ok := ctl.clients[a.newCluster.Name]
-				if a.shouldclientExists {
+				if a.shouldClientExists {
 					Expect(c).ToNot(BeNil())
 					Expect(ok).To(BeTrue())
 				} else {
@@ -247,51 +246,51 @@ var _ = Describe("Controller", func() {
 					args{
 						oldCluster: developmentCluster,
 						newCluster: hibernatedCluster,
-						clients: map[string]types.LokiClient{
+						clients: map[string]ControllerClient{
 							shootName: &fakeLokiClient{},
 						},
-						shouldclientExists: false,
+						shouldClientExists: true,
 					},
 				),
 				Entry("client exists and after update cluster has no changes",
 					args{
 						oldCluster: developmentCluster,
 						newCluster: developmentCluster,
-						clients: map[string]types.LokiClient{
+						clients: map[string]ControllerClient{
 							shootName: &fakeLokiClient{},
 						},
-						shouldclientExists: true,
+						shouldClientExists: true,
 					},
 				),
 				Entry("client does not exist and after update cluster has no changes",
 					args{
 						oldCluster:         testingCluster,
 						newCluster:         testingCluster,
-						clients:            map[string]types.LokiClient{},
-						shouldclientExists: false,
+						clients:            map[string]ControllerClient{},
+						shouldClientExists: false,
 					},
 				),
 				Entry("client does not exist and after update cluster is awake ",
 					args{
 						oldCluster:         hibernatedCluster,
 						newCluster:         developmentCluster,
-						clients:            map[string]types.LokiClient{},
-						shouldclientExists: true,
+						clients:            map[string]ControllerClient{},
+						shouldClientExists: true,
 					},
 				),
 				Entry("client does not exist and after update cluster has evaluation purpose ",
 					args{
 						oldCluster:         testingCluster,
 						newCluster:         developmentCluster,
-						clients:            map[string]types.LokiClient{},
-						shouldclientExists: true,
+						clients:            map[string]ControllerClient{},
+						shouldClientExists: true,
 					}),
 				Entry("client exists and after update cluster has testing purpose ",
 					args{
 						oldCluster:         developmentCluster,
 						newCluster:         testingCluster,
-						clients:            map[string]types.LokiClient{},
-						shouldclientExists: false,
+						clients:            map[string]ControllerClient{},
+						shouldClientExists: false,
 					}),
 			)
 		})

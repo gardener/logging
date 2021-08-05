@@ -80,21 +80,20 @@ func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger lo
 
 // sendRecord send fluentbit records to loki as an entry.
 func (l *loki) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
-	start := time.Now()
 	records := toStringMap(r)
-	level.Debug(l.logger).Log("msg", "processing records", "records", fmt.Sprintf("%+v", records))
-	lbs := model.LabelSet{}
+	level.Debug(l.logger).Log("msg", "processing records", "records", fluentBitRecords(records))
+	lbs := make(model.LabelSet, l.cfg.PluginConfig.LabelSetInitCapacity)
 
 	// Check if metadata is missing
 	if l.cfg.PluginConfig.KubernetesMetadata.FallbackToTagWhenMetadataIsMissing {
 		if _, ok := records["kubernetes"]; !ok {
-			level.Debug(l.logger).Log("msg", fmt.Sprintf("kubernetes metadata is missing. Will try to extract it from the tag %q", l.cfg.PluginConfig.KubernetesMetadata.TagKey), "records", fmt.Sprintf("%+v", records))
+			level.Debug(l.logger).Log("msg", "kubernetes metadata is missing. Will try to extract it from the tag key", "tagKey", l.cfg.PluginConfig.KubernetesMetadata.TagKey, "records", fluentBitRecords(records))
 			err := extractKubernetesMetadataFromTag(records, l.cfg.PluginConfig.KubernetesMetadata.TagKey, l.extractKubernetesMetadataRegexp)
 			if err != nil {
 				metrics.Errors.WithLabelValues(metrics.ErrorCanNotExtractMetadataFromTag).Inc()
-				level.Error(l.logger).Log("msg", err.Error(), "records", fmt.Sprintf("%+v", records))
+				level.Error(l.logger).Log("msg", err, "records", fluentBitRecords(records))
 				if l.cfg.PluginConfig.KubernetesMetadata.DropLogEntryWithoutK8sMetadata {
-					level.Warn(l.logger).Log("msg", "kubernetes metadata is missing and the log entry will be dropped", "records", fmt.Sprintf("%+v", records))
+					level.Warn(l.logger).Log("msg", "kubernetes metadata is missing and the log entry will be dropped", "records", fluentBitRecords(records))
 					metrics.LogsWithoutMetadata.WithLabelValues(metrics.MissingMetadataType).Inc()
 					return nil
 				}
@@ -106,7 +105,7 @@ func (l *loki) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 		err := autoLabels(records, lbs)
 		if err != nil {
 			metrics.Errors.WithLabelValues(metrics.ErrorK8sLabelsNotFound).Inc()
-			level.Error(l.logger).Log("msg", err.Error(), "records", fmt.Sprintf("%+v", records))
+			level.Error(l.logger).Log("msg", err.Error(), "records", fluentBitRecords(records))
 		}
 	}
 
@@ -135,7 +134,7 @@ func (l *loki) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 	client := l.getClient(dynamicHostName)
 
 	if client == nil {
-		level.Debug(l.logger).Log("host", dynamicHostName, "issue", "could_not_find_client")
+		level.Debug(l.logger).Log("host", dynamicHostName, "issue", "could not find a client")
 		metrics.DroppedLogs.WithLabelValues(host).Inc()
 		return nil
 	}
@@ -144,9 +143,9 @@ func (l *loki) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 
 	if l.cfg.PluginConfig.DropSingleKey && len(records) == 1 {
 		for _, v := range records {
-			err := l.send(client, lbs, ts, fmt.Sprintf("%v", v), start)
+			err := l.send(client, lbs, ts, fmt.Sprintf("%v", v))
 			if err != nil {
-				level.Error(l.logger).Log("msg", fmt.Sprintf("error sending record to Loki %v", dynamicHostName), "error", err)
+				level.Error(l.logger).Log("msg", "error sending record to Loki", "host", dynamicHostName, "error", err)
 				metrics.Errors.WithLabelValues(metrics.ErrorSendRecordToLoki).Inc()
 			}
 			return err
@@ -159,9 +158,9 @@ func (l *loki) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 		return fmt.Errorf("error creating line: %v", err)
 	}
 
-	err = l.send(client, lbs, ts, line, start)
+	err = l.send(client, lbs, ts, line)
 	if err != nil {
-		level.Error(l.logger).Log("msg", fmt.Sprintf("error sending record to Loki %v", dynamicHostName), "error", err)
+		level.Error(l.logger).Log("msg", "error sending record to Loki", "host", dynamicHostName, "error", err)
 		metrics.Errors.WithLabelValues(metrics.ErrorSendRecordToLoki).Inc()
 
 		return err
@@ -209,16 +208,6 @@ func (l *loki) setDynamicTenant(record map[string]interface{}, lbs model.LabelSe
 	return lbs
 }
 
-func (l *loki) send(client types.LokiClient, lbs model.LabelSet, ts time.Time, line string, startOfSendind time.Time) error {
-	elapsedBeforeSend := time.Since(startOfSendind)
-	level.Debug(l.logger).Log("Log-Processing-elapsed ", elapsedBeforeSend.String(), "Stream", lbs)
-
-	err := client.Handle(lbs, ts, line)
-
-	if err == nil {
-		elapsedAfterSend := time.Since(startOfSendind)
-		level.Debug(l.logger).Log("Log-Sending-elapsed", elapsedAfterSend.String(), "Stream", lbs)
-	}
-
-	return err
+func (l *loki) send(client types.LokiClient, lbs model.LabelSet, ts time.Time, line string) error {
+	return client.Handle(lbs, ts, line)
 }

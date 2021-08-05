@@ -62,7 +62,7 @@ format:
 
 .PHONY: test
 test:
-	@sh $(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/test.sh -r ./pkg/...
+	@sh $(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/test.sh ./pkg/...
 
 .PHONY: install-requirements
 install-requirements:

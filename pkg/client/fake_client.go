@@ -15,21 +15,34 @@
 package client
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/grafana/loki/pkg/logproto"
 	"github.com/prometheus/common/model"
 )
 
-type LokiClient interface {
-	Handle(labels model.LabelSet, time time.Time, entry string) error
-	// Stop shut down the client immediately without waiting to send the saved logs
-	Stop()
-	// StopWait stops the client of receiving new logs and waits all saved logs to be sent until shuting down
-	StopWait()
+type FakeLokiClient struct {
+	IsStopped           bool
+	IsGracefullyStopped bool
+	Entries             []Entry
 }
 
-type Entry struct {
-	Labels model.LabelSet
-	logproto.Entry
+func (c *FakeLokiClient) Handle(labels model.LabelSet, timestamp time.Time, line string) error {
+	if c.IsStopped || c.IsGracefullyStopped {
+		return fmt.Errorf("client has been stopped")
+	}
+	c.Entries = append(c.Entries, Entry{
+		Labels: labels,
+		Entry:  logproto.Entry{Timestamp: timestamp, Line: line},
+	})
+	return nil
+}
+
+func (c *FakeLokiClient) Stop() {
+	c.IsStopped = true
+}
+
+func (c *FakeLokiClient) StopWait() {
+	c.IsGracefullyStopped = true
 }

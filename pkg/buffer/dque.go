@@ -110,12 +110,12 @@ func (c *dqueClient) dequeuer() {
 			return
 		}
 
-		level.Debug(c.logger).Log("msg", "sending record to Loki", "url", c.url, "record", record.String())
+		level.Debug(c.logger).Log("msg", "sending record to Loki", "url", c.url, "record", record)
 		if err := c.loki.Handle(record.LabelSet, record.Timestamp, record.Line); err != nil {
 			metrics.Errors.WithLabelValues(metrics.ErrorDequeuerSendRecord).Inc()
-			level.Error(c.logger).Log("msg", fmt.Sprintf("error sending record to Loki %s", c.url), "error", err)
+			level.Error(c.logger).Log("msg", "error sending record to Loki", "host", c.url, "error", err)
 		}
-		level.Debug(c.logger).Log("msg", "successful sent record to Loki", "host", c.url, "record", record.String())
+		level.Debug(c.logger).Log("msg", "successful sent record to Loki", "host", c.url, "record", record)
 
 		c.lock.Lock()
 		if c.isStooped && c.queue.Size() <= 0 {
