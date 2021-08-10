@@ -161,12 +161,18 @@ func (c *sortedClient) addToBatch(e entry) {
 
 // Stop the client.
 func (c *sortedClient) Stop() {
-	c.once.Do(func() { close(c.quit) })
+	c.once.Do(func() {
+		close(c.quit)
+		c.lokiclient.Stop()
+	})
 	c.wg.Wait()
 }
 
 func (c *sortedClient) StopWait() {
-	c.once.Do(func() { close(c.quit) })
+	c.once.Do(func() {
+		close(c.quit)
+		c.lokiclient.StopWait()
+	})
 	c.wg.Wait()
 }
 
