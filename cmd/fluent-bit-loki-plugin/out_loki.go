@@ -199,12 +199,11 @@ func FLBPluginFlushCtx(ctx, data unsafe.Pointer, length C.int, _ *C.char) int {
 			timestamp = time.Now()
 		}
 
-		go func(r map[interface{}]interface{}) {
-			err := plugin.SendRecord(r, timestamp)
-			if err != nil {
-				level.Warn(logger).Log("msg", err.Error())
-			}
-		}(record)
+		err := plugin.SendRecord(record, timestamp)
+		if err != nil {
+			level.Warn(logger).Log("msg", err.Error())
+		}
+
 	}
 
 	// Return options:
