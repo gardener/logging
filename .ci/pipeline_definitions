@@ -28,7 +28,6 @@ logging:
         image: 'golang:1.14.2'
   jobs:
     head-update:
-      version: ~
       component_descriptor:
         snapshot_ctx_repository: gardener-public
     pull-request:
