@@ -36,20 +36,27 @@ type newClientFunc func(cfg client.Config, logger log.Logger) (types.LokiClient,
 
 // NewClient creates a new client based on the fluentbit configuration.
 func NewClient(cfg *config.Config, logger log.Logger) (types.LokiClient, error) {
-	var ncf newClientFunc
+	var (
+		ncf       newClientFunc
+		newClient types.LokiClient
+		err       error
+	)
 
 	if cfg.ClientConfig.SortByTimestamp {
 		ncf = func(c client.Config, logger log.Logger) (types.LokiClient, error) {
-			return New(c, cfg.ClientConfig.NumberOfBatchIDs, logger)
+			return newSortedClient(c, cfg.ClientConfig.NumberOfBatchIDs, logger)
 		}
 	} else {
 		ncf = NewPromtailClient
 	}
 
 	if cfg.ClientConfig.BufferConfig.Buffer {
-		return buffer.NewBuffer(cfg, logger, ncf)
+		newClient, err = buffer.NewBuffer(cfg, logger, ncf)
+	} else {
+		newClient, err = ncf(cfg.ClientConfig.GrafanaLokiConfig, logger)
 	}
-	return ncf(cfg.ClientConfig.GrafanaLokiConfig, logger)
+
+	return newClient, err
 }
 
 type promtailClientWithForwardedLogsMetricCounter struct {

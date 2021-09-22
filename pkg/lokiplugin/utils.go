@@ -23,18 +23,19 @@ import (
 )
 
 const (
-	podName            = "pod_name"
-	namespaceName      = "namespace_name"
-	containerName      = "container_name"
-	dockerID           = "docker_id"
-	subExpresionNumber = 5
+	podName                           = "pod_name"
+	namespaceName                     = "namespace_name"
+	containerName                     = "container_name"
+	dockerID                          = "docker_id"
+	subExpresionNumber                = 5
+	inCaseKubernetesMetadataIsMissing = 1
 )
 
 // prevent base64-encoding []byte values (default json.Encoder rule) by
 // converting them to strings
 
 func toStringSlice(slice []interface{}) []interface{} {
-	var s []interface{}
+	s := make([]interface{}, 0, len(slice))
 	for _, v := range slice {
 		switch t := v.(type) {
 		case []byte:
@@ -51,7 +52,7 @@ func toStringSlice(slice []interface{}) []interface{} {
 }
 
 func toStringMap(record map[interface{}]interface{}) map[string]interface{} {
-	m := make(map[string]interface{})
+	m := make(map[string]interface{}, len(record)+inCaseKubernetesMetadataIsMissing)
 	for k, v := range record {
 		key, ok := k.(string)
 		if !ok {
@@ -68,7 +69,6 @@ func toStringMap(record map[interface{}]interface{}) map[string]interface{} {
 			m[key] = v
 		}
 	}
-
 	return m
 }
 
@@ -232,4 +232,10 @@ func createLine(records map[string]interface{}, f config.Format) (string, error)
 	default:
 		return "", fmt.Errorf("invalid line format: %v", f)
 	}
+}
+
+type fluentBitRecords map[string]interface{}
+
+func (r fluentBitRecords) String() string {
+	return fmt.Sprintf("%+v", map[string]interface{}(r))
 }

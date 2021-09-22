@@ -77,8 +77,9 @@ var _ = Describe("Config", func() {
 						TagPrefix:     DefaultKubernetesMetadataTagPrefix,
 						TagExpression: DefaultKubernetesMetadataTagExpression,
 					},
-					DropSingleKey:    true,
-					DynamicHostRegex: "*",
+					DropSingleKey:        true,
+					DynamicHostRegex:     "*",
+					LabelSetInitCapacity: 10,
 				},
 				ClientConfig: config.ClientConfig{
 					GrafanaLokiConfig: client.Config{
@@ -106,9 +107,11 @@ var _ = Describe("Config", func() {
 					NumberOfBatchIDs: 10,
 				},
 				ControllerConfig: config.ControllerConfig{
-					CtlSyncTimeout:              60000000000,
-					DeletedClientTimeExpiration: 3600000000000,
-					CleanExpiredClientsPeriod:   86400000000000,
+					CtlSyncTimeout:                60000000000,
+					DeletedClientTimeExpiration:   3600000000000,
+					CleanExpiredClientsPeriod:     86400000000000,
+					MainControllerClientConfig:    MainControllerClientConfig,
+					DefaultControllerClientConfig: DefaultControllerClientConfig,
 				},
 				LogLevel: infoLogLevel,
 			},
@@ -140,6 +143,7 @@ var _ = Describe("Config", func() {
 						TagPrefix:     DefaultKubernetesMetadataTagPrefix,
 						TagExpression: DefaultKubernetesMetadataTagExpression,
 					},
+					LabelSetInitCapacity: 10,
 				},
 
 				ClientConfig: config.ClientConfig{
@@ -170,9 +174,11 @@ var _ = Describe("Config", func() {
 					SortByTimestamp:  true,
 				},
 				ControllerConfig: config.ControllerConfig{
-					CtlSyncTimeout:              60000000000,
-					DeletedClientTimeExpiration: 3600000000000,
-					CleanExpiredClientsPeriod:   86400000000000,
+					CtlSyncTimeout:                60000000000,
+					DeletedClientTimeExpiration:   3600000000000,
+					CleanExpiredClientsPeriod:     86400000000000,
+					MainControllerClientConfig:    MainControllerClientConfig,
+					DefaultControllerClientConfig: DefaultControllerClientConfig,
 				},
 				LogLevel: warnLogLevel,
 			},
@@ -216,6 +222,7 @@ var _ = Describe("Config", func() {
 						TagPrefix:     DefaultKubernetesMetadataTagPrefix,
 						TagExpression: DefaultKubernetesMetadataTagExpression,
 					},
+					LabelSetInitCapacity: 10,
 				},
 				ClientConfig: config.ClientConfig{
 					GrafanaLokiConfig: client.Config{
@@ -244,9 +251,11 @@ var _ = Describe("Config", func() {
 					NumberOfBatchIDs: 10,
 				},
 				ControllerConfig: config.ControllerConfig{
-					CtlSyncTimeout:              60000000000,
-					DeletedClientTimeExpiration: 3600000000000,
-					CleanExpiredClientsPeriod:   86400000000000,
+					CtlSyncTimeout:                60000000000,
+					DeletedClientTimeExpiration:   3600000000000,
+					CleanExpiredClientsPeriod:     86400000000000,
+					MainControllerClientConfig:    MainControllerClientConfig,
+					DefaultControllerClientConfig: DefaultControllerClientConfig,
 				},
 				LogLevel: warnLogLevel,
 			},
@@ -285,6 +294,7 @@ var _ = Describe("Config", func() {
 						TagPrefix:     DefaultKubernetesMetadataTagPrefix,
 						TagExpression: DefaultKubernetesMetadataTagExpression,
 					},
+					LabelSetInitCapacity: 10,
 				},
 				ClientConfig: ClientConfig{
 					GrafanaLokiConfig: client.Config{
@@ -313,11 +323,13 @@ var _ = Describe("Config", func() {
 					NumberOfBatchIDs: 10,
 				},
 				ControllerConfig: ControllerConfig{
-					DynamicHostPrefix:           "http://loki.",
-					DynamicHostSuffix:           ".svc:3100/loki/api/v1/push",
-					CtlSyncTimeout:              60000000000,
-					DeletedClientTimeExpiration: 3600000000000,
-					CleanExpiredClientsPeriod:   86400000000000,
+					DynamicHostPrefix:             "http://loki.",
+					DynamicHostSuffix:             ".svc:3100/loki/api/v1/push",
+					CtlSyncTimeout:                60000000000,
+					DeletedClientTimeExpiration:   3600000000000,
+					CleanExpiredClientsPeriod:     86400000000000,
+					MainControllerClientConfig:    MainControllerClientConfig,
+					DefaultControllerClientConfig: DefaultControllerClientConfig,
 				},
 				LogLevel: warnLogLevel,
 			},
@@ -352,7 +364,8 @@ var _ = Describe("Config", func() {
 						TagPrefix:     DefaultKubernetesMetadataTagPrefix,
 						TagExpression: DefaultKubernetesMetadataTagExpression,
 					},
-					DynamicHostRegex: "*",
+					DynamicHostRegex:     "*",
+					LabelSetInitCapacity: 10,
 				},
 				ClientConfig: ClientConfig{
 					GrafanaLokiConfig: client.Config{
@@ -381,9 +394,11 @@ var _ = Describe("Config", func() {
 					NumberOfBatchIDs: 10,
 				},
 				ControllerConfig: config.ControllerConfig{
-					CtlSyncTimeout:              60000000000,
-					DeletedClientTimeExpiration: 3600000000000,
-					CleanExpiredClientsPeriod:   86400000000000,
+					CtlSyncTimeout:                60000000000,
+					DeletedClientTimeExpiration:   3600000000000,
+					CleanExpiredClientsPeriod:     86400000000000,
+					MainControllerClientConfig:    MainControllerClientConfig,
+					DefaultControllerClientConfig: DefaultControllerClientConfig,
 				},
 				LogLevel: warnLogLevel,
 			},
@@ -417,6 +432,7 @@ var _ = Describe("Config", func() {
 						TagPrefix:     DefaultKubernetesMetadataTagPrefix,
 						TagExpression: DefaultKubernetesMetadataTagExpression,
 					},
+					LabelSetInitCapacity: 10,
 				},
 				ClientConfig: ClientConfig{
 					GrafanaLokiConfig: client.Config{
@@ -445,9 +461,11 @@ var _ = Describe("Config", func() {
 					NumberOfBatchIDs: 10,
 				},
 				ControllerConfig: config.ControllerConfig{
-					CtlSyncTimeout:              60000000000,
-					DeletedClientTimeExpiration: 3600000000000,
-					CleanExpiredClientsPeriod:   86400000000000,
+					CtlSyncTimeout:                60000000000,
+					DeletedClientTimeExpiration:   3600000000000,
+					CleanExpiredClientsPeriod:     86400000000000,
+					MainControllerClientConfig:    MainControllerClientConfig,
+					DefaultControllerClientConfig: DefaultControllerClientConfig,
 				},
 				LogLevel: warnLogLevel,
 			},
@@ -484,6 +502,7 @@ var _ = Describe("Config", func() {
 						TagPrefix:                          "testPrefix",
 						TagExpression:                      "testExpression",
 					},
+					LabelSetInitCapacity: 10,
 				},
 				ClientConfig: ClientConfig{
 					GrafanaLokiConfig: client.Config{
@@ -512,9 +531,11 @@ var _ = Describe("Config", func() {
 					NumberOfBatchIDs: 10,
 				},
 				ControllerConfig: config.ControllerConfig{
-					CtlSyncTimeout:              60000000000,
-					DeletedClientTimeExpiration: 3600000000000,
-					CleanExpiredClientsPeriod:   86400000000000,
+					CtlSyncTimeout:                60000000000,
+					DeletedClientTimeExpiration:   3600000000000,
+					CleanExpiredClientsPeriod:     86400000000000,
+					MainControllerClientConfig:    MainControllerClientConfig,
+					DefaultControllerClientConfig: DefaultControllerClientConfig,
 				},
 				LogLevel: warnLogLevel,
 			},
@@ -536,17 +557,17 @@ var _ = Describe("Config", func() {
 			},
 			&Config{
 				PluginConfig: PluginConfig{
-					LineFormat:    KvPairFormat,
-					LabelKeys:     []string{"foo", "bar"},
-					RemoveKeys:    []string{"buzz", "fuzz"},
-					DropSingleKey: false,
-
+					LineFormat:       KvPairFormat,
+					LabelKeys:        []string{"foo", "bar"},
+					RemoveKeys:       []string{"buzz", "fuzz"},
+					DropSingleKey:    false,
 					DynamicHostRegex: "*",
 					KubernetesMetadata: KubernetesMetadataExtraction{
 						TagKey:        DefaultKubernetesMetadataTagKey,
 						TagPrefix:     DefaultKubernetesMetadataTagPrefix,
 						TagExpression: DefaultKubernetesMetadataTagExpression,
 					},
+					LabelSetInitCapacity: 10,
 				},
 
 				ClientConfig: ClientConfig{
@@ -576,9 +597,11 @@ var _ = Describe("Config", func() {
 					NumberOfBatchIDs: 10,
 				},
 				ControllerConfig: config.ControllerConfig{
-					CtlSyncTimeout:              60000000000,
-					DeletedClientTimeExpiration: 3600000000000,
-					CleanExpiredClientsPeriod:   86400000000000,
+					CtlSyncTimeout:                60000000000,
+					DeletedClientTimeExpiration:   3600000000000,
+					CleanExpiredClientsPeriod:     86400000000000,
+					MainControllerClientConfig:    MainControllerClientConfig,
+					DefaultControllerClientConfig: DefaultControllerClientConfig,
 				},
 				LogLevel: warnLogLevel,
 			},
@@ -604,6 +627,7 @@ var _ = Describe("Config", func() {
 						Regex:                                 "user-exposed.kubernetes.*",
 						RemoveTenantIdWhenSendingToDefaultURL: true,
 					},
+					LabelSetInitCapacity: 10,
 				},
 				ClientConfig: config.ClientConfig{
 					GrafanaLokiConfig: client.Config{
@@ -631,9 +655,11 @@ var _ = Describe("Config", func() {
 					NumberOfBatchIDs: 10,
 				},
 				ControllerConfig: config.ControllerConfig{
-					CtlSyncTimeout:              60000000000,
-					DeletedClientTimeExpiration: 3600000000000,
-					CleanExpiredClientsPeriod:   86400000000000,
+					CtlSyncTimeout:                60000000000,
+					DeletedClientTimeExpiration:   3600000000000,
+					CleanExpiredClientsPeriod:     86400000000000,
+					MainControllerClientConfig:    MainControllerClientConfig,
+					DefaultControllerClientConfig: DefaultControllerClientConfig,
 				},
 				LogLevel: infoLogLevel,
 			},
@@ -659,6 +685,7 @@ var _ = Describe("Config", func() {
 						Regex:                                 "user-exposed.kubernetes.*",
 						RemoveTenantIdWhenSendingToDefaultURL: true,
 					},
+					LabelSetInitCapacity: 10,
 				},
 				ClientConfig: config.ClientConfig{
 					GrafanaLokiConfig: client.Config{
@@ -686,9 +713,11 @@ var _ = Describe("Config", func() {
 					NumberOfBatchIDs: 10,
 				},
 				ControllerConfig: config.ControllerConfig{
-					CtlSyncTimeout:              60000000000,
-					DeletedClientTimeExpiration: 3600000000000,
-					CleanExpiredClientsPeriod:   86400000000000,
+					CtlSyncTimeout:                60000000000,
+					DeletedClientTimeExpiration:   3600000000000,
+					CleanExpiredClientsPeriod:     86400000000000,
+					MainControllerClientConfig:    MainControllerClientConfig,
+					DefaultControllerClientConfig: DefaultControllerClientConfig,
 				},
 				LogLevel: infoLogLevel,
 			},
@@ -714,6 +743,7 @@ var _ = Describe("Config", func() {
 						Regex:                                 "regex with spaces",
 						RemoveTenantIdWhenSendingToDefaultURL: true,
 					},
+					LabelSetInitCapacity: 10,
 				},
 				ClientConfig: config.ClientConfig{
 					GrafanaLokiConfig: client.Config{
@@ -741,9 +771,11 @@ var _ = Describe("Config", func() {
 					NumberOfBatchIDs: 10,
 				},
 				ControllerConfig: config.ControllerConfig{
-					CtlSyncTimeout:              60000000000,
-					DeletedClientTimeExpiration: 3600000000000,
-					CleanExpiredClientsPeriod:   86400000000000,
+					CtlSyncTimeout:                60000000000,
+					DeletedClientTimeExpiration:   3600000000000,
+					CleanExpiredClientsPeriod:     86400000000000,
+					MainControllerClientConfig:    MainControllerClientConfig,
+					DefaultControllerClientConfig: DefaultControllerClientConfig,
 				},
 				LogLevel: infoLogLevel,
 			},

@@ -50,6 +50,22 @@ It also adds additional configurations that aim to improve plugin's performance 
 | DynamicTenant | When set the value is split on space delimiter to 3 tokens. The first token is the tenant to use, the second one is the field to search for matching. The third is the regex to match token 2. | none
 | RemoveTenantIdWhenSendingToDefaultURL | When `DynamicTenant` is set this flag decide whether to remove the record with dynamic tenant or not when sending them to the default `URL` | true
 | Pprof | Activating the pprof packeg for debugging purpose | false
+| LabelSetInitCapacity | The initial size of the label set which will be extracted from the records. Reduce map reallocation | 10
+| SendLogsToMainClusterWhenIsInCreationState | Send log to the dynamic cluster when it is in creation state | `true`
+| SendLogsToMainClusterWhenIsInReadyState | Send log to the dynamic cluster when it is in ready state | `true`
+| SendLogsToMainClusterWhenIsInHibernatingState | Send log to the dynamic cluster when it is in hibernating state  | `false`
+| SendLogsToMainClusterWhenIsInHibernatedState | Send log to the dynamic cluster when it is in hibernated state | `false`
+| SendLogsToMainClusterWhenIsInDeletionState | Send log to the dynamic cluster when it is in deletion state | `true`
+| SendLogsToMainClusterWhenIsInRestoreState | Send log to the dynamic cluster when it is in restoration state | `true`
+| SendLogsToMainClusterWhenIsInMigrationState | Send log to the dynamic cluster when it is in migration state | `true`
+| SendLogsToDefaultClientWhenClusterIsInCreationState | Send log to the default URL when it is in creation state | `true`
+| SendLogsToDefaultClientWhenClusterIsInReadyState | Send log to the default URL when it is in ready state | `false`
+| SendLogsToDefaultClientWhenClusterIsInHibernatingState | Send log to the default URL when it is in hibernating state | `false`
+| SendLogsToDefaultClientWhenClusterIsInHibernatedState | Send log to the default URL when it is in hibernated state | `false`
+| SendLogsToDefaultClientWhenClusterIsInDeletionState | Send log to the default URL when it is in deletion state | `true`
+| SendLogsToDefaultClientWhenClusterIsInRestoreState | Send log to the default URL when it is in restoration state | `true`
+| SendLogsToDefaultClientWhenClusterIsInMigrationState | Send log to the default URL when it is in migration state | `true`
+
 ### Labels
 
 Labels are used to [query logs](https://github.com/grafana/loki/blob/v1.5.0/docs/logql.md) `{container_name="nginx", cluster="us-west1"}`, they are usually metadata about the workload producing the log stream (`instance`, `container_name`, `region`, `cluster`, `level`).  In Loki labels are indexed consequently you should be cautious when choosing them (high cardinality label values can have performance drastic impact).

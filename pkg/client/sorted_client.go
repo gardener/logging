@@ -38,12 +38,11 @@ type sortedClient struct {
 	numberOfBatchIDs uint64
 	quit             chan struct{}
 	once             sync.Once
-	entries          chan entry
+	entries          chan Entry
 	wg               sync.WaitGroup
 }
 
-// New makes a new Client.
-func New(cfg client.Config, numberOfBatchIds uint64, logger log.Logger) (types.LokiClient, error) {
+func newSortedClient(cfg client.Config, numberOfBatchIds uint64, logger log.Logger) (types.LokiClient, error) {
 	batchWait := cfg.BatchWait
 	cfg.BatchWait = 5 * time.Second
 
@@ -61,7 +60,7 @@ func New(cfg client.Config, numberOfBatchIds uint64, logger log.Logger) (types.L
 		numberOfBatchIDs: numberOfBatchIds,
 		batch:            batch.NewBatch(0),
 		quit:             make(chan struct{}),
-		entries:          make(chan entry),
+		entries:          make(chan Entry),
 	}
 
 	c.wg.Add(1)
@@ -144,7 +143,7 @@ func (c *sortedClient) sendBatch() {
 	c.batch = nil
 }
 
-func (c *sortedClient) newBatch(e entry) {
+func (c *sortedClient) newBatch(e Entry) {
 	c.batchLock.Lock()
 	defer c.batchLock.Unlock()
 	if c.batch == nil {
@@ -152,10 +151,10 @@ func (c *sortedClient) newBatch(e entry) {
 		c.batch = batch.NewBatch(c.batchID % c.numberOfBatchIDs)
 	}
 
-	c.batch.Add(e.labels.Clone(), e.Timestamp, e.Line)
+	c.batch.Add(e.Labels.Clone(), e.Timestamp, e.Line)
 }
 
-func (c *sortedClient) addToBatch(e entry) {
+func (c *sortedClient) addToBatch(e Entry) {
 	c.newBatch(e)
 }
 
@@ -178,7 +177,7 @@ func (c *sortedClient) StopWait() {
 
 // Handle implement EntryHandler; adds a new line to the next batch; send is async.
 func (c *sortedClient) Handle(ls model.LabelSet, t time.Time, s string) error {
-	c.entries <- entry{ls, logproto.Entry{
+	c.entries <- Entry{ls, logproto.Entry{
 		Timestamp: t,
 		Line:      s,
 	}}

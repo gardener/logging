@@ -24,7 +24,6 @@ import (
 	"github.com/gardener/logging/pkg/types"
 
 	extensioncontroller "github.com/gardener/gardener/extensions/pkg/controller"
-	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 
 	"github.com/cortexproject/cortex/pkg/util/flagext"
@@ -45,17 +44,15 @@ type Controller interface {
 	Stop()
 }
 type controller struct {
-	defaultClient      types.LokiClient
-	conf               *config.Config
-	lock               sync.RWMutex
-	clients            map[string]types.LokiClient
-	deletedClientsLock sync.RWMutex
-	deletedClients     map[string]deletionTimestamp
-	once               sync.Once
-	done               chan bool
-	wg                 sync.WaitGroup
-	decoder            runtime.Decoder
-	logger             log.Logger
+	defaultClient types.LokiClient
+	conf          *config.Config
+	lock          sync.RWMutex
+	clients       map[string]ControllerClient
+	once          sync.Once
+	done          chan bool
+	wg            sync.WaitGroup
+	decoder       runtime.Decoder
+	logger        log.Logger
 }
 
 // NewController return Controller interface
@@ -63,21 +60,15 @@ func NewController(informer cache.SharedIndexInformer, conf *config.Config, defa
 	decoder, err := extensioncontroller.NewGardenDecoder()
 	if err != nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorCreateDecoder).Inc()
-		level.Error(logger).Log("msg", "Can't make garden runtime decoder")
-		return nil, err
+		return nil, fmt.Errorf("can't make garden runtime decoder: %v", err)
 	}
 
 	controller := &controller{
-		clients: make(map[string]types.LokiClient, expectedActiveClusters),
-		conf:    conf,
-		decoder: decoder,
-		logger:  logger,
-	}
-
-	if conf.ControllerConfig.SendDeletedClustersLogsToDefaultClient {
-		controller.defaultClient = defaultClient
-		controller.deletedClients = make(map[string]deletionTimestamp)
-		controller.done = make(chan bool)
+		clients:       make(map[string]ControllerClient, expectedActiveClusters),
+		conf:          conf,
+		defaultClient: defaultClient,
+		decoder:       decoder,
+		logger:        logger,
 	}
 
 	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -95,30 +86,7 @@ func NewController(informer cache.SharedIndexInformer, conf *config.Config, defa
 		return nil, fmt.Errorf("failed to wait for caches to sync")
 	}
 
-	if conf.ControllerConfig.SendDeletedClustersLogsToDefaultClient {
-		controller.defaultClient = defaultClient
-		controller.deletedClients = make(map[string]deletionTimestamp)
-		controller.done = make(chan bool)
-		controller.wg.Add(1)
-		go controller.cleanExpiredClients()
-	}
-
 	return controller, nil
-}
-
-// GetClient search a client with <name> and returned if found.
-// In case the controller is closed it returns true as second return value.
-func (ctl *controller) GetClient(name string) (types.LokiClient, bool) {
-
-	client, closed := ctl.getClientForActiveCluster(name)
-	if closed {
-		return client, closed
-	}
-	if client != nil {
-		return client, false
-	}
-
-	return ctl.getClientForClusterInDeletionState(name)
 }
 
 func (ctl *controller) Stop() {
@@ -132,7 +100,6 @@ func (ctl *controller) Stop() {
 		if ctl.done != nil {
 			ctl.done <- true
 			ctl.wg.Wait()
-			ctl.deletedClients = nil
 		}
 	})
 }
@@ -146,10 +113,7 @@ func (ctl *controller) addFunc(obj interface{}) {
 	}
 
 	if ctl.matches(cluster) && !ctl.isDeletedShoot(cluster) {
-		ctl.createClientForActiveCluster(cluster)
-		if ctl.conf.ControllerConfig.SendDeletedClustersLogsToDefaultClient {
-			ctl.createClientForClusterInDeletionState(cluster)
-		}
+		ctl.createControllerClient(cluster)
 	}
 }
 
@@ -168,17 +132,26 @@ func (ctl *controller) updateFunc(oldObj interface{}, newObj interface{}) {
 		return
 	}
 
-	_, ok = ctl.clients[oldCluster.Name]
+	client, ok := ctl.clients[oldCluster.Name]
+	//The client exist in the list so we have to update it
 	if ok {
-		// The shoot is not applicable for logging
+		// The shoot is no longer applicable for logging
 		if !ctl.matches(newCluster) {
-			ctl.deleteClient(newCluster)
-		} else if ctl.isDeletedShoot(newCluster) {
-			ctl.deleteClient(newCluster)
+			ctl.deleteControllerClient(newCluster)
+			return
 		}
+		// Sanity check
+		if client == nil {
+			level.Error(ctl.logger).Log("msg", fmt.Sprintf("The client for cluster %v is NIL. Will try to create new one", newCluster.Name))
+			ctl.createControllerClient(newCluster)
+		}
+
+		ctl.updateControllerClientState(client, newCluster)
 	} else {
-		if ctl.matches(newCluster) && !ctl.isDeletedShoot(newCluster) {
-			ctl.createClientForActiveCluster(newCluster)
+		//The client does not exist and we will try to create a new one if the shoot is applicable for logging
+		if ctl.matches(newCluster) {
+
+			ctl.createControllerClient(newCluster)
 		}
 	}
 }
@@ -191,7 +164,7 @@ func (ctl *controller) delFunc(obj interface{}) {
 		return
 	}
 
-	ctl.deleteClient(cluster)
+	ctl.deleteControllerClient(cluster)
 }
 
 func (ctl *controller) getClientConfig(namespace string) *config.Config {
@@ -220,7 +193,7 @@ func (ctl *controller) matches(cluster *extensionsv1alpha1.Cluster) bool {
 		return false
 	}
 
-	if isShootInHibernation(shoot) || isTestingShoot(shoot) {
+	if isTestingShoot(shoot) {
 		return false
 	}
 
@@ -240,15 +213,4 @@ func (ctl *controller) isDeletedShoot(cluster *extensionsv1alpha1.Cluster) bool 
 
 func (ctl *controller) isStopped() bool {
 	return ctl.clients == nil
-}
-
-func isShootInHibernation(shoot *gardencorev1beta1.Shoot) bool {
-	return shoot != nil &&
-		shoot.Spec.Hibernation != nil &&
-		shoot.Spec.Hibernation.Enabled != nil &&
-		*shoot.Spec.Hibernation.Enabled
-}
-
-func isTestingShoot(shoot *gardencorev1beta1.Shoot) bool {
-	return shoot != nil && shoot.Spec.Purpose != nil && *shoot.Spec.Purpose == "testing"
 }

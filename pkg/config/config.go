@@ -93,6 +93,26 @@ type ControllerConfig struct {
 	DeletedClientTimeExpiration time.Duration
 	// CleanExpiredClientsPeriod is the period of deletion of expired clients
 	CleanExpiredClientsPeriod time.Duration
+	// MainControllerClientConfig configure to whether to send or not the log to the shoot
+	// Loki for a particular shoot state.
+	MainControllerClientConfig ControllerClientConfiguration
+	// DefaultControllerClientConfig configure to whether to send or not the log to the shoot
+	// Loki for a particular shoot state.
+	DefaultControllerClientConfig ControllerClientConfiguration
+}
+
+// ControllerClientConfiguration contains flags which
+// mutes/unmutes Shoot's and Seed Loki for a given Shoot state.
+type ControllerClientConfiguration struct {
+	SendLogsWhenIsInCreationState    bool
+	SendLogsWhenIsInReadyState       bool
+	SendLogsWhenIsInHibernatingState bool
+	SendLogsWhenIsInHibernatedState  bool
+	SendLogsWhenIsInWakingState      bool
+	SendLogsWhenIsInDeletionState    bool
+	SendLogsWhenIsInDeletedState     bool
+	SendLogsWhenIsInRestoreState     bool
+	SendLogsWhenIsInMigrationState   bool
 }
 
 // PluginConfig contains the configuration mostly related to the Loki plugin
@@ -117,7 +137,10 @@ type PluginConfig struct {
 	DynamicHostRegex string
 	// KubernetesMetadata holds the configurations for retrieving the meta data from a tag
 	KubernetesMetadata KubernetesMetadataExtraction
-	DynamicTenant      DynamicTenant
+	//DynamicTenant holds the configurations for retrieving the tenant from a record key
+	DynamicTenant DynamicTenant
+	//LabelSetInitCapacity the initial capacity of the labelset stream
+	LabelSetInitCapacity int
 }
 
 // BufferConfig contains the buffer settings
@@ -164,6 +187,30 @@ var DefaultDqueConfig = DqueConfig{
 	QueueSegmentSize: 500,
 	QueueSync:        false,
 	QueueName:        "dque",
+}
+
+var DefaultControllerClientConfig = ControllerClientConfiguration{
+	SendLogsWhenIsInCreationState:    true,
+	SendLogsWhenIsInReadyState:       false,
+	SendLogsWhenIsInHibernatingState: false,
+	SendLogsWhenIsInHibernatedState:  false,
+	SendLogsWhenIsInWakingState:      false,
+	SendLogsWhenIsInDeletionState:    true,
+	SendLogsWhenIsInDeletedState:     true,
+	SendLogsWhenIsInRestoreState:     true,
+	SendLogsWhenIsInMigrationState:   true,
+}
+
+var MainControllerClientConfig = ControllerClientConfiguration{
+	SendLogsWhenIsInCreationState:    true,
+	SendLogsWhenIsInReadyState:       true,
+	SendLogsWhenIsInHibernatingState: false,
+	SendLogsWhenIsInHibernatedState:  false,
+	SendLogsWhenIsInWakingState:      true,
+	SendLogsWhenIsInDeletionState:    true,
+	SendLogsWhenIsInDeletedState:     true,
+	SendLogsWhenIsInRestoreState:     true,
+	SendLogsWhenIsInMigrationState:   true,
 }
 
 // ParseConfig parse a Loki plugin configuration
@@ -398,7 +445,7 @@ func initControllerConfig(cfg Getter, res *Config) error {
 		res.ControllerConfig.CleanExpiredClientsPeriod = 24 * time.Hour
 	}
 
-	return nil
+	return initControllerClientConfig(cfg, res)
 }
 
 func initPluginConfig(cfg Getter, res *Config) error {
@@ -520,6 +567,158 @@ func initPluginConfig(cfg Getter, res *Config) error {
 			}
 		} else {
 			res.PluginConfig.DynamicTenant.RemoveTenantIdWhenSendingToDefaultURL = true
+		}
+	}
+
+	labelSetInitCapacity := cfg.Get("LabelSetInitCapacity")
+	if labelSetInitCapacity != "" {
+		labelSetInitCapacityValue, err := strconv.Atoi(labelSetInitCapacity)
+		if err != nil {
+			return fmt.Errorf("failed to parse LabelSetInitCapacity: %s", labelSetInitCapacity)
+		}
+		if labelSetInitCapacityValue <= 0 {
+			return fmt.Errorf("LabelSetInitCapacity can't be zero or negative value: %s", labelSetInitCapacity)
+		} else {
+			res.PluginConfig.LabelSetInitCapacity = labelSetInitCapacityValue
+		}
+	} else {
+		res.PluginConfig.LabelSetInitCapacity = 10
+	}
+
+	return nil
+}
+
+func initControllerClientConfig(cfg Getter, res *Config) error {
+	var err error
+
+	res.ControllerConfig.MainControllerClientConfig = MainControllerClientConfig
+	res.ControllerConfig.DefaultControllerClientConfig = DefaultControllerClientConfig
+
+	sendLogsToMainClusterWhenIsInCreationState := cfg.Get("SendLogsToMainClusterWhenIsInCreationState")
+	if sendLogsToMainClusterWhenIsInCreationState != "" {
+		res.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInCreationState, err = strconv.ParseBool(sendLogsToMainClusterWhenIsInCreationState)
+		if err != nil {
+			return fmt.Errorf("invalid value for SendLogsToMainClusterWhenIsInCreationState, error: %v", err)
+		}
+	}
+
+	sendLogsToMainClusterWhenIsInReadyState := cfg.Get("SendLogsToMainClusterWhenIsInReadyState")
+	if sendLogsToMainClusterWhenIsInReadyState != "" {
+		res.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInReadyState, err = strconv.ParseBool(sendLogsToMainClusterWhenIsInReadyState)
+		if err != nil {
+			return fmt.Errorf("invalid value for SendLogsToMainClusterWhenIsInReadyState, error: %v", err)
+		}
+	}
+
+	sendLogsToMainClusterWhenIsInHibernatingState := cfg.Get("SendLogsToMainClusterWhenIsInHibernatingState")
+	if sendLogsToMainClusterWhenIsInHibernatingState != "" {
+		res.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInHibernatingState, err = strconv.ParseBool(sendLogsToMainClusterWhenIsInHibernatingState)
+		if err != nil {
+			return fmt.Errorf("invalid value for SendLogsToMainClusterWhenIsInHibernatingState, error: %v", err)
+		}
+	}
+
+	sendLogsToMainClusterWhenIsInHibernatedState := cfg.Get("SendLogsToMainClusterWhenIsInHibernatedState")
+	if sendLogsToMainClusterWhenIsInHibernatedState != "" {
+		res.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInHibernatedState, err = strconv.ParseBool(sendLogsToMainClusterWhenIsInHibernatedState)
+		if err != nil {
+			return fmt.Errorf("invalid value for SendLogsToMainClusterWhenIsInHibernatedState, error: %v", err)
+		}
+	}
+
+	sendLogsToMainClusterWhenIsInDeletionState := cfg.Get("SendLogsToMainClusterWhenIsInDeletionState")
+	if sendLogsToMainClusterWhenIsInDeletionState != "" {
+		res.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInDeletionState, err = strconv.ParseBool(sendLogsToMainClusterWhenIsInDeletionState)
+		if err != nil {
+			return fmt.Errorf("invalid value for SendLogsToMainClusterWhenIsInDeletionState, error: %v", err)
+		}
+	}
+
+	sendLogsToMainClusterWhenIsInDeletedState := cfg.Get("SendLogsToMainClusterWhenIsInDeletedState")
+	if sendLogsToMainClusterWhenIsInDeletedState != "" {
+		res.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInDeletedState, err = strconv.ParseBool(sendLogsToMainClusterWhenIsInDeletedState)
+		if err != nil {
+			return fmt.Errorf("invalid value for SendLogsToMainClusterWhenIsInDeletedState, error: %v", err)
+		}
+	}
+
+	sendLogsToMainClusterWhenIsInRestoreState := cfg.Get("SendLogsToMainClusterWhenIsInRestoreState")
+	if sendLogsToMainClusterWhenIsInRestoreState != "" {
+		res.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInRestoreState, err = strconv.ParseBool(sendLogsToMainClusterWhenIsInRestoreState)
+		if err != nil {
+			return fmt.Errorf("invalid value for SendLogsToMainClusterWhenIsInRestoreState, error: %v", err)
+		}
+	}
+
+	sendLogsToMainClusterWhenIsInMigrationState := cfg.Get("SendLogsToMainClusterWhenIsInMigrationState")
+	if sendLogsToMainClusterWhenIsInMigrationState != "" {
+		res.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInMigrationState, err = strconv.ParseBool(sendLogsToMainClusterWhenIsInMigrationState)
+		if err != nil {
+			return fmt.Errorf("invalid value for SendLogsToMainClusterWhenIsInMigrationState, error: %v", err)
+		}
+	}
+
+	sendLogsToDefaultClientWhenClusterIsInCreationState := cfg.Get("SendLogsToDefaultClientWhenClusterIsInCreationState")
+	if sendLogsToDefaultClientWhenClusterIsInCreationState != "" {
+		res.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInCreationState, err = strconv.ParseBool(sendLogsToDefaultClientWhenClusterIsInCreationState)
+		if err != nil {
+			return fmt.Errorf("invalid value for SendLogsToDefaultClientWhenClusterIsInCreationState, error: %v", err)
+		}
+	}
+
+	sendLogsToDefaultClientWhenClusterIsInReadyState := cfg.Get("SendLogsToDefaultClientWhenClusterIsInReadyState")
+	if sendLogsToDefaultClientWhenClusterIsInReadyState != "" {
+		res.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInReadyState, err = strconv.ParseBool(sendLogsToDefaultClientWhenClusterIsInReadyState)
+		if err != nil {
+			return fmt.Errorf("invalid value for SendLogsToDefaultClientWhenClusterIsInReadyState, error: %v", err)
+		}
+	}
+
+	sendLogsToDefaultClientWhenClusterIsInHibernatingState := cfg.Get("SendLogsToDefaultClientWhenClusterIsInHibernatingState")
+	if sendLogsToDefaultClientWhenClusterIsInHibernatingState != "" {
+		res.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInHibernatingState, err = strconv.ParseBool(sendLogsToDefaultClientWhenClusterIsInHibernatingState)
+		if err != nil {
+			return fmt.Errorf("invalid value for SendLogsToDefaultClientWhenClusterIsInHibernatingState, error: %v", err)
+		}
+	}
+
+	sendLogsToDefaultClientWhenClusterIsInHibernatedState := cfg.Get("SendLogsToDefaultClientWhenClusterIsInHibernatedState")
+	if sendLogsToDefaultClientWhenClusterIsInHibernatedState != "" {
+		res.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInHibernatedState, err = strconv.ParseBool(sendLogsToDefaultClientWhenClusterIsInHibernatedState)
+		if err != nil {
+			return fmt.Errorf("invalid value for SendLogsToDefaultClientWhenClusterIsInHibernatedState, error: %v", err)
+		}
+	}
+
+	sendLogsToDefaultClientWhenClusterIsInDeletionState := cfg.Get("SendLogsToDefaultClientWhenClusterIsInDeletionState")
+	if sendLogsToDefaultClientWhenClusterIsInDeletionState != "" {
+		res.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInDeletionState, err = strconv.ParseBool(sendLogsToDefaultClientWhenClusterIsInDeletionState)
+		if err != nil {
+			return fmt.Errorf("invalid value for SendLogsToDefaultClientWhenClusterIsInDeletionState, error: %v", err)
+		}
+	}
+
+	sendLogsToDefaultClientWhenClusterIsInDeletedState := cfg.Get("SendLogsToDefaultClientWhenClusterIsInDeletedState")
+	if sendLogsToDefaultClientWhenClusterIsInDeletedState != "" {
+		res.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInDeletedState, err = strconv.ParseBool(sendLogsToDefaultClientWhenClusterIsInDeletedState)
+		if err != nil {
+			return fmt.Errorf("invalid value for SendLogsToDefaultClientWhenClusterIsInDeletedState, error: %v", err)
+		}
+	}
+
+	sendLogsToDefaultClientWhenClusterIsInRestoreState := cfg.Get("SendLogsToDefaultClientWhenClusterIsInRestoreState")
+	if sendLogsToDefaultClientWhenClusterIsInRestoreState != "" {
+		res.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInRestoreState, err = strconv.ParseBool(sendLogsToDefaultClientWhenClusterIsInRestoreState)
+		if err != nil {
+			return fmt.Errorf("invalid value for SendLogsToDefaultClientWhenClusterIsInRestoreState, error: %v", err)
+		}
+	}
+
+	sendLogsToDefaultClientWhenClusterIsInMigrationState := cfg.Get("SendLogsToDefaultClientWhenClusterIsInMigrationState")
+	if sendLogsToDefaultClientWhenClusterIsInMigrationState != "" {
+		res.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInMigrationState, err = strconv.ParseBool(sendLogsToDefaultClientWhenClusterIsInMigrationState)
+		if err != nil {
+			return fmt.Errorf("invalid value for SendLogsToDefaultClientWhenClusterIsInMigrationState, error: %v", err)
 		}
 	}
 
