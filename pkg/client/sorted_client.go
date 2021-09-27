@@ -50,6 +50,7 @@ func newSortedClient(cfg client.Config, numberOfBatchIds uint64, logger log.Logg
 	if err != nil {
 		return nil, err
 	}
+	lokiclient = NewMultiTenantClientWrapper(lokiclient, false)
 
 	c := &sortedClient{
 		logger:           log.With(logger, "component", "client", "host", cfg.URL.Host),
