@@ -114,6 +114,12 @@ var _ = Describe("Multi Tenant Client", func() {
 			s:             "test1",
 			wantedTenants: []model.LabelValue{"operator", "user"},
 		}),
+		ginkotable.Entry("Handle record with __gardener_multitenant_id__ reserved label with one empty. Separator \" ; \" and leading and trailing spaces.", handleArgs{
+			ls:            model.LabelSet{"hostname": "test", "__gardener_multitenant_id__": "  operator ; ; user  "},
+			t:             time.Now(),
+			s:             "test1",
+			wantedTenants: []model.LabelValue{"operator", "user"},
+		}),
 		ginkotable.Entry("Handle record with __gardener_multitenant_id__ and __tenant_id__ reserved labels.", handleArgs{
 			ls:            model.LabelSet{"hostname": "test", "__tenant_id__": "pinokio", "__gardener_multitenant_id__": "operator; user"},
 			t:             time.Now(),

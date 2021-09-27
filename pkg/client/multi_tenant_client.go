@@ -36,8 +36,8 @@ const (
 	MultiTenantClientsSeparator = ";"
 )
 
-// NewMultiTenantClientWrapper returns Loki client which support more than one tenant id specified
-// under `_gardener_multitenamt_id__` labale separated with semicolumn.
+// NewMultiTenantClientWrapper returns Loki client which supports more than one tenant id specified
+// under `_gardener_multitenamt_id__` label. The tenants are separated by semicolon.
 func NewMultiTenantClientWrapper(clientToWrap types.LokiClient, copyLabelSet bool) types.LokiClient {
 	return &multiTenantClient{
 		lokiclient:   clientToWrap,
