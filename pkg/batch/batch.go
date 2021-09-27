@@ -49,6 +49,7 @@ func (b *Batch) Add(ls model.LabelSet, t time.Time, line string) {
 	b.Bytes += len(line)
 
 	// Append the entry to an already existing stream (if any)
+	// Not efficient string building.
 	labels := ls.String()
 	if stream, ok := b.Streams[labels]; ok {
 		stream.add(t, line)

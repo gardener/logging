@@ -47,7 +47,13 @@ func NewClient(cfg *config.Config, logger log.Logger) (types.LokiClient, error) 
 			return newSortedClient(c, cfg.ClientConfig.NumberOfBatchIDs, logger)
 		}
 	} else {
-		ncf = NewPromtailClient
+		ncf = func(cfg client.Config, logger log.Logger) (types.LokiClient, error) {
+			c, err := NewPromtailClient(cfg, logger)
+			if err != nil {
+				return nil, err
+			}
+			return NewMultiTenantClientWrapper(c, false), nil
+		}
 	}
 
 	if cfg.ClientConfig.BufferConfig.Buffer {
@@ -105,9 +111,11 @@ func NewRemoveTenantIdClient(clientToWrap types.LokiClient) types.LokiClient {
 }
 
 func (c *removeTenantIdClient) Handle(ls model.LabelSet, t time.Time, s string) error {
+	//If `__tenant_id__` exist the log is dropped because we assume it was re-emitted
 	if _, ok := ls[client.ReservedLabelTenantID]; ok {
 		return nil
 	}
+	delete(ls, MultiTenantClientLabel)
 	return c.lokiclient.Handle(ls, t, s)
 }
 
