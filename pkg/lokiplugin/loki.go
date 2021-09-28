@@ -125,6 +125,11 @@ func (l *loki) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 
 	metrics.IncomingLogs.WithLabelValues(host).Inc()
 
+	// Extract __gardener_multitenant_id__ from the record into the labelSet.
+	// And then delete it from the record.
+	extractMultiTenantClientLabel(records, lbs)
+	removeMultiTenantClientLabel(records)
+
 	removeKeys(records, append(l.cfg.PluginConfig.LabelKeys, l.cfg.PluginConfig.RemoveKeys...))
 	if len(records) == 0 {
 		metrics.DroppedLogs.WithLabelValues(host).Inc()

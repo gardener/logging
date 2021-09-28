@@ -19,6 +19,7 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"github.com/prometheus/common/model"
 
+	client "github.com/gardener/logging/pkg/client"
 	"github.com/gardener/logging/pkg/config"
 )
 
@@ -197,6 +198,20 @@ func removeKeys(records map[string]interface{}, keys []string) {
 	for _, k := range keys {
 		delete(records, k)
 	}
+}
+
+func extractMultiTenantClientLabel(records map[string]interface{}, res model.LabelSet) {
+	if value, ok := getRecordValue(client.MultiTenantClientLabel, records); ok {
+		lName := model.LabelName(client.MultiTenantClientLabel)
+		lValue := model.LabelValue(value)
+		if lValue.IsValid() && lName.IsValid() {
+			res[lName] = lValue
+		}
+	}
+}
+
+func removeMultiTenantClientLabel(records map[string]interface{}) {
+	delete(records, client.MultiTenantClientLabel)
 }
 
 func createLine(records map[string]interface{}, f config.Format) (string, error) {
