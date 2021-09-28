@@ -660,7 +660,7 @@ func initControllerClientConfig(cfg Getter, res *Config) error {
 
 	sendLogsToDefaultClientWhenClusterIsInCreationState := cfg.Get("SendLogsToDefaultClientWhenClusterIsInCreationState")
 	if sendLogsToDefaultClientWhenClusterIsInCreationState != "" {
-		res.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInCreationState, err = strconv.ParseBool(sendLogsToDefaultClientWhenClusterIsInCreationState)
+		res.ControllerConfig.DefaultControllerClientConfig.SendLogsWhenIsInCreationState, err = strconv.ParseBool(sendLogsToDefaultClientWhenClusterIsInCreationState)
 		if err != nil {
 			return fmt.Errorf("invalid value for SendLogsToDefaultClientWhenClusterIsInCreationState, error: %v", err)
 		}
@@ -668,7 +668,7 @@ func initControllerClientConfig(cfg Getter, res *Config) error {
 
 	sendLogsToDefaultClientWhenClusterIsInReadyState := cfg.Get("SendLogsToDefaultClientWhenClusterIsInReadyState")
 	if sendLogsToDefaultClientWhenClusterIsInReadyState != "" {
-		res.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInReadyState, err = strconv.ParseBool(sendLogsToDefaultClientWhenClusterIsInReadyState)
+		res.ControllerConfig.DefaultControllerClientConfig.SendLogsWhenIsInReadyState, err = strconv.ParseBool(sendLogsToDefaultClientWhenClusterIsInReadyState)
 		if err != nil {
 			return fmt.Errorf("invalid value for SendLogsToDefaultClientWhenClusterIsInReadyState, error: %v", err)
 		}
@@ -676,7 +676,7 @@ func initControllerClientConfig(cfg Getter, res *Config) error {
 
 	sendLogsToDefaultClientWhenClusterIsInHibernatingState := cfg.Get("SendLogsToDefaultClientWhenClusterIsInHibernatingState")
 	if sendLogsToDefaultClientWhenClusterIsInHibernatingState != "" {
-		res.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInHibernatingState, err = strconv.ParseBool(sendLogsToDefaultClientWhenClusterIsInHibernatingState)
+		res.ControllerConfig.DefaultControllerClientConfig.SendLogsWhenIsInHibernatingState, err = strconv.ParseBool(sendLogsToDefaultClientWhenClusterIsInHibernatingState)
 		if err != nil {
 			return fmt.Errorf("invalid value for SendLogsToDefaultClientWhenClusterIsInHibernatingState, error: %v", err)
 		}
@@ -684,7 +684,7 @@ func initControllerClientConfig(cfg Getter, res *Config) error {
 
 	sendLogsToDefaultClientWhenClusterIsInHibernatedState := cfg.Get("SendLogsToDefaultClientWhenClusterIsInHibernatedState")
 	if sendLogsToDefaultClientWhenClusterIsInHibernatedState != "" {
-		res.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInHibernatedState, err = strconv.ParseBool(sendLogsToDefaultClientWhenClusterIsInHibernatedState)
+		res.ControllerConfig.DefaultControllerClientConfig.SendLogsWhenIsInHibernatedState, err = strconv.ParseBool(sendLogsToDefaultClientWhenClusterIsInHibernatedState)
 		if err != nil {
 			return fmt.Errorf("invalid value for SendLogsToDefaultClientWhenClusterIsInHibernatedState, error: %v", err)
 		}
@@ -692,7 +692,7 @@ func initControllerClientConfig(cfg Getter, res *Config) error {
 
 	sendLogsToDefaultClientWhenClusterIsInDeletionState := cfg.Get("SendLogsToDefaultClientWhenClusterIsInDeletionState")
 	if sendLogsToDefaultClientWhenClusterIsInDeletionState != "" {
-		res.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInDeletionState, err = strconv.ParseBool(sendLogsToDefaultClientWhenClusterIsInDeletionState)
+		res.ControllerConfig.DefaultControllerClientConfig.SendLogsWhenIsInDeletionState, err = strconv.ParseBool(sendLogsToDefaultClientWhenClusterIsInDeletionState)
 		if err != nil {
 			return fmt.Errorf("invalid value for SendLogsToDefaultClientWhenClusterIsInDeletionState, error: %v", err)
 		}
@@ -700,7 +700,7 @@ func initControllerClientConfig(cfg Getter, res *Config) error {
 
 	sendLogsToDefaultClientWhenClusterIsInDeletedState := cfg.Get("SendLogsToDefaultClientWhenClusterIsInDeletedState")
 	if sendLogsToDefaultClientWhenClusterIsInDeletedState != "" {
-		res.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInDeletedState, err = strconv.ParseBool(sendLogsToDefaultClientWhenClusterIsInDeletedState)
+		res.ControllerConfig.DefaultControllerClientConfig.SendLogsWhenIsInDeletedState, err = strconv.ParseBool(sendLogsToDefaultClientWhenClusterIsInDeletedState)
 		if err != nil {
 			return fmt.Errorf("invalid value for SendLogsToDefaultClientWhenClusterIsInDeletedState, error: %v", err)
 		}
@@ -708,7 +708,7 @@ func initControllerClientConfig(cfg Getter, res *Config) error {
 
 	sendLogsToDefaultClientWhenClusterIsInRestoreState := cfg.Get("SendLogsToDefaultClientWhenClusterIsInRestoreState")
 	if sendLogsToDefaultClientWhenClusterIsInRestoreState != "" {
-		res.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInRestoreState, err = strconv.ParseBool(sendLogsToDefaultClientWhenClusterIsInRestoreState)
+		res.ControllerConfig.DefaultControllerClientConfig.SendLogsWhenIsInRestoreState, err = strconv.ParseBool(sendLogsToDefaultClientWhenClusterIsInRestoreState)
 		if err != nil {
 			return fmt.Errorf("invalid value for SendLogsToDefaultClientWhenClusterIsInRestoreState, error: %v", err)
 		}
@@ -716,7 +716,7 @@ func initControllerClientConfig(cfg Getter, res *Config) error {
 
 	sendLogsToDefaultClientWhenClusterIsInMigrationState := cfg.Get("SendLogsToDefaultClientWhenClusterIsInMigrationState")
 	if sendLogsToDefaultClientWhenClusterIsInMigrationState != "" {
-		res.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInMigrationState, err = strconv.ParseBool(sendLogsToDefaultClientWhenClusterIsInMigrationState)
+		res.ControllerConfig.DefaultControllerClientConfig.SendLogsWhenIsInMigrationState, err = strconv.ParseBool(sendLogsToDefaultClientWhenClusterIsInMigrationState)
 		if err != nil {
 			return fmt.Errorf("invalid value for SendLogsToDefaultClientWhenClusterIsInMigrationState, error: %v", err)
 		}
