@@ -85,14 +85,9 @@ type ControllerConfig struct {
 	DynamicHostPrefix string
 	// DynamicHostSuffix is the suffix of the dynamic host endpoint
 	DynamicHostSuffix string
-	// SendDeletedClustersLogsToDefaultClient indicates whether the logs from
-	// shoot in deleting state should be save in the default url or not
-	SendDeletedClustersLogsToDefaultClient bool
 	// DeletedClientTimeExpiration is the time after a client for
 	// deleted shoot should be cosidered for removal
 	DeletedClientTimeExpiration time.Duration
-	// CleanExpiredClientsPeriod is the period of deletion of expired clients
-	CleanExpiredClientsPeriod time.Duration
 	// MainControllerClientConfig configure to whether to send or not the log to the shoot
 	// Loki for a particular shoot state.
 	MainControllerClientConfig ControllerClientConfiguration
@@ -417,14 +412,6 @@ func initControllerConfig(cfg Getter, res *Config) error {
 	res.ControllerConfig.DynamicHostPrefix = cfg.Get("DynamicHostPrefix")
 	res.ControllerConfig.DynamicHostSuffix = cfg.Get("DynamicHostSuffix")
 
-	sendDeletedClustersLogsToDefaultClient := cfg.Get("SendDeletedClustersLogsToDefaultClient")
-	if sendDeletedClustersLogsToDefaultClient != "" {
-		res.ControllerConfig.SendDeletedClustersLogsToDefaultClient, err = strconv.ParseBool(sendDeletedClustersLogsToDefaultClient)
-		if err != nil {
-			return fmt.Errorf("invalid string SendDeletedClustersLogsToDefaultClient: %v", err)
-		}
-	}
-
 	deletedClientTimeExpiration := cfg.Get("DeletedClientTimeExpiration")
 	if deletedClientTimeExpiration != "" {
 		res.ControllerConfig.DeletedClientTimeExpiration, err = time.ParseDuration(deletedClientTimeExpiration)
@@ -433,16 +420,6 @@ func initControllerConfig(cfg Getter, res *Config) error {
 		}
 	} else {
 		res.ControllerConfig.DeletedClientTimeExpiration = time.Hour
-	}
-
-	cleanExpiredClientsPeriod := cfg.Get("CleanExpiredClientsPeriod")
-	if cleanExpiredClientsPeriod != "" {
-		res.ControllerConfig.CleanExpiredClientsPeriod, err = time.ParseDuration(cleanExpiredClientsPeriod)
-		if err != nil {
-			return fmt.Errorf("failed to parse CleanExpiredClientsPeriod: %s", cleanExpiredClientsPeriod)
-		}
-	} else {
-		res.ControllerConfig.CleanExpiredClientsPeriod = 24 * time.Hour
 	}
 
 	return initControllerClientConfig(cfg, res)

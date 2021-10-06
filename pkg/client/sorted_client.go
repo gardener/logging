@@ -22,6 +22,7 @@ import (
 	"github.com/gardener/logging/pkg/types"
 
 	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	"github.com/grafana/loki/pkg/logproto"
 	"github.com/grafana/loki/pkg/promtail/client"
 	"github.com/prometheus/common/model"
@@ -29,7 +30,7 @@ import (
 
 type sortedClient struct {
 	logger           log.Logger
-	lokiclient       types.LokiClient
+	lokiclient       multiTenantClient
 	batch            *batch.Batch
 	batchWait        time.Duration
 	batchLock        sync.Mutex
@@ -50,11 +51,10 @@ func newSortedClient(cfg client.Config, numberOfBatchIds uint64, logger log.Logg
 	if err != nil {
 		return nil, err
 	}
-	lokiclient = NewMultiTenantClientWrapper(lokiclient, false)
 
 	c := &sortedClient{
 		logger:           log.With(logger, "component", "client", "host", cfg.URL.Host),
-		lokiclient:       lokiclient,
+		lokiclient:       multiTenantClient{lokiclient: lokiclient},
 		batchWait:        batchWait,
 		batchSize:        cfg.BatchSize,
 		batchID:          0,
@@ -136,9 +136,10 @@ func (c *sortedClient) sendBatch() {
 	}
 
 	c.batch.Sort()
+
 	for _, stream := range c.batch.Streams {
-		for _, entry := range stream.Entries {
-			_ = c.lokiclient.Handle(stream.Labels, entry.Timestamp, entry.Line)
+		if err := c.lokiclient.handleStream(*stream); err != nil {
+			level.Error(c.logger).Log("msg", "error sending stream", "stream", stream.Labels.String())
 		}
 	}
 	c.batch = nil

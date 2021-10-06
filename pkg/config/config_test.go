@@ -109,7 +109,6 @@ var _ = Describe("Config", func() {
 				ControllerConfig: config.ControllerConfig{
 					CtlSyncTimeout:                60000000000,
 					DeletedClientTimeExpiration:   3600000000000,
-					CleanExpiredClientsPeriod:     86400000000000,
 					MainControllerClientConfig:    MainControllerClientConfig,
 					DefaultControllerClientConfig: DefaultControllerClientConfig,
 				},
@@ -176,7 +175,6 @@ var _ = Describe("Config", func() {
 				ControllerConfig: config.ControllerConfig{
 					CtlSyncTimeout:                60000000000,
 					DeletedClientTimeExpiration:   3600000000000,
-					CleanExpiredClientsPeriod:     86400000000000,
 					MainControllerClientConfig:    MainControllerClientConfig,
 					DefaultControllerClientConfig: DefaultControllerClientConfig,
 				},
@@ -253,7 +251,6 @@ var _ = Describe("Config", func() {
 				ControllerConfig: config.ControllerConfig{
 					CtlSyncTimeout:                60000000000,
 					DeletedClientTimeExpiration:   3600000000000,
-					CleanExpiredClientsPeriod:     86400000000000,
 					MainControllerClientConfig:    MainControllerClientConfig,
 					DefaultControllerClientConfig: DefaultControllerClientConfig,
 				},
@@ -327,7 +324,6 @@ var _ = Describe("Config", func() {
 					DynamicHostSuffix:             ".svc:3100/loki/api/v1/push",
 					CtlSyncTimeout:                60000000000,
 					DeletedClientTimeExpiration:   3600000000000,
-					CleanExpiredClientsPeriod:     86400000000000,
 					MainControllerClientConfig:    MainControllerClientConfig,
 					DefaultControllerClientConfig: DefaultControllerClientConfig,
 				},
@@ -396,7 +392,6 @@ var _ = Describe("Config", func() {
 				ControllerConfig: config.ControllerConfig{
 					CtlSyncTimeout:                60000000000,
 					DeletedClientTimeExpiration:   3600000000000,
-					CleanExpiredClientsPeriod:     86400000000000,
 					MainControllerClientConfig:    MainControllerClientConfig,
 					DefaultControllerClientConfig: DefaultControllerClientConfig,
 				},
@@ -463,7 +458,6 @@ var _ = Describe("Config", func() {
 				ControllerConfig: config.ControllerConfig{
 					CtlSyncTimeout:                60000000000,
 					DeletedClientTimeExpiration:   3600000000000,
-					CleanExpiredClientsPeriod:     86400000000000,
 					MainControllerClientConfig:    MainControllerClientConfig,
 					DefaultControllerClientConfig: DefaultControllerClientConfig,
 				},
@@ -533,7 +527,6 @@ var _ = Describe("Config", func() {
 				ControllerConfig: config.ControllerConfig{
 					CtlSyncTimeout:                60000000000,
 					DeletedClientTimeExpiration:   3600000000000,
-					CleanExpiredClientsPeriod:     86400000000000,
 					MainControllerClientConfig:    MainControllerClientConfig,
 					DefaultControllerClientConfig: DefaultControllerClientConfig,
 				},
@@ -599,7 +592,6 @@ var _ = Describe("Config", func() {
 				ControllerConfig: config.ControllerConfig{
 					CtlSyncTimeout:                60000000000,
 					DeletedClientTimeExpiration:   3600000000000,
-					CleanExpiredClientsPeriod:     86400000000000,
 					MainControllerClientConfig:    MainControllerClientConfig,
 					DefaultControllerClientConfig: DefaultControllerClientConfig,
 				},
@@ -657,7 +649,6 @@ var _ = Describe("Config", func() {
 				ControllerConfig: config.ControllerConfig{
 					CtlSyncTimeout:                60000000000,
 					DeletedClientTimeExpiration:   3600000000000,
-					CleanExpiredClientsPeriod:     86400000000000,
 					MainControllerClientConfig:    MainControllerClientConfig,
 					DefaultControllerClientConfig: DefaultControllerClientConfig,
 				},
@@ -715,7 +706,6 @@ var _ = Describe("Config", func() {
 				ControllerConfig: config.ControllerConfig{
 					CtlSyncTimeout:                60000000000,
 					DeletedClientTimeExpiration:   3600000000000,
-					CleanExpiredClientsPeriod:     86400000000000,
 					MainControllerClientConfig:    MainControllerClientConfig,
 					DefaultControllerClientConfig: DefaultControllerClientConfig,
 				},
@@ -773,7 +763,6 @@ var _ = Describe("Config", func() {
 				ControllerConfig: config.ControllerConfig{
 					CtlSyncTimeout:                60000000000,
 					DeletedClientTimeExpiration:   3600000000000,
-					CleanExpiredClientsPeriod:     86400000000000,
 					MainControllerClientConfig:    MainControllerClientConfig,
 					DefaultControllerClientConfig: DefaultControllerClientConfig,
 				},

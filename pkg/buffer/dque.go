@@ -145,7 +145,7 @@ func (c *dqueClient) StopWait() {
 		if err := c.closeQue(true); err != nil {
 			level.Error(c.logger).Log("msg", "error closing buffered client", "queue", c.queue.Name, "err", err.Error())
 		}
-		c.loki.Stop()
+		c.loki.StopWait()
 	})
 }
 
