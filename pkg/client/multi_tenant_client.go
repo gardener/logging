@@ -20,6 +20,7 @@ import (
 
 	giterrors "github.com/pkg/errors"
 
+	"github.com/gardener/logging/pkg/batch"
 	"github.com/gardener/logging/pkg/types"
 
 	"github.com/grafana/loki/pkg/promtail/client"
@@ -63,7 +64,9 @@ func (c *multiTenantClient) Handle(ls model.LabelSet, t time.Time, s string) err
 		if c.copyLabelSet {
 			tmpLs = ls.Clone()
 		}
+
 		tmpLs[client.ReservedLabelTenantID] = model.LabelValue(tenant)
+
 		err := c.lokiclient.Handle(tmpLs, t, s)
 		if err != nil {
 			errs = append(errs, err)
@@ -105,4 +108,43 @@ func (c *multiTenantClient) Stop() {
 // StopWait stops the client waiting all saved logs to be sent.
 func (c *multiTenantClient) StopWait() {
 	c.lokiclient.StopWait()
+}
+
+func (c *multiTenantClient) handleStream(stream batch.Stream) error {
+	tenantsIDs, ok := stream.Labels[MultiTenantClientLabel]
+	if !ok {
+		return c.handleEntries(stream.Labels, stream.Entries)
+	}
+
+	tenants := getTenants(string(tenantsIDs))
+	delete(stream.Labels, MultiTenantClientLabel)
+	if len(tenants) < 1 {
+		return c.handleEntries(stream.Labels, stream.Entries)
+	}
+
+	var combineErr error
+	for _, tenant := range tenants {
+		ls := stream.Labels
+		if c.copyLabelSet {
+			ls = stream.Labels.Clone()
+		}
+		ls[client.ReservedLabelTenantID] = model.LabelValue(tenant)
+		err := c.handleEntries(ls, stream.Entries)
+		if err != nil {
+			combineErr = giterrors.Wrap(combineErr, err.Error())
+		}
+
+	}
+	return nil
+}
+
+func (c *multiTenantClient) handleEntries(ls model.LabelSet, entries []batch.Entry) error {
+	var combineErr error
+	for _, entry := range entries {
+		err := c.lokiclient.Handle(ls, entry.Timestamp, entry.Line)
+		if err != nil {
+			combineErr = giterrors.Wrap(combineErr, err.Error())
+		}
+	}
+	return combineErr
 }
