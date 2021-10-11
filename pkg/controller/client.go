@@ -23,8 +23,7 @@ import (
 	"github.com/gardener/logging/pkg/metrics"
 	"github.com/gardener/logging/pkg/types"
 
-	extensioncontroller "github.com/gardener/gardener/extensions/pkg/controller"
-	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
+	gardenercorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
@@ -70,8 +69,8 @@ func (ctl *controller) newControllerClient(clientConf *config.Config) (Controlle
 	return c, nil
 }
 
-func (ctl *controller) createControllerClient(cluster *extensionsv1alpha1.Cluster) {
-	clientConf := ctl.getClientConfig(cluster.Name)
+func (ctl *controller) createControllerClient(clusterName string, shoot *gardenercorev1beta1.Shoot) {
+	clientConf := ctl.getClientConfig(clusterName)
 	if clientConf == nil {
 		return
 	}
@@ -79,23 +78,23 @@ func (ctl *controller) createControllerClient(cluster *extensionsv1alpha1.Cluste
 	client, err := ctl.newControllerClient(clientConf)
 	if err != nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorFailedToMakeLokiClient).Inc()
-		level.Error(ctl.logger).Log("msg", fmt.Sprintf("failed to make new loki client for cluster %v", cluster.Name), "error", err.Error())
+		level.Error(ctl.logger).Log("msg", fmt.Sprintf("failed to make new loki client for cluster %v", clusterName), "error", err.Error())
 		return
 	}
 
-	ctl.updateControllerClientState(client, cluster)
+	ctl.updateControllerClientState(client, shoot)
 
-	level.Info(ctl.logger).Log("msg", fmt.Sprintf("Add client for cluster %v in %v state", cluster.Name, client.GetState()))
+	level.Info(ctl.logger).Log("msg", fmt.Sprintf("Add client for cluster %v in %v state", clusterName, client.GetState()))
 	ctl.lock.Lock()
 	defer ctl.lock.Unlock()
 
 	if ctl.isStopped() {
 		return
 	}
-	ctl.clients[cluster.Name] = client
+	ctl.clients[clusterName] = client
 }
 
-func (ctl *controller) deleteControllerClient(cluster *extensionsv1alpha1.Cluster) {
+func (ctl *controller) deleteControllerClient(clusterName string) {
 	ctl.lock.Lock()
 
 	if ctl.isStopped() {
@@ -103,26 +102,19 @@ func (ctl *controller) deleteControllerClient(cluster *extensionsv1alpha1.Cluste
 		return
 	}
 
-	client, ok := ctl.clients[cluster.Name]
+	client, ok := ctl.clients[clusterName]
 	if ok && client != nil {
-		delete(ctl.clients, cluster.Name)
+		delete(ctl.clients, clusterName)
 	}
 
 	ctl.lock.Unlock()
 	if ok && client != nil {
-		level.Info(ctl.logger).Log("msg", fmt.Sprintf("Delete client for cluster %v", cluster.Name))
+		level.Info(ctl.logger).Log("msg", fmt.Sprintf("Delete client for cluster %v", clusterName))
 		client.StopWait()
 	}
 }
 
-func (ctl *controller) updateControllerClientState(client ControllerClient, cluster *extensionsv1alpha1.Cluster) {
-
-	shoot, err := extensioncontroller.ShootFromCluster(ctl.decoder, cluster)
-	if err != nil {
-		metrics.Errors.WithLabelValues(metrics.ErrorCanNotExtractShoot).Inc()
-		level.Error(ctl.logger).Log("msg", fmt.Sprintf("can't extract shoot from cluster %v", cluster.Name))
-	}
-
+func (ctl *controller) updateControllerClientState(client ControllerClient, shoot *gardenercorev1beta1.Shoot) {
 	client.SetState(getShootState(shoot))
 }
 

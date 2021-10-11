@@ -15,6 +15,7 @@
 package controller
 
 import (
+	"bytes"
 	"fmt"
 	"sync"
 	"time"
@@ -24,6 +25,7 @@ import (
 	"github.com/gardener/logging/pkg/types"
 
 	extensioncontroller "github.com/gardener/gardener/extensions/pkg/controller"
+	gardenercorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 
 	"github.com/cortexproject/cortex/pkg/util/flagext"
@@ -112,8 +114,15 @@ func (ctl *controller) addFunc(obj interface{}) {
 		return
 	}
 
-	if ctl.matches(cluster) && !ctl.isDeletedShoot(cluster) {
-		ctl.createControllerClient(cluster)
+	shoot, err := extensioncontroller.ShootFromCluster(ctl.decoder, cluster)
+	if err != nil {
+		metrics.Errors.WithLabelValues(metrics.ErrorCanNotExtractShoot).Inc()
+		level.Error(ctl.logger).Log("msg", fmt.Sprintf("can't extract shoot from cluster %v", cluster.Name))
+		return
+	}
+
+	if ctl.matches(shoot) && !ctl.isDeletedShoot(shoot) {
+		ctl.createControllerClient(cluster.Name, shoot)
 	}
 }
 
@@ -132,26 +141,36 @@ func (ctl *controller) updateFunc(oldObj interface{}, newObj interface{}) {
 		return
 	}
 
-	client, ok := ctl.clients[oldCluster.Name]
+	if bytes.Equal(oldCluster.Spec.Shoot.Raw, newCluster.Spec.Shoot.Raw) {
+		return
+	}
+
+	shoot, err := extensioncontroller.ShootFromCluster(ctl.decoder, newCluster)
+	if err != nil {
+		metrics.Errors.WithLabelValues(metrics.ErrorCanNotExtractShoot).Inc()
+		level.Error(ctl.logger).Log("msg", fmt.Sprintf("can't extract shoot from cluster %v", newCluster.Name))
+		return
+	}
+
+	client, ok := ctl.clients[newCluster.Name]
 	//The client exist in the list so we have to update it
 	if ok {
 		// The shoot is no longer applicable for logging
-		if !ctl.matches(newCluster) {
-			ctl.deleteControllerClient(newCluster)
+		if !ctl.matches(shoot) {
+			ctl.deleteControllerClient(oldCluster.Name)
 			return
 		}
 		// Sanity check
 		if client == nil {
-			level.Error(ctl.logger).Log("msg", fmt.Sprintf("The client for cluster %v is NIL. Will try to create new one", newCluster.Name))
-			ctl.createControllerClient(newCluster)
+			level.Error(ctl.logger).Log("msg", fmt.Sprintf("The client for cluster %v is NIL. Will try to create new one", oldCluster.Name))
+			ctl.createControllerClient(newCluster.Name, shoot)
 		}
 
-		ctl.updateControllerClientState(client, newCluster)
+		ctl.updateControllerClientState(client, shoot)
 	} else {
 		//The client does not exist and we will try to create a new one if the shoot is applicable for logging
-		if ctl.matches(newCluster) {
-
-			ctl.createControllerClient(newCluster)
+		if ctl.matches(shoot) {
+			ctl.createControllerClient(newCluster.Name, shoot)
 		}
 	}
 }
@@ -164,7 +183,7 @@ func (ctl *controller) delFunc(obj interface{}) {
 		return
 	}
 
-	ctl.deleteControllerClient(cluster)
+	ctl.deleteControllerClient(cluster.Name)
 }
 
 func (ctl *controller) getClientConfig(namespace string) *config.Config {
@@ -185,29 +204,11 @@ func (ctl *controller) getClientConfig(namespace string) *config.Config {
 	return &conf
 }
 
-func (ctl *controller) matches(cluster *extensionsv1alpha1.Cluster) bool {
-	shoot, err := extensioncontroller.ShootFromCluster(ctl.decoder, cluster)
-	if err != nil {
-		metrics.Errors.WithLabelValues(metrics.ErrorCanNotExtractShoot).Inc()
-		level.Error(ctl.logger).Log("msg", fmt.Sprintf("can't extract shoot from cluster %v", cluster.Name))
-		return false
-	}
-
-	if isTestingShoot(shoot) {
-		return false
-	}
-
-	return true
+func (ctl *controller) matches(shoot *gardenercorev1beta1.Shoot) bool {
+	return !isTestingShoot(shoot)
 }
 
-func (ctl *controller) isDeletedShoot(cluster *extensionsv1alpha1.Cluster) bool {
-	shoot, err := extensioncontroller.ShootFromCluster(ctl.decoder, cluster)
-	if err != nil {
-		metrics.Errors.WithLabelValues(metrics.ErrorCanNotExtractShoot).Inc()
-		level.Error(ctl.logger).Log("msg", fmt.Sprintf("can't extract shoot from cluster %v", cluster.Name))
-		return false
-	}
-
+func (ctl *controller) isDeletedShoot(shoot *gardenercorev1beta1.Shoot) bool {
 	return shoot != nil && shoot.DeletionTimestamp != nil
 }
 
