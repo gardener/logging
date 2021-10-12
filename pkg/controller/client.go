@@ -22,13 +22,14 @@ import (
 	"github.com/gardener/logging/pkg/config"
 	"github.com/gardener/logging/pkg/metrics"
 	"github.com/gardener/logging/pkg/types"
-	"github.com/prometheus/common/model"
 
 	extensioncontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
+	giterrors "github.com/pkg/errors"
+	"github.com/prometheus/common/model"
 )
 
 // GetClient search a client with <name> and returned if found.
@@ -160,15 +161,28 @@ type ControllerClient interface {
 }
 
 func (c *controllerClient) Handle(ls model.LabelSet, t time.Time, s string) error {
-	if !c.muteMainClient {
-		if err := c.mainClient.Handle(ls, t, s); err != nil {
-			return err
+	var combineErr error
+	// Because we do not use thread save methods here we just copy the variables
+	// in case they have changed during the two consequal calls to Handle.
+	sendToMain, sendToDefault := !c.muteMainClient, !c.muteDefaultClient
+
+	if sendToMain {
+		// because this client does not alter the labels set we don't need to clone
+		// the it if we don't spread the logs between the two clients. But if we
+		// are sending the log record to both client we have to pass a copy because
+		// we are not sure what kind of label set processing will be done in the coresponding
+		// client which can lead to "concurrent map iteration and map write error".
+		if err := c.mainClient.Handle(copyLabelSet(ls, sendToDefault), t, s); err != nil {
+			combineErr = giterrors.Wrap(combineErr, err.Error())
 		}
 	}
-	if !c.muteDefaultClient {
-		return c.defaultClient.Handle(ls, t, s)
+	if sendToDefault {
+		if err := c.defaultClient.Handle(copyLabelSet(ls, sendToMain), t, s); err != nil {
+			combineErr = giterrors.Wrap(combineErr, err.Error())
+		}
+
 	}
-	return nil
+	return combineErr
 }
 
 // Stop the client.
