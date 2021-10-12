@@ -18,13 +18,13 @@ import (
 	"strings"
 	"time"
 
-	giterrors "github.com/pkg/errors"
-
 	"github.com/gardener/logging/pkg/batch"
 	"github.com/gardener/logging/pkg/types"
 
 	"github.com/grafana/loki/pkg/promtail/client"
 	"github.com/prometheus/common/model"
+
+	giterrors "github.com/pkg/errors"
 )
 
 type multiTenantClient struct {
