@@ -19,6 +19,7 @@ import (
 	"unsafe"
 
 	"github.com/gardener/logging/pkg/config"
+	"github.com/gardener/logging/pkg/healthz"
 	"github.com/gardener/logging/pkg/lokiplugin"
 	"github.com/gardener/logging/pkg/metrics"
 
@@ -51,9 +52,10 @@ func init() {
 	_ = logLevel.Set("info")
 	logger = log.With(newLogger(logLevel), "ts", log.DefaultTimestampUTC, "caller", "main")
 
-	// metrics
+	// metrics and healthz
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
+		http.Handle("/healthz", healthz.Handler("", ""))
 		if err := http.ListenAndServe(":2021", nil); err != nil {
 			level.Error(logger).Log("Fluent-bit-gardener-output-plugin", err.Error())
 		}
