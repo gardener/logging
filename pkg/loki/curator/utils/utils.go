@@ -16,86 +16,140 @@ package utils
 
 import (
 	"fmt"
+	"io"
 	"os"
+	"runtime"
 	"sort"
+	"strings"
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 )
 
+type file struct {
+	name    string
+	modTime int64
+}
+
 // DeleteFiles deletes a files until the free capacity reaches the target free capacity
 func DeleteFiles(dirPath string, targetFreeSpace uint64, pageSize int, freeSpace func() (uint64, error), logger log.Logger) (int, error) {
 	allDeletedFiles := 0
-	currFreeSpace, err := freeSpace()
+	currentFreeSpace, err := freeSpace()
 	if err != nil {
 		return allDeletedFiles, err
 	}
-	level.Debug(logger).Log("msg", fmt.Sprintf("current free space: %d.", currFreeSpace))
+	level.Debug(logger).Log("msg", "current free space", "bytes", currentFreeSpace)
 
-	for currFreeSpace < targetFreeSpace {
-		currDeletedFiles, err := deleteFilesCount(dirPath, pageSize)
-		level.Debug(logger).Log("msg", fmt.Sprintf("current deleted files: %d.", currDeletedFiles))
+	for currentFreeSpace < targetFreeSpace {
+		currDeletedFiles, err := deleteNOldestFiles(dirPath, pageSize)
+		level.Debug(logger).Log("msg", "current deleted files", "count", currDeletedFiles)
 
 		if err != nil {
 			return allDeletedFiles, err
 		}
 		allDeletedFiles += currDeletedFiles
 
-		if currFreeSpace, err = freeSpace(); err != nil {
+		if currentFreeSpace, err = freeSpace(); err != nil {
 			return allDeletedFiles, err
 		}
-		level.Debug(logger).Log("msg", fmt.Sprintf("current free space: %d.", currFreeSpace))
+		level.Debug(logger).Log("msg", "current free space", "bytes", currentFreeSpace)
 	}
 
 	return allDeletedFiles, nil
 }
 
-func deleteFilesCount(dirPath string, count int) (int, error) {
-	f, err := os.Open(dirPath)
+func deleteNOldestFiles(dirPath string, filePageSize int) (int, error) {
+	var deletedFiles int
+	oldestFiles, err := GetNOldestFiles(dirPath, filePageSize)
 	if err != nil {
-		return 0, err
+		return deletedFiles, err
 	}
+	for _, fileForDeletion := range oldestFiles {
+		if err = os.Remove(dirPath + "/" + fileForDeletion.name); err != nil {
+			return deletedFiles, err
+		}
+		deletedFiles++
+	}
+	return deletedFiles, err
+}
 
-	var initArray []os.FileInfo
-	temp := make([]os.FileInfo, 0, count)
-	listPage, err := f.Readdir(count)
+func GetNOldestFiles(dirPath string, filePageSize int) ([]file, error) {
+	var filePage []file
+	openedDir, err := os.Open(dirPath)
 	if err != nil {
-		return 0, fmt.Errorf("failed to read dir %s, err: %v", dirPath, err)
+		return []file{}, err
 	}
-	if len(listPage) < count {
-		return len(listPage), fmt.Errorf("found %d which is less than %d count", len(listPage), count)
+	defer openedDir.Close()
+
+	oldestNFiles, err := getNextNFiles(nil, openedDir, filePageSize)
+	if err != nil {
+		return []file{}, err
 	}
 
-	initArray = listPage
-	sort.Slice(initArray, func(i, j int) bool {
-		return initArray[i].ModTime().Before(initArray[j].ModTime())
-	})
-	for listPage, err = f.Readdir(int(count)); err == nil; listPage, err = f.Readdir(int(count)) {
-		sort.Slice(listPage, func(i, j int) bool {
-			return listPage[i].ModTime().Before(listPage[j].ModTime())
-		})
-		var initArrayIndex int
-		var listPageIndex int
+	sortFilesByModTime(oldestNFiles)
 
-		for initArrayIndex+listPageIndex < count {
-			if listPageIndex >= len(listPage) || listPage[listPageIndex].ModTime().After(initArray[initArrayIndex].ModTime()) {
-				temp = append(temp, initArray[initArrayIndex])
-				initArrayIndex++
+	tempBuffer := make([]file, 0, filePageSize)
+
+	for filePage, err = getNextNFiles(nil, openedDir, filePageSize); err == nil && len(filePage) > 0; filePage, err = getNextNFiles(filePage[:0], openedDir, filePageSize) {
+		sortFilesByModTime(filePage)
+		var oldestNFilesIndex, filePageIndex int
+
+		for oldestNFilesIndex+filePageIndex < filePageSize {
+			if filePageIndex >= len(filePage) {
+				tempBuffer = append(tempBuffer, oldestNFiles[oldestNFilesIndex:]...)
+				break
+			}
+			if oldestNFilesIndex >= len(oldestNFiles) {
+				tempBuffer = append(tempBuffer, filePage[filePageIndex:]...)
+				break
+			}
+
+			if filePage[filePageIndex].modTime < oldestNFiles[oldestNFilesIndex].modTime {
+				tempBuffer = append(tempBuffer, filePage[filePageIndex])
+				filePageIndex++
 			} else {
-				temp = append(temp, listPage[listPageIndex])
-				listPageIndex++
+				tempBuffer = append(tempBuffer, oldestNFiles[oldestNFilesIndex])
+				oldestNFilesIndex++
 			}
 		}
-		initArray, temp = temp, initArray[:0]
+		oldestNFiles, tempBuffer = tempBuffer, oldestNFiles[:0]
+	}
+	return oldestNFiles, err
+}
+
+func getNextNFiles(nextNFiles []file, openedDir *os.File, count int) ([]file, error) {
+	nextNFilesInfo, err := openedDir.Readdir(count)
+	if err != nil && err != io.EOF {
+		return []file{}, fmt.Errorf("failed to read dir %s, err: %v", openedDir.Name(), err)
+	}
+	if nextNFiles == nil {
+		nextNFiles = make([]file, 0, len(nextNFilesInfo))
 	}
 
-	var deletedCount int
-	for i := 0; i < len(initArray); i++ {
-		if err = os.Remove(dirPath + "/" + initArray[i].Name()); err != nil {
-			return deletedCount, err
-		}
-		deletedCount++
+	for _, fileInfo := range nextNFilesInfo {
+		nextNFiles = append(nextNFiles, file{name: fileInfo.Name(), modTime: fileInfo.ModTime().Unix()})
 	}
+	return nextNFiles, nil
+}
 
-	return deletedCount, nil
+func sortFilesByModTime(files []file) {
+	sort.Slice(files, func(i, j int) bool {
+		return files[i].modTime < files[j].modTime
+	})
+}
+
+type MemStat struct {
+	sb strings.Builder
+}
+
+func (ms MemStat) String() string {
+	var m runtime.MemStats
+	defer ms.sb.Reset()
+	runtime.ReadMemStats(&m)
+	fmt.Fprintf(&ms.sb, "%+v\n", m)
+	memoryWastedFragmentation := m.HeapInuse - m.HeapAlloc
+	fmt.Fprintf(&ms.sb, "Fragmentation Memory Waste: %d\n", memoryWastedFragmentation)
+	memoryThatCouldBeReturnedToOS := m.HeapIdle - m.HeapReleased
+	fmt.Fprintf(&ms.sb, "Memory That Could Be Returned To OS: %d\n", memoryThatCouldBeReturnedToOS)
+	return ms.sb.String()
 }

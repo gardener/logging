@@ -39,7 +39,7 @@ func (c *Curator) freeUpInodeCapacityIfNeeded() error {
 		metrics.TriggeredInodeDeletion.Inc()
 		level.Info(c.logger).Log("msg", "inodes cleanup started...")
 		targetFreeInodes := stat.Files / 100 * uint64(c.config.InodeConfig.TargetFreePercentages)
-		level.Debug(c.logger).Log("msg", fmt.Sprintf("target free inodes: %d.", targetFreeInodes))
+		level.Debug(c.logger).Log("msg", "target free inodes", "inodes", targetFreeInodes)
 
 		currFreeSpaceFunc := func() (uint64, error) {
 			var stat syscall.Statfs_t

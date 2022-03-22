@@ -18,17 +18,22 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"runtime"
 
 	"github.com/gardener/logging/cmd/loki-curator/app"
 	"github.com/gardener/logging/pkg/loki/curator"
 	"github.com/go-kit/kit/log/level"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+
+	_ "net/http/pprof"
 )
 
 func main() {
 	// metrics
 	go func() {
+		runtime.SetMutexProfileFraction(5)
+		runtime.SetBlockProfileRate(1)
 		http.Handle("/curator/metrics", promhttp.Handler())
 		_ = http.ListenAndServe(":2718", nil)
 	}()
