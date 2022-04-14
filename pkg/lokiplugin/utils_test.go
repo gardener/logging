@@ -171,7 +171,7 @@ var _ = Describe("Loki plugin utils", func() {
 		),
 		Entry("bad format",
 			createLineArgs{
-				records: nil,
+				records: map[string]interface{}{},
 				f:       config.Format(3),
 				want:    "",
 				wantErr: true,

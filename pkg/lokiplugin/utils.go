@@ -9,6 +9,7 @@ package lokiplugin
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"regexp"
@@ -16,7 +17,6 @@ import (
 	"strings"
 
 	"github.com/go-logfmt/logfmt"
-	jsoniter "github.com/json-iterator/go"
 	"github.com/prometheus/common/model"
 
 	client "github.com/gardener/logging/pkg/client"
@@ -217,7 +217,7 @@ func removeMultiTenantClientLabel(records map[string]interface{}) {
 func createLine(records map[string]interface{}, f config.Format) (string, error) {
 	switch f {
 	case config.JSONFormat:
-		js, err := jsoniter.ConfigCompatibleWithStandardLibrary.Marshal(records)
+		js, err := json.Marshal(records)
 		if err != nil {
 			return "", err
 		}

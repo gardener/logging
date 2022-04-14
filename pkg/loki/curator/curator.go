@@ -15,10 +15,12 @@
 package curator
 
 import (
+	"runtime"
 	"time"
 
 	config "github.com/gardener/logging/pkg/loki/curator/config"
 	"github.com/gardener/logging/pkg/loki/curator/metrics"
+	"github.com/gardener/logging/pkg/loki/curator/utils"
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
@@ -44,12 +46,15 @@ func NewCurator(conf config.CuratorConfig, logger log.Logger) *Curator {
 
 // Run the ticker
 func (c *Curator) Run() {
+	ms := utils.MemStat{}
 	for {
 		select {
 		case <-c.closed:
 			return
 		case <-c.ticker.C:
+			level.Debug(c.logger).Log("mem_status", ms)
 			c.curate()
+			runtime.GC()
 		}
 	}
 }

@@ -42,7 +42,7 @@ func (c *Curator) freeUpDiskCapacityIfNeeded() error {
 		metrics.TriggeredStorageDeletion.Inc()
 		level.Info(c.logger).Log("msg", "storage cleanup started...")
 		targetFreeCap := allCapacity / 100 * uint64(c.config.StorageConfig.TargetFreePercentages)
-		level.Debug(c.logger).Log("msg", fmt.Sprintf("target free capacity: %d.", targetFreeCap))
+		level.Debug(c.logger).Log("msg", "target free capacity", "bytes", targetFreeCap)
 
 		currFreeSpaceFunc := func() (uint64, error) {
 			var stat syscall.Statfs_t
