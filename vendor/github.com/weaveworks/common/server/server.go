@@ -62,23 +62,30 @@ type Config struct {
 	HTTPServerWriteTimeout        time.Duration `yaml:"http_server_write_timeout"`
 	HTTPServerIdleTimeout         time.Duration `yaml:"http_server_idle_timeout"`
 
-	GRPCOptions          []grpc.ServerOption            `yaml:"-"`
-	GRPCMiddleware       []grpc.UnaryServerInterceptor  `yaml:"-"`
-	GRPCStreamMiddleware []grpc.StreamServerInterceptor `yaml:"-"`
-	HTTPMiddleware       []middleware.Interface         `yaml:"-"`
+	GRPCOptions                   []grpc.ServerOption            `yaml:"-"`
+	GRPCMiddleware                []grpc.UnaryServerInterceptor  `yaml:"-"`
+	GRPCStreamMiddleware          []grpc.StreamServerInterceptor `yaml:"-"`
+	HTTPMiddleware                []middleware.Interface         `yaml:"-"`
+	Router                        *mux.Router                    `yaml:"-"`
+	DoNotAddDefaultHTTPMiddleware bool                           `yaml:"-"`
 
-	GPRCServerMaxRecvMsgSize        int           `yaml:"grpc_server_max_recv_msg_size"`
-	GRPCServerMaxSendMsgSize        int           `yaml:"grpc_server_max_send_msg_size"`
-	GPRCServerMaxConcurrentStreams  uint          `yaml:"grpc_server_max_concurrent_streams"`
-	GRPCServerMaxConnectionIdle     time.Duration `yaml:"grpc_server_max_connection_idle"`
-	GRPCServerMaxConnectionAge      time.Duration `yaml:"grpc_server_max_connection_age"`
-	GRPCServerMaxConnectionAgeGrace time.Duration `yaml:"grpc_server_max_connection_age_grace"`
-	GRPCServerTime                  time.Duration `yaml:"grpc_server_keepalive_time"`
-	GRPCServerTimeout               time.Duration `yaml:"grpc_server_keepalive_timeout"`
+	GPRCServerMaxRecvMsgSize           int           `yaml:"grpc_server_max_recv_msg_size"`
+	GRPCServerMaxSendMsgSize           int           `yaml:"grpc_server_max_send_msg_size"`
+	GPRCServerMaxConcurrentStreams     uint          `yaml:"grpc_server_max_concurrent_streams"`
+	GRPCServerMaxConnectionIdle        time.Duration `yaml:"grpc_server_max_connection_idle"`
+	GRPCServerMaxConnectionAge         time.Duration `yaml:"grpc_server_max_connection_age"`
+	GRPCServerMaxConnectionAgeGrace    time.Duration `yaml:"grpc_server_max_connection_age_grace"`
+	GRPCServerTime                     time.Duration `yaml:"grpc_server_keepalive_time"`
+	GRPCServerTimeout                  time.Duration `yaml:"grpc_server_keepalive_timeout"`
+	GRPCServerMinTimeBetweenPings      time.Duration `yaml:"grpc_server_min_time_between_pings"`
+	GRPCServerPingWithoutStreamAllowed bool          `yaml:"grpc_server_ping_without_stream_allowed"`
 
-	LogFormat logging.Format    `yaml:"log_format"`
-	LogLevel  logging.Level     `yaml:"log_level"`
-	Log       logging.Interface `yaml:"-"`
+	LogFormat          logging.Format    `yaml:"log_format"`
+	LogLevel           logging.Level     `yaml:"log_level"`
+	Log                logging.Interface `yaml:"-"`
+	LogSourceIPs       bool              `yaml:"log_source_ips_enabled"`
+	LogSourceIPsHeader string            `yaml:"log_source_ips_header"`
+	LogSourceIPsRegex  string            `yaml:"log_source_ips_regex"`
 
 	// If not set, default signal handler is used.
 	SignalHandler SignalHandler `yaml:"-"`
@@ -117,9 +124,14 @@ func (cfg *Config) RegisterFlags(f *flag.FlagSet) {
 	f.DurationVar(&cfg.GRPCServerMaxConnectionAgeGrace, "server.grpc.keepalive.max-connection-age-grace", infinty, "An additive period after max-connection-age after which the connection will be forcibly closed. Default: infinity")
 	f.DurationVar(&cfg.GRPCServerTime, "server.grpc.keepalive.time", time.Hour*2, "Duration after which a keepalive probe is sent in case of no activity over the connection., Default: 2h")
 	f.DurationVar(&cfg.GRPCServerTimeout, "server.grpc.keepalive.timeout", time.Second*20, "After having pinged for keepalive check, the duration after which an idle connection should be closed, Default: 20s")
+	f.DurationVar(&cfg.GRPCServerMinTimeBetweenPings, "server.grpc.keepalive.min-time-between-pings", 5*time.Minute, "Minimum amount of time a client should wait before sending a keepalive ping. If client sends keepalive ping more often, server will send GOAWAY and close the connection.")
+	f.BoolVar(&cfg.GRPCServerPingWithoutStreamAllowed, "server.grpc.keepalive.ping-without-stream-allowed", false, "If true, server allows keepalive pings even when there are no active streams(RPCs). If false, and client sends ping when there are no active streams, server will send GOAWAY and close the connection.")
 	f.StringVar(&cfg.PathPrefix, "server.path-prefix", "", "Base path to serve all API routes from (e.g. /v1/)")
 	cfg.LogFormat.RegisterFlags(f)
 	cfg.LogLevel.RegisterFlags(f)
+	f.BoolVar(&cfg.LogSourceIPs, "server.log-source-ips-enabled", false, "Optionally log the source IPs.")
+	f.StringVar(&cfg.LogSourceIPsHeader, "server.log-source-ips-header", "", "Header field storing the source IPs. Only used if server.log-source-ips-enabled is true. If not set the default Forwarded, X-Real-IP and X-Forwarded-For headers are used")
+	f.StringVar(&cfg.LogSourceIPsRegex, "server.log-source-ips-regex", "", "Regex for matching the source IPs. Only used if server.log-source-ips-enabled is true. If not set the default Forwarded, X-Real-IP and X-Forwarded-For headers are used")
 }
 
 // Server wraps a HTTP and gRPC server, and some common initialization.
@@ -139,11 +151,20 @@ type Server struct {
 
 // New makes a new Server
 func New(cfg Config) (*Server, error) {
+	tcpConnections := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: cfg.MetricsNamespace,
+		Name:      "tcp_connections",
+		Help:      "Current number of accepted TCP connections.",
+	}, []string{"protocol"})
+	prometheus.MustRegister(tcpConnections)
+
 	// Setup listeners first, so we can fail early if the port is in use.
 	httpListener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", cfg.HTTPListenAddress, cfg.HTTPListenPort))
 	if err != nil {
 		return nil, err
 	}
+	httpListener = middleware.CountingListener(httpListener, tcpConnections.WithLabelValues("http"))
+
 	if cfg.HTTPConnLimit > 0 {
 		httpListener = netutil.LimitListener(httpListener, cfg.HTTPConnLimit)
 	}
@@ -152,6 +173,7 @@ func New(cfg Config) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
+	grpcListener = middleware.CountingListener(grpcListener, tcpConnections.WithLabelValues("grpc"))
 
 	if cfg.GRPCConnLimit > 0 {
 		grpcListener = netutil.LimitListener(grpcListener, cfg.GRPCConnLimit)
@@ -191,6 +213,29 @@ func New(cfg Config) (*Server, error) {
 	}, []string{"method", "route", "status_code", "ws"})
 	prometheus.MustRegister(requestDuration)
 
+	receivedMessageSize := prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Namespace: cfg.MetricsNamespace,
+		Name:      "request_message_bytes",
+		Help:      "Size (in bytes) of messages received in the request.",
+		Buckets:   middleware.BodySizeBuckets,
+	}, []string{"method", "route"})
+	prometheus.MustRegister(receivedMessageSize)
+
+	sentMessageSize := prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Namespace: cfg.MetricsNamespace,
+		Name:      "response_message_bytes",
+		Help:      "Size (in bytes) of messages sent in response.",
+		Buckets:   middleware.BodySizeBuckets,
+	}, []string{"method", "route"})
+	prometheus.MustRegister(sentMessageSize)
+
+	inflightRequests := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: cfg.MetricsNamespace,
+		Name:      "inflight_requests",
+		Help:      "Current number of inflight requests.",
+	}, []string{"method", "route"})
+	prometheus.MustRegister(inflightRequests)
+
 	log.WithField("http", httpListener.Addr()).WithField("grpc", grpcListener.Addr()).Infof("server listening on addresses")
 
 	// Setup gRPC server
@@ -220,6 +265,11 @@ func New(cfg Config) (*Server, error) {
 		Timeout:               cfg.GRPCServerTimeout,
 	}
 
+	grpcKeepAliveEnforcementPolicy := keepalive.EnforcementPolicy{
+		MinTime:             cfg.GRPCServerMinTimeBetweenPings,
+		PermitWithoutStream: cfg.GRPCServerPingWithoutStreamAllowed,
+	}
+
 	grpcOptions := []grpc.ServerOption{
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
 			grpcMiddleware...,
@@ -228,9 +278,11 @@ func New(cfg Config) (*Server, error) {
 			grpcStreamMiddleware...,
 		)),
 		grpc.KeepaliveParams(grpcKeepAliveOptions),
+		grpc.KeepaliveEnforcementPolicy(grpcKeepAliveEnforcementPolicy),
 		grpc.MaxRecvMsgSize(cfg.GPRCServerMaxRecvMsgSize),
 		grpc.MaxSendMsgSize(cfg.GRPCServerMaxSendMsgSize),
 		grpc.MaxConcurrentStreams(uint32(cfg.GPRCServerMaxConcurrentStreams)),
+		grpc.StatsHandler(middleware.NewStatsHandler(receivedMessageSize, sentMessageSize, inflightRequests)),
 	}
 	grpcOptions = append(grpcOptions, cfg.GRPCOptions...)
 	if grpcTLSConfig != nil {
@@ -240,7 +292,12 @@ func New(cfg Config) (*Server, error) {
 	grpcServer := grpc.NewServer(grpcOptions...)
 
 	// Setup HTTP server
-	router := mux.NewRouter()
+	var router *mux.Router
+	if cfg.Router != nil {
+		router = cfg.Router
+	} else {
+		router = mux.NewRouter()
+	}
 	if cfg.PathPrefix != "" {
 		// Expect metrics and pprof handlers to be prefixed with server's path prefix.
 		// e.g. /loki/metrics or /loki/debug/pprof
@@ -249,20 +306,39 @@ func New(cfg Config) (*Server, error) {
 	if cfg.RegisterInstrumentation {
 		RegisterInstrumentation(router)
 	}
-	httpMiddleware := []middleware.Interface{
-		middleware.Tracer{
-			RouteMatcher: router,
-		},
-		middleware.Log{
-			Log: log,
-		},
-		middleware.Instrument{
-			Duration:     requestDuration,
-			RouteMatcher: router,
-		},
+
+	var sourceIPs *middleware.SourceIPExtractor
+	if cfg.LogSourceIPs {
+		sourceIPs, err = middleware.NewSourceIPs(cfg.LogSourceIPsHeader, cfg.LogSourceIPsRegex)
+		if err != nil {
+			return nil, fmt.Errorf("error setting up source IP extraction: %v", err)
+		}
 	}
 
-	httpMiddleware = append(httpMiddleware, cfg.HTTPMiddleware...)
+	defaultHTTPMiddleware := []middleware.Interface{
+		middleware.Tracer{
+			RouteMatcher: router,
+			SourceIPs:    sourceIPs,
+		},
+		middleware.Log{
+			Log:       log,
+			SourceIPs: sourceIPs,
+		},
+		middleware.Instrument{
+			RouteMatcher:     router,
+			Duration:         requestDuration,
+			RequestBodySize:  receivedMessageSize,
+			ResponseBodySize: sentMessageSize,
+			InflightRequests: inflightRequests,
+		},
+	}
+	httpMiddleware := []middleware.Interface{}
+	if cfg.DoNotAddDefaultHTTPMiddleware {
+		httpMiddleware = cfg.HTTPMiddleware
+	} else {
+		httpMiddleware = append(defaultHTTPMiddleware, cfg.HTTPMiddleware...)
+	}
+
 	httpServer := &http.Server{
 		ReadTimeout:  cfg.HTTPServerReadTimeout,
 		WriteTimeout: cfg.HTTPServerWriteTimeout,
@@ -293,7 +369,9 @@ func New(cfg Config) (*Server, error) {
 
 // RegisterInstrumentation on the given router.
 func RegisterInstrumentation(router *mux.Router) {
-	router.Handle("/metrics", promhttp.Handler())
+	router.Handle("/metrics", promhttp.HandlerFor(prometheus.DefaultGatherer, promhttp.HandlerOpts{
+		EnableOpenMetrics: true,
+	}))
 	router.PathPrefix("/debug/pprof").Handler(http.DefaultServeMux)
 }
 

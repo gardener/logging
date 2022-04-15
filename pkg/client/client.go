@@ -23,7 +23,10 @@ import (
 	"github.com/gardener/logging/pkg/types"
 
 	"github.com/go-kit/kit/log"
+	"github.com/grafana/loki/pkg/logproto"
+	"github.com/grafana/loki/pkg/promtail/api"
 	"github.com/grafana/loki/pkg/promtail/client"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/model"
 )
 
@@ -73,7 +76,7 @@ type promtailClientWithForwardedLogsMetricCounter struct {
 // NewPromtailClient return promtail client which increments the ForwardedLogs counter on
 // successful call of the Handle function
 func NewPromtailClient(cfg client.Config, logger log.Logger) (types.LokiClient, error) {
-	c, err := client.New(cfg, logger)
+	c, err := client.New(prometheus.DefaultRegisterer, cfg, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -84,9 +87,7 @@ func NewPromtailClient(cfg client.Config, logger log.Logger) (types.LokiClient, 
 }
 
 func (c *promtailClientWithForwardedLogsMetricCounter) Handle(ls model.LabelSet, t time.Time, s string) error {
-	if err := c.lokiclient.Handle(ls, t, s); err != nil {
-		return err
-	}
+	c.lokiclient.Chan() <- api.Entry{Labels: ls, Entry: logproto.Entry{Timestamp: t, Line: s}}
 	metrics.ForwardedLogs.WithLabelValues(c.host).Inc()
 	return nil
 }

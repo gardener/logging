@@ -52,7 +52,7 @@ func (c *Curator) Run() {
 		case <-c.closed:
 			return
 		case <-c.ticker.C:
-			level.Debug(c.logger).Log("mem_status", ms)
+			_ = level.Debug(c.logger).Log("mem_status", ms)
 			c.curate()
 			runtime.GC()
 		}
@@ -66,12 +66,12 @@ func (c *Curator) Stop() {
 
 func (c *Curator) curate() {
 	if err := c.freeUpDiskCapacityIfNeeded(); err != nil {
-		level.Error(c.logger).Log("msg", "Error in checking storage capacity", "error", err)
+		_ = level.Error(c.logger).Log("msg", "Error in checking storage capacity", "error", err)
 		metrics.Errors.WithLabelValues(metrics.ErrorWithDiskCurator).Inc()
 	}
 
 	if err := c.freeUpInodeCapacityIfNeeded(); err != nil {
-		level.Error(c.logger).Log("msg", "Error in checking Inodes capacity", "error", err)
+		_ = level.Error(c.logger).Log("msg", "Error in checking Inodes capacity", "error", err)
 		metrics.Errors.WithLabelValues(metrics.ErrorWithInodeCurator).Inc()
 	}
 }

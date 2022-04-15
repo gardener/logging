@@ -19,7 +19,6 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/gardener/logging/pkg/config"
 	. "github.com/gardener/logging/pkg/config"
 
 	"github.com/cortexproject/cortex/pkg/util"
@@ -70,7 +69,7 @@ var _ = Describe("Config", func() {
 		Entry("default values", testArgs{
 			map[string]string{},
 			&Config{
-				PluginConfig: config.PluginConfig{
+				PluginConfig: PluginConfig{
 					LineFormat: JSONFormat,
 					KubernetesMetadata: KubernetesMetadataExtraction{
 						TagKey:        DefaultKubernetesMetadataTagKey,
@@ -81,10 +80,10 @@ var _ = Describe("Config", func() {
 					DynamicHostRegex:     "*",
 					LabelSetInitCapacity: 10,
 				},
-				ClientConfig: config.ClientConfig{
+				ClientConfig: ClientConfig{
 					GrafanaLokiConfig: client.Config{
 						URL:            defaultURL,
-						BatchSize:      100 * 1024,
+						BatchSize:      1024 * 1024,
 						BatchWait:      1 * time.Second,
 						ExternalLabels: lokiflag.LabelSet{LabelSet: model.LabelSet{"job": "fluent-bit"}},
 						BackoffConfig: util.BackoffConfig{
@@ -106,7 +105,7 @@ var _ = Describe("Config", func() {
 					},
 					NumberOfBatchIDs: 10,
 				},
-				ControllerConfig: config.ControllerConfig{
+				ControllerConfig: ControllerConfig{
 					CtlSyncTimeout:                60000000000,
 					DeletedClientTimeExpiration:   3600000000000,
 					MainControllerClientConfig:    MainControllerClientConfig,
@@ -131,7 +130,7 @@ var _ = Describe("Config", func() {
 				"SortByTimestamp": "true",
 			},
 			&Config{
-				PluginConfig: config.PluginConfig{
+				PluginConfig: PluginConfig{
 					LineFormat:       KvPairFormat,
 					LabelKeys:        []string{"foo", "bar"},
 					RemoveKeys:       []string{"buzz", "fuzz"},
@@ -145,7 +144,7 @@ var _ = Describe("Config", func() {
 					LabelSetInitCapacity: 10,
 				},
 
-				ClientConfig: config.ClientConfig{
+				ClientConfig: ClientConfig{
 					GrafanaLokiConfig: client.Config{
 						URL:            somewhereURL,
 						TenantID:       "my-tenant-id",
@@ -172,7 +171,7 @@ var _ = Describe("Config", func() {
 					NumberOfBatchIDs: 10,
 					SortByTimestamp:  true,
 				},
-				ControllerConfig: config.ControllerConfig{
+				ControllerConfig: ControllerConfig{
 					CtlSyncTimeout:                60000000000,
 					DeletedClientTimeExpiration:   3600000000000,
 					MainControllerClientConfig:    MainControllerClientConfig,
@@ -222,7 +221,7 @@ var _ = Describe("Config", func() {
 					},
 					LabelSetInitCapacity: 10,
 				},
-				ClientConfig: config.ClientConfig{
+				ClientConfig: ClientConfig{
 					GrafanaLokiConfig: client.Config{
 						URL:            somewhereURL,
 						TenantID:       "", // empty as not set in fluent-bit plugin config map
@@ -248,7 +247,7 @@ var _ = Describe("Config", func() {
 					},
 					NumberOfBatchIDs: 10,
 				},
-				ControllerConfig: config.ControllerConfig{
+				ControllerConfig: ControllerConfig{
 					CtlSyncTimeout:                60000000000,
 					DeletedClientTimeExpiration:   3600000000000,
 					MainControllerClientConfig:    MainControllerClientConfig,
@@ -389,7 +388,7 @@ var _ = Describe("Config", func() {
 					},
 					NumberOfBatchIDs: 10,
 				},
-				ControllerConfig: config.ControllerConfig{
+				ControllerConfig: ControllerConfig{
 					CtlSyncTimeout:                60000000000,
 					DeletedClientTimeExpiration:   3600000000000,
 					MainControllerClientConfig:    MainControllerClientConfig,
@@ -455,7 +454,7 @@ var _ = Describe("Config", func() {
 					},
 					NumberOfBatchIDs: 10,
 				},
-				ControllerConfig: config.ControllerConfig{
+				ControllerConfig: ControllerConfig{
 					CtlSyncTimeout:                60000000000,
 					DeletedClientTimeExpiration:   3600000000000,
 					MainControllerClientConfig:    MainControllerClientConfig,
@@ -524,7 +523,7 @@ var _ = Describe("Config", func() {
 					},
 					NumberOfBatchIDs: 10,
 				},
-				ControllerConfig: config.ControllerConfig{
+				ControllerConfig: ControllerConfig{
 					CtlSyncTimeout:                60000000000,
 					DeletedClientTimeExpiration:   3600000000000,
 					MainControllerClientConfig:    MainControllerClientConfig,
@@ -589,7 +588,7 @@ var _ = Describe("Config", func() {
 					},
 					NumberOfBatchIDs: 10,
 				},
-				ControllerConfig: config.ControllerConfig{
+				ControllerConfig: ControllerConfig{
 					CtlSyncTimeout:                60000000000,
 					DeletedClientTimeExpiration:   3600000000000,
 					MainControllerClientConfig:    MainControllerClientConfig,
@@ -604,7 +603,7 @@ var _ = Describe("Config", func() {
 				"DynamicTenant": "  user tag user-exposed.kubernetes.*   ",
 			},
 			&Config{
-				PluginConfig: config.PluginConfig{
+				PluginConfig: PluginConfig{
 					LineFormat: JSONFormat,
 					KubernetesMetadata: KubernetesMetadataExtraction{
 						TagKey:        DefaultKubernetesMetadataTagKey,
@@ -621,10 +620,10 @@ var _ = Describe("Config", func() {
 					},
 					LabelSetInitCapacity: 10,
 				},
-				ClientConfig: config.ClientConfig{
+				ClientConfig: ClientConfig{
 					GrafanaLokiConfig: client.Config{
 						URL:            defaultURL,
-						BatchSize:      100 * 1024,
+						BatchSize:      1024 * 1024,
 						BatchWait:      1 * time.Second,
 						ExternalLabels: lokiflag.LabelSet{LabelSet: model.LabelSet{"job": "fluent-bit"}},
 						BackoffConfig: util.BackoffConfig{
@@ -646,7 +645,7 @@ var _ = Describe("Config", func() {
 					},
 					NumberOfBatchIDs: 10,
 				},
-				ControllerConfig: config.ControllerConfig{
+				ControllerConfig: ControllerConfig{
 					CtlSyncTimeout:                60000000000,
 					DeletedClientTimeExpiration:   3600000000000,
 					MainControllerClientConfig:    MainControllerClientConfig,
@@ -661,7 +660,7 @@ var _ = Describe("Config", func() {
 				"DynamicTenant": "   user tag    ",
 			},
 			&Config{
-				PluginConfig: config.PluginConfig{
+				PluginConfig: PluginConfig{
 					LineFormat: JSONFormat,
 					KubernetesMetadata: KubernetesMetadataExtraction{
 						TagKey:        DefaultKubernetesMetadataTagKey,
@@ -678,10 +677,10 @@ var _ = Describe("Config", func() {
 					},
 					LabelSetInitCapacity: 10,
 				},
-				ClientConfig: config.ClientConfig{
+				ClientConfig: ClientConfig{
 					GrafanaLokiConfig: client.Config{
 						URL:            defaultURL,
-						BatchSize:      100 * 1024,
+						BatchSize:      1024 * 1024,
 						BatchWait:      1 * time.Second,
 						ExternalLabels: lokiflag.LabelSet{LabelSet: model.LabelSet{"job": "fluent-bit"}},
 						BackoffConfig: util.BackoffConfig{
@@ -703,7 +702,7 @@ var _ = Describe("Config", func() {
 					},
 					NumberOfBatchIDs: 10,
 				},
-				ControllerConfig: config.ControllerConfig{
+				ControllerConfig: ControllerConfig{
 					CtlSyncTimeout:                60000000000,
 					DeletedClientTimeExpiration:   3600000000000,
 					MainControllerClientConfig:    MainControllerClientConfig,
@@ -718,7 +717,7 @@ var _ = Describe("Config", func() {
 				"DynamicTenant": "  user tag regex with spaces   ",
 			},
 			&Config{
-				PluginConfig: config.PluginConfig{
+				PluginConfig: PluginConfig{
 					LineFormat: JSONFormat,
 					KubernetesMetadata: KubernetesMetadataExtraction{
 						TagKey:        DefaultKubernetesMetadataTagKey,
@@ -735,10 +734,10 @@ var _ = Describe("Config", func() {
 					},
 					LabelSetInitCapacity: 10,
 				},
-				ClientConfig: config.ClientConfig{
+				ClientConfig: ClientConfig{
 					GrafanaLokiConfig: client.Config{
 						URL:            defaultURL,
-						BatchSize:      100 * 1024,
+						BatchSize:      1024 * 1024,
 						BatchWait:      1 * time.Second,
 						ExternalLabels: lokiflag.LabelSet{LabelSet: model.LabelSet{"job": "fluent-bit"}},
 						BackoffConfig: util.BackoffConfig{
@@ -760,7 +759,7 @@ var _ = Describe("Config", func() {
 					},
 					NumberOfBatchIDs: 10,
 				},
-				ControllerConfig: config.ControllerConfig{
+				ControllerConfig: ControllerConfig{
 					CtlSyncTimeout:                60000000000,
 					DeletedClientTimeExpiration:   3600000000000,
 					MainControllerClientConfig:    MainControllerClientConfig,

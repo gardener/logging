@@ -3,7 +3,6 @@ package logql
 import (
 	"container/heap"
 	"context"
-	"fmt"
 	"math"
 	"sort"
 	"time"
@@ -14,6 +13,8 @@ import (
 
 	"github.com/grafana/loki/pkg/iter"
 	"github.com/grafana/loki/pkg/logproto"
+	"github.com/grafana/loki/pkg/logql/log"
+	"github.com/grafana/loki/pkg/util"
 )
 
 type QueryRangeType string
@@ -102,9 +103,23 @@ func GetRangeType(q Params) QueryRangeType {
 
 // Evaluator is an interface for iterating over data at different nodes in the AST
 type Evaluator interface {
+	SampleEvaluator
+	EntryEvaluator
+}
+
+type SampleEvaluator interface {
 	// StepEvaluator returns a StepEvaluator for a given SampleExpr. It's explicitly passed another StepEvaluator// in order to enable arbitrary computation of embedded expressions. This allows more modular & extensible
 	// StepEvaluator implementations which can be composed.
-	StepEvaluator(ctx context.Context, nextEvaluator Evaluator, expr SampleExpr, p Params) (StepEvaluator, error)
+	StepEvaluator(ctx context.Context, nextEvaluator SampleEvaluator, expr SampleExpr, p Params) (StepEvaluator, error)
+}
+
+type SampleEvaluatorFunc func(ctx context.Context, nextEvaluator SampleEvaluator, expr SampleExpr, p Params) (StepEvaluator, error)
+
+func (s SampleEvaluatorFunc) StepEvaluator(ctx context.Context, nextEvaluator SampleEvaluator, expr SampleExpr, p Params) (StepEvaluator, error) {
+	return s(ctx, nextEvaluator, expr, p)
+}
+
+type EntryEvaluator interface {
 	// Iterator returns the iter.EntryIterator for a given LogSelectorExpr
 	Iterator(context.Context, LogSelectorExpr, Params) (iter.EntryIterator, error)
 }
@@ -125,7 +140,6 @@ func NewDefaultEvaluator(querier Querier, maxLookBackPeriod time.Duration) *Defa
 		querier:           querier,
 		maxLookBackPeriod: maxLookBackPeriod,
 	}
-
 }
 
 func (ev *DefaultEvaluator) Iterator(ctx context.Context, expr LogSelectorExpr, q Params) (iter.EntryIterator, error) {
@@ -145,17 +159,34 @@ func (ev *DefaultEvaluator) Iterator(ctx context.Context, expr LogSelectorExpr, 
 	}
 
 	return ev.querier.SelectLogs(ctx, params)
-
 }
 
 func (ev *DefaultEvaluator) StepEvaluator(
 	ctx context.Context,
-	nextEv Evaluator,
+	nextEv SampleEvaluator,
 	expr SampleExpr,
 	q Params,
 ) (StepEvaluator, error) {
 	switch e := expr.(type) {
 	case *vectorAggregationExpr:
+		if rangExpr, ok := e.left.(*rangeAggregationExpr); ok && e.operation == OpTypeSum {
+			// if range expression is wrapped with a vector expression
+			// we should send the vector expression for allowing reducing labels at the source.
+			nextEv = SampleEvaluatorFunc(func(ctx context.Context, nextEvaluator SampleEvaluator, expr SampleExpr, p Params) (StepEvaluator, error) {
+				it, err := ev.querier.SelectSamples(ctx, SelectSampleParams{
+					&logproto.SampleQueryRequest{
+						Start:    q.Start().Add(-rangExpr.left.interval),
+						End:      q.End(),
+						Selector: e.String(), // intentionally send the the vector for reducing labels.
+						Shards:   q.Shards(),
+					},
+				})
+				if err != nil {
+					return nil, err
+				}
+				return rangeAggEvaluator(iter.NewPeekingSampleIterator(it), rangExpr, q)
+			})
+		}
 		return vectorAggEvaluator(ctx, nextEv, e, q)
 	case *rangeAggregationExpr:
 		it, err := ev.querier.SelectSamples(ctx, SelectSampleParams{
@@ -172,6 +203,8 @@ func (ev *DefaultEvaluator) StepEvaluator(
 		return rangeAggEvaluator(iter.NewPeekingSampleIterator(it), e, q)
 	case *binOpExpr:
 		return binOpStepEvaluator(ctx, nextEv, e, q)
+	case *labelReplaceExpr:
+		return labelReplaceEvaluator(ctx, nextEv, e, q)
 	default:
 		return nil, EvaluatorUnsupportedType(e, ev)
 	}
@@ -179,7 +212,7 @@ func (ev *DefaultEvaluator) StepEvaluator(
 
 func vectorAggEvaluator(
 	ctx context.Context,
-	ev Evaluator,
+	ev SampleEvaluator,
 	expr *vectorAggregationExpr,
 	q Params,
 ) (StepEvaluator, error) {
@@ -201,14 +234,11 @@ func vectorAggEvaluator(
 			if expr.params < 1 {
 				return next, ts, promql.Vector{}
 			}
-
 		}
 		for _, s := range vec {
 			metric := s.Metric
 
-			var (
-				groupingKey uint64
-			)
+			var groupingKey uint64
 			if expr.grouping.without {
 				groupingKey, buf = metric.HashWithoutLabels(buf, expr.grouping.groups...)
 			} else {
@@ -370,7 +400,6 @@ func vectorAggEvaluator(
 			})
 		}
 		return next, ts, vec
-
 	}, nextEvaluator.Close, nextEvaluator.Error)
 }
 
@@ -383,40 +412,105 @@ func rangeAggEvaluator(
 	if err != nil {
 		return nil, err
 	}
-	return rangeVectorEvaluator{
-		iter: newRangeVectorIterator(
-			it,
-			expr.left.interval.Nanoseconds(),
-			q.Step().Nanoseconds(),
-			q.Start().UnixNano(), q.End().UnixNano(),
-		),
-		agg: agg,
+	iter := newRangeVectorIterator(
+		it,
+		expr.left.interval.Nanoseconds(),
+		q.Step().Nanoseconds(),
+		q.Start().UnixNano(), q.End().UnixNano(),
+	)
+	if expr.operation == OpRangeTypeAbsent {
+		return &absentRangeVectorEvaluator{
+			iter: iter,
+			lbs:  absentLabels(expr),
+		}, nil
+	}
+	return &rangeVectorEvaluator{
+		iter: iter,
+		agg:  agg,
 	}, nil
 }
 
 type rangeVectorEvaluator struct {
 	agg  RangeVectorAggregator
 	iter RangeVectorIterator
+
+	err error
 }
 
-func (r rangeVectorEvaluator) Next() (bool, int64, promql.Vector) {
+func (r *rangeVectorEvaluator) Next() (bool, int64, promql.Vector) {
 	next := r.iter.Next()
 	if !next {
 		return false, 0, promql.Vector{}
 	}
 	ts, vec := r.iter.At(r.agg)
+	for _, s := range vec {
+		// Errors are not allowed in metrics.
+		if s.Metric.Has(log.ErrorLabel) {
+			r.err = newPipelineErr(s.Metric)
+			return false, 0, promql.Vector{}
+		}
+	}
 	return true, ts, vec
 }
 
 func (r rangeVectorEvaluator) Close() error { return r.iter.Close() }
 
-func (r rangeVectorEvaluator) Error() error { return r.iter.Error() }
+func (r rangeVectorEvaluator) Error() error {
+	if r.err != nil {
+		return r.err
+	}
+	return r.iter.Error()
+}
+
+type absentRangeVectorEvaluator struct {
+	iter RangeVectorIterator
+	lbs  labels.Labels
+
+	err error
+}
+
+func (r *absentRangeVectorEvaluator) Next() (bool, int64, promql.Vector) {
+	next := r.iter.Next()
+	if !next {
+		return false, 0, promql.Vector{}
+	}
+	ts, vec := r.iter.At(one)
+	for _, s := range vec {
+		// Errors are not allowed in metrics.
+		if s.Metric.Has(log.ErrorLabel) {
+			r.err = newPipelineErr(s.Metric)
+			return false, 0, promql.Vector{}
+		}
+	}
+	if len(vec) > 0 {
+		return next, ts, promql.Vector{}
+	}
+	// values are missing.
+	return next, ts, promql.Vector{
+		promql.Sample{
+			Point: promql.Point{
+				T: ts,
+				V: 1.,
+			},
+			Metric: r.lbs,
+		},
+	}
+}
+
+func (r absentRangeVectorEvaluator) Close() error { return r.iter.Close() }
+
+func (r absentRangeVectorEvaluator) Error() error {
+	if r.err != nil {
+		return r.err
+	}
+	return r.iter.Error()
+}
 
 // binOpExpr explicitly does not handle when both legs are literals as
 // it makes the type system simpler and these are reduced in mustNewBinOpExpr
 func binOpStepEvaluator(
 	ctx context.Context,
-	ev Evaluator,
+	ev SampleEvaluator,
 	expr *binOpExpr,
 	q Params,
 ) (StepEvaluator, error) {
@@ -493,7 +587,6 @@ func binOpStepEvaluator(
 
 		results := make(promql.Vector, 0, len(pairs))
 		for _, pair := range pairs {
-
 			// merge
 			if merged := mergeBinOp(expr.op, pair[0], pair[1], !expr.opts.ReturnBool, IsComparisonOperator(expr.op)); merged != nil {
 				results = append(results, *merged)
@@ -521,7 +614,7 @@ func binOpStepEvaluator(
 		case 1:
 			return errs[0]
 		default:
-			return fmt.Errorf("Multiple errors: %+v", errs)
+			return util.MultiError(errs)
 		}
 	})
 }
@@ -602,7 +695,7 @@ func mergeBinOp(op string, left, right *promql.Sample, filter, isVectorCompariso
 				return nil
 			}
 			res := promql.Sample{
-				Metric: left.Metric.Copy(),
+				Metric: left.Metric,
 				Point:  left.Point,
 			}
 
@@ -805,7 +898,6 @@ func mergeBinOp(op string, left, right *promql.Sample, filter, isVectorCompariso
 		res.Point.V = 0
 	}
 	return res
-
 }
 
 // literalStepEvaluator merges a literal with a StepEvaluator. Since order matters in
@@ -849,4 +941,79 @@ func literalStepEvaluator(
 		eval.Close,
 		eval.Error,
 	)
+}
+
+func labelReplaceEvaluator(
+	ctx context.Context,
+	ev SampleEvaluator,
+	expr *labelReplaceExpr,
+	q Params,
+) (StepEvaluator, error) {
+	nextEvaluator, err := ev.StepEvaluator(ctx, ev, expr.left, q)
+	if err != nil {
+		return nil, err
+	}
+	buf := make([]byte, 0, 1024)
+	var labelCache map[uint64]labels.Labels
+	return newStepEvaluator(func() (bool, int64, promql.Vector) {
+		next, ts, vec := nextEvaluator.Next()
+		if !next {
+			return false, 0, promql.Vector{}
+		}
+		if labelCache == nil {
+			labelCache = make(map[uint64]labels.Labels, len(vec))
+		}
+		var hash uint64
+		for i, s := range vec {
+			hash, buf = s.Metric.HashWithoutLabels(buf)
+			if labels, ok := labelCache[hash]; ok {
+				vec[i].Metric = labels
+				continue
+			}
+			src := s.Metric.Get(expr.src)
+			indexes := expr.re.FindStringSubmatchIndex(src)
+			if indexes == nil {
+				// If there is no match, no replacement should take place.
+				labelCache[hash] = s.Metric
+				continue
+			}
+			res := expr.re.ExpandString([]byte{}, expr.replacement, src, indexes)
+
+			lb := labels.NewBuilder(s.Metric).Del(expr.dst)
+			if len(res) > 0 {
+				lb.Set(expr.dst, string(res))
+			}
+			outLbs := lb.Labels()
+			labelCache[hash] = outLbs
+			vec[i].Metric = outLbs
+		}
+		return next, ts, vec
+	}, nextEvaluator.Close, nextEvaluator.Error)
+}
+
+// This is to replace missing timeseries during absent_over_time aggregation.
+func absentLabels(expr SampleExpr) labels.Labels {
+	m := labels.Labels{}
+
+	lm := expr.Selector().Matchers()
+	if len(lm) == 0 {
+		return m
+	}
+
+	empty := []string{}
+	for _, ma := range lm {
+		if ma.Name == labels.MetricName {
+			continue
+		}
+		if ma.Type == labels.MatchEqual && !m.Has(ma.Name) {
+			m = labels.NewBuilder(m).Set(ma.Name, ma.Value).Labels()
+		} else {
+			empty = append(empty, ma.Name)
+		}
+	}
+
+	for _, v := range empty {
+		m = labels.NewBuilder(m).Del(v).Labels()
+	}
+	return m
 }

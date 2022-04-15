@@ -139,7 +139,7 @@ func (c *sortedClient) sendBatch() {
 
 	for _, stream := range c.batch.Streams {
 		if err := c.lokiclient.handleStream(*stream); err != nil {
-			level.Error(c.logger).Log("msg", "error sending stream", "stream", stream.Labels.String())
+			_ = level.Error(c.logger).Log("msg", "error sending stream", "stream", stream.Labels.String())
 		}
 	}
 	c.batch = nil

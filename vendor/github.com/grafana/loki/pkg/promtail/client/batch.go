@@ -1,12 +1,17 @@
 package client
 
 import (
+	"fmt"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
+	"github.com/prometheus/common/model"
 
 	"github.com/grafana/loki/pkg/logproto"
+	"github.com/grafana/loki/pkg/promtail/api"
 )
 
 // batch holds pending log streams waiting to be sent to Loki, and it's used
@@ -19,7 +24,7 @@ type batch struct {
 	createdAt time.Time
 }
 
-func newBatch(entries ...entry) *batch {
+func newBatch(entries ...api.Entry) *batch {
 	b := &batch{
 		streams:   map[string]*logproto.Stream{},
 		bytes:     0,
@@ -35,11 +40,11 @@ func newBatch(entries ...entry) *batch {
 }
 
 // add an entry to the batch
-func (b *batch) add(entry entry) {
+func (b *batch) add(entry api.Entry) {
 	b.bytes += len(entry.Line)
 
 	// Append the entry to an already existing stream (if any)
-	labels := entry.labels.String()
+	labels := labelsMapToString(entry.Labels, ReservedLabelTenantID)
 	if stream, ok := b.streams[labels]; ok {
 		stream.Entries = append(stream.Entries, entry.Entry)
 		return
@@ -52,6 +57,22 @@ func (b *batch) add(entry entry) {
 	}
 }
 
+func labelsMapToString(ls model.LabelSet, without ...model.LabelName) string {
+	lstrs := make([]string, 0, len(ls))
+Outer:
+	for l, v := range ls {
+		for _, w := range without {
+			if l == w {
+				continue Outer
+			}
+		}
+		lstrs = append(lstrs, fmt.Sprintf("%s=%q", l, v))
+	}
+
+	sort.Strings(lstrs)
+	return fmt.Sprintf("{%s}", strings.Join(lstrs, ", "))
+}
+
 // sizeBytes returns the current batch size in bytes
 func (b *batch) sizeBytes() int {
 	return b.bytes
@@ -59,7 +80,7 @@ func (b *batch) sizeBytes() int {
 
 // sizeBytesAfter returns the size of the batch after the input entry
 // will be added to the batch itself
-func (b *batch) sizeBytesAfter(entry entry) int {
+func (b *batch) sizeBytesAfter(entry api.Entry) int {
 	return b.bytes + len(entry.Line)
 }
 

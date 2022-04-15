@@ -40,7 +40,7 @@ func main() {
 
 	conf, logger, err := app.ParseConfiguration()
 	if err != nil {
-		level.Error(logger).Log("msg", "error", err)
+		_ = level.Error(logger).Log("msg", "error", err)
 		os.Exit(1)
 	}
 
@@ -49,6 +49,6 @@ func main() {
 	signal.Notify(c, os.Interrupt)
 	go func() { curator.Run() }()
 	sig := <-c
-	level.Error(logger).Log("msg", "error", "Got %s signal. Aborting...", sig)
+	_ = level.Error(logger).Log("msg", "error", "Got %s signal. Aborting...", sig)
 	curator.Stop()
 }

@@ -27,6 +27,7 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
+
 	"github.com/prometheus/prometheus/tsdb/chunkenc"
 	tsdb_errors "github.com/prometheus/prometheus/tsdb/errors"
 	"github.com/prometheus/prometheus/tsdb/fileutil"
@@ -229,14 +230,13 @@ func cutSegmentFile(dirFile *os.File, magicNumber uint32, chunksFormat byte, all
 	}
 	defer func() {
 		if returnErr != nil {
-			var merr tsdb_errors.MultiError
-			merr.Add(returnErr)
+			errs := tsdb_errors.NewMulti(returnErr)
 			if f != nil {
-				merr.Add(f.Close())
+				errs.Add(f.Close())
 			}
 			// Calling RemoveAll on a non-existent file does not return error.
-			merr.Add(os.RemoveAll(ptmp))
-			returnErr = merr.Err()
+			errs.Add(os.RemoveAll(ptmp))
+			returnErr = errs.Err()
 		}
 	}()
 	if allocSize > 0 {
@@ -281,85 +281,6 @@ func (w *Writer) write(b []byte) error {
 	n, err := w.wbuf.Write(b)
 	w.n += int64(n)
 	return err
-}
-
-// MergeOverlappingChunks removes the samples whose timestamp is overlapping.
-// The last appearing sample is retained in case there is overlapping.
-// This assumes that `chks []Meta` is sorted w.r.t. MinTime.
-func MergeOverlappingChunks(chks []Meta) ([]Meta, error) {
-	if len(chks) < 2 {
-		return chks, nil
-	}
-	newChks := make([]Meta, 0, len(chks)) // Will contain the merged chunks.
-	newChks = append(newChks, chks[0])
-	last := 0
-	for _, c := range chks[1:] {
-		// We need to check only the last chunk in newChks.
-		// Reason: (1) newChks[last-1].MaxTime < newChks[last].MinTime (non overlapping)
-		//         (2) As chks are sorted w.r.t. MinTime, newChks[last].MinTime < c.MinTime.
-		// So never overlaps with newChks[last-1] or anything before that.
-		if c.MinTime > newChks[last].MaxTime {
-			newChks = append(newChks, c)
-			last++
-			continue
-		}
-		nc := &newChks[last]
-		if c.MaxTime > nc.MaxTime {
-			nc.MaxTime = c.MaxTime
-		}
-		chk, err := MergeChunks(nc.Chunk, c.Chunk)
-		if err != nil {
-			return nil, err
-		}
-		nc.Chunk = chk
-	}
-
-	return newChks, nil
-}
-
-// MergeChunks vertically merges a and b, i.e., if there is any sample
-// with same timestamp in both a and b, the sample in a is discarded.
-func MergeChunks(a, b chunkenc.Chunk) (*chunkenc.XORChunk, error) {
-	newChunk := chunkenc.NewXORChunk()
-	app, err := newChunk.Appender()
-	if err != nil {
-		return nil, err
-	}
-	ait := a.Iterator(nil)
-	bit := b.Iterator(nil)
-	aok, bok := ait.Next(), bit.Next()
-	for aok && bok {
-		at, av := ait.At()
-		bt, bv := bit.At()
-		if at < bt {
-			app.Append(at, av)
-			aok = ait.Next()
-		} else if bt < at {
-			app.Append(bt, bv)
-			bok = bit.Next()
-		} else {
-			app.Append(bt, bv)
-			aok = ait.Next()
-			bok = bit.Next()
-		}
-	}
-	for aok {
-		at, av := ait.At()
-		app.Append(at, av)
-		aok = ait.Next()
-	}
-	for bok {
-		bt, bv := bit.At()
-		app.Append(bt, bv)
-		bok = bit.Next()
-	}
-	if ait.Err() != nil {
-		return nil, ait.Err()
-	}
-	if bit.Err() != nil {
-		return nil, bit.Err()
-	}
-	return newChunk, nil
 }
 
 // WriteChunks writes as many chunks as possible to the current segment,
@@ -498,10 +419,6 @@ func (b realByteSlice) Range(start, end int) []byte {
 	return b[start:end]
 }
 
-func (b realByteSlice) Sub(start, end int) ByteSlice {
-	return b[start:end]
-}
-
 // Reader implements a ChunkReader for a serialized byte stream
 // of series data.
 type Reader struct {
@@ -545,16 +462,16 @@ func NewDirReader(dir string, pool chunkenc.Pool) (*Reader, error) {
 	}
 
 	var (
-		bs   []ByteSlice
-		cs   []io.Closer
-		merr tsdb_errors.MultiError
+		bs []ByteSlice
+		cs []io.Closer
 	)
 	for _, fn := range files {
 		f, err := fileutil.OpenMmapFile(fn)
 		if err != nil {
-			merr.Add(errors.Wrap(err, "mmap files"))
-			merr.Add(closeAll(cs))
-			return nil, merr
+			return nil, tsdb_errors.NewMulti(
+				errors.Wrap(err, "mmap files"),
+				tsdb_errors.CloseAll(cs),
+			).Err()
 		}
 		cs = append(cs, f)
 		bs = append(bs, realByteSlice(f.Bytes()))
@@ -562,15 +479,16 @@ func NewDirReader(dir string, pool chunkenc.Pool) (*Reader, error) {
 
 	reader, err := newReader(bs, cs, pool)
 	if err != nil {
-		merr.Add(err)
-		merr.Add(closeAll(cs))
-		return nil, merr
+		return nil, tsdb_errors.NewMulti(
+			err,
+			tsdb_errors.CloseAll(cs),
+		).Err()
 	}
 	return reader, nil
 }
 
 func (s *Reader) Close() error {
-	return closeAll(s.cs)
+	return tsdb_errors.CloseAll(s.cs)
 }
 
 // Size returns the size of the chunks.
@@ -669,13 +587,4 @@ func sequenceFiles(dir string) ([]string, error) {
 		res = append(res, filepath.Join(dir, fi.Name()))
 	}
 	return res, nil
-}
-
-func closeAll(cs []io.Closer) error {
-	var merr tsdb_errors.MultiError
-
-	for _, c := range cs {
-		merr.Add(c.Close())
-	}
-	return merr.Err()
 }
