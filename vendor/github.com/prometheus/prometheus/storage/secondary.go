@@ -47,8 +47,8 @@ func newSecondaryQuerierFromChunk(cq ChunkQuerier) genericQuerier {
 	return &secondaryQuerier{genericQuerier: newGenericQuerierFromChunk(cq)}
 }
 
-func (s *secondaryQuerier) LabelValues(name string) ([]string, Warnings, error) {
-	vals, w, err := s.genericQuerier.LabelValues(name)
+func (s *secondaryQuerier) LabelValues(name string, matchers ...*labels.Matcher) ([]string, Warnings, error) {
+	vals, w, err := s.genericQuerier.LabelValues(name, matchers...)
 	if err != nil {
 		return nil, append([]error{err}, w...), nil
 	}
@@ -63,35 +63,37 @@ func (s *secondaryQuerier) LabelNames() ([]string, Warnings, error) {
 	return names, w, nil
 }
 
-func (s *secondaryQuerier) createFn(asyncSet genericSeriesSet) func() (genericSeriesSet, bool) {
-	s.asyncSets = append(s.asyncSets, asyncSet)
+func (s *secondaryQuerier) Select(sortSeries bool, hints *SelectHints, matchers ...*labels.Matcher) genericSeriesSet {
+	if s.done {
+		panic("secondaryQuerier: Select invoked after first Next of any returned SeriesSet was done")
+	}
+
+	s.asyncSets = append(s.asyncSets, s.genericQuerier.Select(sortSeries, hints, matchers...))
 	curr := len(s.asyncSets) - 1
-	return func() (genericSeriesSet, bool) {
+	return &lazyGenericSeriesSet{init: func() (genericSeriesSet, bool) {
 		s.once.Do(func() {
-			// At first create invocation we iterate over all sets and ensure its Next() returns some value without
+			// At first init invocation we iterate over all async sets and ensure its Next() returns some value without
 			// errors. This is to ensure we support consistent partial failures.
 			for i, set := range s.asyncSets {
 				if set.Next() {
 					continue
 				}
 				ws := set.Warnings()
-				// Failed set.
 				if err := set.Err(); err != nil {
-					ws = append([]error{err}, ws...)
-					// Promote the warnings to the current one.
-					s.asyncSets[curr] = warningsOnlySeriesSet(ws)
-					// One of the sets failed, ensure rest of the sets returns nothing. (All or nothing logic).
+					// One of the sets failed, ensure current one returning errors as warnings, and rest of the sets return nothing.
+					// (All or nothing logic).
+					s.asyncSets[curr] = warningsOnlySeriesSet(append([]error{err}, ws...))
 					for i := range s.asyncSets {
-						if curr != i {
-							s.asyncSets[i] = noopGenericSeriesSet{}
+						if curr == i {
+							continue
 						}
+						s.asyncSets[i] = noopGenericSeriesSet{}
 					}
 					break
 				}
 				// Exhausted set.
 				s.asyncSets[i] = warningsOnlySeriesSet(ws)
 			}
-
 			s.done = true
 		})
 
@@ -101,12 +103,5 @@ func (s *secondaryQuerier) createFn(asyncSet genericSeriesSet) func() (genericSe
 		default:
 			return s.asyncSets[curr], true
 		}
-	}
-}
-
-func (s *secondaryQuerier) Select(sortSeries bool, hints *SelectHints, matchers ...*labels.Matcher) genericSeriesSet {
-	if s.done {
-		panic("secondaryQuerier: Select invoked after first Next of any returned SeriesSet was done")
-	}
-	return &lazySeriesSet{create: s.createFn(s.genericQuerier.Select(sortSeries, hints, matchers...))}
+	}}
 }

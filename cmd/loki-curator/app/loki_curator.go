@@ -39,15 +39,15 @@ func ParseConfiguration() (*config.CuratorConfig, log.Logger, error) {
 	}
 
 	logger = newLogger(conf.LogLevel)
-	level.Info(logger).Log("LogLevel", conf.LogLevel)
-	level.Info(logger).Log("TriggerInterval", conf.TriggerInterval)
-	level.Info(logger).Log("DiskPath", conf.DiskPath)
-	level.Info(logger).Log("InodeConfig.MinFreePercentages", conf.InodeConfig.MinFreePercentages)
-	level.Info(logger).Log("InodeConfig.TargetFreePercentages", conf.InodeConfig.TargetFreePercentages)
-	level.Info(logger).Log("InodeConfig.PageSizeForDeletionPercentages", conf.InodeConfig.PageSizeForDeletionPercentages)
-	level.Info(logger).Log("StorageConfig.MinFreePercentages", conf.StorageConfig.MinFreePercentages)
-	level.Info(logger).Log("StorageConfig.TargetFreePercentages", conf.StorageConfig.TargetFreePercentages)
-	level.Info(logger).Log("StorageConfig.PageSizeForDeletionPercentages", conf.StorageConfig.PageSizeForDeletionPercentages)
+	_ = level.Info(logger).Log("LogLevel", conf.LogLevel)
+	_ = level.Info(logger).Log("TriggerInterval", conf.TriggerInterval)
+	_ = level.Info(logger).Log("DiskPath", conf.DiskPath)
+	_ = level.Info(logger).Log("InodeConfig.MinFreePercentages", conf.InodeConfig.MinFreePercentages)
+	_ = level.Info(logger).Log("InodeConfig.TargetFreePercentages", conf.InodeConfig.TargetFreePercentages)
+	_ = level.Info(logger).Log("InodeConfig.PageSizeForDeletionPercentages", conf.InodeConfig.PageSizeForDeletionPercentages)
+	_ = level.Info(logger).Log("StorageConfig.MinFreePercentages", conf.StorageConfig.MinFreePercentages)
+	_ = level.Info(logger).Log("StorageConfig.TargetFreePercentages", conf.StorageConfig.TargetFreePercentages)
+	_ = level.Info(logger).Log("StorageConfig.PageSizeForDeletionPercentages", conf.StorageConfig.PageSizeForDeletionPercentages)
 
 	return conf, logger, nil
 }
@@ -62,9 +62,9 @@ func newLogger(logLevelName string) log.Logger {
 	case "warn":
 		fallthrough
 	case "error":
-		logLevel.Set(logLevelName)
+		_ = logLevel.Set(logLevelName)
 	default:
-		logLevel.Set("info")
+		_ = logLevel.Set("info")
 	}
 
 	l := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))

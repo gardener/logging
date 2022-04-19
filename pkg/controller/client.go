@@ -78,13 +78,13 @@ func (ctl *controller) createControllerClient(clusterName string, shoot *gardene
 	client, err := ctl.newControllerClient(clientConf)
 	if err != nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorFailedToMakeLokiClient).Inc()
-		level.Error(ctl.logger).Log("msg", fmt.Sprintf("failed to make new loki client for cluster %v", clusterName), "error", err.Error())
+		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("failed to make new loki client for cluster %v", clusterName), "error", err.Error())
 		return
 	}
 
 	ctl.updateControllerClientState(client, shoot)
 
-	level.Info(ctl.logger).Log("msg", fmt.Sprintf("Add client for cluster %v in %v state", clusterName, client.GetState()))
+	_ = level.Info(ctl.logger).Log("msg", fmt.Sprintf("Add client for cluster %v in %v state", clusterName, client.GetState()))
 	ctl.lock.Lock()
 	defer ctl.lock.Unlock()
 
@@ -109,7 +109,7 @@ func (ctl *controller) deleteControllerClient(clusterName string) {
 
 	ctl.lock.Unlock()
 	if ok && client != nil {
-		level.Info(ctl.logger).Log("msg", fmt.Sprintf("Delete client for cluster %v", clusterName))
+		_ = level.Info(ctl.logger).Log("msg", fmt.Sprintf("Delete client for cluster %v", clusterName))
 		client.StopWait()
 	}
 }
@@ -221,11 +221,11 @@ func (c *controllerClient) SetState(state clusterState) {
 		c.muteMainClient = !c.mainClientConf.SendLogsWhenIsInCreationState
 		c.muteDefaultClient = !c.defaultClientConf.SendLogsWhenIsInCreationState
 	default:
-		level.Error(c.logger).Log("msg", fmt.Sprintf("Unknown state %v for cluster %v. The client state will not be changed", state, c.name))
+		_ = level.Error(c.logger).Log("msg", fmt.Sprintf("Unknown state %v for cluster %v. The client state will not be changed", state, c.name))
 		return
 	}
 
-	level.Info(c.logger).Log("msg", fmt.Sprintf("Cluster %s state changes from %v to %v", c.name, c.state, state))
+	_ = level.Info(c.logger).Log("msg", fmt.Sprintf("Cluster %s state changes from %v to %v", c.name, c.state, state))
 	c.state = state
 }
 

@@ -110,14 +110,14 @@ func (ctl *controller) addFunc(obj interface{}) {
 	cluster, ok := obj.(*extensionsv1alpha1.Cluster)
 	if !ok {
 		metrics.Errors.WithLabelValues(metrics.ErrorAddFuncNotACluster).Inc()
-		level.Error(ctl.logger).Log("msg", fmt.Sprintf("%v is not a cluster", obj))
+		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("%v is not a cluster", obj))
 		return
 	}
 
 	shoot, err := extensioncontroller.ShootFromCluster(ctl.decoder, cluster)
 	if err != nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorCanNotExtractShoot).Inc()
-		level.Error(ctl.logger).Log("msg", fmt.Sprintf("can't extract shoot from cluster %v", cluster.Name))
+		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("can't extract shoot from cluster %v", cluster.Name))
 		return
 	}
 
@@ -130,14 +130,14 @@ func (ctl *controller) updateFunc(oldObj interface{}, newObj interface{}) {
 	oldCluster, ok := oldObj.(*extensionsv1alpha1.Cluster)
 	if !ok {
 		metrics.Errors.WithLabelValues(metrics.ErrorUpdateFuncOldNotACluster).Inc()
-		level.Error(ctl.logger).Log("msg", fmt.Sprintf("%v is not a cluster", oldCluster))
+		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("%v is not a cluster", oldCluster))
 		return
 	}
 
 	newCluster, ok := newObj.(*extensionsv1alpha1.Cluster)
 	if !ok {
 		metrics.Errors.WithLabelValues(metrics.ErrorUpdateFuncNewNotACluster).Inc()
-		level.Error(ctl.logger).Log("msg", fmt.Sprintf("%v is not a cluster", newCluster))
+		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("%v is not a cluster", newCluster))
 		return
 	}
 
@@ -148,7 +148,7 @@ func (ctl *controller) updateFunc(oldObj interface{}, newObj interface{}) {
 	shoot, err := extensioncontroller.ShootFromCluster(ctl.decoder, newCluster)
 	if err != nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorCanNotExtractShoot).Inc()
-		level.Error(ctl.logger).Log("msg", fmt.Sprintf("can't extract shoot from cluster %v", newCluster.Name))
+		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("can't extract shoot from cluster %v", newCluster.Name))
 		return
 	}
 
@@ -162,7 +162,7 @@ func (ctl *controller) updateFunc(oldObj interface{}, newObj interface{}) {
 		}
 		// Sanity check
 		if client == nil {
-			level.Error(ctl.logger).Log("msg", fmt.Sprintf("The client for cluster %v is NIL. Will try to create new one", oldCluster.Name))
+			_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("The client for cluster %v is NIL. Will try to create new one", oldCluster.Name))
 			ctl.createControllerClient(newCluster.Name, shoot)
 		}
 
@@ -179,7 +179,7 @@ func (ctl *controller) delFunc(obj interface{}) {
 	cluster, ok := obj.(*extensionsv1alpha1.Cluster)
 	if !ok {
 		metrics.Errors.WithLabelValues(metrics.ErrorDeleteFuncNotAcluster).Inc()
-		level.Error(ctl.logger).Log("msg", fmt.Sprintf("%v is not a cluster", obj))
+		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("%v is not a cluster", obj))
 		return
 	}
 
@@ -193,7 +193,7 @@ func (ctl *controller) getClientConfig(namespace string) *config.Config {
 	err := clientURL.Set(url)
 	if err != nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorFailedToParseURL).Inc()
-		level.Error(ctl.logger).Log("msg", fmt.Sprintf("failed to parse client URL  for %v", namespace), "error", err.Error())
+		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("failed to parse client URL  for %v", namespace), "error", err.Error())
 		return nil
 	}
 

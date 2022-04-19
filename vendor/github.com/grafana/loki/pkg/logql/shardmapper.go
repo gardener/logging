@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/cortexproject/cortex/pkg/querier/astmapper"
-	"github.com/cortexproject/cortex/pkg/util"
+	util_log "github.com/cortexproject/cortex/pkg/util/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
@@ -129,10 +129,12 @@ func (m ShardMapper) Map(expr Expr, r *shardRecorder) (Expr, error) {
 	switch e := expr.(type) {
 	case *literalExpr:
 		return e, nil
-	case *matchersExpr, *filterExpr:
+	case *matchersExpr, *pipelineExpr:
 		return m.mapLogSelectorExpr(e.(LogSelectorExpr), r), nil
 	case *vectorAggregationExpr:
 		return m.mapVectorAggregationExpr(e, r)
+	case *labelReplaceExpr:
+		return m.mapLabelReplaceExpr(e, r)
 	case *rangeAggregationExpr:
 		return m.mapRangeAggregationExpr(e, r), nil
 	case *binOpExpr:
@@ -204,7 +206,7 @@ func (m ShardMapper) mapVectorAggregationExpr(expr *vectorAggregationExpr, r *sh
 
 	// if this AST contains unshardable operations, don't shard this at this level,
 	// but attempt to shard a child node.
-	if shardable := isShardable(expr.Operations()); !shardable {
+	if !expr.Shardable() {
 		subMapped, err := m.Map(expr.left, r)
 		if err != nil {
 			return nil, err
@@ -269,7 +271,7 @@ func (m ShardMapper) mapVectorAggregationExpr(expr *vectorAggregationExpr, r *sh
 	default:
 		// this should not be reachable. If an operation is shardable it should
 		// have an optimization listed.
-		level.Warn(util.Logger).Log(
+		level.Warn(util_log.Logger).Log(
 			"msg", "unexpected operation which appears shardable, ignoring",
 			"operation", expr.operation,
 		)
@@ -277,7 +279,24 @@ func (m ShardMapper) mapVectorAggregationExpr(expr *vectorAggregationExpr, r *sh
 	}
 }
 
+func (m ShardMapper) mapLabelReplaceExpr(expr *labelReplaceExpr, r *shardRecorder) (SampleExpr, error) {
+	subMapped, err := m.Map(expr.left, r)
+	if err != nil {
+		return nil, err
+	}
+	cpy := *expr
+	cpy.left = subMapped.(SampleExpr)
+	return &cpy, nil
+}
+
 func (m ShardMapper) mapRangeAggregationExpr(expr *rangeAggregationExpr, r *shardRecorder) SampleExpr {
+	if hasLabelModifier(expr) {
+		// if an expr can modify labels this means multiple shards can returns the same labelset.
+		// When this happens the merge strategy needs to be different than a simple concatenation.
+		// For instance for rates we need to sum data from different shards but same series.
+		// Since we currently support only concatenation as merge strategy, we skip those queries.
+		return expr
+	}
 	switch expr.operation {
 	case OpRangeTypeCount, OpRangeTypeRate, OpRangeTypeBytesRate, OpRangeTypeBytes:
 		// count_over_time(x) -> count_over_time(x, shard=1) ++ count_over_time(x, shard=2)...
@@ -289,14 +308,20 @@ func (m ShardMapper) mapRangeAggregationExpr(expr *rangeAggregationExpr, r *shar
 	}
 }
 
-// isShardable returns false if any of the listed operation types are not shardable and true otherwise
-func isShardable(ops []string) bool {
-	for _, op := range ops {
-		if shardable := shardableOps[op]; !shardable {
-			return false
+// hasLabelModifier tells if an expression contains pipelines that can modify stream labels
+// parsers introduce new labels but does not alter original one for instance.
+func hasLabelModifier(expr *rangeAggregationExpr) bool {
+	switch ex := expr.left.left.(type) {
+	case *matchersExpr:
+		return false
+	case *pipelineExpr:
+		for _, p := range ex.pipeline {
+			if _, ok := p.(*labelFmtExpr); ok {
+				return true
+			}
 		}
 	}
-	return true
+	return false
 }
 
 // shardableOps lists the operations which may be sharded.
@@ -328,6 +353,9 @@ var shardableOps = map[string]bool{
 	OpRangeTypeRate:      true,
 	OpRangeTypeBytes:     true,
 	OpRangeTypeBytesRate: true,
+	OpRangeTypeSum:       true,
+	OpRangeTypeMax:       true,
+	OpRangeTypeMin:       true,
 
 	// binops - arith
 	OpTypeAdd: true,

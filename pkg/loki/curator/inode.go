@@ -34,12 +34,12 @@ func (c *Curator) freeUpInodeCapacityIfNeeded() error {
 	freeInodePercs := int((stat.Ffree * 100) / stat.Files)
 	metrics.FreeInodePercentages.Set(float64(freeInodePercs))
 
-	level.Debug(c.logger).Log("msg", "current inode free capacity", "percentages", freeInodePercs)
+	_ = level.Debug(c.logger).Log("msg", "current inode free capacity", "percentages", freeInodePercs)
 	if freeInodePercs < c.config.InodeConfig.MinFreePercentages {
 		metrics.TriggeredInodeDeletion.Inc()
-		level.Info(c.logger).Log("msg", "inodes cleanup started...")
+		_ = level.Info(c.logger).Log("msg", "inodes cleanup started...")
 		targetFreeInodes := stat.Files / 100 * uint64(c.config.InodeConfig.TargetFreePercentages)
-		level.Debug(c.logger).Log("msg", "target free inodes", "inodes", targetFreeInodes)
+		_ = level.Debug(c.logger).Log("msg", "target free inodes", "inodes", targetFreeInodes)
 
 		currFreeSpaceFunc := func() (uint64, error) {
 			var stat syscall.Statfs_t
@@ -57,7 +57,7 @@ func (c *Curator) freeUpInodeCapacityIfNeeded() error {
 			return fmt.Errorf("%s; Failed to clean the needed inodes. DeletedInodes: %d", err.Error(), deletedCount)
 		}
 
-		level.Info(c.logger).Log("msg", "inodes cleanup completed", "deleted chunks", deletedCount)
+		_ = level.Info(c.logger).Log("msg", "inodes cleanup completed", "deleted chunks", deletedCount)
 	}
 
 	return nil

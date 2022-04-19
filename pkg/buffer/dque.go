@@ -92,7 +92,7 @@ func (c *dqueClient) dequeuer() {
 				return
 			default:
 				metrics.Errors.WithLabelValues(metrics.ErrorDequeuer).Inc()
-				level.Error(c.logger).Log("msg", "error dequeuing record", "error", err, "queue", c.queue.Name)
+				_ = level.Error(c.logger).Log("msg", "error dequeuing record", "error", err, "queue", c.queue.Name)
 				continue
 			}
 		}
@@ -101,7 +101,7 @@ func (c *dqueClient) dequeuer() {
 		record, ok := entry.(*dqueEntry)
 		if !ok {
 			metrics.Errors.WithLabelValues(metrics.ErrorDequeuerNotValidType).Inc()
-			level.Error(c.logger).Log("msg", "error dequeued record is not an valid type", "queue", c.queue.Name)
+			_ = level.Error(c.logger).Log("msg", "error dequeued record is not an valid type", "queue", c.queue.Name)
 			continue
 		}
 
@@ -110,12 +110,12 @@ func (c *dqueClient) dequeuer() {
 			return
 		}
 
-		level.Debug(c.logger).Log("msg", "sending record to Loki", "url", c.url, "record", record)
+		_ = level.Debug(c.logger).Log("msg", "sending record to Loki", "url", c.url, "record", record)
 		if err := c.loki.Handle(record.LabelSet, record.Timestamp, record.Line); err != nil {
 			metrics.Errors.WithLabelValues(metrics.ErrorDequeuerSendRecord).Inc()
-			level.Error(c.logger).Log("msg", "error sending record to Loki", "host", c.url, "error", err)
+			_ = level.Error(c.logger).Log("msg", "error sending record to Loki", "host", c.url, "error", err)
 		}
-		level.Debug(c.logger).Log("msg", "successful sent record to Loki", "host", c.url, "record", record)
+		_ = level.Debug(c.logger).Log("msg", "successful sent record to Loki", "host", c.url, "record", record)
 
 		c.lock.Lock()
 		if c.isStooped && c.queue.Size() <= 0 {
@@ -130,7 +130,7 @@ func (c *dqueClient) dequeuer() {
 func (c *dqueClient) Stop() {
 	c.once.Do(func() {
 		if err := c.closeQue(false); err != nil {
-			level.Error(c.logger).Log("msg", "error closing buffered client", "queue", c.queue.Name, "err", err.Error())
+			_ = level.Error(c.logger).Log("msg", "error closing buffered client", "queue", c.queue.Name, "err", err.Error())
 		}
 		c.loki.Stop()
 	})
@@ -140,10 +140,10 @@ func (c *dqueClient) Stop() {
 func (c *dqueClient) StopWait() {
 	c.once.Do(func() {
 		if err := c.stopQue(true); err != nil {
-			level.Error(c.logger).Log("msg", "error stopping buffered client", "queue", c.queue.Name, "err", err.Error())
+			_ = level.Error(c.logger).Log("msg", "error stopping buffered client", "queue", c.queue.Name, "err", err.Error())
 		}
 		if err := c.closeQue(true); err != nil {
-			level.Error(c.logger).Log("msg", "error closing buffered client", "queue", c.queue.Name, "err", err.Error())
+			_ = level.Error(c.logger).Log("msg", "error closing buffered client", "queue", c.queue.Name, "err", err.Error())
 		}
 		c.loki.StopWait()
 	})

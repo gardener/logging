@@ -38,11 +38,11 @@ func DeleteFiles(dirPath string, targetFreeSpace uint64, pageSize int, freeSpace
 	if err != nil {
 		return allDeletedFiles, err
 	}
-	level.Debug(logger).Log("msg", "current free space", "bytes", currentFreeSpace)
+	_ = level.Debug(logger).Log("msg", "current free space", "bytes", currentFreeSpace)
 
 	for currentFreeSpace < targetFreeSpace {
 		currDeletedFiles, err := deleteNOldestFiles(dirPath, pageSize)
-		level.Debug(logger).Log("msg", "current deleted files", "count", currDeletedFiles)
+		_ = level.Debug(logger).Log("msg", "current deleted files", "count", currDeletedFiles)
 
 		if err != nil {
 			return allDeletedFiles, err
@@ -52,7 +52,7 @@ func DeleteFiles(dirPath string, targetFreeSpace uint64, pageSize int, freeSpace
 		if currentFreeSpace, err = freeSpace(); err != nil {
 			return allDeletedFiles, err
 		}
-		level.Debug(logger).Log("msg", "current free space", "bytes", currentFreeSpace)
+		_ = level.Debug(logger).Log("msg", "current free space", "bytes", currentFreeSpace)
 	}
 
 	return allDeletedFiles, nil

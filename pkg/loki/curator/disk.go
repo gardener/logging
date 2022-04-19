@@ -37,12 +37,12 @@ func (c *Curator) freeUpDiskCapacityIfNeeded() error {
 	freeCapacityPerc := int(freeCapacity * 100 / allCapacity)
 	metrics.FreeStoragePercentages.Set(float64(freeCapacityPerc))
 
-	level.Debug(c.logger).Log("msg", "current storage free capacity", "percentages", freeCapacityPerc)
+	_ = level.Debug(c.logger).Log("msg", "current storage free capacity", "percentages", freeCapacityPerc)
 	if freeCapacityPerc < c.config.StorageConfig.MinFreePercentages {
 		metrics.TriggeredStorageDeletion.Inc()
-		level.Info(c.logger).Log("msg", "storage cleanup started...")
+		_ = level.Info(c.logger).Log("msg", "storage cleanup started...")
 		targetFreeCap := allCapacity / 100 * uint64(c.config.StorageConfig.TargetFreePercentages)
-		level.Debug(c.logger).Log("msg", "target free capacity", "bytes", targetFreeCap)
+		_ = level.Debug(c.logger).Log("msg", "target free capacity", "bytes", targetFreeCap)
 
 		currFreeSpaceFunc := func() (uint64, error) {
 			var stat syscall.Statfs_t
@@ -60,7 +60,7 @@ func (c *Curator) freeUpDiskCapacityIfNeeded() error {
 			return fmt.Errorf("%s; Failed to clean the needed capacity. DeletedFiles: %d", err.Error(), deletedCount)
 		}
 
-		level.Info(c.logger).Log("msg", "storage cleanup completed", "deleted chunks", deletedCount)
+		_ = level.Info(c.logger).Log("msg", "storage cleanup completed", "deleted chunks", deletedCount)
 	}
 
 	return nil

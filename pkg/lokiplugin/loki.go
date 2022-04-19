@@ -81,19 +81,19 @@ func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger lo
 // sendRecord send fluentbit records to loki as an entry.
 func (l *loki) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 	records := toStringMap(r)
-	level.Debug(l.logger).Log("msg", "processing records", "records", fluentBitRecords(records))
+	_ = level.Debug(l.logger).Log("msg", "processing records", "records", fluentBitRecords(records))
 	lbs := make(model.LabelSet, l.cfg.PluginConfig.LabelSetInitCapacity)
 
 	// Check if metadata is missing
 	if l.cfg.PluginConfig.KubernetesMetadata.FallbackToTagWhenMetadataIsMissing {
 		if _, ok := records["kubernetes"]; !ok {
-			level.Debug(l.logger).Log("msg", "kubernetes metadata is missing. Will try to extract it from the tag key", "tagKey", l.cfg.PluginConfig.KubernetesMetadata.TagKey, "records", fluentBitRecords(records))
+			_ = level.Debug(l.logger).Log("msg", "kubernetes metadata is missing. Will try to extract it from the tag key", "tagKey", l.cfg.PluginConfig.KubernetesMetadata.TagKey, "records", fluentBitRecords(records))
 			err := extractKubernetesMetadataFromTag(records, l.cfg.PluginConfig.KubernetesMetadata.TagKey, l.extractKubernetesMetadataRegexp)
 			if err != nil {
 				metrics.Errors.WithLabelValues(metrics.ErrorCanNotExtractMetadataFromTag).Inc()
-				level.Error(l.logger).Log("msg", err, "records", fluentBitRecords(records))
+				_ = level.Error(l.logger).Log("msg", err, "records", fluentBitRecords(records))
 				if l.cfg.PluginConfig.KubernetesMetadata.DropLogEntryWithoutK8sMetadata {
-					level.Warn(l.logger).Log("msg", "kubernetes metadata is missing and the log entry will be dropped", "records", fluentBitRecords(records))
+					_ = level.Warn(l.logger).Log("msg", "kubernetes metadata is missing and the log entry will be dropped", "records", fluentBitRecords(records))
 					metrics.LogsWithoutMetadata.WithLabelValues(metrics.MissingMetadataType).Inc()
 					return nil
 				}
@@ -105,7 +105,7 @@ func (l *loki) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 		err := autoLabels(records, lbs)
 		if err != nil {
 			metrics.Errors.WithLabelValues(metrics.ErrorK8sLabelsNotFound).Inc()
-			level.Error(l.logger).Log("msg", err.Error(), "records", fluentBitRecords(records))
+			_ = level.Error(l.logger).Log("msg", err.Error(), "records", fluentBitRecords(records))
 		}
 	}
 
@@ -139,7 +139,7 @@ func (l *loki) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 	client := l.getClient(dynamicHostName)
 
 	if client == nil {
-		level.Debug(l.logger).Log("host", dynamicHostName, "issue", "could not find a client")
+		_ = level.Debug(l.logger).Log("host", dynamicHostName, "issue", "could not find a client")
 		metrics.DroppedLogs.WithLabelValues(host).Inc()
 		return nil
 	}
@@ -150,7 +150,7 @@ func (l *loki) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 		for _, v := range records {
 			err := l.send(client, lbs, ts, fmt.Sprintf("%v", v))
 			if err != nil {
-				level.Error(l.logger).Log("msg", "error sending record to Loki", "host", dynamicHostName, "error", err)
+				_ = level.Error(l.logger).Log("msg", "error sending record to Loki", "host", dynamicHostName, "error", err)
 				metrics.Errors.WithLabelValues(metrics.ErrorSendRecordToLoki).Inc()
 			}
 			return err
@@ -165,7 +165,7 @@ func (l *loki) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 
 	err = l.send(client, lbs, ts, line)
 	if err != nil {
-		level.Error(l.logger).Log("msg", "error sending record to Loki", "host", dynamicHostName, "error", err)
+		_ = level.Error(l.logger).Log("msg", "error sending record to Loki", "host", dynamicHostName, "error", err)
 		metrics.Errors.WithLabelValues(metrics.ErrorSendRecordToLoki).Inc()
 
 		return err
