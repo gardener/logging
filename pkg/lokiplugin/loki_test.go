@@ -22,6 +22,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	"github.com/weaveworks/common/logging"
+	"k8s.io/utils/pointer"
 
 	"github.com/gardener/logging/pkg/config"
 	"github.com/gardener/logging/pkg/types"
@@ -409,4 +410,92 @@ var _ = Describe("Loki plugin", func() {
 				}),
 		)
 	})
+
+	Describe("#addHostnameAsLabel", func() {
+		type addHostnameAsLabelArgs struct {
+			lokiplugin loki
+			labelSet   model.LabelSet
+			want       struct {
+				labelSet model.LabelSet
+			}
+		}
+
+		hostname, err := os.Hostname()
+		Expect(err).ToNot(HaveOccurred())
+		hostnameKeyPtr := pointer.StringPtr("hostname")
+		hostnameValuePtr := pointer.StringPtr("HOST")
+
+		DescribeTable("#addHostnameAsLabel",
+			func(args addHostnameAsLabelArgs) {
+				Expect(args.lokiplugin.addHostnameAsLabel(args.labelSet)).To(Succeed())
+				Expect(args.want.labelSet).To(Equal(args.labelSet))
+			},
+			Entry("HostnameKey and HostnameValue are nil",
+				addHostnameAsLabelArgs{
+					lokiplugin: loki{
+						cfg: &config.Config{
+							PluginConfig: config.PluginConfig{
+								HostnameKey:   nil,
+								HostnameValue: nil,
+							},
+						},
+					},
+					labelSet: model.LabelSet{
+						"foo": "bar",
+					},
+					want: struct {
+						labelSet model.LabelSet
+					}{
+						labelSet: model.LabelSet{
+							"foo": "bar",
+						},
+					},
+				}),
+			Entry("HostnameKey is not nil and HostnameValue is nil",
+				addHostnameAsLabelArgs{
+					lokiplugin: loki{
+						cfg: &config.Config{
+							PluginConfig: config.PluginConfig{
+								HostnameKey:   hostnameKeyPtr,
+								HostnameValue: nil,
+							},
+						},
+					},
+					labelSet: model.LabelSet{
+						"foo": "bar",
+					},
+					want: struct {
+						labelSet model.LabelSet
+					}{
+						labelSet: model.LabelSet{
+							"foo":      "bar",
+							"hostname": model.LabelValue(hostname),
+						},
+					},
+				}),
+			Entry("HostnameKey and HostnameValue are not nil",
+				addHostnameAsLabelArgs{
+					lokiplugin: loki{
+						cfg: &config.Config{
+							PluginConfig: config.PluginConfig{
+								HostnameKey:   hostnameKeyPtr,
+								HostnameValue: hostnameValuePtr,
+							},
+						},
+					},
+					labelSet: model.LabelSet{
+						"foo": "bar",
+					},
+					want: struct {
+						labelSet model.LabelSet
+					}{
+						labelSet: model.LabelSet{
+							"foo":      "bar",
+							"hostname": model.LabelValue(*hostnameValuePtr),
+						},
+					},
+				}),
+		)
+	})
+
 })

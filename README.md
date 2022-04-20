@@ -47,6 +47,7 @@ It also adds additional configurations that aim to improve plugin's performance 
 | DeletedClientTimeExpiration | The time duration after a client for deleted cluster will be considered for expired | 1 hour
 | DynamicTenant | When set the value is split on space delimiter to 3 tokens. The first token is the tenant to use, the second one is the field to search for matching. The third is the regex to match token 2. | none
 | RemoveTenantIdWhenSendingToDefaultURL | When `DynamicTenant` is set this flag decide whether to remove the record with dynamic tenant or not when sending them to the default `URL` | true
+| HostnameKeyValue | \<hostname-kye\>\<space\>\<hostname-value\> key/value pair adding the hostname into the label stream. When value is omitted the hostname is deduced from os.Hostname() call | nil
 | Pprof | Activating the pprof packeg for debugging purpose | false
 | LabelSetInitCapacity | The initial size of the label set which will be extracted from the records. Reduce map reallocation | 10
 | SendLogsToMainClusterWhenIsInCreationState | Send log to the dynamic cluster when it is in creation state | `true`

@@ -30,6 +30,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/prometheus/common/model"
 	"github.com/weaveworks/common/logging"
+	"k8s.io/utils/pointer"
 )
 
 type fakeConfig map[string]string
@@ -37,6 +38,117 @@ type fakeConfig map[string]string
 func (f fakeConfig) Get(key string) string {
 	return f[key]
 }
+
+const (
+	defaultJSONFormat                  = 0
+	defaultLabelSetInitCapacity        = 12
+	defaultDynamicHostRegex            = "*"
+	defaultDropSingleKey               = true
+	defaultBatchSize                   = 1024 * 1024
+	defaultBatchWait                   = 1 * time.Second
+	defaultMinBackoff                  = (1 * time.Second) / 2
+	defaultMaxBackoff                  = 300 * time.Second
+	defaultMaxRetries                  = 10
+	defaultTimeout                     = 10 * time.Second
+	defaultQueueDir                    = "/tmp/flb-storage/loki"
+	defaultQueueSegmentSize            = 500
+	defaultQueueSync                   = false
+	defaultQueueName                   = "dque"
+	defaultBuffer                      = false
+	defaultBufferType                  = "dque"
+	defaultNumberOfBatchIDs            = 10
+	defaultCtlSyncTimeout              = 60000000000
+	defaultDeletedClientTimeExpiration = 3600000000000
+	defaultAllow                       = true
+	defaultDeny                        = false
+	expectError                        = true
+	expectNoError                      = false
+)
+
+var (
+	defaultKubernetesMetadata = KubernetesMetadataExtraction{
+		TagKey:        "tag",
+		TagPrefix:     "kubernetes\\.var\\.log\\.containers",
+		TagExpression: "\\.([^_]+)_([^_]+)_(.+)-([a-z0-9]{64})\\.log$",
+	}
+
+	defaultPluginConfig = PluginConfig{
+		LineFormat:           defaultJSONFormat,
+		KubernetesMetadata:   defaultKubernetesMetadata,
+		DropSingleKey:        defaultDropSingleKey,
+		DynamicHostRegex:     defaultDynamicHostRegex,
+		LabelSetInitCapacity: defaultLabelSetInitCapacity,
+	}
+
+	defaultBackoffConfig = util.BackoffConfig{
+		MinBackoff: defaultMinBackoff,
+		MaxBackoff: defaultMaxBackoff,
+		MaxRetries: defaultMaxRetries,
+	}
+
+	defaultExternalLabels = lokiflag.LabelSet{LabelSet: model.LabelSet{"job": "fluent-bit"}}
+
+	defaultGrafanaLokiConfig = client.Config{
+		URL:            defaultURL,
+		BatchSize:      defaultBatchSize,
+		BatchWait:      defaultBatchWait,
+		ExternalLabels: defaultExternalLabels,
+		BackoffConfig:  defaultBackoffConfig,
+		Timeout:        defaultTimeout,
+	}
+
+	defaultDqueConfig = DqueConfig{
+		QueueDir:         defaultQueueDir,
+		QueueSegmentSize: defaultQueueSegmentSize,
+		QueueSync:        defaultQueueSync,
+		QueueName:        defaultQueueName,
+	}
+
+	defaultBufferConfig = BufferConfig{
+		Buffer:     defaultBuffer,
+		BufferType: defaultBufferType,
+		DqueConfig: defaultDqueConfig,
+	}
+
+	defaultClientConfig = ClientConfig{
+		GrafanaLokiConfig: defaultGrafanaLokiConfig,
+		BufferConfig:      defaultBufferConfig,
+		NumberOfBatchIDs:  defaultNumberOfBatchIDs,
+	}
+
+	defaultMainControllerClientConfig = ControllerClientConfiguration{
+		SendLogsWhenIsInCreationState:    defaultAllow,
+		SendLogsWhenIsInReadyState:       defaultAllow,
+		SendLogsWhenIsInHibernatingState: defaultDeny,
+		SendLogsWhenIsInHibernatedState:  defaultDeny,
+		SendLogsWhenIsInWakingState:      defaultAllow,
+		SendLogsWhenIsInDeletionState:    defaultAllow,
+		SendLogsWhenIsInDeletedState:     defaultAllow,
+		SendLogsWhenIsInRestoreState:     defaultAllow,
+		SendLogsWhenIsInMigrationState:   defaultAllow,
+	}
+
+	defaultControllerClientConfig = ControllerClientConfiguration{
+		SendLogsWhenIsInCreationState:    defaultAllow,
+		SendLogsWhenIsInReadyState:       defaultDeny,
+		SendLogsWhenIsInHibernatingState: defaultDeny,
+		SendLogsWhenIsInHibernatedState:  defaultDeny,
+		SendLogsWhenIsInWakingState:      defaultDeny,
+		SendLogsWhenIsInDeletionState:    defaultAllow,
+		SendLogsWhenIsInDeletedState:     defaultAllow,
+		SendLogsWhenIsInRestoreState:     defaultAllow,
+		SendLogsWhenIsInMigrationState:   defaultAllow,
+	}
+
+	defaultControllerConfig = ControllerConfig{
+		CtlSyncTimeout:                defaultCtlSyncTimeout,
+		DeletedClientTimeExpiration:   defaultDeletedClientTimeExpiration,
+		MainControllerClientConfig:    defaultMainControllerClientConfig,
+		DefaultControllerClientConfig: defaultControllerClientConfig,
+	}
+
+	defaultURL, _ = ParseURL("http://localhost:3100/loki/api/v1/push")
+)
 
 var _ = Describe("Config", func() {
 	type testArgs struct {
@@ -51,7 +163,6 @@ var _ = Describe("Config", func() {
 	_ = warnLogLevel.Set("warn")
 	_ = infoLogLevel.Set("info")
 	somewhereURL, _ := ParseURL("http://somewhere.com:3100/loki/api/v1/push")
-	defaultURL, _ := ParseURL("http://localhost:3100/loki/api/v1/push")
 
 	DescribeTable("Test Config",
 		func(args testArgs) {
@@ -69,51 +180,12 @@ var _ = Describe("Config", func() {
 		Entry("default values", testArgs{
 			map[string]string{},
 			&Config{
-				PluginConfig: PluginConfig{
-					LineFormat: JSONFormat,
-					KubernetesMetadata: KubernetesMetadataExtraction{
-						TagKey:        DefaultKubernetesMetadataTagKey,
-						TagPrefix:     DefaultKubernetesMetadataTagPrefix,
-						TagExpression: DefaultKubernetesMetadataTagExpression,
-					},
-					DropSingleKey:        true,
-					DynamicHostRegex:     "*",
-					LabelSetInitCapacity: 10,
-				},
-				ClientConfig: ClientConfig{
-					GrafanaLokiConfig: client.Config{
-						URL:            defaultURL,
-						BatchSize:      1024 * 1024,
-						BatchWait:      1 * time.Second,
-						ExternalLabels: lokiflag.LabelSet{LabelSet: model.LabelSet{"job": "fluent-bit"}},
-						BackoffConfig: util.BackoffConfig{
-							MinBackoff: (1 * time.Second) / 2,
-							MaxBackoff: 300 * time.Second,
-							MaxRetries: 10,
-						},
-						Timeout: 10 * time.Second,
-					},
-					BufferConfig: BufferConfig{
-						Buffer:     false,
-						BufferType: DefaultBufferConfig.BufferType,
-						DqueConfig: DqueConfig{
-							QueueDir:         DefaultDqueConfig.QueueDir,
-							QueueSegmentSize: 500,
-							QueueSync:        false,
-							QueueName:        DefaultDqueConfig.QueueName,
-						},
-					},
-					NumberOfBatchIDs: 10,
-				},
-				ControllerConfig: ControllerConfig{
-					CtlSyncTimeout:                60000000000,
-					DeletedClientTimeExpiration:   3600000000000,
-					MainControllerClientConfig:    MainControllerClientConfig,
-					DefaultControllerClientConfig: DefaultControllerClientConfig,
-				},
-				LogLevel: infoLogLevel,
+				PluginConfig:     defaultPluginConfig,
+				ClientConfig:     defaultClientConfig,
+				ControllerConfig: defaultControllerConfig,
+				LogLevel:         infoLogLevel,
 			},
-			false},
+			expectNoError},
 		),
 		Entry("setting values", testArgs{
 			map[string]string{
@@ -131,17 +203,13 @@ var _ = Describe("Config", func() {
 			},
 			&Config{
 				PluginConfig: PluginConfig{
-					LineFormat:       KvPairFormat,
-					LabelKeys:        []string{"foo", "bar"},
-					RemoveKeys:       []string{"buzz", "fuzz"},
-					DropSingleKey:    false,
-					DynamicHostRegex: "*",
-					KubernetesMetadata: KubernetesMetadataExtraction{
-						TagKey:        DefaultKubernetesMetadataTagKey,
-						TagPrefix:     DefaultKubernetesMetadataTagPrefix,
-						TagExpression: DefaultKubernetesMetadataTagExpression,
-					},
-					LabelSetInitCapacity: 10,
+					LineFormat:           KvPairFormat,
+					LabelKeys:            []string{"foo", "bar"},
+					RemoveKeys:           []string{"buzz", "fuzz"},
+					DropSingleKey:        false,
+					DynamicHostRegex:     defaultDynamicHostRegex,
+					KubernetesMetadata:   defaultKubernetesMetadata,
+					LabelSetInitCapacity: defaultLabelSetInitCapacity,
 				},
 
 				ClientConfig: ClientConfig{
@@ -151,35 +219,21 @@ var _ = Describe("Config", func() {
 						BatchSize:      100,
 						BatchWait:      30 * time.Second,
 						ExternalLabels: lokiflag.LabelSet{LabelSet: model.LabelSet{"app": "foo"}},
-						BackoffConfig: util.BackoffConfig{
-							MinBackoff: (1 * time.Second) / 2,
-							MaxBackoff: 300 * time.Second,
-							MaxRetries: 10,
-						},
-						Timeout: 10 * time.Second,
+						BackoffConfig:  defaultBackoffConfig,
+						Timeout:        defaultTimeout,
 					},
 					BufferConfig: BufferConfig{
-						Buffer:     false,
-						BufferType: DefaultBufferConfig.BufferType,
-						DqueConfig: DqueConfig{
-							QueueDir:         DefaultDqueConfig.QueueDir,
-							QueueSegmentSize: DefaultDqueConfig.QueueSegmentSize,
-							QueueSync:        DefaultDqueConfig.QueueSync,
-							QueueName:        DefaultDqueConfig.QueueName,
-						},
+						Buffer:     defaultBuffer,
+						BufferType: defaultBufferType,
+						DqueConfig: defaultDqueConfig,
 					},
-					NumberOfBatchIDs: 10,
+					NumberOfBatchIDs: defaultNumberOfBatchIDs,
 					SortByTimestamp:  true,
 				},
-				ControllerConfig: ControllerConfig{
-					CtlSyncTimeout:                60000000000,
-					DeletedClientTimeExpiration:   3600000000000,
-					MainControllerClientConfig:    MainControllerClientConfig,
-					DefaultControllerClientConfig: DefaultControllerClientConfig,
-				},
-				LogLevel: warnLogLevel,
+				ControllerConfig: defaultControllerConfig,
+				LogLevel:         warnLogLevel,
 			},
-			false},
+			expectNoError},
 		),
 		Entry("with label map", testArgs{
 			map[string]string{
@@ -213,13 +267,9 @@ var _ = Describe("Config", func() {
 						},
 						"stream": "stream",
 					},
-					DynamicHostRegex: "*",
-					KubernetesMetadata: KubernetesMetadataExtraction{
-						TagKey:        DefaultKubernetesMetadataTagKey,
-						TagPrefix:     DefaultKubernetesMetadataTagPrefix,
-						TagExpression: DefaultKubernetesMetadataTagExpression,
-					},
-					LabelSetInitCapacity: 10,
+					DynamicHostRegex:     defaultDynamicHostRegex,
+					KubernetesMetadata:   defaultKubernetesMetadata,
+					LabelSetInitCapacity: defaultLabelSetInitCapacity,
 				},
 				ClientConfig: ClientConfig{
 					GrafanaLokiConfig: client.Config{
@@ -228,34 +278,16 @@ var _ = Describe("Config", func() {
 						BatchSize:      100,
 						BatchWait:      30 * time.Second,
 						ExternalLabels: lokiflag.LabelSet{LabelSet: model.LabelSet{"app": "foo"}},
-						BackoffConfig: util.BackoffConfig{
-							MinBackoff: (1 * time.Second) / 2,
-							MaxBackoff: 300 * time.Second,
-							MaxRetries: 10,
-						},
-						Timeout: 10 * time.Second,
+						BackoffConfig:  defaultBackoffConfig,
+						Timeout:        defaultTimeout,
 					},
-					BufferConfig: BufferConfig{
-						Buffer:     false,
-						BufferType: DefaultBufferConfig.BufferType,
-						DqueConfig: DqueConfig{
-							QueueDir:         DefaultDqueConfig.QueueDir,
-							QueueSegmentSize: DefaultDqueConfig.QueueSegmentSize,
-							QueueSync:        DefaultDqueConfig.QueueSync,
-							QueueName:        DefaultDqueConfig.QueueName,
-						},
-					},
-					NumberOfBatchIDs: 10,
+					BufferConfig:     defaultBufferConfig,
+					NumberOfBatchIDs: defaultNumberOfBatchIDs,
 				},
-				ControllerConfig: ControllerConfig{
-					CtlSyncTimeout:                60000000000,
-					DeletedClientTimeExpiration:   3600000000000,
-					MainControllerClientConfig:    MainControllerClientConfig,
-					DefaultControllerClientConfig: DefaultControllerClientConfig,
-				},
-				LogLevel: warnLogLevel,
+				ControllerConfig: defaultControllerConfig,
+				LogLevel:         warnLogLevel,
 			},
-			false},
+			expectNoError},
 		),
 		Entry("with dynamic configuration", testArgs{
 			map[string]string{
@@ -284,13 +316,9 @@ var _ = Describe("Config", func() {
 							"namespace_name": "namespace",
 						},
 					},
-					DynamicHostRegex: "shoot--",
-					KubernetesMetadata: KubernetesMetadataExtraction{
-						TagKey:        DefaultKubernetesMetadataTagKey,
-						TagPrefix:     DefaultKubernetesMetadataTagPrefix,
-						TagExpression: DefaultKubernetesMetadataTagExpression,
-					},
-					LabelSetInitCapacity: 10,
+					DynamicHostRegex:     "shoot--",
+					KubernetesMetadata:   defaultKubernetesMetadata,
+					LabelSetInitCapacity: defaultLabelSetInitCapacity,
 				},
 				ClientConfig: ClientConfig{
 					GrafanaLokiConfig: client.Config{
@@ -299,36 +327,23 @@ var _ = Describe("Config", func() {
 						BatchSize:      100,
 						BatchWait:      30 * time.Second,
 						ExternalLabels: lokiflag.LabelSet{LabelSet: model.LabelSet{"app": "foo"}},
-						BackoffConfig: util.BackoffConfig{
-							MinBackoff: (1 * time.Second) / 2,
-							MaxBackoff: 300 * time.Second,
-							MaxRetries: 10,
-						},
-						Timeout: 10 * time.Second,
+						BackoffConfig:  defaultBackoffConfig,
+						Timeout:        defaultTimeout,
 					},
-					BufferConfig: BufferConfig{
-						Buffer:     false,
-						BufferType: DefaultBufferConfig.BufferType,
-						DqueConfig: DqueConfig{
-							QueueDir:         DefaultDqueConfig.QueueDir,
-							QueueSegmentSize: DefaultDqueConfig.QueueSegmentSize,
-							QueueSync:        DefaultDqueConfig.QueueSync,
-							QueueName:        DefaultDqueConfig.QueueName,
-						},
-					},
-					NumberOfBatchIDs: 10,
+					BufferConfig:     defaultBufferConfig,
+					NumberOfBatchIDs: defaultNumberOfBatchIDs,
 				},
 				ControllerConfig: ControllerConfig{
 					DynamicHostPrefix:             "http://loki.",
 					DynamicHostSuffix:             ".svc:3100/loki/api/v1/push",
-					CtlSyncTimeout:                60000000000,
-					DeletedClientTimeExpiration:   3600000000000,
-					MainControllerClientConfig:    MainControllerClientConfig,
-					DefaultControllerClientConfig: DefaultControllerClientConfig,
+					CtlSyncTimeout:                defaultCtlSyncTimeout,
+					DeletedClientTimeExpiration:   defaultDeletedClientTimeExpiration,
+					MainControllerClientConfig:    defaultMainControllerClientConfig,
+					DefaultControllerClientConfig: defaultControllerClientConfig,
 				},
 				LogLevel: warnLogLevel,
 			},
-			false},
+			expectNoError},
 		),
 		Entry("with Buffer configuration", testArgs{
 			map[string]string{
@@ -342,25 +357,21 @@ var _ = Describe("Config", func() {
 				"LabelKeys":        "foo,bar",
 				"DropSingleKey":    "false",
 				"Buffer":           "true",
-				"BufferType":       DefaultBufferConfig.BufferType,
+				"BufferType":       "dque",
 				"QueueDir":         "/foo/bar",
-				"QueueSegmentSize": "500",
+				"QueueSegmentSize": "600",
 				"QueueSync":        "full",
 				"QueueName":        "buzz",
 			},
 			&Config{
 				PluginConfig: PluginConfig{
-					LineFormat:    KvPairFormat,
-					LabelKeys:     []string{"foo", "bar"},
-					RemoveKeys:    []string{"buzz", "fuzz"},
-					DropSingleKey: false,
-					KubernetesMetadata: KubernetesMetadataExtraction{
-						TagKey:        DefaultKubernetesMetadataTagKey,
-						TagPrefix:     DefaultKubernetesMetadataTagPrefix,
-						TagExpression: DefaultKubernetesMetadataTagExpression,
-					},
-					DynamicHostRegex:     "*",
-					LabelSetInitCapacity: 10,
+					LineFormat:           KvPairFormat,
+					LabelKeys:            []string{"foo", "bar"},
+					RemoveKeys:           []string{"buzz", "fuzz"},
+					DropSingleKey:        false,
+					KubernetesMetadata:   defaultKubernetesMetadata,
+					DynamicHostRegex:     defaultDynamicHostRegex,
+					LabelSetInitCapacity: defaultLabelSetInitCapacity,
 				},
 				ClientConfig: ClientConfig{
 					GrafanaLokiConfig: client.Config{
@@ -369,34 +380,25 @@ var _ = Describe("Config", func() {
 						BatchSize:      100,
 						BatchWait:      30 * time.Second,
 						ExternalLabels: lokiflag.LabelSet{LabelSet: model.LabelSet{"app": "foo"}},
-						BackoffConfig: util.BackoffConfig{
-							MinBackoff: (1 * time.Second) / 2,
-							MaxBackoff: 300 * time.Second,
-							MaxRetries: 10,
-						},
-						Timeout: 10 * time.Second,
+						BackoffConfig:  defaultBackoffConfig,
+						Timeout:        defaultTimeout,
 					},
 					BufferConfig: BufferConfig{
 						Buffer:     true,
-						BufferType: DefaultBufferConfig.BufferType,
+						BufferType: "dque",
 						DqueConfig: DqueConfig{
 							QueueDir:         "/foo/bar",
-							QueueSegmentSize: DefaultDqueConfig.QueueSegmentSize,
+							QueueSegmentSize: 600,
 							QueueSync:        true,
 							QueueName:        "buzz",
 						},
 					},
-					NumberOfBatchIDs: 10,
+					NumberOfBatchIDs: defaultNumberOfBatchIDs,
 				},
-				ControllerConfig: ControllerConfig{
-					CtlSyncTimeout:                60000000000,
-					DeletedClientTimeExpiration:   3600000000000,
-					MainControllerClientConfig:    MainControllerClientConfig,
-					DefaultControllerClientConfig: DefaultControllerClientConfig,
-				},
-				LogLevel: warnLogLevel,
+				ControllerConfig: defaultControllerConfig,
+				LogLevel:         warnLogLevel,
 			},
-			false},
+			expectNoError},
 		),
 		Entry("with retries and timeouts configuration", testArgs{
 			map[string]string{
@@ -416,17 +418,13 @@ var _ = Describe("Config", func() {
 			},
 			&Config{
 				PluginConfig: PluginConfig{
-					LineFormat:       KvPairFormat,
-					LabelKeys:        []string{"foo", "bar"},
-					RemoveKeys:       []string{"buzz", "fuzz"},
-					DropSingleKey:    false,
-					DynamicHostRegex: "*",
-					KubernetesMetadata: KubernetesMetadataExtraction{
-						TagKey:        DefaultKubernetesMetadataTagKey,
-						TagPrefix:     DefaultKubernetesMetadataTagPrefix,
-						TagExpression: DefaultKubernetesMetadataTagExpression,
-					},
-					LabelSetInitCapacity: 10,
+					LineFormat:           KvPairFormat,
+					LabelKeys:            []string{"foo", "bar"},
+					RemoveKeys:           []string{"buzz", "fuzz"},
+					DropSingleKey:        false,
+					DynamicHostRegex:     defaultDynamicHostRegex,
+					KubernetesMetadata:   defaultKubernetesMetadata,
+					LabelSetInitCapacity: defaultLabelSetInitCapacity,
 				},
 				ClientConfig: ClientConfig{
 					GrafanaLokiConfig: client.Config{
@@ -442,27 +440,13 @@ var _ = Describe("Config", func() {
 							MaxRetries: 3,
 						},
 					},
-					BufferConfig: BufferConfig{
-						Buffer:     false,
-						BufferType: DefaultBufferConfig.BufferType,
-						DqueConfig: DqueConfig{
-							QueueDir:         DefaultDqueConfig.QueueDir,
-							QueueSegmentSize: DefaultDqueConfig.QueueSegmentSize,
-							QueueSync:        DefaultDqueConfig.QueueSync,
-							QueueName:        DefaultDqueConfig.QueueName,
-						},
-					},
-					NumberOfBatchIDs: 10,
+					BufferConfig:     defaultBufferConfig,
+					NumberOfBatchIDs: defaultNumberOfBatchIDs,
 				},
-				ControllerConfig: ControllerConfig{
-					CtlSyncTimeout:                60000000000,
-					DeletedClientTimeExpiration:   3600000000000,
-					MainControllerClientConfig:    MainControllerClientConfig,
-					DefaultControllerClientConfig: DefaultControllerClientConfig,
-				},
-				LogLevel: warnLogLevel,
+				ControllerConfig: defaultControllerConfig,
+				LogLevel:         warnLogLevel,
 			},
-			false},
+			expectNoError},
 		),
 		Entry("with kubernetes metadata configuration", testArgs{
 			map[string]string{
@@ -487,7 +471,7 @@ var _ = Describe("Config", func() {
 					LabelKeys:        []string{"foo", "bar"},
 					RemoveKeys:       []string{"buzz", "fuzz"},
 					DropSingleKey:    false,
-					DynamicHostRegex: "*",
+					DynamicHostRegex: defaultDynamicHostRegex,
 					KubernetesMetadata: KubernetesMetadataExtraction{
 						FallbackToTagWhenMetadataIsMissing: true,
 						DropLogEntryWithoutK8sMetadata:     true,
@@ -495,7 +479,7 @@ var _ = Describe("Config", func() {
 						TagPrefix:                          "testPrefix",
 						TagExpression:                      "testExpression",
 					},
-					LabelSetInitCapacity: 10,
+					LabelSetInitCapacity: defaultLabelSetInitCapacity,
 				},
 				ClientConfig: ClientConfig{
 					GrafanaLokiConfig: client.Config{
@@ -504,34 +488,16 @@ var _ = Describe("Config", func() {
 						BatchSize:      100,
 						BatchWait:      30 * time.Second,
 						ExternalLabels: lokiflag.LabelSet{LabelSet: model.LabelSet{"app": "foo"}},
-						BackoffConfig: util.BackoffConfig{
-							MinBackoff: (1 * time.Second) / 2,
-							MaxBackoff: 300 * time.Second,
-							MaxRetries: 10,
-						},
-						Timeout: 10 * time.Second,
+						BackoffConfig:  defaultBackoffConfig,
+						Timeout:        defaultTimeout,
 					},
-					BufferConfig: BufferConfig{
-						Buffer:     false,
-						BufferType: DefaultBufferConfig.BufferType,
-						DqueConfig: DqueConfig{
-							QueueDir:         DefaultDqueConfig.QueueDir,
-							QueueSegmentSize: DefaultDqueConfig.QueueSegmentSize,
-							QueueSync:        DefaultDqueConfig.QueueSync,
-							QueueName:        DefaultDqueConfig.QueueName,
-						},
-					},
-					NumberOfBatchIDs: 10,
+					BufferConfig:     defaultBufferConfig,
+					NumberOfBatchIDs: defaultNumberOfBatchIDs,
 				},
-				ControllerConfig: ControllerConfig{
-					CtlSyncTimeout:                60000000000,
-					DeletedClientTimeExpiration:   3600000000000,
-					MainControllerClientConfig:    MainControllerClientConfig,
-					DefaultControllerClientConfig: DefaultControllerClientConfig,
-				},
-				LogLevel: warnLogLevel,
+				ControllerConfig: defaultControllerConfig,
+				LogLevel:         warnLogLevel,
 			},
-			false},
+			expectNoError},
 		),
 		Entry("with metrics  configuration", testArgs{
 			map[string]string{
@@ -549,17 +515,13 @@ var _ = Describe("Config", func() {
 			},
 			&Config{
 				PluginConfig: PluginConfig{
-					LineFormat:       KvPairFormat,
-					LabelKeys:        []string{"foo", "bar"},
-					RemoveKeys:       []string{"buzz", "fuzz"},
-					DropSingleKey:    false,
-					DynamicHostRegex: "*",
-					KubernetesMetadata: KubernetesMetadataExtraction{
-						TagKey:        DefaultKubernetesMetadataTagKey,
-						TagPrefix:     DefaultKubernetesMetadataTagPrefix,
-						TagExpression: DefaultKubernetesMetadataTagExpression,
-					},
-					LabelSetInitCapacity: 10,
+					LineFormat:           KvPairFormat,
+					LabelKeys:            []string{"foo", "bar"},
+					RemoveKeys:           []string{"buzz", "fuzz"},
+					DropSingleKey:        false,
+					DynamicHostRegex:     defaultDynamicHostRegex,
+					KubernetesMetadata:   defaultKubernetesMetadata,
+					LabelSetInitCapacity: defaultLabelSetInitCapacity,
 				},
 
 				ClientConfig: ClientConfig{
@@ -569,34 +531,16 @@ var _ = Describe("Config", func() {
 						BatchSize:      100,
 						BatchWait:      30 * time.Second,
 						ExternalLabels: lokiflag.LabelSet{LabelSet: model.LabelSet{"app": "foo"}},
-						BackoffConfig: util.BackoffConfig{
-							MinBackoff: (1 * time.Second) / 2,
-							MaxBackoff: 300 * time.Second,
-							MaxRetries: 10,
-						},
-						Timeout: 10 * time.Second,
+						BackoffConfig:  defaultBackoffConfig,
+						Timeout:        defaultTimeout,
 					},
-					BufferConfig: BufferConfig{
-						Buffer:     false,
-						BufferType: DefaultBufferConfig.BufferType,
-						DqueConfig: DqueConfig{
-							QueueDir:         DefaultDqueConfig.QueueDir,
-							QueueSegmentSize: DefaultDqueConfig.QueueSegmentSize,
-							QueueSync:        DefaultDqueConfig.QueueSync,
-							QueueName:        DefaultDqueConfig.QueueName,
-						},
-					},
-					NumberOfBatchIDs: 10,
+					BufferConfig:     defaultBufferConfig,
+					NumberOfBatchIDs: defaultNumberOfBatchIDs,
 				},
-				ControllerConfig: ControllerConfig{
-					CtlSyncTimeout:                60000000000,
-					DeletedClientTimeExpiration:   3600000000000,
-					MainControllerClientConfig:    MainControllerClientConfig,
-					DefaultControllerClientConfig: DefaultControllerClientConfig,
-				},
-				LogLevel: warnLogLevel,
+				ControllerConfig: defaultControllerConfig,
+				LogLevel:         warnLogLevel,
 			},
-			false},
+			expectNoError},
 		),
 		Entry("With dynamic tenant values", testArgs{
 			map[string]string{
@@ -604,56 +548,23 @@ var _ = Describe("Config", func() {
 			},
 			&Config{
 				PluginConfig: PluginConfig{
-					LineFormat: JSONFormat,
-					KubernetesMetadata: KubernetesMetadataExtraction{
-						TagKey:        DefaultKubernetesMetadataTagKey,
-						TagPrefix:     DefaultKubernetesMetadataTagPrefix,
-						TagExpression: DefaultKubernetesMetadataTagExpression,
-					},
-					DropSingleKey:    true,
-					DynamicHostRegex: "*",
+					LineFormat:         defaultJSONFormat,
+					KubernetesMetadata: defaultKubernetesMetadata,
+					DropSingleKey:      defaultDropSingleKey,
+					DynamicHostRegex:   defaultDynamicHostRegex,
 					DynamicTenant: DynamicTenant{
 						Tenant:                                "user",
 						Field:                                 "tag",
 						Regex:                                 "user-exposed.kubernetes.*",
 						RemoveTenantIdWhenSendingToDefaultURL: true,
 					},
-					LabelSetInitCapacity: 10,
+					LabelSetInitCapacity: defaultLabelSetInitCapacity,
 				},
-				ClientConfig: ClientConfig{
-					GrafanaLokiConfig: client.Config{
-						URL:            defaultURL,
-						BatchSize:      1024 * 1024,
-						BatchWait:      1 * time.Second,
-						ExternalLabels: lokiflag.LabelSet{LabelSet: model.LabelSet{"job": "fluent-bit"}},
-						BackoffConfig: util.BackoffConfig{
-							MinBackoff: (1 * time.Second) / 2,
-							MaxBackoff: 300 * time.Second,
-							MaxRetries: 10,
-						},
-						Timeout: 10 * time.Second,
-					},
-					BufferConfig: BufferConfig{
-						Buffer:     false,
-						BufferType: DefaultBufferConfig.BufferType,
-						DqueConfig: DqueConfig{
-							QueueDir:         DefaultDqueConfig.QueueDir,
-							QueueSegmentSize: 500,
-							QueueSync:        false,
-							QueueName:        DefaultDqueConfig.QueueName,
-						},
-					},
-					NumberOfBatchIDs: 10,
-				},
-				ControllerConfig: ControllerConfig{
-					CtlSyncTimeout:                60000000000,
-					DeletedClientTimeExpiration:   3600000000000,
-					MainControllerClientConfig:    MainControllerClientConfig,
-					DefaultControllerClientConfig: DefaultControllerClientConfig,
-				},
-				LogLevel: infoLogLevel,
+				ClientConfig:     defaultClientConfig,
+				ControllerConfig: defaultControllerConfig,
+				LogLevel:         infoLogLevel,
 			},
-			false},
+			expectNoError},
 		),
 		Entry("With only two fields for dynamic tenant values", testArgs{
 			map[string]string{
@@ -661,56 +572,23 @@ var _ = Describe("Config", func() {
 			},
 			&Config{
 				PluginConfig: PluginConfig{
-					LineFormat: JSONFormat,
-					KubernetesMetadata: KubernetesMetadataExtraction{
-						TagKey:        DefaultKubernetesMetadataTagKey,
-						TagPrefix:     DefaultKubernetesMetadataTagPrefix,
-						TagExpression: DefaultKubernetesMetadataTagExpression,
-					},
-					DropSingleKey:    true,
-					DynamicHostRegex: "*",
+					LineFormat:         defaultJSONFormat,
+					KubernetesMetadata: defaultKubernetesMetadata,
+					DropSingleKey:      defaultDropSingleKey,
+					DynamicHostRegex:   defaultDynamicHostRegex,
 					DynamicTenant: DynamicTenant{
 						Tenant:                                "user",
 						Field:                                 "tag",
 						Regex:                                 "user-exposed.kubernetes.*",
 						RemoveTenantIdWhenSendingToDefaultURL: true,
 					},
-					LabelSetInitCapacity: 10,
+					LabelSetInitCapacity: defaultLabelSetInitCapacity,
 				},
-				ClientConfig: ClientConfig{
-					GrafanaLokiConfig: client.Config{
-						URL:            defaultURL,
-						BatchSize:      1024 * 1024,
-						BatchWait:      1 * time.Second,
-						ExternalLabels: lokiflag.LabelSet{LabelSet: model.LabelSet{"job": "fluent-bit"}},
-						BackoffConfig: util.BackoffConfig{
-							MinBackoff: (1 * time.Second) / 2,
-							MaxBackoff: 300 * time.Second,
-							MaxRetries: 10,
-						},
-						Timeout: 10 * time.Second,
-					},
-					BufferConfig: BufferConfig{
-						Buffer:     false,
-						BufferType: DefaultBufferConfig.BufferType,
-						DqueConfig: DqueConfig{
-							QueueDir:         DefaultDqueConfig.QueueDir,
-							QueueSegmentSize: 500,
-							QueueSync:        false,
-							QueueName:        DefaultDqueConfig.QueueName,
-						},
-					},
-					NumberOfBatchIDs: 10,
-				},
-				ControllerConfig: ControllerConfig{
-					CtlSyncTimeout:                60000000000,
-					DeletedClientTimeExpiration:   3600000000000,
-					MainControllerClientConfig:    MainControllerClientConfig,
-					DefaultControllerClientConfig: DefaultControllerClientConfig,
-				},
-				LogLevel: infoLogLevel,
+				ClientConfig:     defaultClientConfig,
+				ControllerConfig: defaultControllerConfig,
+				LogLevel:         infoLogLevel,
 			},
-			true},
+			expectError},
 		),
 		Entry("With more than 3 fields for dynamic tenant values", testArgs{
 			map[string]string{
@@ -718,56 +596,62 @@ var _ = Describe("Config", func() {
 			},
 			&Config{
 				PluginConfig: PluginConfig{
-					LineFormat: JSONFormat,
-					KubernetesMetadata: KubernetesMetadataExtraction{
-						TagKey:        DefaultKubernetesMetadataTagKey,
-						TagPrefix:     DefaultKubernetesMetadataTagPrefix,
-						TagExpression: DefaultKubernetesMetadataTagExpression,
-					},
-					DropSingleKey:    true,
-					DynamicHostRegex: "*",
+					LineFormat:         JSONFormat,
+					KubernetesMetadata: defaultKubernetesMetadata,
+					DropSingleKey:      defaultDropSingleKey,
+					DynamicHostRegex:   defaultDynamicHostRegex,
 					DynamicTenant: DynamicTenant{
 						Tenant:                                "user",
 						Field:                                 "tag",
 						Regex:                                 "regex with spaces",
 						RemoveTenantIdWhenSendingToDefaultURL: true,
 					},
-					LabelSetInitCapacity: 10,
+					LabelSetInitCapacity: defaultLabelSetInitCapacity,
 				},
-				ClientConfig: ClientConfig{
-					GrafanaLokiConfig: client.Config{
-						URL:            defaultURL,
-						BatchSize:      1024 * 1024,
-						BatchWait:      1 * time.Second,
-						ExternalLabels: lokiflag.LabelSet{LabelSet: model.LabelSet{"job": "fluent-bit"}},
-						BackoffConfig: util.BackoffConfig{
-							MinBackoff: (1 * time.Second) / 2,
-							MaxBackoff: 300 * time.Second,
-							MaxRetries: 10,
-						},
-						Timeout: 10 * time.Second,
-					},
-					BufferConfig: BufferConfig{
-						Buffer:     false,
-						BufferType: DefaultBufferConfig.BufferType,
-						DqueConfig: DqueConfig{
-							QueueDir:         DefaultDqueConfig.QueueDir,
-							QueueSegmentSize: 500,
-							QueueSync:        false,
-							QueueName:        DefaultDqueConfig.QueueName,
-						},
-					},
-					NumberOfBatchIDs: 10,
-				},
-				ControllerConfig: ControllerConfig{
-					CtlSyncTimeout:                60000000000,
-					DeletedClientTimeExpiration:   3600000000000,
-					MainControllerClientConfig:    MainControllerClientConfig,
-					DefaultControllerClientConfig: DefaultControllerClientConfig,
-				},
-				LogLevel: infoLogLevel,
+				ClientConfig:     defaultClientConfig,
+				ControllerConfig: defaultControllerConfig,
+				LogLevel:         infoLogLevel,
 			},
-			false},
+			expectNoError},
+		),
+		Entry("With one field HostnameKeyValue values", testArgs{
+			map[string]string{
+				"HostnameKeyValue": "hostname",
+			},
+			&Config{
+				PluginConfig: PluginConfig{
+					LineFormat:           defaultJSONFormat,
+					KubernetesMetadata:   defaultKubernetesMetadata,
+					DropSingleKey:        defaultDropSingleKey,
+					DynamicHostRegex:     defaultDynamicHostRegex,
+					LabelSetInitCapacity: defaultLabelSetInitCapacity,
+					HostnameKey:          pointer.StringPtr("hostname"),
+				},
+				ClientConfig:     defaultClientConfig,
+				ControllerConfig: defaultControllerConfig,
+				LogLevel:         infoLogLevel,
+			},
+			expectNoError},
+		),
+		Entry("With two fields for HostnameKeyValue values", testArgs{
+			map[string]string{
+				"HostnameKeyValue": "hostname ${HOST}",
+			},
+			&Config{
+				PluginConfig: PluginConfig{
+					LineFormat:           defaultJSONFormat,
+					KubernetesMetadata:   defaultKubernetesMetadata,
+					DropSingleKey:        defaultDropSingleKey,
+					DynamicHostRegex:     defaultDynamicHostRegex,
+					LabelSetInitCapacity: defaultLabelSetInitCapacity,
+					HostnameKey:          pointer.StringPtr("hostname"),
+					HostnameValue:        pointer.StringPtr("${HOST}"),
+				},
+				ClientConfig:     defaultClientConfig,
+				ControllerConfig: defaultControllerConfig,
+				LogLevel:         infoLogLevel,
+			},
+			expectNoError},
 		),
 		Entry("bad url", testArgs{map[string]string{"URL": "::doh.com"}, nil, true}),
 		Entry("bad BatchWait", testArgs{map[string]string{"BatchWait": "a"}, nil, true}),

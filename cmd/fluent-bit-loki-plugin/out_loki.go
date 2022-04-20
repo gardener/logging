@@ -150,6 +150,12 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 	level.Info(paramLogger).Log("DynamicField", fmt.Sprintf("%+v", conf.PluginConfig.DynamicTenant.Field))
 	level.Info(paramLogger).Log("DynamicRegex", fmt.Sprintf("%+v", conf.PluginConfig.DynamicTenant.Regex))
 	level.Info(paramLogger).Log("Pprof", fmt.Sprintf("%+v", conf.Pprof))
+	if conf.PluginConfig.HostnameKey != nil {
+		level.Info(paramLogger).Log("HostnameKey", fmt.Sprintf("%+v", *conf.PluginConfig.HostnameKey))
+	}
+	if conf.PluginConfig.HostnameValue != nil {
+		level.Info(paramLogger).Log("HostnameValue", fmt.Sprintf("%+v", *conf.PluginConfig.HostnameValue))
+	}
 	level.Info(paramLogger).Log("LabelSetInitCapacity", fmt.Sprintf("%+v", conf.PluginConfig.LabelSetInitCapacity))
 	level.Info(paramLogger).Log("SendLogsToMainClusterWhenIsInCreationState", fmt.Sprintf("%+v", conf.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInCreationState))
 	level.Info(paramLogger).Log("SendLogsToMainClusterWhenIsInReadyState", fmt.Sprintf("%+v", conf.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInReadyState))

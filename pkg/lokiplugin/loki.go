@@ -9,6 +9,7 @@ package lokiplugin
 
 import (
 	"fmt"
+	"os"
 	"regexp"
 	"time"
 
@@ -146,6 +147,10 @@ func (l *loki) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 
 	metrics.IncomingLogsWithEndpoint.WithLabelValues(host).Inc()
 
+	if err := l.addHostnameAsLabel(lbs); err != nil {
+		_ = level.Warn(l.logger).Log("msg", err)
+	}
+
 	if l.cfg.PluginConfig.DropSingleKey && len(records) == 1 {
 		for _, v := range records {
 			err := l.send(client, lbs, ts, fmt.Sprintf("%v", v))
@@ -215,4 +220,22 @@ func (l *loki) setDynamicTenant(record map[string]interface{}, lbs model.LabelSe
 
 func (l *loki) send(client types.LokiClient, lbs model.LabelSet, ts time.Time, line string) error {
 	return client.Handle(lbs, ts, line)
+}
+
+func (l *loki) addHostnameAsLabel(res model.LabelSet) error {
+	if l.cfg.PluginConfig.HostnameKey == nil {
+		return nil
+	}
+	if l.cfg.PluginConfig.HostnameValue != nil {
+		res[model.LabelName(*l.cfg.PluginConfig.HostnameKey)] = model.LabelValue(*l.cfg.PluginConfig.HostnameValue)
+	} else {
+		//TODO: Make this code snippet more efficient
+		hostname, err := os.Hostname()
+		if err != nil {
+			return err
+		}
+		res[model.LabelName(*l.cfg.PluginConfig.HostnameKey)] = model.LabelValue(hostname)
+	}
+
+	return nil
 }
