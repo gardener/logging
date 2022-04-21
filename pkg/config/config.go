@@ -136,6 +136,10 @@ type PluginConfig struct {
 	DynamicTenant DynamicTenant
 	//LabelSetInitCapacity the initial capacity of the labelset stream
 	LabelSetInitCapacity int
+	//HostnameKey is the key name of the hostname key/value pair
+	HostnameKey *string
+	//HostnameValue is the value name of the hostname key/value pair
+	HostnameValue *string
 }
 
 // BufferConfig contains the buffer settings
@@ -559,7 +563,21 @@ func initPluginConfig(cfg Getter, res *Config) error {
 			res.PluginConfig.LabelSetInitCapacity = labelSetInitCapacityValue
 		}
 	} else {
-		res.PluginConfig.LabelSetInitCapacity = 10
+		res.PluginConfig.LabelSetInitCapacity = 12
+	}
+
+	hostnameKeyValue := cfg.Get("HostnameKeyValue")
+	if hostnameKeyValue != "" {
+		hostnameKeyValueTokens := strings.SplitN(hostnameKeyValue, " ", 2)
+		switch len(hostnameKeyValueTokens) {
+		case 1:
+			res.PluginConfig.HostnameKey = &hostnameKeyValueTokens[0]
+		case 2:
+			res.PluginConfig.HostnameKey = &hostnameKeyValueTokens[0]
+			res.PluginConfig.HostnameValue = &hostnameKeyValueTokens[1]
+		default:
+			return fmt.Errorf("failed to parse HostnameKeyValue. Should consist of <hostname-key>\" \"<optional hostname-value>\". Found %d elements", len(hostnameKeyValueTokens))
+		}
 	}
 
 	return nil
