@@ -25,7 +25,7 @@ logging:
             target: telegraf
     steps:
       verify:
-        image: 'golang:1.14.2'
+        image: 'golang:1.18'
   jobs:
     head-update:
       traits:
