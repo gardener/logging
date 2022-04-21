@@ -14,28 +14,43 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# TODO: Switch back to the original script once https://github.com/gardener/gardener/pull/2541 is vendored.
-
 set -e
 
-echo "> Installing requirements"
+# this script is kept for compatability reasons (other repos might use this script as well to install these tools)
+# TODO: drop this script in a future release
+echo "> [DEPRECATED] Installing requirements"
 
 export GO111MODULE=on
-curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.27.0
-curl -s "https://raw.githubusercontent.com/helm/helm/v2.16.9/scripts/get" | bash -s -- --version 'v2.13.1'
+curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.45.0
+curl -s "https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3" | bash -s -- --version 'v3.6.3'
 
-if [[ "$(uname -s)" == *"Darwin"* ]]; then
+platform=$(uname -s)
+if [[ ${platform} == "Linux" ]]; then
+  if ! which jq &>/dev/null; then
+    echo "Installing jq ..."
+    curl -L -o /usr/local/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64
+    chmod +x /usr/local/bin/jq
+  fi
+fi
+
+if [[ ${platform} == *"Darwin"* ]]; then
   cat <<EOM
 You are running in a MAC OS environment!
+
 Please make sure you have installed the following requirements:
+
 - GNU Core Utils
 - GNU Tar
 - GNU Sed
+- GNU Parallel
+
 Brew command:
-$ brew install coreutils gnu-tar gnu-sed
+$ brew install coreutils gnu-sed gnu-tar grep jq parallel
+
 Please allow them to be used without their "g" prefix:
 $ export PATH=/usr/local/opt/coreutils/libexec/gnubin:\$PATH
-$ export PATH=/usr/local/opt/gnu-tar/libexec/gnubin:\$PATH
 $ export PATH=/usr/local/opt/gnu-sed/libexec/gnubin:\$PATH
+$ export PATH=/usr/local/opt/gnu-tar/libexec/gnubin:\$PATH
+$ export PATH=/usr/local/opt/grep/libexec/gnubin:\$PATH
 EOM
 fi
