@@ -7,7 +7,7 @@ COPY . .
 RUN  make build
 
 #############  fluent-bit-plugin #############
-FROM eu.gcr.io/gardener-project/3rd/alpine:3.12.3 AS fluent-bit-plugin
+FROM alpine:3.15.4 AS fluent-bit-plugin
 
 COPY --from=builder /go/src/github.com/gardener/logging/build /source/plugins
 
@@ -26,6 +26,6 @@ EXPOSE 2718
 ENTRYPOINT [ "/curator" ]
 
 #############      telegraf       #############
-FROM telegraf:1.18.0-alpine AS telegraf
+FROM telegraf:1.22.3-alpine AS telegraf
 
 RUN apk add --update bash iptables su-exec sudo && rm -rf /var/cache/apk/*
