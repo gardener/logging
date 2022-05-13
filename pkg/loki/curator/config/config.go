@@ -30,6 +30,7 @@ type CuratorConfig struct {
 	TriggerInterval time.Duration `yaml:"TriggerInterval,omitempty"`
 	InodeConfig     Config        `yaml:"InodeConfig,omitempty"`
 	StorageConfig   Config        `yaml:"StorageConfig,omitempty"`
+	DropCacheConfig CacheConfig   `yaml:"DropCacheConfig,omitempty"`
 }
 
 // Config holds the curator's config for a unit
@@ -37,6 +38,13 @@ type Config struct {
 	MinFreePercentages             int `yaml:"MinFreePercentages,omitempty"`
 	TargetFreePercentages          int `yaml:"TargetFreePercentages,omitempty"`
 	PageSizeForDeletionPercentages int `yaml:"PageSizeForDeletionPercentages,omitempty"`
+}
+
+type CacheConfig struct {
+	Enabled           bool          `yaml:"Enabled,omitempty"`
+	TriggerInterval   time.Duration `yaml:"TriggerInterval,omitempty"`
+	DropCacheFilePath string        `yaml:"DropCacheFilePath,omitempty"`
+	ResetCacheOption  int           `yaml:"ResetCacheOption,omitempty"`
 }
 
 // DefaultCuratorConfig holds default configurations for the curator
@@ -54,6 +62,12 @@ var DefaultCuratorConfig = CuratorConfig{
 		TargetFreePercentages:          15,
 		PageSizeForDeletionPercentages: 1,
 	},
+	DropCacheConfig: CacheConfig{
+		Enabled:           false,
+		TriggerInterval:   24 * time.Hour,
+		DropCacheFilePath: "/var/host_sys_vm/drop_caches",
+		ResetCacheOption:  2,
+	},
 }
 
 // ParseConfigurations reads configurations from a given yaml file path and makes CuratorConfig object from them
@@ -70,8 +84,12 @@ func ParseConfigurations(curatorConfigPath string) (*CuratorConfig, error) {
 		return nil, err
 	}
 
-	if config.TriggerInterval < 1*time.Second {
+	if config.TriggerInterval < 1*time.Second || config.DropCacheConfig.TriggerInterval < 1*time.Second {
 		return nil, errors.Errorf("TriggerInterval should be >= 1 second.")
+	}
+
+	if config.DropCacheConfig.ResetCacheOption < 1 || config.DropCacheConfig.ResetCacheOption > 3 {
+		return nil, errors.Errorf("ResetCacheOption should be a number between 1 and 3.")
 	}
 
 	if err = isValidPercentage(

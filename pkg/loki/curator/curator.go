@@ -15,7 +15,8 @@
 package curator
 
 import (
-	"runtime"
+	"io/ioutil"
+	"strconv"
 	"time"
 
 	config "github.com/gardener/logging/pkg/loki/curator/config"
@@ -28,19 +29,21 @@ import (
 
 // Curator holds needed propperties for a curator
 type Curator struct {
-	closed chan struct{}
-	ticker *time.Ticker
-	config config.CuratorConfig
-	logger log.Logger
+	closed           chan struct{}
+	curateTicker     *time.Ticker
+	cleanCacheTicker *time.Ticker
+	config           config.CuratorConfig
+	logger           log.Logger
 }
 
 // NewCurator creates new curator object
 func NewCurator(conf config.CuratorConfig, logger log.Logger) *Curator {
 	return &Curator{
-		closed: make(chan struct{}),
-		ticker: time.NewTicker(conf.TriggerInterval),
-		config: conf,
-		logger: logger,
+		closed:           make(chan struct{}),
+		curateTicker:     time.NewTicker(conf.TriggerInterval),
+		cleanCacheTicker: time.NewTicker(conf.DropCacheConfig.TriggerInterval),
+		config:           conf,
+		logger:           logger,
 	}
 }
 
@@ -51,10 +54,13 @@ func (c *Curator) Run() {
 		select {
 		case <-c.closed:
 			return
-		case <-c.ticker.C:
+		case <-c.curateTicker.C:
 			_ = level.Debug(c.logger).Log("mem_status", ms)
 			c.curate()
-			runtime.GC()
+		case <-c.cleanCacheTicker.C:
+			if c.config.DropCacheConfig.Enabled {
+				c.cleanCache()
+			}
 		}
 	}
 }
@@ -74,4 +80,13 @@ func (c *Curator) curate() {
 		_ = level.Error(c.logger).Log("msg", "Error in checking Inodes capacity", "error", err)
 		metrics.Errors.WithLabelValues(metrics.ErrorWithInodeCurator).Inc()
 	}
+}
+
+func (c *Curator) cleanCache() {
+	_ = level.Info(c.logger).Log("msg", "cache cleanup started", "filePath", c.config.DropCacheConfig.DropCacheFilePath, "dropOption", c.config.DropCacheConfig.ResetCacheOption)
+	err := ioutil.WriteFile(c.config.DropCacheConfig.DropCacheFilePath, []byte(strconv.Itoa(c.config.DropCacheConfig.ResetCacheOption)), 0644)
+	if err != nil {
+		_ = level.Error(c.logger).Log("msg", "Error in cache cleaning", "error", err)
+	}
+	_ = level.Info(c.logger).Log("msg", "cache cleanup completed")
 }

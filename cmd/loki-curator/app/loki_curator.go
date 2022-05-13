@@ -48,6 +48,10 @@ func ParseConfiguration() (*config.CuratorConfig, log.Logger, error) {
 	_ = level.Info(logger).Log("StorageConfig.MinFreePercentages", conf.StorageConfig.MinFreePercentages)
 	_ = level.Info(logger).Log("StorageConfig.TargetFreePercentages", conf.StorageConfig.TargetFreePercentages)
 	_ = level.Info(logger).Log("StorageConfig.PageSizeForDeletionPercentages", conf.StorageConfig.PageSizeForDeletionPercentages)
+	_ = level.Info(logger).Log("DropCacheConfig.Enabled", conf.DropCacheConfig.Enabled)
+	_ = level.Info(logger).Log("DropCacheConfig.TriggerInterval", conf.DropCacheConfig.TriggerInterval)
+	_ = level.Info(logger).Log("DropCacheConfig.DropCacheFilePath", conf.DropCacheConfig.DropCacheFilePath)
+	_ = level.Info(logger).Log("DropCacheConfig.ResetCacheOption", conf.DropCacheConfig.ResetCacheOption)
 
 	return conf, logger, nil
 }

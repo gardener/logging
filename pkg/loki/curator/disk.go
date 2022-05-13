@@ -16,6 +16,7 @@ package curator
 
 import (
 	"fmt"
+	"runtime"
 	"syscall"
 
 	"github.com/gardener/logging/pkg/loki/curator/metrics"
@@ -61,6 +62,7 @@ func (c *Curator) freeUpDiskCapacityIfNeeded() error {
 		}
 
 		_ = level.Info(c.logger).Log("msg", "storage cleanup completed", "deleted chunks", deletedCount)
+		runtime.GC()
 	}
 
 	return nil

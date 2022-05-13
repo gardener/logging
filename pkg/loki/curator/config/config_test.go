@@ -72,6 +72,12 @@ var _ = Describe("CuratorConfig", func() {
 					"TargetFreePercentages":          6,
 					"PageSizeForDeletionPercentages": 7,
 				},
+				"DropCacheConfig": map[string]interface{}{
+					"Enabled":           true,
+					"TriggerInterval":   "1s",
+					"DropCacheFilePath": "/test",
+					"ResetCacheOption":  3,
+				},
 			},
 			&CuratorConfig{
 				LogLevel:        "debug",
@@ -86,6 +92,12 @@ var _ = Describe("CuratorConfig", func() {
 					MinFreePercentages:             5,
 					TargetFreePercentages:          6,
 					PageSizeForDeletionPercentages: 7,
+				},
+				DropCacheConfig: CacheConfig{
+					Enabled:           true,
+					TriggerInterval:   1 * time.Second,
+					DropCacheFilePath: "/test",
+					ResetCacheOption:  3,
 				},
 			},
 			false},
@@ -115,6 +127,14 @@ var _ = Describe("CuratorConfig", func() {
 		Entry("bad CapacityPageSizeForDeletionPercentages", testArgs{map[string]interface{}{
 			"StorageConfig": map[string]interface{}{
 				"PageSizeForDeletionPercentages": -1,
+			}}, nil, true}),
+		Entry("bad Curator TriggerInterval", testArgs{map[string]interface{}{
+			"DropCacheConfig": map[string]interface{}{
+				"TriggerInterval": "0s",
+			}}, nil, true}),
+		Entry("bad ResetCacheOption", testArgs{map[string]interface{}{
+			"DropCacheConfig": map[string]interface{}{
+				"ResetCacheOption": 4,
 			}}, nil, true}),
 	)
 })
