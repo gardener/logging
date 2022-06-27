@@ -29,3 +29,12 @@ ENTRYPOINT [ "/curator" ]
 FROM telegraf:1.22.3-alpine AS telegraf
 
 RUN apk add --update bash iptables su-exec sudo && rm -rf /var/cache/apk/*
+
+#############      eventlogger       #############
+FROM gcr.io/distroless/static:nonroot AS event-logger
+
+COPY --from=builder /go/src/github.com/gardener/logging/build/event-logger /event-logger
+
+WORKDIR /
+
+ENTRYPOINT [ "/event-logger" ]
