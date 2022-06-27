@@ -23,6 +23,11 @@ logging:
             image: 'eu.gcr.io/gardener-project/gardener/telegraf-iptables'
             dockerfile: './Dockerfile'
             target: telegraf
+          event-logger:
+            registry: 'gcr-readwrite'
+            image: 'eu.gcr.io/gardener-project/gardener/event-logger'
+            dockerfile: './Dockerfile'
+            target: event-logger
     steps:
       verify:
         image: 'golang:1.18'
