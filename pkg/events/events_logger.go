@@ -51,14 +51,14 @@ type GardenerEventWatcherConfig struct {
 func (e *GardenerEventWatcherConfig) New() *GardenerEventWatcher {
 	_ = e.SeedKubeInformerFactory.InformerFor(&v1.Event{},
 		NewEventInformerFuncForNamespace(
-			"Seed",
+			"seed",
 			e.SeedEventWatcherConfig.Namespace,
 		),
 	)
 
 	_ = e.ShootKubeInformerFactory.InformerFor(&v1.Event{},
 		NewEventInformerFuncForNamespace(
-			"Shoot",
+			"shoot",
 			e.ShootEventWatcherConfig.Namespace,
 		),
 	)
