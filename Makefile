@@ -27,12 +27,12 @@ plugin:
 
 .PHONY: curator
 curator:
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on \
+	CGO_ENABLED=0 GO111MODULE=on \
 	  go build -mod=vendor -o build/curator ./cmd/loki-curator
 
 .PHONY: event-logger
 event-logger:
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on \
+	CGO_ENABLED=0 GO111MODULE=on \
 	  go build -mod=vendor -o build/event-logger ./cmd/event-logger
 
 .PHONY: build
