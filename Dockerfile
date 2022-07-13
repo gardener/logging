@@ -4,7 +4,7 @@ FROM golang:1.18 AS builder
 WORKDIR /go/src/github.com/gardener/logging
 COPY . .
 
-RUN  make build
+RUN make build
 
 #############  fluent-bit-plugin #############
 FROM alpine:3.15.4 AS fluent-bit-plugin
@@ -26,9 +26,11 @@ EXPOSE 2718
 ENTRYPOINT [ "/curator" ]
 
 #############      telegraf       #############
-FROM telegraf:1.22.3-alpine AS telegraf
+FROM telegraf:1.22.3 AS telegraf
 
-RUN apk add --update bash iptables su-exec sudo && rm -rf /var/cache/apk/*
+RUN apt update
+RUN apt install -y iptables
+RUN apt clean
 
 #############      eventlogger       #############
 FROM gcr.io/distroless/static:nonroot AS event-logger
