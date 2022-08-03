@@ -1,5 +1,5 @@
 #############      builder       #############
-FROM golang:1.18 AS plugin-builder
+FROM golang:1.18.5 AS plugin-builder
 
 WORKDIR /go/src/github.com/gardener/logging
 COPY . .
@@ -8,7 +8,7 @@ ARG TARGETARCH
 RUN make plugin GOARCH=$TARGETARCH
 
 #############  fluent-bit-plugin #############
-FROM alpine:3.15.4 AS fluent-bit-plugin
+FROM alpine:3.16.1 AS fluent-bit-plugin
 
 COPY --from=plugin-builder /go/src/github.com/gardener/logging/build /source/plugins
 
@@ -17,7 +17,7 @@ WORKDIR /
 ENTRYPOINT ["cp","/source/plugins/.","/plugins", "-fr"]
 
 #############      image-builder       #############
-FROM golang:1.18 AS image-builder
+FROM golang:1.18.5 AS image-builder
 
 WORKDIR /go/src/github.com/gardener/logging
 COPY . .
@@ -46,7 +46,7 @@ WORKDIR /
 ENTRYPOINT [ "/event-logger" ]
 
 #############      telegraf       #############
-FROM telegraf:1.22.3 AS telegraf
+FROM telegraf:1.23.3 AS telegraf
 
 RUN apt update
 RUN apt install -y iptables
