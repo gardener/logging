@@ -1,29 +1,49 @@
 #############      builder       #############
-FROM golang:1.18 AS builder
+FROM golang:1.18 AS plugin-builder
 
 WORKDIR /go/src/github.com/gardener/logging
 COPY . .
+
 ARG TARGETARCH
-RUN make build GOARCH=$TARGETARCH
+RUN make plugin GOARCH=$TARGETARCH
 
 #############  fluent-bit-plugin #############
 FROM alpine:3.15.4 AS fluent-bit-plugin
 
-COPY --from=builder /go/src/github.com/gardener/logging/build /source/plugins
+COPY --from=plugin-builder /go/src/github.com/gardener/logging/build /source/plugins
 
 WORKDIR /
 
 ENTRYPOINT ["cp","/source/plugins/.","/plugins", "-fr"]
 
+#############      image-builder       #############
+FROM golang:1.18 AS image-builder
+
+WORKDIR /go/src/github.com/gardener/logging
+COPY . .
+
+ARG EFFECTIVE_VERSION
+
+RUN make install EFFECTIVE_VERSION=$EFFECTIVE_VERSION
+
 #############      curator       #############
 FROM gcr.io/distroless/static:nonroot AS curator
 
-COPY --from=builder /go/src/github.com/gardener/logging/build/curator /curator
+COPY --from=image-builder /go/bin/loki-curator /curator
 
 WORKDIR /
 EXPOSE 2718
 
 ENTRYPOINT [ "/curator" ]
+
+#############      eventlogger       #############
+FROM gcr.io/distroless/static:nonroot AS event-logger
+
+COPY --from=image-builder /go/bin/event-logger /event-logger
+
+WORKDIR /
+
+ENTRYPOINT [ "/event-logger" ]
 
 #############      telegraf       #############
 FROM telegraf:1.22.3 AS telegraf
@@ -31,12 +51,3 @@ FROM telegraf:1.22.3 AS telegraf
 RUN apt update
 RUN apt install -y iptables
 RUN apt clean
-
-#############      eventlogger       #############
-FROM gcr.io/distroless/static:nonroot AS event-logger
-
-COPY --from=builder /go/src/github.com/gardener/logging/build/event-logger /event-logger
-
-WORKDIR /
-
-ENTRYPOINT [ "/event-logger" ]

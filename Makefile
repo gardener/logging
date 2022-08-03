@@ -20,32 +20,43 @@ LOKI_CURATOR_IMAGE_REPOSITORY         := $(REGISTRY)/loki-curator
 TELEGRAF_IMAGE_REPOSITORY             := $(REGISTRY)/telegraf-iptables
 EVENT_LOGGER_IMAGE_REPOSITORY         := $(REGISTRY)/event-logger
 IMAGE_TAG                             := $(VERSION)
-GOARCH                				  := amd64
+EFFECTIVE_VERSION                     := $(VERSION)-$(shell git rev-parse HEAD)
+GOARCH                                := amd64
 
 .PHONY: plugin
 plugin:
-	CGO_ENABLED=1 GOARCH=$(GOARCH) GO111MODULE=on \
-	  go build -mod=vendor -buildmode=c-shared -o build/out_loki.so ./cmd/fluent-bit-loki-plugin
+	go build -mod=vendor -buildmode=c-shared -o build/out_loki.so ./cmd/fluent-bit-loki-plugin
 
 .PHONY: curator
 curator:
-	CGO_ENABLED=0 GOARCH=$(GOARCH) GO111MODULE=on \
+	CGO_ENABLED=0 GOOS=linux GOARCH=$(GOARCH) GO111MODULE=on \
 	  go build -mod=vendor -o build/curator ./cmd/loki-curator
 
 .PHONY: event-logger
 event-logger:
-	CGO_ENABLED=0 GOARCH=$(GOARCH) GO111MODULE=on \
+	CGO_ENABLED=0 GOOS=linux GOARCH=$(GOARCH) GO111MODULE=on \
 	  go build -mod=vendor -o build/event-logger ./cmd/event-logger
 
 .PHONY: build
-build: plugin curator event-logger
+build: plugin
+
+.PHONY: install
+install: install-loki-curator install-event-logger
+
+.PHONY: install-loki-curator
+install-loki-curator:
+	@EFFECTIVE_VERSION=$(EFFECTIVE_VERSION) ./hack/install.sh ./cmd/loki-curator
+
+.PHONY: install-event-logger
+install-event-logger:
+	@EFFECTIVE_VERSION=$(EFFECTIVE_VERSION) ./hack/install.sh ./cmd/event-logger
 
 .PHONY: docker-images
 docker-images:
 	@docker build -t $(FLUENT_BIT_TO_LOKI_IMAGE_REPOSITORY):$(IMAGE_TAG) -t $(FLUENT_BIT_TO_LOKI_IMAGE_REPOSITORY):latest -f Dockerfile --target fluent-bit-plugin .
 	@docker build -t $(LOKI_CURATOR_IMAGE_REPOSITORY):$(IMAGE_TAG) -t $(LOKI_CURATOR_IMAGE_REPOSITORY):latest -f Dockerfile --target curator .
 	@docker build -t $(TELEGRAF_IMAGE_REPOSITORY):$(IMAGE_TAG) -t $(TELEGRAF_IMAGE_REPOSITORY):latest -f Dockerfile --target telegraf .
-	@docker build -t $(EVENT_LOGGER_IMAGE_REPOSITORY):$(IMAGE_TAG) -t $(EVENT_LOGGER_IMAGE_REPOSITORY):latest -f Dockerfile --target event-logger .
+	@docker build --build-arg EFFECTIVE_VERSION=$(EFFECTIVE_VERSION) -t $(EVENT_LOGGER_IMAGE_REPOSITORY):$(IMAGE_TAG) -t $(EVENT_LOGGER_IMAGE_REPOSITORY):latest -f Dockerfile --target event-logger .
 
 .PHONY: docker-push
 docker-push:
