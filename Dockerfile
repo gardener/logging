@@ -1,4 +1,14 @@
-#############      builder       #############
+#############      image builder       #############
+FROM golang:1.18.5 AS image-builder
+
+WORKDIR /go/src/github.com/gardener/logging
+COPY . .
+
+ARG EFFECTIVE_VERSION
+ARG TARGETARCH
+RUN make install EFFECTIVE_VERSION=$EFFECTIVE_VERSION GOARCH=$TARGETARCH
+
+#############      fluent-bit plugin builder       #############
 FROM golang:1.18.5 AS plugin-builder
 
 WORKDIR /go/src/github.com/gardener/logging
@@ -15,16 +25,6 @@ COPY --from=plugin-builder /go/src/github.com/gardener/logging/build /source/plu
 WORKDIR /
 
 CMD cp /source/plugins/. /plugins -fr
-
-#############      image-builder       #############
-FROM golang:1.18.5 AS image-builder
-
-WORKDIR /go/src/github.com/gardener/logging
-COPY . .
-
-ARG EFFECTIVE_VERSION
-ARG TARGETARCH
-RUN make install EFFECTIVE_VERSION=$EFFECTIVE_VERSION GOARCH=$TARGETARCH
 
 #############      curator       #############
 FROM gcr.io/distroless/static:nonroot AS curator

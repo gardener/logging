@@ -214,3 +214,10 @@ You can also adapt your plugins.conf, removing the need to change the command li
 [PLUGINS]
     Path /path/to/built/out_loki.so
 ```
+
+
+
+
+
+
+
