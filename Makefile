@@ -24,7 +24,8 @@ GOARCH                				  := amd64
 
 .PHONY: plugin
 plugin:
-	go build -mod=vendor -buildmode=c-shared -o build/out_loki.so ./cmd/fluent-bit-loki-plugin
+	CGO_ENABLED=1 GOARCH=$(GOARCH) GO111MODULE=on \
+	  go build -mod=vendor -buildmode=c-shared -o build/out_loki.so ./cmd/fluent-bit-loki-plugin
 
 .PHONY: curator
 curator:
