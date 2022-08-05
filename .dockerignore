@@ -1,0 +1,16 @@
+# Ignore everything
+**
+
+# Exclude folders relevant for build
+!.git
+!.dockerignore
+!cmd/
+!build/
+!hack/
+!pkg/
+!vendor/
+!.golangci.yaml
+!go.mod
+!go.sum
+!Makefile
+!VERSION

@@ -1,3 +1,17 @@
+// Copyright (c) 2022 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package events
 
 import (
@@ -7,46 +21,11 @@ import (
 
 	"github.com/spf13/pflag"
 	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
-	kubeinformers "k8s.io/client-go/informers"
 	kubeinformersinterfaces "k8s.io/client-go/informers/internalinterfaces"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 )
-
-func GetController(clientset *kubernetes.Clientset, namespace string, fieldSelector fields.Selector) cache.Controller {
-	watchlist := cache.NewListWatchFromClient(
-		clientset.CoreV1().RESTClient(),
-		"events",
-		namespace,
-		fieldSelector,
-	)
-	_, controller := cache.NewInformer(
-		watchlist,
-		&v1.Event{},
-		0,
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-				j, _ := json.Marshal(obj)
-				fmt.Printf("%s\n", string(j))
-			},
-		},
-	)
-	return controller
-}
-
-type EventWatcherConfig struct {
-	Kubeconfig string //Do I need this field?
-	Namespace  string
-}
-
-type GardenerEventWatcherConfig struct {
-	SeedEventWatcherConfig   EventWatcherConfig
-	SeedKubeInformerFactory  kubeinformers.SharedInformerFactory
-	ShootEventWatcherConfig  EventWatcherConfig
-	ShootKubeInformerFactory kubeinformers.SharedInformerFactory
-}
 
 func (e *GardenerEventWatcherConfig) New() *GardenerEventWatcher {
 	_ = e.SeedKubeInformerFactory.InformerFor(&v1.Event{},
@@ -69,22 +48,10 @@ func (e *GardenerEventWatcherConfig) New() *GardenerEventWatcher {
 	}
 }
 
-type GardenerEventWatcher struct {
-	SeedKubeInformerFactory  kubeinformers.SharedInformerFactory
-	ShootKubeInformerFactory kubeinformers.SharedInformerFactory
-}
-
 func (e *GardenerEventWatcher) Run(stopCh <-chan struct{}) {
 	e.SeedKubeInformerFactory.Start(stopCh)
 	e.ShootKubeInformerFactory.Start(stopCh)
 	<-stopCh
-}
-
-///////////////
-// Options has all the context and parameters needed to run a Gardener Event Logger.
-type Options struct {
-	Kubeconfig string
-	Namespace  string
 }
 
 func (o *Options) Validate() []error {
@@ -98,10 +65,6 @@ func (o *Options) ApplyTo(config *EventWatcherConfig) error {
 	config.Kubeconfig = o.Kubeconfig
 	config.Namespace = o.Namespace
 	return nil
-}
-
-type SeedOptions struct {
-	Options
 }
 
 // AddFlags adds all flags to the given FlagSet.
@@ -121,10 +84,6 @@ func (o *SeedOptions) Validate() []error {
 
 func (o *SeedOptions) ApplyTo(config *EventWatcherConfig) error {
 	return o.Options.ApplyTo(config)
-}
-
-type ShootOptions struct {
-	Options
 }
 
 // AddFlags adds all flags to the given FlagSet.
@@ -162,52 +121,58 @@ func NewEventInformerFuncForNamespace(origin, namespace string) kubeinformersint
 		)
 		informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
-				event, ok := getCorev1Event(obj, origin)
-				if !ok {
-					return
+				if isV1Event(obj) {
+					v1Event := obj.(*v1.Event)
+					printV1Event(v1Event, origin)
 				}
-				j, _ := json.Marshal(event)
-				fmt.Printf("%s\n", string(j))
+			},
+			UpdateFunc: func(oldObj interface{}, newObject interface{}) {
+				if isV1Event(newObject) {
+					v1Event := newObject.(*v1.Event)
+					printV1Event(v1Event, origin)
+				}
 			},
 		})
 		return informer
 	}
 }
 
-type event struct {
-	Origin         string      `json:"origin" protobuf:"bytes,9,name=origin"`
-	Type           string      `json:"type,omitempty" protobuf:"bytes,9,opt,name=type"`
-	Count          int32       `json:"count,omitempty" protobuf:"varint,8,opt,name=count"`
-	FirstTimestamp metav1.Time `json:"firstTimestamp,omitempty" protobuf:"bytes,6,opt,name=firstTimestamp"`
-	LastTimestamp  metav1.Time `json:"lastTimestamp,omitempty" protobuf:"bytes,7,opt,name=lastTimestamp"`
-	Reason         string      `json:"reason,omitempty" protobuf:"bytes,3,opt,name=reason"`
-	Object         string      `json:"object" protobuf:"bytes,2,opt,name=object"`
-	Message        string      `json:"_entry,omitempty" protobuf:"bytes,4,opt,name=_entry"`
-	Source         string      `json:"source,omitempty" protobuf:"bytes,5,opt,name=source"`
-	SourceHost     string      `json:"sourceHost,omitempty" protobuf:"bytes,2,opt,name=sourceHost"`
+func isV1Event(obj interface{}) bool {
+	_, ok := obj.(*v1.Event)
+	return ok
 }
 
-func getCorev1Event(obj interface{}, origin string) (*event, bool) {
-	eventObj, ok := obj.(*v1.Event)
-	if !ok {
-		return nil, false
-	}
-
-	involvedObject := eventObj.InvolvedObject.Name
-	if eventObj.InvolvedObject.Kind != "" {
-		involvedObject = eventObj.InvolvedObject.Kind + "/" + involvedObject
+func getEventFromV1Event(v1Event *v1.Event, origin string) *event {
+	involvedObject := v1Event.InvolvedObject.Name
+	if v1Event.InvolvedObject.Kind != "" {
+		involvedObject = v1Event.InvolvedObject.Kind + "/" + involvedObject
 	}
 
 	return &event{
 		Origin:         origin,
-		Type:           eventObj.Type,
-		Count:          eventObj.Count,
-		FirstTimestamp: eventObj.FirstTimestamp,
-		LastTimestamp:  eventObj.LastTimestamp,
-		Reason:         eventObj.Reason,
+		Type:           v1Event.Type,
+		Count:          v1Event.Count,
+		FirstTimestamp: v1Event.FirstTimestamp,
+		LastTimestamp:  v1Event.LastTimestamp,
+		Reason:         v1Event.Reason,
 		Object:         involvedObject,
-		Message:        eventObj.Message,
-		Source:         eventObj.Source.Component,
-		SourceHost:     eventObj.Source.Host,
-	}, true
+		Message:        v1Event.Message,
+		Source:         v1Event.Source.Component,
+		SourceHost:     v1Event.Source.Host,
+	}
+}
+
+func isOlderThan(event *v1.Event, than time.Duration) bool {
+	return time.Since(event.CreationTimestamp.Time) > than
+}
+
+func printV1Event(v1Event *v1.Event, origin string) {
+	if isOlderThan(v1Event, time.Second*5) {
+		return
+	}
+	j, err := json.Marshal(getEventFromV1Event(v1Event, origin))
+	if err != nil {
+		fmt.Printf("%s\n", err.Error())
+	}
+	fmt.Printf("%s\n", string(j))
 }
