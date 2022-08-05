@@ -3,8 +3,8 @@ FROM golang:1.18 AS builder
 
 WORKDIR /go/src/github.com/gardener/logging
 COPY . .
-
-RUN make build
+ARG TARGETARCH
+RUN make build GOARCH=$TARGETARCH
 
 #############  fluent-bit-plugin #############
 FROM alpine:3.15.4 AS fluent-bit-plugin
