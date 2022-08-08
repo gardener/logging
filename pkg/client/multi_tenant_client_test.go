@@ -12,13 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package client
+package client_test
 
 import (
+	"os"
 	"time"
 
+	"github.com/gardener/logging/pkg/client"
+	"github.com/gardener/logging/pkg/config"
 	"github.com/gardener/logging/pkg/types"
-	"github.com/grafana/loki/pkg/promtail/client"
+	"github.com/weaveworks/common/logging"
+
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
+	promtailclient "github.com/grafana/loki/pkg/promtail/client"
 	. "github.com/onsi/ginkgo"
 	ginkotable "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -27,30 +34,23 @@ import (
 
 var _ = Describe("Multi Tenant Client", func() {
 	var (
-		fakeClient *FakeLokiClient
+		fakeClient *client.FakeLokiClient
 		mtc        types.LokiClient
 	)
 
 	BeforeEach(func() {
-		fakeClient = &FakeLokiClient{}
-		mtc = NewMultiTenantClientWrapper(fakeClient, false)
-	})
+		var err error
+		fakeClient = &client.FakeLokiClient{}
+		var infoLogLevel logging.Level
+		_ = infoLogLevel.Set("info")
 
-	Describe("#NewMultiTenantClientWrapper", func() {
-
-		It("Should return wrapper client which does not copy the label set before sending it to the wrapped client", func() {
-			mtc := NewMultiTenantClientWrapper(fakeClient, false)
-			Expect(mtc).NotTo(BeNil())
-			Expect(mtc.(*multiTenantClient).lokiclient).To(Equal(fakeClient))
-			Expect(mtc.(*multiTenantClient).copyLabelSet).To(BeFalse())
-		})
-
-		It("Should return wrapper client which copies the label set before sending it to the wrapped client", func() {
-			mtc := NewMultiTenantClientWrapper(fakeClient, true)
-			Expect(mtc).NotTo(BeNil())
-			Expect(mtc.(*multiTenantClient).lokiclient).To(Equal(fakeClient))
-			Expect(mtc.(*multiTenantClient).copyLabelSet).To(BeTrue())
-		})
+		mtc, err = client.NewMultiTenantClientDecorator(config.Config{},
+			func(_ config.Config, _ log.Logger) (types.LokiClient, error) {
+				return fakeClient, nil
+			},
+			level.NewFilter(log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr)), infoLogLevel.Gokit))
+		Expect(err).ToNot(HaveOccurred())
+		Expect(mtc).NotTo(BeNil())
 	})
 
 	type handleArgs struct {
@@ -66,10 +66,10 @@ var _ = Describe("Multi Tenant Client", func() {
 		var gotTenants []model.LabelValue
 		for _, entry := range fakeClient.Entries {
 			// __gardener_multitenant_id__ should be removed after Handle() call
-			_, ok := entry.Labels[MultiTenantClientLabel]
+			_, ok := entry.Labels[client.MultiTenantClientLabel]
 			Expect(ok).To(BeFalse())
 			// Each tenant in the MultiTenantClientLabel should be transferred to __tenant_id__
-			if tenant, ok := entry.Labels[client.ReservedLabelTenantID]; ok {
+			if tenant, ok := entry.Labels[promtailclient.ReservedLabelTenantID]; ok {
 				gotTenants = append(gotTenants, tenant)
 			}
 		}
@@ -130,21 +130,21 @@ var _ = Describe("Multi Tenant Client", func() {
 
 	Describe("#Stop", func() {
 		It("should stop", func() {
-			Expect(mtc.(*multiTenantClient).lokiclient.(*FakeLokiClient).IsGracefullyStopped).To(BeFalse())
-			Expect(mtc.(*multiTenantClient).lokiclient.(*FakeLokiClient).IsStopped).To(BeFalse())
+			Expect(fakeClient.IsGracefullyStopped).To(BeFalse())
+			Expect(fakeClient.IsStopped).To(BeFalse())
 			mtc.Stop()
-			Expect(mtc.(*multiTenantClient).lokiclient.(*FakeLokiClient).IsGracefullyStopped).To(BeFalse())
-			Expect(mtc.(*multiTenantClient).lokiclient.(*FakeLokiClient).IsStopped).To(BeTrue())
+			Expect(fakeClient.IsGracefullyStopped).To(BeFalse())
+			Expect(fakeClient.IsStopped).To(BeTrue())
 		})
 	})
 
 	Describe("#StopWait", func() {
 		It("should stop", func() {
-			Expect(mtc.(*multiTenantClient).lokiclient.(*FakeLokiClient).IsGracefullyStopped).To(BeFalse())
-			Expect(mtc.(*multiTenantClient).lokiclient.(*FakeLokiClient).IsStopped).To(BeFalse())
+			Expect(fakeClient.IsGracefullyStopped).To(BeFalse())
+			Expect(fakeClient.IsStopped).To(BeFalse())
 			mtc.StopWait()
-			Expect(mtc.(*multiTenantClient).lokiclient.(*FakeLokiClient).IsGracefullyStopped).To(BeTrue())
-			Expect(mtc.(*multiTenantClient).lokiclient.(*FakeLokiClient).IsStopped).To(BeFalse())
+			Expect(fakeClient.IsGracefullyStopped).To(BeTrue())
+			Expect(fakeClient.IsStopped).To(BeFalse())
 		})
 	})
 

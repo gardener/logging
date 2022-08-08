@@ -17,16 +17,11 @@ package client
 import (
 	"time"
 
-	"github.com/gardener/logging/pkg/buffer"
 	"github.com/gardener/logging/pkg/config"
-	"github.com/gardener/logging/pkg/metrics"
 	"github.com/gardener/logging/pkg/types"
 
 	"github.com/go-kit/kit/log"
-	"github.com/grafana/loki/pkg/logproto"
-	"github.com/grafana/loki/pkg/promtail/api"
 	"github.com/grafana/loki/pkg/promtail/client"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/model"
 )
 
@@ -35,71 +30,61 @@ const (
 	waitCheckFrequencyDelimiter = 10
 )
 
-type newClientFunc func(cfg client.Config, logger log.Logger) (types.LokiClient, error)
+type Options struct {
+	RemoveTenantID    bool
+	MultiTenantClient bool
+	PreservedLabels   model.LabelSet
+}
 
 // NewClient creates a new client based on the fluentbit configuration.
-func NewClient(cfg *config.Config, logger log.Logger) (types.LokiClient, error) {
+func NewClient(cfg config.Config, logger log.Logger, options Options) (types.LokiClient, error) {
 	var (
-		ncf       newClientFunc
-		newClient types.LokiClient
-		err       error
+		ncf NewLokiClientFunc
 	)
 
+	ncf = func(c config.Config, logger log.Logger) (types.LokiClient, error) {
+		return NewPromtailClient(c.ClientConfig.GrafanaLokiConfig, logger)
+	}
+
+	// When label processing is done the sorting client could be used.
 	if cfg.ClientConfig.SortByTimestamp {
-		ncf = func(c client.Config, logger log.Logger) (types.LokiClient, error) {
-			return newSortedClient(c, cfg.ClientConfig.NumberOfBatchIDs, logger)
+		ncf = func(c config.Config, l log.Logger) (types.LokiClient, error) {
+			return newSortedClientDecorator(c, nil, l)
 		}
-	} else {
-		ncf = func(cfg client.Config, logger log.Logger) (types.LokiClient, error) {
-			c, err := NewPromtailClient(cfg, logger)
-			if err != nil {
-				return nil, err
-			}
-			return NewMultiTenantClientWrapper(c, false), nil
+	}
+
+	// The last wrapper which process labels should be the pack client.
+	// After the pack labels which are needed for the record processing
+	// cloud be packed and thus no long existing
+	if options.PreservedLabels != nil {
+		tempNCF := ncf
+		ncf = func(c config.Config, l log.Logger) (types.LokiClient, error) {
+			return NewPackClientDecorator(c, tempNCF, l)
+		}
+	}
+
+	if options.RemoveTenantID {
+		tempNCF := ncf
+		ncf = func(c config.Config, l log.Logger) (types.LokiClient, error) {
+			return NewRemoveTenantIdClientDecorator(c, tempNCF, l)
+		}
+	}
+
+	if options.MultiTenantClient {
+		tempNCF := ncf
+		ncf = func(c config.Config, l log.Logger) (types.LokiClient, error) {
+			return NewMultiTenantClientDecorator(c, tempNCF, l)
 		}
 	}
 
 	if cfg.ClientConfig.BufferConfig.Buffer {
-		newClient, err = buffer.NewBuffer(cfg, logger, ncf)
-	} else {
-		newClient, err = ncf(cfg.ClientConfig.GrafanaLokiConfig, logger)
+		tempNCF := ncf
+		ncf = func(c config.Config, l log.Logger) (types.LokiClient, error) {
+			return NewBufferDecorator(c, tempNCF, l)
+		}
 	}
 
-	return newClient, err
-}
-
-type promtailClientWithForwardedLogsMetricCounter struct {
-	lokiclient client.Client
-	host       string
-}
-
-// NewPromtailClient return promtail client which increments the ForwardedLogs counter on
-// successful call of the Handle function
-func NewPromtailClient(cfg client.Config, logger log.Logger) (types.LokiClient, error) {
-	c, err := client.New(prometheus.DefaultRegisterer, cfg, logger)
-	if err != nil {
-		return nil, err
-	}
-	return &promtailClientWithForwardedLogsMetricCounter{
-		lokiclient: c,
-		host:       cfg.URL.Hostname(),
-	}, nil
-}
-
-func (c *promtailClientWithForwardedLogsMetricCounter) Handle(ls model.LabelSet, t time.Time, s string) error {
-	c.lokiclient.Chan() <- api.Entry{Labels: ls, Entry: logproto.Entry{Timestamp: t, Line: s}}
-	metrics.ForwardedLogs.WithLabelValues(c.host).Inc()
-	return nil
-}
-
-// Stop the client.
-func (c *promtailClientWithForwardedLogsMetricCounter) Stop() {
-	c.lokiclient.Stop()
-}
-
-// StopWait stops the client waiting all saved logs to be sent.
-func (c *promtailClientWithForwardedLogsMetricCounter) StopWait() {
-	c.lokiclient.Stop()
+	return ncf(cfg, logger)
 }
 
 type removeTenantIdClient struct {
@@ -109,6 +94,16 @@ type removeTenantIdClient struct {
 // NewRemoveTenantIdClient return loki client wich removes the __tenant_id__ value fro the label set
 func NewRemoveTenantIdClient(clientToWrap types.LokiClient) types.LokiClient {
 	return &removeTenantIdClient{clientToWrap}
+}
+
+// NewRemoveTenantIdClient return loki client which removes the __tenant_id__ value fro the label set
+func NewRemoveTenantIdClientDecorator(cfg config.Config, newClient NewLokiClientFunc, logger log.Logger) (types.LokiClient, error) {
+	client, err := newLokiClient(cfg, newClient, logger)
+	if err != nil {
+		return nil, err
+	}
+
+	return &removeTenantIdClient{client}, nil
 }
 
 func (c *removeTenantIdClient) Handle(ls model.LabelSet, t time.Time, s string) error {
@@ -128,4 +123,11 @@ func (c *removeTenantIdClient) Stop() {
 // StopWait stops the client waiting all saved logs to be sent.
 func (c *removeTenantIdClient) StopWait() {
 	c.lokiclient.Stop()
+}
+
+func newLokiClient(cfg config.Config, newClient NewLokiClientFunc, logger log.Logger) (types.LokiClient, error) {
+	if newClient != nil {
+		return newClient(cfg, logger)
+	}
+	return NewPromtailClient(cfg.ClientConfig.GrafanaLokiConfig, logger)
 }

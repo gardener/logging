@@ -38,7 +38,7 @@ var _ = Describe("Client", func() {
 	defaultURL, _ := parseURL("http://localhost:3100/loki/api/v1/push")
 	var infoLogLevel logging.Level
 	_ = infoLogLevel.Set("info")
-	conf := &config.Config{
+	conf := config.Config{
 		ClientConfig: config.ClientConfig{
 			GrafanaLokiConfig: client.Config{
 				URL:            defaultURL,
@@ -88,7 +88,7 @@ var _ = Describe("Client", func() {
 
 	Describe("NewClient", func() {
 		It("should create a client", func() {
-			c, err := NewClient(conf, logger)
+			c, err := NewClient(conf, logger, Options{})
 			Expect(err).ToNot(HaveOccurred())
 			Expect(c).ToNot(BeNil())
 		})

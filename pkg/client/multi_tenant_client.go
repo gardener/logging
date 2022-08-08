@@ -19,7 +19,9 @@ import (
 	"time"
 
 	"github.com/gardener/logging/pkg/batch"
+	"github.com/gardener/logging/pkg/config"
 	"github.com/gardener/logging/pkg/types"
+	"github.com/go-kit/kit/log"
 
 	"github.com/grafana/loki/pkg/promtail/client"
 	"github.com/prometheus/common/model"
@@ -37,13 +39,18 @@ const (
 	MultiTenantClientsSeparator = ";"
 )
 
-// NewMultiTenantClientWrapper returns Loki client which supports more than one tenant id specified
+// NewMultiTenantClientDecorator returns Loki client which supports more than one tenant id specified
 // under `_gardener_multitenamt_id__` label. The tenants are separated by semicolon.
-func NewMultiTenantClientWrapper(clientToWrap types.LokiClient, copyLabelSet bool) types.LokiClient {
-	return &multiTenantClient{
-		lokiclient:   clientToWrap,
-		copyLabelSet: copyLabelSet,
+func NewMultiTenantClientDecorator(cfg config.Config, newClient NewLokiClientFunc, logger log.Logger) (types.LokiClient, error) {
+	client, err := newLokiClient(cfg, newClient, logger)
+	if err != nil {
+		return nil, err
 	}
+
+	return &multiTenantClient{
+		lokiclient:   client,
+		copyLabelSet: true,
+	}, nil
 }
 
 func (c *multiTenantClient) Handle(ls model.LabelSet, t time.Time, s string) error {

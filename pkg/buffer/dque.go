@@ -20,7 +20,6 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/grafana/loki/pkg/logproto"
-	"github.com/grafana/loki/pkg/promtail/client"
 	"github.com/joncrlsn/dque"
 	"github.com/prometheus/common/model"
 )
@@ -46,8 +45,8 @@ type dqueClient struct {
 	lock      sync.Mutex
 }
 
-// newDque makes a new dque loki client
-func newDque(cfg *config.Config, logger log.Logger, newClientFunc func(cfg client.Config, logger log.Logger) (types.LokiClient, error)) (types.LokiClient, error) {
+// NewDque makes a new dque loki client
+func NewDque(cfg config.Config, logger log.Logger, newClientFunc func(cfg config.Config, logger log.Logger) (types.LokiClient, error)) (types.LokiClient, error) {
 	var err error
 
 	q := &dqueClient{
@@ -70,7 +69,7 @@ func newDque(cfg *config.Config, logger log.Logger, newClientFunc func(cfg clien
 		_ = q.queue.TurboOn()
 	}
 
-	q.loki, err = newClientFunc(cfg.ClientConfig.GrafanaLokiConfig, logger)
+	q.loki, err = newClientFunc(cfg, logger)
 	if err != nil {
 		return nil, err
 	}

@@ -17,11 +17,17 @@ package client
 import (
 	"time"
 
+	"github.com/gardener/logging/pkg/config"
+	"github.com/gardener/logging/pkg/types"
+
+	"github.com/go-kit/kit/log"
 	"github.com/grafana/loki/pkg/logproto"
 	"github.com/prometheus/common/model"
 )
 
+// LokiClient represents an instance which sends logs to Loki ingester
 type LokiClient interface {
+	// Handle processes logs and then sends them to Loki ingester
 	Handle(labels model.LabelSet, time time.Time, entry string) error
 	// Stop shut down the client immediately without waiting to send the saved logs
 	Stop()
@@ -33,3 +39,9 @@ type Entry struct {
 	Labels model.LabelSet
 	logproto.Entry
 }
+
+// NewLokiClientFunc returns a LokiClient on success.
+type NewLokiClientFunc func(cfg config.Config, logger log.Logger) (types.LokiClient, error)
+
+// NewLokiClientDecoratorFunc return LokiClient which wraps another LokiClient
+type NewLokiClientDecoratorFunc func(cfg config.Config, client LokiClient, logger log.Logger) (types.LokiClient, error)

@@ -23,7 +23,6 @@ import (
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	"github.com/grafana/loki/pkg/promtail/client"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/prometheus/common/model"
@@ -33,14 +32,14 @@ import (
 var _ = Describe("Buffer", func() {
 	var infoLogLevel logging.Level
 	_ = infoLogLevel.Set("info")
-	var conf *config.Config
+	var conf config.Config
 
 	logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
 	logger = level.NewFilter(logger, infoLogLevel.Gokit)
 
 	Describe("NewBuffer", func() {
 		BeforeEach(func() {
-			conf = &config.Config{
+			conf = config.Config{
 				ClientConfig: config.ClientConfig{
 					BufferConfig: config.BufferConfig{
 						Buffer:     false,
@@ -80,7 +79,7 @@ var _ = Describe("Buffer", func() {
 
 		BeforeEach(func() {
 			var err error
-			conf = &config.Config{
+			conf = config.Config{
 				ClientConfig: config.ClientConfig{
 					BufferConfig: config.BufferConfig{
 						Buffer:     false,
@@ -94,7 +93,7 @@ var _ = Describe("Buffer", func() {
 					},
 				},
 			}
-			lokiclient, err = newDque(conf, logger, newFakeLokiClient)
+			lokiclient, err = NewDque(conf, logger, newFakeLokiClient)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(lokiclient).ToNot(BeNil())
 		})
@@ -151,7 +150,7 @@ type fakeLokiclient struct {
 	sentLogs []logEntry
 }
 
-func newFakeLokiClient(c client.Config, logger log.Logger) (types.LokiClient, error) {
+func newFakeLokiClient(c config.Config, logger log.Logger) (types.LokiClient, error) {
 	return &fakeLokiclient{}, nil
 }
 
