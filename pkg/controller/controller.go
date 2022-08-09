@@ -96,9 +96,12 @@ func (ctl *controller) Stop() {
 		ctl.lock.Lock()
 		defer ctl.lock.Unlock()
 		for _, client := range ctl.clients {
-			client.Stop()
+			client.StopWait()
 		}
 		ctl.clients = nil
+		if ctl.defaultClient != nil {
+			ctl.defaultClient.StopWait()
+		}
 		if ctl.done != nil {
 			ctl.done <- true
 			ctl.wg.Wait()

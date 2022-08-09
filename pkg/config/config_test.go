@@ -78,6 +78,7 @@ var (
 		DropSingleKey:        defaultDropSingleKey,
 		DynamicHostRegex:     defaultDynamicHostRegex,
 		LabelSetInitCapacity: defaultLabelSetInitCapacity,
+		PreservedLabels:      model.LabelSet{},
 	}
 
 	defaultBackoffConfig = util.BackoffConfig{
@@ -200,6 +201,7 @@ var _ = Describe("Config", func() {
 				"LabelKeys":       "foo,bar",
 				"DropSingleKey":   "false",
 				"SortByTimestamp": "true",
+				"PreservedLabels": "namesapce, origin",
 			},
 			&Config{
 				PluginConfig: PluginConfig{
@@ -210,6 +212,10 @@ var _ = Describe("Config", func() {
 					DynamicHostRegex:     defaultDynamicHostRegex,
 					KubernetesMetadata:   defaultKubernetesMetadata,
 					LabelSetInitCapacity: defaultLabelSetInitCapacity,
+					PreservedLabels: model.LabelSet{
+						"namesapce": "",
+						"origin":    "",
+					},
 				},
 
 				ClientConfig: ClientConfig{
@@ -270,6 +276,7 @@ var _ = Describe("Config", func() {
 					DynamicHostRegex:     defaultDynamicHostRegex,
 					KubernetesMetadata:   defaultKubernetesMetadata,
 					LabelSetInitCapacity: defaultLabelSetInitCapacity,
+					PreservedLabels:      model.LabelSet{},
 				},
 				ClientConfig: ClientConfig{
 					GrafanaLokiConfig: client.Config{
@@ -319,6 +326,7 @@ var _ = Describe("Config", func() {
 					DynamicHostRegex:     "shoot--",
 					KubernetesMetadata:   defaultKubernetesMetadata,
 					LabelSetInitCapacity: defaultLabelSetInitCapacity,
+					PreservedLabels:      model.LabelSet{},
 				},
 				ClientConfig: ClientConfig{
 					GrafanaLokiConfig: client.Config{
@@ -372,6 +380,7 @@ var _ = Describe("Config", func() {
 					KubernetesMetadata:   defaultKubernetesMetadata,
 					DynamicHostRegex:     defaultDynamicHostRegex,
 					LabelSetInitCapacity: defaultLabelSetInitCapacity,
+					PreservedLabels:      model.LabelSet{},
 				},
 				ClientConfig: ClientConfig{
 					GrafanaLokiConfig: client.Config{
@@ -425,6 +434,7 @@ var _ = Describe("Config", func() {
 					DynamicHostRegex:     defaultDynamicHostRegex,
 					KubernetesMetadata:   defaultKubernetesMetadata,
 					LabelSetInitCapacity: defaultLabelSetInitCapacity,
+					PreservedLabels:      model.LabelSet{},
 				},
 				ClientConfig: ClientConfig{
 					GrafanaLokiConfig: client.Config{
@@ -480,6 +490,7 @@ var _ = Describe("Config", func() {
 						TagExpression:                      "testExpression",
 					},
 					LabelSetInitCapacity: defaultLabelSetInitCapacity,
+					PreservedLabels:      model.LabelSet{},
 				},
 				ClientConfig: ClientConfig{
 					GrafanaLokiConfig: client.Config{
@@ -522,6 +533,7 @@ var _ = Describe("Config", func() {
 					DynamicHostRegex:     defaultDynamicHostRegex,
 					KubernetesMetadata:   defaultKubernetesMetadata,
 					LabelSetInitCapacity: defaultLabelSetInitCapacity,
+					PreservedLabels:      model.LabelSet{},
 				},
 
 				ClientConfig: ClientConfig{
@@ -559,6 +571,7 @@ var _ = Describe("Config", func() {
 						RemoveTenantIdWhenSendingToDefaultURL: true,
 					},
 					LabelSetInitCapacity: defaultLabelSetInitCapacity,
+					PreservedLabels:      model.LabelSet{},
 				},
 				ClientConfig:     defaultClientConfig,
 				ControllerConfig: defaultControllerConfig,
@@ -583,6 +596,7 @@ var _ = Describe("Config", func() {
 						RemoveTenantIdWhenSendingToDefaultURL: true,
 					},
 					LabelSetInitCapacity: defaultLabelSetInitCapacity,
+					PreservedLabels:      model.LabelSet{},
 				},
 				ClientConfig:     defaultClientConfig,
 				ControllerConfig: defaultControllerConfig,
@@ -607,6 +621,7 @@ var _ = Describe("Config", func() {
 						RemoveTenantIdWhenSendingToDefaultURL: true,
 					},
 					LabelSetInitCapacity: defaultLabelSetInitCapacity,
+					PreservedLabels:      model.LabelSet{},
 				},
 				ClientConfig:     defaultClientConfig,
 				ControllerConfig: defaultControllerConfig,
@@ -626,6 +641,7 @@ var _ = Describe("Config", func() {
 					DynamicHostRegex:     defaultDynamicHostRegex,
 					LabelSetInitCapacity: defaultLabelSetInitCapacity,
 					HostnameKey:          pointer.StringPtr("hostname"),
+					PreservedLabels:      model.LabelSet{},
 				},
 				ClientConfig:     defaultClientConfig,
 				ControllerConfig: defaultControllerConfig,
@@ -646,6 +662,7 @@ var _ = Describe("Config", func() {
 					LabelSetInitCapacity: defaultLabelSetInitCapacity,
 					HostnameKey:          pointer.StringPtr("hostname"),
 					HostnameValue:        pointer.StringPtr("${HOST}"),
+					PreservedLabels:      model.LabelSet{},
 				},
 				ClientConfig:     defaultClientConfig,
 				ControllerConfig: defaultControllerConfig,

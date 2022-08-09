@@ -110,36 +110,38 @@ type ControllerClientConfiguration struct {
 	SendLogsWhenIsInMigrationState   bool
 }
 
-// PluginConfig contains the configuration mostly related to the Loki plugin
+// PluginConfig contains the configuration mostly related to the Loki plugin.
 type PluginConfig struct {
-	// AutoKubernetesLabels extact all key/values from the kubernetes field
+	// AutoKubernetesLabels extact all key/values from the kubernetes field.
 	AutoKubernetesLabels bool
-	// RemoveKeys specify removing keys
+	// RemoveKeys specify removing keys.
 	RemoveKeys []string
-	// LabelKeys is comma separated list of keys to use as stream labels
+	// LabelKeys is comma separated list of keys to use as stream labels.
 	LabelKeys []string
-	// LineFormat is the format to use when flattening the record to a log line
+	// LineFormat is the format to use when flattening the record to a log line.
 	LineFormat Format
 	// DropSingleKey if set to true and after extracting label_keys a record only
 	// has a single key remaining, the log line sent to Loki will just be
-	// the value of the record key
+	// the value of the record key.
 	DropSingleKey bool
-	// LabelMap is path to a json file defining how to transform nested records
+	// LabelMap is path to a json file defining how to transform nested records.
 	LabelMap map[string]interface{}
-	// DynamicHostPath is jsonpath in the log labels to the dynamic host
+	// DynamicHostPath is jsonpath in the log labels to the dynamic host.
 	DynamicHostPath map[string]interface{}
-	// DynamicHostRegex is regex to check if the dynamic host is valid
+	// DynamicHostRegex is regex to check if the dynamic host is valid.
 	DynamicHostRegex string
-	// KubernetesMetadata holds the configurations for retrieving the meta data from a tag
+	// KubernetesMetadata holds the configurations for retrieving the meta data from a tag.
 	KubernetesMetadata KubernetesMetadataExtraction
-	//DynamicTenant holds the configurations for retrieving the tenant from a record key
+	//DynamicTenant holds the configurations for retrieving the tenant from a record key.
 	DynamicTenant DynamicTenant
-	//LabelSetInitCapacity the initial capacity of the labelset stream
+	//LabelSetInitCapacity the initial capacity of the labelset stream.
 	LabelSetInitCapacity int
-	//HostnameKey is the key name of the hostname key/value pair
+	//HostnameKey is the key name of the hostname key/value pair.
 	HostnameKey *string
-	//HostnameValue is the value name of the hostname key/value pair
+	//HostnameValue is the value name of the hostname key/value pair.
 	HostnameValue *string
+	//PreservedLabels is the set of label which will be preserved after packing the handled logs.
+	PreservedLabels model.LabelSet
 }
 
 // BufferConfig contains the buffer settings
@@ -577,6 +579,14 @@ func initPluginConfig(cfg Getter, res *Config) error {
 			res.PluginConfig.HostnameValue = &hostnameKeyValueTokens[1]
 		default:
 			return fmt.Errorf("failed to parse HostnameKeyValue. Should consist of <hostname-key>\" \"<optional hostname-value>\". Found %d elements", len(hostnameKeyValueTokens))
+		}
+	}
+
+	res.PluginConfig.PreservedLabels = model.LabelSet{}
+	preservedLabelsStr := cfg.Get("PreservedLabels")
+	if preservedLabelsStr != "" {
+		for _, label := range strings.Split(preservedLabelsStr, ",") {
+			res.PluginConfig.PreservedLabels[model.LabelName(strings.TrimSpace(label))] = ""
 		}
 	}
 

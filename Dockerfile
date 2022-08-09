@@ -14,7 +14,7 @@ COPY --from=plugin-builder /go/src/github.com/gardener/logging/build /source/plu
 
 WORKDIR /
 
-ENTRYPOINT ["cp","/source/plugins/.","/plugins", "-fr"]
+CMD cp /source/plugins/. /plugins -fr
 
 #############      image-builder       #############
 FROM golang:1.18.5 AS image-builder

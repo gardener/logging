@@ -49,18 +49,29 @@ func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger lo
 	var err error
 	loki := &loki{cfg: cfg, logger: logger}
 
-	loki.defaultClient, err = client.NewClient(cfg, logger)
+	loki.defaultClient, err = client.NewClient(*cfg, logger, client.Options{
+		RemoveTenantID:    cfg.PluginConfig.DynamicTenant.RemoveTenantIdWhenSendingToDefaultURL,
+		MultiTenantClient: false,
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	if cfg.PluginConfig.DynamicTenant.RemoveTenantIdWhenSendingToDefaultURL {
-		loki.defaultClient = client.NewRemoveTenantIdClient(loki.defaultClient)
-	}
-
 	if cfg.PluginConfig.DynamicHostPath != nil {
 		loki.dynamicHostRegexp = regexp.MustCompile(cfg.PluginConfig.DynamicHostRegex)
-		loki.controller, err = controller.NewController(informer, cfg, loki.defaultClient, logger)
+
+		cfgShallowCopy := *cfg
+		cfgShallowCopy.ClientConfig.BufferConfig.DqueConfig.QueueName = cfg.ClientConfig.BufferConfig.DqueConfig.QueueName + "-controller"
+		controllerDefaultClient, err := client.NewClient(cfgShallowCopy, logger, client.Options{
+			RemoveTenantID:    cfg.PluginConfig.DynamicTenant.RemoveTenantIdWhenSendingToDefaultURL,
+			MultiTenantClient: false,
+			PreservedLabels:   cfg.PluginConfig.PreservedLabels,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		loki.controller, err = controller.NewController(informer, cfg, controllerDefaultClient, logger)
 		if err != nil {
 			return nil, err
 		}

@@ -156,6 +156,9 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 	if conf.PluginConfig.HostnameValue != nil {
 		level.Info(paramLogger).Log("HostnameValue", fmt.Sprintf("%+v", *conf.PluginConfig.HostnameValue))
 	}
+	if conf.PluginConfig.PreservedLabels != nil {
+		level.Info(paramLogger).Log("PreservedLabels", fmt.Sprintf("%+v", conf.PluginConfig.PreservedLabels))
+	}
 	level.Info(paramLogger).Log("LabelSetInitCapacity", fmt.Sprintf("%+v", conf.PluginConfig.LabelSetInitCapacity))
 	level.Info(paramLogger).Log("SendLogsToMainClusterWhenIsInCreationState", fmt.Sprintf("%+v", conf.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInCreationState))
 	level.Info(paramLogger).Log("SendLogsToMainClusterWhenIsInReadyState", fmt.Sprintf("%+v", conf.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInReadyState))

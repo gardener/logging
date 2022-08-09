@@ -19,12 +19,12 @@ import (
 	"time"
 
 	"github.com/gardener/logging/pkg/batch"
+	"github.com/gardener/logging/pkg/config"
 	"github.com/gardener/logging/pkg/types"
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/grafana/loki/pkg/logproto"
-	"github.com/grafana/loki/pkg/promtail/client"
 	"github.com/prometheus/common/model"
 )
 
@@ -43,22 +43,23 @@ type sortedClient struct {
 	wg               sync.WaitGroup
 }
 
-func newSortedClient(cfg client.Config, numberOfBatchIds uint64, logger log.Logger) (types.LokiClient, error) {
-	batchWait := cfg.BatchWait
-	cfg.BatchWait = 5 * time.Second
+func newSortedClientDecorator(cfg config.Config, newClient NewLokiClientFunc, logger log.Logger) (types.LokiClient, error) {
+	var err error
+	batchWait := cfg.ClientConfig.GrafanaLokiConfig.BatchWait
+	cfg.ClientConfig.GrafanaLokiConfig.BatchWait = 5 * time.Second
 
-	lokiclient, err := NewPromtailClient(cfg, logger)
+	client, err := newLokiClient(cfg, newClient, logger)
 	if err != nil {
 		return nil, err
 	}
 
 	c := &sortedClient{
-		logger:           log.With(logger, "component", "client", "host", cfg.URL.Host),
-		lokiclient:       multiTenantClient{lokiclient: lokiclient},
+		logger:           log.With(logger, "component", "client", "host", cfg.ClientConfig.GrafanaLokiConfig.URL.Host),
+		lokiclient:       multiTenantClient{lokiclient: client},
 		batchWait:        batchWait,
-		batchSize:        cfg.BatchSize,
+		batchSize:        cfg.ClientConfig.GrafanaLokiConfig.BatchSize,
 		batchID:          0,
-		numberOfBatchIDs: numberOfBatchIds,
+		numberOfBatchIDs: cfg.ClientConfig.NumberOfBatchIDs,
 		batch:            batch.NewBatch(0),
 		quit:             make(chan struct{}),
 		entries:          make(chan Entry),
