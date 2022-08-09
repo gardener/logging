@@ -32,6 +32,7 @@ func (c *FakeLokiClient) Handle(labels model.LabelSet, timestamp time.Time, line
 	if c.IsStopped || c.IsGracefullyStopped {
 		return fmt.Errorf("client has been stopped")
 	}
+
 	c.Entries = append(c.Entries, Entry{
 		Labels: labels.Clone(),
 		Entry:  logproto.Entry{Timestamp: timestamp, Line: line},

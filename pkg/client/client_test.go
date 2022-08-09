@@ -19,7 +19,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/gardener/logging/pkg/batch"
 	"github.com/gardener/logging/pkg/config"
 
 	"github.com/cortexproject/cortex/pkg/util"
@@ -91,33 +90,6 @@ var _ = Describe("Client", func() {
 			c, err := NewClient(conf, logger, Options{})
 			Expect(err).ToNot(HaveOccurred())
 			Expect(c).ToNot(BeNil())
-		})
-	})
-
-	Describe("sortedClient", func() {
-		Describe("#isBatchWaitExceeded", func() {
-			It("should return true when batch is older than 1 second", func() {
-				c := &sortedClient{
-					batchWait: time.Duration(1),
-					batch:     batch.NewBatch(0),
-				}
-				time.Sleep(2 * time.Second)
-				Expect(c.isBatchWaitExceeded()).To(BeTrue())
-			})
-			It("should return false when batch is younger than 10 second", func() {
-				c := &sortedClient{
-					batchWait: time.Duration(10 * time.Second),
-					batch:     batch.NewBatch(0),
-				}
-				Expect(c.isBatchWaitExceeded()).To(BeFalse())
-			})
-			It("should return false when batch is nil", func() {
-				c := &sortedClient{
-					batchWait: 1,
-					batch:     nil,
-				}
-				Expect(c.isBatchWaitExceeded()).To(BeFalse())
-			})
 		})
 	})
 })

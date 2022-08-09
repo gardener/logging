@@ -49,7 +49,7 @@ func NewClient(cfg config.Config, logger log.Logger, options Options) (types.Lok
 	// When label processing is done the sorting client could be used.
 	if cfg.ClientConfig.SortByTimestamp {
 		ncf = func(c config.Config, l log.Logger) (types.LokiClient, error) {
-			return newSortedClientDecorator(c, nil, l)
+			return NewSortedClientDecorator(c, nil, l)
 		}
 	}
 
