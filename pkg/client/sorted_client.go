@@ -43,10 +43,10 @@ type sortedClient struct {
 	wg               sync.WaitGroup
 }
 
-func newSortedClientDecorator(cfg config.Config, newClient NewLokiClientFunc, logger log.Logger) (types.LokiClient, error) {
+func NewSortedClientDecorator(cfg config.Config, newClient NewLokiClientFunc, logger log.Logger) (types.LokiClient, error) {
 	var err error
 	batchWait := cfg.ClientConfig.GrafanaLokiConfig.BatchWait
-	cfg.ClientConfig.GrafanaLokiConfig.BatchWait = 5 * time.Second
+	cfg.ClientConfig.GrafanaLokiConfig.BatchWait = batchWait + (5 * time.Second)
 
 	client, err := newLokiClient(cfg, newClient, logger)
 	if err != nil {
