@@ -1,5 +1,5 @@
 #############      builder       #############
-FROM golang:1.18.5 AS plugin-builder
+FROM golang:1.18.4 AS plugin-builder
 
 WORKDIR /go/src/github.com/gardener/logging
 COPY . .
@@ -16,8 +16,11 @@ WORKDIR /
 
 CMD cp /source/plugins/. /plugins -fr
 
+############# distroless-static
+FROM gcr.io/distroless/static-debian11:nonroot as distroless-static
+
 #############      image-builder       #############
-FROM golang:1.18.5 AS image-builder
+FROM golang:1.18.4 AS image-builder
 
 WORKDIR /go/src/github.com/gardener/logging
 COPY . .
@@ -27,7 +30,7 @@ ARG TARGETARCH
 RUN make install EFFECTIVE_VERSION=$EFFECTIVE_VERSION GOARCH=$TARGETARCH
 
 #############      curator       #############
-FROM gcr.io/distroless/static:nonroot AS curator
+FROM distroless-static AS curator
 
 COPY --from=image-builder /go/bin/loki-curator /curator
 
@@ -37,7 +40,7 @@ EXPOSE 2718
 ENTRYPOINT [ "/curator" ]
 
 #############      eventlogger       #############
-FROM gcr.io/distroless/static:nonroot AS event-logger
+FROM distroless-static AS event-logger
 
 COPY --from=image-builder /go/bin/event-logger /event-logger
 
