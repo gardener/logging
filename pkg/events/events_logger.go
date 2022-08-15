@@ -19,91 +19,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/spf13/pflag"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	kubeinformersinterfaces "k8s.io/client-go/informers/internalinterfaces"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 )
-
-func (e *GardenerEventWatcherConfig) New() *GardenerEventWatcher {
-	_ = e.SeedKubeInformerFactory.InformerFor(&v1.Event{},
-		NewEventInformerFuncForNamespace(
-			"seed",
-			e.SeedEventWatcherConfig.Namespace,
-		),
-	)
-
-	_ = e.ShootKubeInformerFactory.InformerFor(&v1.Event{},
-		NewEventInformerFuncForNamespace(
-			"shoot",
-			e.ShootEventWatcherConfig.Namespace,
-		),
-	)
-
-	return &GardenerEventWatcher{
-		SeedKubeInformerFactory:  e.SeedKubeInformerFactory,
-		ShootKubeInformerFactory: e.ShootKubeInformerFactory,
-	}
-}
-
-func (e *GardenerEventWatcher) Run(stopCh <-chan struct{}) {
-	e.SeedKubeInformerFactory.Start(stopCh)
-	e.ShootKubeInformerFactory.Start(stopCh)
-	<-stopCh
-}
-
-func (o *Options) Validate() []error {
-	//TODO: vlvasilev implement me
-	errors := []error{}
-	errors = append(errors, nil)
-	return errors
-}
-
-func (o *Options) ApplyTo(config *EventWatcherConfig) error {
-	config.Kubeconfig = o.Kubeconfig
-	config.Namespace = o.Namespace
-	return nil
-}
-
-// AddFlags adds all flags to the given FlagSet.
-func (o *SeedOptions) AddFlags(fs *pflag.FlagSet) {
-	if o == nil {
-		return
-	}
-
-	fs.StringVar(&o.Kubeconfig, "seed-kubeconfig", "", "The kubeconfig for the seed cluster")
-	fs.StringVar(&o.Namespace, "seed-event-namespace", "kube-system", "The namespace of the seed events")
-}
-
-// Validate all flags of the given Options.
-func (o *SeedOptions) Validate() []error {
-	return o.Options.Validate()
-}
-
-func (o *SeedOptions) ApplyTo(config *EventWatcherConfig) error {
-	return o.Options.ApplyTo(config)
-}
-
-// AddFlags adds all flags to the given FlagSet.
-func (o *ShootOptions) AddFlags(fs *pflag.FlagSet) {
-	if o == nil {
-		return
-	}
-
-	fs.StringVar(&o.Kubeconfig, "shoot-kubeconfig", "", "The kubeconfig for the shoot cluster")
-	fs.StringVar(&o.Namespace, "shoot-event-namespace", "kube-system", "The namespace of the shoot events")
-}
-
-// Validate all flags of the given Options.
-func (o *ShootOptions) Validate() []error {
-	return o.Options.Validate()
-}
-
-func (o *ShootOptions) ApplyTo(config *EventWatcherConfig) error {
-	return o.Options.ApplyTo(config)
-}
 
 func NewEventInformerFuncForNamespace(origin, namespace string) kubeinformersinterfaces.NewInformerFunc {
 	return func(clientset kubernetes.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
@@ -150,6 +71,7 @@ func getEventFromV1Event(v1Event *v1.Event, origin string) *event {
 
 	return &event{
 		Origin:         origin,
+		Namespace:      v1Event.Namespace,
 		Type:           v1Event.Type,
 		Count:          v1Event.Count,
 		FirstTimestamp: v1Event.FirstTimestamp,
