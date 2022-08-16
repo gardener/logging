@@ -16,30 +16,17 @@ package events
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	kubeinformers "k8s.io/client-go/informers"
 )
 
 type EventWatcherConfig struct {
 	Kubeconfig string //Do I need this field?
-	Namespace  string
-}
-
-type GardenerEventWatcherConfig struct {
-	SeedEventWatcherConfig   EventWatcherConfig
-	SeedKubeInformerFactory  kubeinformers.SharedInformerFactory
-	ShootEventWatcherConfig  EventWatcherConfig
-	ShootKubeInformerFactory kubeinformers.SharedInformerFactory
-}
-
-type GardenerEventWatcher struct {
-	SeedKubeInformerFactory  kubeinformers.SharedInformerFactory
-	ShootKubeInformerFactory kubeinformers.SharedInformerFactory
+	Namespaces []string
 }
 
 // Options has all the context and parameters needed to run a Gardener Event Logger.
 type Options struct {
 	Kubeconfig string
-	Namespace  string
+	Namespaces []string
 }
 
 type SeedOptions struct {
@@ -51,8 +38,9 @@ type ShootOptions struct {
 }
 
 type event struct {
-	Origin         string      `json:"origin" protobuf:"bytes,9,name=origin"`
-	Type           string      `json:"type,omitempty" protobuf:"bytes,9,opt,name=type"`
+	Origin         string      `json:"origin" protobuf:"bytes,6,name=origin"`
+	Namespace      string      `json:"namespace" protobuf:"bytes,9,name=namespace"`
+	Type           string      `json:"type,omitempty" protobuf:"bytes,4,opt,name=type"`
 	Count          int32       `json:"count,omitempty" protobuf:"varint,8,opt,name=count"`
 	FirstTimestamp metav1.Time `json:"firstTimestamp,omitempty" protobuf:"bytes,6,opt,name=firstTimestamp"`
 	LastTimestamp  metav1.Time `json:"lastTimestamp,omitempty" protobuf:"bytes,7,opt,name=lastTimestamp"`

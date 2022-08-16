@@ -108,8 +108,17 @@ func (o *Options) Validate() error {
 func (o *Options) config(seedKubeAPIServerConfig *rest.Config, seedKubeClient *kubernetes.Clientset, shootKubeAPIServerConfig *rest.Config, shootKubeClient *kubernetes.Clientset) (*events.GardenerEventWatcherConfig, error) {
 	config := &events.GardenerEventWatcherConfig{}
 
-	config.SeedKubeInformerFactory = kubeinformers.NewSharedInformerFactory(seedKubeClient, seedKubeAPIServerConfig.Timeout)
-	config.ShootKubeInformerFactory = kubeinformers.NewSharedInformerFactory(shootKubeClient, shootKubeAPIServerConfig.Timeout)
+	for _, namespace := range o.SeedEventWatcher.Namespaces {
+		config.SeedKubeInformerFactories = append(config.SeedKubeInformerFactories,
+			kubeinformers.NewFilteredSharedInformerFactory(shootKubeClient, shootKubeAPIServerConfig.Timeout, namespace, nil),
+		)
+	}
+
+	for _, namespace := range o.ShootEventWatcher.Namespaces {
+		config.ShootKubeInformerFactories = append(config.ShootKubeInformerFactories,
+			kubeinformers.NewFilteredSharedInformerFactory(shootKubeClient, shootKubeAPIServerConfig.Timeout, namespace, nil),
+		)
+	}
 
 	if err := o.ApplyTo(config); err != nil {
 		return nil, err
