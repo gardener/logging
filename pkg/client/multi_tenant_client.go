@@ -30,8 +30,7 @@ import (
 )
 
 type multiTenantClient struct {
-	lokiclient   types.LokiClient
-	copyLabelSet bool
+	lokiclient types.LokiClient
 }
 
 const (
@@ -48,8 +47,7 @@ func NewMultiTenantClientDecorator(cfg config.Config, newClient NewLokiClientFun
 	}
 
 	return &multiTenantClient{
-		lokiclient:   client,
-		copyLabelSet: true,
+		lokiclient: client,
 	}, nil
 }
 
@@ -67,11 +65,7 @@ func (c *multiTenantClient) Handle(ls model.LabelSet, t time.Time, s string) err
 
 	var errs []error
 	for _, tenant := range tenants {
-		tmpLs := ls
-		if c.copyLabelSet {
-			tmpLs = ls.Clone()
-		}
-
+		tmpLs := ls.Clone()
 		tmpLs[client.ReservedLabelTenantID] = model.LabelValue(tenant)
 
 		err := c.lokiclient.Handle(tmpLs, t, s)
@@ -131,16 +125,13 @@ func (c *multiTenantClient) handleStream(stream batch.Stream) error {
 
 	var combineErr error
 	for _, tenant := range tenants {
-		ls := stream.Labels
-		if c.copyLabelSet {
-			ls = stream.Labels.Clone()
-		}
+		ls := stream.Labels.Clone()
 		ls[client.ReservedLabelTenantID] = model.LabelValue(tenant)
+
 		err := c.handleEntries(ls, stream.Entries)
 		if err != nil {
 			combineErr = giterrors.Wrap(combineErr, err.Error())
 		}
-
 	}
 	return nil
 }
