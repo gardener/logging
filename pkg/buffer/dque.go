@@ -27,7 +27,6 @@ import (
 type dqueEntry struct {
 	LabelSet model.LabelSet
 	logproto.Entry
-	end bool
 }
 
 func dqueEntryBuilder() interface{} {
@@ -102,11 +101,6 @@ func (c *dqueClient) dequeuer() {
 			metrics.Errors.WithLabelValues(metrics.ErrorDequeuerNotValidType).Inc()
 			_ = level.Error(c.logger).Log("msg", "error dequeued record is not an valid type", "queue", c.queue.Name)
 			continue
-		}
-
-		if record.end {
-			//TODO: What if the final ending record is malformed here
-			return
 		}
 
 		_ = level.Debug(c.logger).Log("msg", "sending record to Loki", "url", c.url, "record", record)

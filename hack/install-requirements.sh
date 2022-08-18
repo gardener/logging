@@ -17,7 +17,7 @@
 set -e
 
 # this script is kept for compatability reasons (other repos might use this script as well to install these tools)
-# TODO: drop this script in a future release
+# TODO: This file can be replaced with a helper Makefile which contains all needed binaries.
 echo "> [DEPRECATED] Installing requirements"
 
 export GO111MODULE=on

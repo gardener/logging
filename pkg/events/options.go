@@ -15,14 +15,29 @@
 package events
 
 import (
+	"errors"
+	"os"
+	"strings"
+
 	"github.com/spf13/pflag"
+	"k8s.io/apimachinery/pkg/api/validation"
 )
 
 func (o *Options) Validate() []error {
-	//TODO: vlvasilev implement me
-	errors := []error{}
-	errors = append(errors, nil)
-	return errors
+	allErrors := []error{}
+	if o.Kubeconfig != "inClusterConfig" {
+		if _, err := os.Stat(o.Kubeconfig); err != nil {
+			allErrors = append(allErrors, err)
+		}
+	}
+
+	for _, ns := range o.Namespaces {
+		if errs := validation.ValidateNamespaceName(ns, false); len(errs) > 0 {
+			allErrors = append(allErrors, errors.New(strings.Join(errs, "; ")))
+		}
+	}
+
+	return allErrors
 }
 
 func (o *Options) ApplyTo(config *EventWatcherConfig) error {

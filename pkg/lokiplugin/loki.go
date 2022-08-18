@@ -240,7 +240,6 @@ func (l *loki) addHostnameAsLabel(res model.LabelSet) error {
 	if l.cfg.PluginConfig.HostnameValue != nil {
 		res[model.LabelName(*l.cfg.PluginConfig.HostnameKey)] = model.LabelValue(*l.cfg.PluginConfig.HostnameValue)
 	} else {
-		//TODO: Make this code snippet more efficient
 		hostname, err := os.Hostname()
 		if err != nil {
 			return err
