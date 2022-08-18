@@ -55,7 +55,7 @@ const (
 	DefaultKubernetesMetadataTagPrefix = "kubernetes\\.var\\.log\\.containers"
 )
 
-//Config holds all of the needet properties of the loki output plugin
+// Config holds all of the needet properties of the loki output plugin
 type Config struct {
 	ClientConfig     ClientConfig
 	ControllerConfig ControllerConfig
@@ -75,6 +75,8 @@ type ClientConfig struct {
 	// NumberOfBatchIDs is number of id per batch.
 	// This increase the number of loki label streams
 	NumberOfBatchIDs uint64
+	// IdLabelName is the name of the batch id label key.
+	IdLabelName model.LabelName
 }
 
 // ControllerConfig hold the configuration fot the Loki client controller
@@ -399,6 +401,16 @@ func initClientConfig(cfg Getter, res *Config) error {
 	} else {
 		res.ClientConfig.NumberOfBatchIDs = 10
 	}
+
+	idLabelNameStr := cfg.Get("IdLabelName")
+	if idLabelNameStr == "" {
+		idLabelNameStr = "id"
+	}
+	idLabelName := model.LabelName(idLabelNameStr)
+	if !idLabelName.IsValid() {
+		return fmt.Errorf("invalid IdLabelName: %s", idLabelNameStr)
+	}
+	res.ClientConfig.IdLabelName = idLabelName
 
 	return nil
 }

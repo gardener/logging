@@ -37,6 +37,7 @@ type sortedClient struct {
 	batchSize        int
 	batchID          uint64
 	numberOfBatchIDs uint64
+	idLabelName      model.LabelName
 	quit             chan struct{}
 	once             sync.Once
 	entries          chan Entry
@@ -60,7 +61,8 @@ func NewSortedClientDecorator(cfg config.Config, newClient NewLokiClientFunc, lo
 		batchSize:        cfg.ClientConfig.GrafanaLokiConfig.BatchSize,
 		batchID:          0,
 		numberOfBatchIDs: cfg.ClientConfig.NumberOfBatchIDs,
-		batch:            batch.NewBatch(0),
+		batch:            batch.NewBatch(cfg.ClientConfig.IdLabelName, 0),
+		idLabelName:      cfg.ClientConfig.IdLabelName,
 		quit:             make(chan struct{}),
 		entries:          make(chan Entry),
 	}
@@ -138,7 +140,7 @@ func (c *sortedClient) sendBatch() {
 
 	c.batch.Sort()
 
-	for _, stream := range c.batch.Streams {
+	for _, stream := range c.batch.GetStreams() {
 		if err := c.lokiclient.handleStream(*stream); err != nil {
 			_ = level.Error(c.logger).Log("msg", "error sending stream", "stream", stream.Labels.String())
 		}
@@ -151,7 +153,7 @@ func (c *sortedClient) newBatch(e Entry) {
 	defer c.batchLock.Unlock()
 	if c.batch == nil {
 		c.batchID++
-		c.batch = batch.NewBatch(c.batchID % c.numberOfBatchIDs)
+		c.batch = batch.NewBatch(c.idLabelName, c.batchID%c.numberOfBatchIDs)
 	}
 
 	c.batch.Add(e.Labels.Clone(), e.Timestamp, e.Line)

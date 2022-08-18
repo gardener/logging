@@ -74,6 +74,7 @@ var _ = Describe("Sorted Client", func() {
 					URL:       clientURL,
 				},
 				NumberOfBatchIDs: 2,
+				IdLabelName:      model.LabelName("id"),
 			},
 		},
 			func(_ config.Config, _ log.Logger) (types.LokiClient, error) {

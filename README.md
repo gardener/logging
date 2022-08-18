@@ -44,6 +44,7 @@ It also adds additional configurations that aim to improve plugin's performance 
 | DropLogEntryWithoutK8sMetadata | When metadata is missing for the log entry, it will be dropped | `false`
 | ControllerSyncTimeout | Time to wait for cluster object synchronization | 60 seconds
 | NumberOfBatchIDs | The number of id per batch. This increase the number of loki label streams | 10
+| IdLabelName | The name of the batch ID label kye in the stream label set | `id`
 | DeletedClientTimeExpiration | The time duration after a client for deleted cluster will be considered for expired | 1 hour
 | DynamicTenant | When set the value is split on space delimiter to 3 tokens. The first token is the tenant to use, the second one is the field to search for matching. The third is the regex to match token 2. | none
 | RemoveTenantIdWhenSendingToDefaultURL | When `DynamicTenant` is set this flag decide whether to remove the record with dynamic tenant or not when sending them to the default `URL` | true

@@ -27,10 +27,10 @@ var _ = Describe("Batch", func() {
 	Describe("#NewBatch", func() {
 		It("Should create new batch", func() {
 			var id uint64 = 11
-			batch := NewBatch(id % 10)
+			batch := NewBatch(model.LabelName("id"), id%10)
 			Expect(batch).ToNot(BeNil())
-			Expect(batch.Streams).ToNot(BeNil())
-			Expect(batch.Bytes).To(Equal(0))
+			Expect(batch.streams).ToNot(BeNil())
+			Expect(batch.bytes).To(Equal(0))
 			Expect(batch.id).To(Equal(uint64(1)))
 
 		})
@@ -69,15 +69,15 @@ var _ = Describe("Batch", func() {
 
 	ginkgoTable.DescribeTable("#Add",
 		func(args addTestArgs) {
-			batch := NewBatch(0)
+			batch := NewBatch(model.LabelName("id"), 0)
 			for _, entry := range args.entries {
 				batch.Add(entry.LabelSet, entry.Timestamp, entry.Line)
 			}
 
-			Expect(len(batch.Streams)).To(Equal(len(args.expectedBatch.Streams)))
-			Expect(batch.Bytes).To(Equal(args.expectedBatch.Bytes))
-			for streamName, stream := range batch.Streams {
-				s, ok := args.expectedBatch.Streams[streamName]
+			Expect(len(batch.streams)).To(Equal(len(args.expectedBatch.streams)))
+			Expect(batch.bytes).To(Equal(args.expectedBatch.bytes))
+			for streamName, stream := range batch.streams {
+				s, ok := args.expectedBatch.streams[streamName]
 				Expect(ok).To(BeTrue())
 				Expect(stream).To(Equal(s))
 			}
@@ -91,7 +91,7 @@ var _ = Describe("Batch", func() {
 				},
 			},
 			expectedBatch: Batch{
-				Streams: map[string]*Stream{
+				streams: map[string]*Stream{
 					label1.String(): &Stream{
 						Labels: label1ID0.Clone(),
 						Entries: []Entry{
@@ -103,7 +103,7 @@ var _ = Describe("Batch", func() {
 						lastTimestamp: timeStamp1,
 					},
 				},
-				Bytes: 5,
+				bytes: 5,
 			},
 		}),
 		ginkgoTable.Entry("add two entry for one stream", addTestArgs{
@@ -120,7 +120,7 @@ var _ = Describe("Batch", func() {
 				},
 			},
 			expectedBatch: Batch{
-				Streams: map[string]*Stream{
+				streams: map[string]*Stream{
 					label1.String(): &Stream{
 						Labels: label1ID0.Clone(),
 						Entries: []Entry{
@@ -136,7 +136,7 @@ var _ = Describe("Batch", func() {
 						lastTimestamp: timeStamp2,
 					},
 				},
-				Bytes: 10,
+				bytes: 10,
 			},
 		}),
 		ginkgoTable.Entry("Add two entry for two stream", addTestArgs{
@@ -153,7 +153,7 @@ var _ = Describe("Batch", func() {
 				},
 			},
 			expectedBatch: Batch{
-				Streams: map[string]*Stream{
+				streams: map[string]*Stream{
 					label1.String(): &Stream{
 						Labels: label1ID0.Clone(),
 						Entries: []Entry{
@@ -175,7 +175,7 @@ var _ = Describe("Batch", func() {
 						lastTimestamp: timeStamp2,
 					},
 				},
-				Bytes: 10,
+				bytes: 10,
 			},
 		}),
 		ginkgoTable.Entry("Add two entry per each for two streams", addTestArgs{
@@ -202,7 +202,7 @@ var _ = Describe("Batch", func() {
 				},
 			},
 			expectedBatch: Batch{
-				Streams: map[string]*Stream{
+				streams: map[string]*Stream{
 					label1.String(): &Stream{
 						Labels: label1ID0.Clone(),
 						Entries: []Entry{
@@ -232,7 +232,7 @@ var _ = Describe("Batch", func() {
 						lastTimestamp: timeStamp2,
 					},
 				},
-				Bytes: 20,
+				bytes: 20,
 			},
 		}),
 	)
@@ -243,7 +243,7 @@ var _ = Describe("Batch", func() {
 		},
 		ginkgoTable.Entry("Sort batch with single stream with single entry", sortTestArgs{
 			batch: Batch{
-				Streams: map[string]*Stream{
+				streams: map[string]*Stream{
 					label1.String(): &Stream{
 						Labels: label1ID0.Clone(),
 						Entries: []Entry{
@@ -255,10 +255,10 @@ var _ = Describe("Batch", func() {
 						lastTimestamp: timeStamp1,
 					},
 				},
-				Bytes: 5,
+				bytes: 5,
 			},
 			expectedBatch: Batch{
-				Streams: map[string]*Stream{
+				streams: map[string]*Stream{
 					label1.String(): &Stream{
 						Labels: label1ID0.Clone(),
 						Entries: []Entry{
@@ -270,12 +270,12 @@ var _ = Describe("Batch", func() {
 						lastTimestamp: timeStamp1,
 					},
 				},
-				Bytes: 5,
+				bytes: 5,
 			},
 		}),
 		ginkgoTable.Entry("Sort batch with single stream with two entry", sortTestArgs{
 			batch: Batch{
-				Streams: map[string]*Stream{
+				streams: map[string]*Stream{
 					label1.String(): &Stream{
 						Labels: label1ID0.Clone(),
 						Entries: []Entry{
@@ -292,10 +292,10 @@ var _ = Describe("Batch", func() {
 						lastTimestamp:     timeStamp2,
 					},
 				},
-				Bytes: 5,
+				bytes: 5,
 			},
 			expectedBatch: Batch{
-				Streams: map[string]*Stream{
+				streams: map[string]*Stream{
 					label1.String(): &Stream{
 						Labels: label1ID0.Clone(),
 						Entries: []Entry{
@@ -311,12 +311,12 @@ var _ = Describe("Batch", func() {
 						lastTimestamp: timeStamp2,
 					},
 				},
-				Bytes: 5,
+				bytes: 5,
 			},
 		}),
 		ginkgoTable.Entry("Sort batch with two stream with two entry", sortTestArgs{
 			batch: Batch{
-				Streams: map[string]*Stream{
+				streams: map[string]*Stream{
 					label1.String(): &Stream{
 						Labels: label1ID0.Clone(),
 						Entries: []Entry{
@@ -348,10 +348,10 @@ var _ = Describe("Batch", func() {
 						lastTimestamp:     timeStamp2,
 					},
 				},
-				Bytes: 5,
+				bytes: 5,
 			},
 			expectedBatch: Batch{
-				Streams: map[string]*Stream{
+				streams: map[string]*Stream{
 					label1.String(): &Stream{
 						Labels: label1ID0.Clone(),
 						Entries: []Entry{
@@ -381,15 +381,8 @@ var _ = Describe("Batch", func() {
 						lastTimestamp: timeStamp2,
 					},
 				},
-				Bytes: 5,
+				bytes: 5,
 			},
 		}),
 	)
 })
-
-// type Stream struct {
-// 	Labels            model.LabelSet
-// 	Entries           []Entry
-// 	isEntryOutOfOrder bool
-// 	lastTimestamp     time.Time
-// }

@@ -115,6 +115,7 @@ var (
 		GrafanaLokiConfig: defaultGrafanaLokiConfig,
 		BufferConfig:      defaultBufferConfig,
 		NumberOfBatchIDs:  defaultNumberOfBatchIDs,
+		IdLabelName:       model.LabelName("id"),
 	}
 
 	defaultMainControllerClientConfig = ControllerClientConfiguration{
@@ -234,6 +235,7 @@ var _ = Describe("Config", func() {
 						DqueConfig: defaultDqueConfig,
 					},
 					NumberOfBatchIDs: defaultNumberOfBatchIDs,
+					IdLabelName:      model.LabelName("id"),
 					SortByTimestamp:  true,
 				},
 				ControllerConfig: defaultControllerConfig,
@@ -289,6 +291,7 @@ var _ = Describe("Config", func() {
 						Timeout:        defaultTimeout,
 					},
 					BufferConfig:     defaultBufferConfig,
+					IdLabelName:      model.LabelName("id"),
 					NumberOfBatchIDs: defaultNumberOfBatchIDs,
 				},
 				ControllerConfig: defaultControllerConfig,
@@ -339,6 +342,7 @@ var _ = Describe("Config", func() {
 						Timeout:        defaultTimeout,
 					},
 					BufferConfig:     defaultBufferConfig,
+					IdLabelName:      model.LabelName("id"),
 					NumberOfBatchIDs: defaultNumberOfBatchIDs,
 				},
 				ControllerConfig: ControllerConfig{
@@ -403,6 +407,7 @@ var _ = Describe("Config", func() {
 						},
 					},
 					NumberOfBatchIDs: defaultNumberOfBatchIDs,
+					IdLabelName:      model.LabelName("id"),
 				},
 				ControllerConfig: defaultControllerConfig,
 				LogLevel:         warnLogLevel,
@@ -452,6 +457,7 @@ var _ = Describe("Config", func() {
 					},
 					BufferConfig:     defaultBufferConfig,
 					NumberOfBatchIDs: defaultNumberOfBatchIDs,
+					IdLabelName:      model.LabelName("id"),
 				},
 				ControllerConfig: defaultControllerConfig,
 				LogLevel:         warnLogLevel,
@@ -504,6 +510,7 @@ var _ = Describe("Config", func() {
 					},
 					BufferConfig:     defaultBufferConfig,
 					NumberOfBatchIDs: defaultNumberOfBatchIDs,
+					IdLabelName:      model.LabelName("id"),
 				},
 				ControllerConfig: defaultControllerConfig,
 				LogLevel:         warnLogLevel,
@@ -548,6 +555,7 @@ var _ = Describe("Config", func() {
 					},
 					BufferConfig:     defaultBufferConfig,
 					NumberOfBatchIDs: defaultNumberOfBatchIDs,
+					IdLabelName:      model.LabelName("id"),
 				},
 				ControllerConfig: defaultControllerConfig,
 				LogLevel:         warnLogLevel,
