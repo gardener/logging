@@ -146,3 +146,32 @@ func (c *multiTenantClient) handleEntries(ls model.LabelSet, entries []batch.Ent
 	}
 	return combineErr
 }
+
+type removeMultiTenantIdClient struct {
+	lokiclient types.LokiClient
+}
+
+// NewRemoveMultiTenantIdClientDecorator wraps loki client which removes the __gardener_multitenant_id__ label from the label set
+func NewRemoveMultiTenantIdClientDecorator(cfg config.Config, newClient NewLokiClientFunc, logger log.Logger) (types.LokiClient, error) {
+	client, err := newLokiClient(cfg, newClient, logger)
+	if err != nil {
+		return nil, err
+	}
+
+	return &removeMultiTenantIdClient{client}, nil
+}
+
+func (c *removeMultiTenantIdClient) Handle(ls model.LabelSet, t time.Time, s string) error {
+	delete(ls, MultiTenantClientLabel)
+	return c.lokiclient.Handle(ls, t, s)
+}
+
+// Stop the client.
+func (c *removeMultiTenantIdClient) Stop() {
+	c.lokiclient.Stop()
+}
+
+// StopWait stops the client waiting all saved logs to be sent.
+func (c *removeMultiTenantIdClient) StopWait() {
+	c.lokiclient.StopWait()
+}
