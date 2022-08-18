@@ -149,3 +149,99 @@ var _ = Describe("Multi Tenant Client", func() {
 	})
 
 })
+
+var _ = Describe("Remove Multi Tenant Client", func() {
+	var (
+		fakeClient *client.FakeLokiClient
+		mtc        types.LokiClient
+	)
+
+	BeforeEach(func() {
+		var err error
+		fakeClient = &client.FakeLokiClient{}
+		var infoLogLevel logging.Level
+		_ = infoLogLevel.Set("info")
+
+		mtc, err = client.NewRemoveMultiTenantIdClientDecorator(config.Config{},
+			func(_ config.Config, _ log.Logger) (types.LokiClient, error) {
+				return fakeClient, nil
+			},
+			level.NewFilter(log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr)), infoLogLevel.Gokit))
+		Expect(err).ToNot(HaveOccurred())
+		Expect(mtc).NotTo(BeNil())
+	})
+
+	type handleArgs struct {
+		ls             model.LabelSet
+		t              time.Time
+		s              string
+		wantedLabelSet model.LabelSet
+	}
+	ginkotable.DescribeTable("#Handle", func(args handleArgs) {
+		err := mtc.Handle(args.ls, args.t, args.s)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(len(fakeClient.Entries) > 0).To(BeTrue())
+
+		for _, entry := range fakeClient.Entries {
+			Expect(entry.Labels).To(Equal(args.wantedLabelSet))
+		}
+	},
+		ginkotable.Entry("Handle record without __gardener_multitenant_id__ labels.", handleArgs{
+			ls:             model.LabelSet{"hostname": "test"},
+			t:              time.Now(),
+			s:              "test1",
+			wantedLabelSet: model.LabelSet{"hostname": "test"},
+		}),
+		ginkotable.Entry("Handle record without __gardener_multitenant_id__ label and with __tenant_id__ label.", handleArgs{
+			ls:             model.LabelSet{"hostname": "test", "__tenant_id__": "user"},
+			t:              time.Now(),
+			s:              "test1",
+			wantedLabelSet: model.LabelSet{"hostname": "test", "__tenant_id__": "user"},
+		}),
+		ginkotable.Entry("Handle record with __gardener_multitenant_id__ reserved label.", handleArgs{
+			ls:             model.LabelSet{"hostname": "test", "__gardener_multitenant_id__": "operator; user"},
+			t:              time.Now(),
+			s:              "test1",
+			wantedLabelSet: model.LabelSet{"hostname": "test"},
+		}),
+		ginkotable.Entry("Handle record with __gardener_multitenant_id__ reserved label and __tenant_id__ label.", handleArgs{
+			ls:             model.LabelSet{"hostname": "test", "__gardener_multitenant_id__": "operator;user", "__tenant_id__": "user"},
+			t:              time.Now(),
+			s:              "test1",
+			wantedLabelSet: model.LabelSet{"hostname": "test", "__tenant_id__": "user"},
+		}),
+		ginkotable.Entry("Handle record without labels", handleArgs{
+			ls:             model.LabelSet{},
+			t:              time.Now(),
+			s:              "test1",
+			wantedLabelSet: model.LabelSet{},
+		}),
+		ginkotable.Entry("Handle record with nil label set", handleArgs{
+			ls:             nil,
+			t:              time.Now(),
+			s:              "test1",
+			wantedLabelSet: model.LabelSet{},
+		}),
+	)
+
+	Describe("#Stop", func() {
+		It("should stop", func() {
+			Expect(fakeClient.IsGracefullyStopped).To(BeFalse())
+			Expect(fakeClient.IsStopped).To(BeFalse())
+			mtc.Stop()
+			Expect(fakeClient.IsGracefullyStopped).To(BeFalse())
+			Expect(fakeClient.IsStopped).To(BeTrue())
+		})
+	})
+
+	Describe("#StopWait", func() {
+		It("should stop", func() {
+			Expect(fakeClient.IsGracefullyStopped).To(BeFalse())
+			Expect(fakeClient.IsStopped).To(BeFalse())
+			mtc.StopWait()
+			Expect(fakeClient.IsGracefullyStopped).To(BeTrue())
+			Expect(fakeClient.IsStopped).To(BeFalse())
+		})
+	})
+
+})

@@ -75,6 +75,11 @@ func NewClient(cfg config.Config, logger log.Logger, options Options) (types.Lok
 		ncf = func(c config.Config, l log.Logger) (types.LokiClient, error) {
 			return NewMultiTenantClientDecorator(c, tempNCF, l)
 		}
+	} else {
+		tempNCF := ncf
+		ncf = func(c config.Config, l log.Logger) (types.LokiClient, error) {
+			return NewRemoveMultiTenantIdClientDecorator(c, tempNCF, l)
+		}
 	}
 
 	if cfg.ClientConfig.BufferConfig.Buffer {
@@ -91,11 +96,6 @@ type removeTenantIdClient struct {
 	lokiclient types.LokiClient
 }
 
-// NewRemoveTenantIdClient return loki client wich removes the __tenant_id__ value fro the label set
-func NewRemoveTenantIdClient(clientToWrap types.LokiClient) types.LokiClient {
-	return &removeTenantIdClient{clientToWrap}
-}
-
 // NewRemoveTenantIdClient return loki client which removes the __tenant_id__ value fro the label set
 func NewRemoveTenantIdClientDecorator(cfg config.Config, newClient NewLokiClientFunc, logger log.Logger) (types.LokiClient, error) {
 	client, err := newLokiClient(cfg, newClient, logger)
@@ -107,11 +107,7 @@ func NewRemoveTenantIdClientDecorator(cfg config.Config, newClient NewLokiClient
 }
 
 func (c *removeTenantIdClient) Handle(ls model.LabelSet, t time.Time, s string) error {
-	//If `__tenant_id__` exist the log is dropped because we assume it was re-emitted
-	if _, ok := ls[client.ReservedLabelTenantID]; ok {
-		return nil
-	}
-	delete(ls, MultiTenantClientLabel)
+	delete(ls, client.ReservedLabelTenantID)
 	return c.lokiclient.Handle(ls, t, s)
 }
 
@@ -122,7 +118,7 @@ func (c *removeTenantIdClient) Stop() {
 
 // StopWait stops the client waiting all saved logs to be sent.
 func (c *removeTenantIdClient) StopWait() {
-	c.lokiclient.Stop()
+	c.lokiclient.StopWait()
 }
 
 func newLokiClient(cfg config.Config, newClient NewLokiClientFunc, logger log.Logger) (types.LokiClient, error) {
