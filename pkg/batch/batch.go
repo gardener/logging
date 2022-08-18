@@ -25,20 +25,21 @@ import (
 // The aggregation of the logs is used to reduce the number
 // of push request to the Loki
 type Batch struct {
-	Streams   map[string]*Stream
-	Bytes     int
-	CreatedAt time.Time
-	id        uint64
+	streams     map[string]*Stream
+	bytes       int
+	createdAt   time.Time
+	id          uint64
+	idLabelName model.LabelName
 }
 
 // NewBatch returns a batch where the label set<ls>,
 // timestamp<t> and the log line<line> are added to it.
-func NewBatch(id uint64) *Batch {
+func NewBatch(idLabelName model.LabelName, id uint64) *Batch {
 	b := &Batch{
-		Streams:   make(map[string]*Stream),
-		Bytes:     0,
-		CreatedAt: time.Now(),
-		id:        id,
+		streams:     make(map[string]*Stream),
+		createdAt:   time.Now(),
+		id:          id,
+		idLabelName: idLabelName,
 	}
 
 	return b
@@ -46,22 +47,21 @@ func NewBatch(id uint64) *Batch {
 
 // Add an entry to the batch
 func (b *Batch) Add(ls model.LabelSet, t time.Time, line string) {
-	b.Bytes += len(line)
+	b.bytes += len(line)
 
 	// Append the entry to an already existing stream (if any)
 	// Not efficient string building.
 	labels := ls.String()
-	if stream, ok := b.Streams[labels]; ok {
+	if stream, ok := b.streams[labels]; ok {
 		stream.add(t, line)
 		return
 	}
 
 	// Add the entry as a new stream
-	//TODO: make "id" key be set from the argument line
 	ls = ls.Clone()
-	ls["id"] = model.LabelValue(strconv.FormatUint(b.id, 10))
+	ls[b.idLabelName] = model.LabelValue(strconv.FormatUint(b.id, 10))
 	entry := Entry{Timestamp: t, Line: line}
-	b.Streams[labels] = &Stream{
+	b.streams[labels] = &Stream{
 		Labels:        ls,
 		Entries:       []Entry{entry},
 		lastTimestamp: t,
@@ -70,23 +70,28 @@ func (b *Batch) Add(ls model.LabelSet, t time.Time, line string) {
 
 // SizeBytes returns the current batch size in bytes
 func (b *Batch) SizeBytes() int {
-	return b.Bytes
+	return b.bytes
 }
 
 // SizeBytesAfter returns the size of the batch after
 // the log of the next entry is added
 func (b *Batch) SizeBytesAfter(line string) int {
-	return b.Bytes + len(line)
+	return b.bytes + len(line)
 }
 
 // Age of the batch since its creation
 func (b *Batch) Age() time.Duration {
-	return time.Since(b.CreatedAt)
+	return time.Since(b.createdAt)
 }
 
 // Sort sorts the entries in each stream by the timestamp
 func (b *Batch) Sort() {
-	for _, stream := range b.Streams {
+	for _, stream := range b.streams {
 		stream.sort()
 	}
+}
+
+// GetStreams returns batch streams
+func (b *Batch) GetStreams() map[string]*Stream {
+	return b.streams
 }
