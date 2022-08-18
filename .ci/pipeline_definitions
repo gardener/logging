@@ -7,10 +7,6 @@ logging:
         preprocess:
           'inject-commit-hash'
       publish:
-        oci-builder: docker-buildx
-        platforms:
-        - linux/amd64
-        - linux/arm64
         dockerimages:
           fluent-bit-to-loki:
             registry: 'gcr-readwrite'
