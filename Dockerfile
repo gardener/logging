@@ -8,7 +8,7 @@ ARG TARGETARCH
 RUN make plugin GOARCH=$TARGETARCH
 
 #############  fluent-bit-plugin #############
-FROM alpine:3.16.1 AS fluent-bit-plugin
+FROM alpine:3.16.2 AS fluent-bit-plugin
 
 COPY --from=plugin-builder /go/src/github.com/gardener/logging/build /source/plugins
 
@@ -46,7 +46,7 @@ WORKDIR /
 ENTRYPOINT [ "/event-logger" ]
 
 #############      telegraf       #############
-FROM telegraf:1.23.3 AS telegraf
+FROM telegraf:1.23.4 AS telegraf
 
 RUN apt update
 RUN apt install -y iptables
