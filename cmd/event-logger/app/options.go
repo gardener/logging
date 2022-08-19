@@ -110,7 +110,7 @@ func (o *Options) config(seedKubeAPIServerConfig *rest.Config, seedKubeClient *k
 
 	for _, namespace := range o.SeedEventWatcher.Namespaces {
 		config.SeedKubeInformerFactories = append(config.SeedKubeInformerFactories,
-			kubeinformers.NewFilteredSharedInformerFactory(shootKubeClient, shootKubeAPIServerConfig.Timeout, namespace, nil),
+			kubeinformers.NewFilteredSharedInformerFactory(seedKubeClient, shootKubeAPIServerConfig.Timeout, namespace, nil),
 		)
 	}
 

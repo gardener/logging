@@ -25,7 +25,7 @@ import (
 
 func (o *Options) Validate() []error {
 	allErrors := []error{}
-	if o.Kubeconfig != "inClusterConfig" {
+	if o.Kubeconfig != "inClusterConfig" && o.Kubeconfig != "" {
 		if _, err := os.Stat(o.Kubeconfig); err != nil {
 			allErrors = append(allErrors, err)
 		}
