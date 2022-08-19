@@ -15,8 +15,6 @@
 package events
 
 import (
-	"fmt"
-
 	v1 "k8s.io/api/core/v1"
 	kubeinformers "k8s.io/client-go/informers"
 )
@@ -35,7 +33,6 @@ type GardenerEventWatcher struct {
 
 func (e *GardenerEventWatcherConfig) New() *GardenerEventWatcher {
 	for indx, namespace := range e.SeedEventWatcherConfig.Namespaces {
-		fmt.Println("**********MAKE SEED EVENT WATCHER FOR NAMESPACE: ", namespace, "*****************")
 		_ = e.SeedKubeInformerFactories[indx].InformerFor(&v1.Event{},
 			NewEventInformerFuncForNamespace(
 				"seed",
@@ -45,7 +42,6 @@ func (e *GardenerEventWatcherConfig) New() *GardenerEventWatcher {
 	}
 
 	for indx, namespace := range e.ShootEventWatcherConfig.Namespaces {
-		fmt.Println("**********MAKE SHOOT EVENT WATCHER FOR NAMESPACE: ", namespace, "*****************")
 		_ = e.ShootKubeInformerFactories[indx].InformerFor(&v1.Event{},
 			NewEventInformerFuncForNamespace(
 				"shoot",
