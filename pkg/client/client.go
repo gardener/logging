@@ -42,14 +42,21 @@ func NewClient(cfg config.Config, logger log.Logger, options Options) (types.Lok
 		ncf NewLokiClientFunc
 	)
 
-	ncf = func(c config.Config, logger log.Logger) (types.LokiClient, error) {
-		return NewPromtailClient(c.ClientConfig.GrafanaLokiConfig, logger)
+	if cfg.ClientConfig.TestingClient == nil {
+		ncf = func(c config.Config, logger log.Logger) (types.LokiClient, error) {
+			return NewPromtailClient(c.ClientConfig.GrafanaLokiConfig, logger)
+		}
+	} else {
+		ncf = func(c config.Config, logger log.Logger) (types.LokiClient, error) {
+			return newTestingPromtailClient(cfg.ClientConfig.TestingClient, c.ClientConfig.GrafanaLokiConfig, logger)
+		}
 	}
 
 	// When label processing is done the sorting client could be used.
 	if cfg.ClientConfig.SortByTimestamp {
+		tempNCF := ncf
 		ncf = func(c config.Config, l log.Logger) (types.LokiClient, error) {
-			return NewSortedClientDecorator(c, nil, l)
+			return NewSortedClientDecorator(c, tempNCF, l)
 		}
 	}
 

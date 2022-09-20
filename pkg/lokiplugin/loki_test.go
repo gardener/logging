@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,18 +18,17 @@ import (
 	"regexp"
 	"time"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
-	. "github.com/onsi/gomega"
-	"github.com/weaveworks/common/logging"
-	"k8s.io/utils/pointer"
-
 	"github.com/gardener/logging/pkg/config"
 	"github.com/gardener/logging/pkg/types"
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/gomega"
 	"github.com/prometheus/common/model"
+	"github.com/weaveworks/common/logging"
+	"k8s.io/utils/pointer"
 )
 
 type entry struct {

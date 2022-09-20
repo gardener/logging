@@ -25,11 +25,11 @@ import (
 	lokiflag "github.com/grafana/loki/pkg/util/flagext"
 )
 
-var defaultClientCfg = client.Config{}
+var DefaultClientCfg = client.Config{}
 
 func init() {
 	// Init everything with default values.
-	flagext.RegisterFlags(&defaultClientCfg)
+	flagext.RegisterFlags(&DefaultClientCfg)
 }
 
 // Getter get a configuration settings base on the passed key
@@ -77,6 +77,8 @@ type ClientConfig struct {
 	NumberOfBatchIDs uint64
 	// IdLabelName is the name of the batch id label key.
 	IdLabelName model.LabelName
+	// TestingClient is mocked grafana/loki client used for testing purposes
+	TestingClient client.Client
 }
 
 // ControllerConfig hold the configuration fot the Loki client controller
@@ -253,7 +255,7 @@ func ParseConfig(cfg Getter) (*Config, error) {
 }
 
 func initClientConfig(cfg Getter, res *Config) error {
-	res.ClientConfig.GrafanaLokiConfig = defaultClientCfg
+	res.ClientConfig.GrafanaLokiConfig = DefaultClientCfg
 	res.ClientConfig.BufferConfig = DefaultBufferConfig
 
 	url := cfg.Get("URL")
