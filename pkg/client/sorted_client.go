@@ -81,9 +81,6 @@ func (c *sortedClient) run() {
 	maxWaitCheck := time.NewTicker(maxWaitCheckFrequency)
 
 	defer func() {
-		if c.batch != nil {
-			c.sendBatch()
-		}
 		maxWaitCheck.Stop()
 		c.wg.Done()
 	}()
@@ -167,17 +164,22 @@ func (c *sortedClient) addToBatch(e Entry) {
 func (c *sortedClient) Stop() {
 	c.once.Do(func() {
 		close(c.quit)
+		c.wg.Wait()
 		c.lokiclient.Stop()
 	})
-	c.wg.Wait()
+
 }
 
 func (c *sortedClient) StopWait() {
 	c.once.Do(func() {
 		close(c.quit)
+		c.wg.Wait()
+		if c.batch != nil {
+			c.sendBatch()
+		}
 		c.lokiclient.StopWait()
 	})
-	c.wg.Wait()
+
 }
 
 // Handle implement EntryHandler; adds a new line to the next batch; send is async.
