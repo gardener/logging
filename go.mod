@@ -164,6 +164,8 @@ replace (
 	github.com/Azure/azure-sdk-for-go => github.com/Azure/azure-sdk-for-go v36.2.0+incompatible
 
 	github.com/Azure/go-autorest => github.com/Azure/go-autorest v13.3.0+incompatible
+
+	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.4.0
 	github.com/hpcloud/tail => github.com/grafana/tail v0.0.0-20191024143944-0b54ddf21fe7
 	github.com/prometheus/common => github.com/prometheus/common v0.15.0
 	github.com/weaveworks/common => github.com/weaveworks/common v0.0.0-20210419092856-009d1eebd624
@@ -180,7 +182,6 @@ replace (
 	k8s.io/helm => k8s.io/helm v2.13.1+incompatible
 	k8s.io/kube-aggregator => k8s.io/kube-aggregator v0.17.9
 	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.4.0
-
 	sigs.k8s.io/controller-runtime/pkg/manager/signals => sigs.k8s.io/controller-runtime/pkg/manager/signals v0.7.0
 // Override reference that causes an error from Go proxy - see https://github.com/golang/go/issues/33558
 //k8s.io/client-go => k8s.io/client-go v0.0.0-20190620085101-78d2af792bab

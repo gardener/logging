@@ -47,6 +47,14 @@ func NewPromtailClient(cfg client.Config, logger log.Logger) (types.LokiClient, 
 	}, nil
 }
 
+// newTestingPromtailClient is wrapping fake grafana/loki client used for testing
+func newTestingPromtailClient(c client.Client, cfg client.Config, logger log.Logger) (types.LokiClient, error) {
+	return &promtailClientWithForwardedLogsMetricCounter{
+		lokiclient: c,
+		host:       cfg.URL.Hostname(),
+	}, nil
+}
+
 func (c *promtailClientWithForwardedLogsMetricCounter) Handle(ls model.LabelSet, t time.Time, s string) error {
 	c.lokiclient.Chan() <- api.Entry{Labels: ls, Entry: logproto.Entry{Timestamp: t, Line: s}}
 	metrics.ForwardedLogs.WithLabelValues(c.host).Inc()
