@@ -149,7 +149,7 @@ var (
 		DefaultControllerClientConfig: defaultControllerClientConfig,
 	}
 
-	defaultURL, _ = ParseURL("http://localhost:3100/loki/api/v1/push")
+	defaultURL = parseURL("http://localhost:3100/loki/api/v1/push")
 )
 
 var _ = Describe("Config", func() {
@@ -164,7 +164,7 @@ var _ = Describe("Config", func() {
 
 	_ = warnLogLevel.Set("warn")
 	_ = infoLogLevel.Set("info")
-	somewhereURL, _ := ParseURL("http://somewhere.com:3100/loki/api/v1/push")
+	somewhereURL := parseURL("http://somewhere.com:3100/loki/api/v1/push")
 
 	DescribeTable("Test Config",
 		func(args testArgs) {
@@ -254,7 +254,7 @@ var _ = Describe("Config", func() {
 				"RemoveKeys":    "buzz,fuzz",
 				"LabelKeys":     "foo,bar",
 				"DropSingleKey": "false",
-				"LabelMapPath":  getTestFileName(),
+				"LabelMapPath":  createTempLabelMap(),
 			},
 			&Config{
 				PluginConfig: PluginConfig{
@@ -699,21 +699,15 @@ var _ = Describe("Config", func() {
 	)
 })
 
-func ParseURL(u string) (flagext.URLValue, error) {
-	parsed, err := url.Parse(u)
-	if err != nil {
-		return flagext.URLValue{}, err
-	}
-	return flagext.URLValue{URL: parsed}, nil
+func parseURL(u string) flagext.URLValue {
+	parsed, _ := url.Parse(u)
+	return flagext.URLValue{URL: parsed}
 }
 
-func CreateTempLabelMap() (string, error) {
-	file, err := ioutil.TempFile("", "labelmap")
-	if err != nil {
-		return "", err
-	}
+func createTempLabelMap() string {
+	file, _ := ioutil.TempFile("", "labelmap")
 
-	_, err = file.WriteString(`{
+	_, _ = file.WriteString(`{
 		"kubernetes": {
 			"namespace_name": "namespace",
 			"labels": {
@@ -727,13 +721,5 @@ func CreateTempLabelMap() (string, error) {
 		"stream": "stream"
 	}`)
 
-	if err != nil {
-		return "", err
-	}
-	return file.Name(), nil
-}
-
-func getTestFileName() string {
-	testFileName, _ = CreateTempLabelMap()
-	return testFileName
+	return file.Name()
 }

@@ -229,7 +229,7 @@ func ParseConfig(cfg Getter) (*Config, error) {
 	}
 	var level logging.Level
 	if err := level.Set(logLevel); err != nil {
-		return nil, fmt.Errorf("invalid log level: %v", logLevel)
+		return nil, err
 	}
 	res.LogLevel = level
 
