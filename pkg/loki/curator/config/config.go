@@ -58,7 +58,11 @@ var DefaultCuratorConfig = CuratorConfig{
 
 // ParseConfigurations reads configurations from a given yaml file path and makes CuratorConfig object from them
 func ParseConfigurations(curatorConfigPath string) (*CuratorConfig, error) {
-	curatorConfigAbsPath, _ := filepath.Abs(curatorConfigPath)
+	curatorConfigAbsPath, err := filepath.Abs(curatorConfigPath)
+	if err != nil {
+		return nil, err
+	}
+
 	curatorConfigFile, err := ioutil.ReadFile(curatorConfigAbsPath)
 	if err != nil {
 		return nil, err

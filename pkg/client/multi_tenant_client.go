@@ -133,7 +133,7 @@ func (c *multiTenantClient) handleStream(stream batch.Stream) error {
 			combineErr = giterrors.Wrap(combineErr, err.Error())
 		}
 	}
-	return nil
+	return combineErr
 }
 
 func (c *multiTenantClient) handleEntries(ls model.LabelSet, entries []batch.Entry) error {

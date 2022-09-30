@@ -30,19 +30,21 @@ import (
 )
 
 func main() {
-	// metrics
-	go func() {
-		runtime.SetMutexProfileFraction(5)
-		runtime.SetBlockProfileRate(1)
-		http.Handle("/curator/metrics", promhttp.Handler())
-		_ = http.ListenAndServe(":2718", nil)
-	}()
-
 	conf, logger, err := app.ParseConfiguration()
 	if err != nil {
 		_ = level.Error(logger).Log("msg", "error", err)
 		os.Exit(1)
 	}
+
+	// metrics
+	go func() {
+		runtime.SetMutexProfileFraction(5)
+		runtime.SetBlockProfileRate(1)
+		http.Handle("/curator/metrics", promhttp.Handler())
+		if err := http.ListenAndServe(":2718", nil); err != nil {
+			_ = level.Error(logger).Log("Curator metric server error", err.Error())
+		}
+	}()
 
 	curator := curator.NewCurator(*conf, logger)
 	c := make(chan os.Signal, 2)
