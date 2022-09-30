@@ -51,6 +51,10 @@ install-loki-curator:
 install-event-logger:
 	@EFFECTIVE_VERSION=$(EFFECTIVE_VERSION) ./hack/install.sh ./cmd/event-logger
 
+.PHONY: install-copy
+install-copy:
+	@EFFECTIVE_VERSION=$(EFFECTIVE_VERSION) ./hack/install.sh ./cmd/copy
+
 .PHONY: docker-images
 docker-images:
 	@docker build -t $(FLUENT_BIT_TO_LOKI_IMAGE_REPOSITORY):$(IMAGE_TAG) -t $(FLUENT_BIT_TO_LOKI_IMAGE_REPOSITORY):latest -f Dockerfile --target fluent-bit-plugin .
