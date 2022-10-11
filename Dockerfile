@@ -51,8 +51,6 @@ WORKDIR /
 ENTRYPOINT [ "/event-logger" ]
 
 #############      telegraf       #############
-FROM telegraf:1.23.4 AS telegraf
+FROM telegraf:1.24.2 AS telegraf
 
-RUN apt update
-RUN apt install -y iptables
-RUN apt clean
+RUN apt update && apt install -y iptables sudo && apt clean
