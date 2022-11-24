@@ -159,7 +159,7 @@ func (c *dqueClient) Handle(ls model.LabelSet, t time.Time, s string) error {
 }
 
 func (e *dqueEntry) String() string {
-	return fmt.Sprintf("labels: %+v timestamp: %+v line: %+v", e.LabelSet, e.Timestamp, e.Line)
+	return fmt.Sprintf("labels: %+v timestamp: %+v line: %+v", e.LabelSet, e.Entry.Timestamp, e.Entry.Line)
 }
 
 func (c *dqueClient) stopQue(wait bool) error {

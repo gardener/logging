@@ -30,10 +30,14 @@ const (
 	waitCheckFrequencyDelimiter = 10
 )
 
+// Options for creating a Loki client
 type Options struct {
-	RemoveTenantID    bool
+	// RemoveTenantID flag removes the "__tenant_id_" label
+	RemoveTenantID bool
+	// MultiTenantClient glaf removes the "__gardener_multitenant_id__" label
 	MultiTenantClient bool
-	PreservedLabels   model.LabelSet
+	// PreservedLabels is the labels to preserve
+	PreservedLabels model.LabelSet
 }
 
 // NewClient creates a new client based on the fluentbit configuration.
@@ -103,7 +107,7 @@ type removeTenantIdClient struct {
 	lokiclient types.LokiClient
 }
 
-// NewRemoveTenantIdClient return loki client which removes the __tenant_id__ value fro the label set
+// NewRemoveTenantIdClientDecorator return loki client which removes the __tenant_id__ value fro the label set
 func NewRemoveTenantIdClientDecorator(cfg config.Config, newClient NewLokiClientFunc, logger log.Logger) (types.LokiClient, error) {
 	client, err := newLokiClient(cfg, newClient, logger)
 	if err != nil {

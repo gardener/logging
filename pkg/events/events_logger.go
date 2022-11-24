@@ -26,6 +26,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
+// NewEventInformerFuncForNamespace returns function which creates new event informer for a given namespace.
 func NewEventInformerFuncForNamespace(origin, namespace string) kubeinformersinterfaces.NewInformerFunc {
 	return func(clientset kubernetes.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
 		watchlist := cache.NewListWatchFromClient(
@@ -74,6 +75,7 @@ func getEventFromV1Event(v1Event *v1.Event, origin string) *event {
 		Namespace:      v1Event.Namespace,
 		Type:           v1Event.Type,
 		Count:          v1Event.Count,
+		EventTime:      v1Event.EventTime,
 		FirstTimestamp: v1Event.FirstTimestamp,
 		LastTimestamp:  v1Event.LastTimestamp,
 		Reason:         v1Event.Reason,

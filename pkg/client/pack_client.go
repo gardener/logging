@@ -31,7 +31,7 @@ type packClient struct {
 	excludedLabels model.LabelSet
 }
 
-// NewPackClient return loki client which pack all the labels except the explicitly excluded ones and forward them the the wrapped client.
+// NewPackClientDecorator return loki client which pack all the labels except the explicitly excluded ones and forward them the the wrapped client.
 func NewPackClientDecorator(cfg config.Config, newClient NewLokiClientFunc, logger log.Logger) (types.LokiClient, error) {
 	client, err := newLokiClient(cfg, newClient, logger)
 	if err != nil {
@@ -44,7 +44,8 @@ func NewPackClientDecorator(cfg config.Config, newClient NewLokiClientFunc, logg
 	}, nil
 }
 
-//This function can modify the label set so avoid concurrent use of it.
+// Handle processes and sends logs to Loki.
+// This function can modify the label set so avoid concurrent use of it.
 func (c *packClient) Handle(ls model.LabelSet, t time.Time, s string) error {
 	if c.checkIfLabelSetContainsExcludedLabels(ls) {
 		log := make(map[string]string, len(ls))

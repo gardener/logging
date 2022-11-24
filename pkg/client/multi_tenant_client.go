@@ -34,7 +34,9 @@ type multiTenantClient struct {
 }
 
 const (
-	MultiTenantClientLabel      = "__gardener_multitenant_id__"
+	// MultiTenantClientLabel is the reserved label for multiple client specification
+	MultiTenantClientLabel = "__gardener_multitenant_id__"
+	// MultiTenantClientsSeparator separates the client names in MultiTenantClientLabel
 	MultiTenantClientsSeparator = ";"
 )
 

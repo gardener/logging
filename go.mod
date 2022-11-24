@@ -1,6 +1,6 @@
 module github.com/gardener/logging
 
-go 1.18
+go 1.19
 
 require (
 	github.com/ahmetb/gen-crd-api-reference-docs v0.2.0
@@ -8,6 +8,7 @@ require (
 	github.com/fluent/fluent-bit-go v0.0.0-20190925192703-ea13c021720c
 	github.com/gardener/gardener v1.5.0
 	github.com/go-kit/kit v0.12.0
+	github.com/go-kit/log v0.2.0
 	github.com/go-logfmt/logfmt v0.5.1
 	github.com/gobuffalo/packr/v2 v2.8.0
 	github.com/golang/mock v1.6.0
@@ -58,7 +59,6 @@ require (
 	github.com/gardener/gardener-resource-manager v0.10.0 // indirect
 	github.com/gardener/hvpa-controller v0.0.0-20191014062307-fad3bdf06a25 // indirect
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32 // indirect
-	github.com/go-kit/log v0.2.0 // indirect
 	github.com/go-logr/logr v0.4.0 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
 	github.com/go-openapi/jsonreference v0.19.5 // indirect

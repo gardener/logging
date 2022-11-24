@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v2"
 )
 
 // CuratorConfig holds the curator's configurations
@@ -75,7 +75,7 @@ func ParseConfigurations(curatorConfigPath string) (*CuratorConfig, error) {
 	}
 
 	if config.TriggerInterval < 1*time.Second {
-		return nil, errors.Errorf("TriggerInterval should be >= 1 second.")
+		return nil, errors.Errorf("the TriggerInterval should be >= 1 second")
 	}
 
 	if err = isValidPercentage(

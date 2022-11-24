@@ -35,6 +35,7 @@ type LokiClient interface {
 	StopWait()
 }
 
+// Entry represent a Loki log record.
 type Entry struct {
 	Labels model.LabelSet
 	logproto.Entry

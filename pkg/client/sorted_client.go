@@ -44,6 +44,7 @@ type sortedClient struct {
 	wg               sync.WaitGroup
 }
 
+// NewSortedClientDecorator returns client which sorts the logs based their timestamp.
 func NewSortedClientDecorator(cfg config.Config, newClient NewLokiClientFunc, logger log.Logger) (types.LokiClient, error) {
 	var err error
 	batchWait := cfg.ClientConfig.GrafanaLokiConfig.BatchWait
@@ -100,7 +101,7 @@ func (c *sortedClient) run() {
 
 			// If adding the entry to the batch will increase the size over the max
 			// size allowed, we do send the current batch and then create a new one
-			if c.batch.SizeBytesAfter(e.Line) > c.batchSize {
+			if c.batch.SizeBytesAfter(e.Entry.Line) > c.batchSize {
 				c.sendBatch()
 				c.newBatch(e)
 				break
@@ -153,7 +154,7 @@ func (c *sortedClient) newBatch(e Entry) {
 		c.batch = batch.NewBatch(c.idLabelName, c.batchID%c.numberOfBatchIDs)
 	}
 
-	c.batch.Add(e.Labels.Clone(), e.Timestamp, e.Line)
+	c.batch.Add(e.Labels.Clone(), e.Entry.Timestamp, e.Entry.Line)
 }
 
 func (c *sortedClient) addToBatch(e Entry) {
