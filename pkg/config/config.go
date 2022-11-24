@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -487,9 +488,14 @@ func initPluginConfig(cfg Getter, res *Config) error {
 
 	labelMapPath := cfg.Get("LabelMapPath")
 	if labelMapPath != "" {
-		content, err := ioutil.ReadFile(labelMapPath)
-		if err != nil {
-			return fmt.Errorf("failed to open LabelMap file: %s", err)
+		var content []byte
+		if _, err := os.Stat(labelMapPath); err == nil {
+			content, err = ioutil.ReadFile(labelMapPath)
+			if err != nil {
+				return fmt.Errorf("failed to open LabelMap file: %s", err)
+			}
+		} else if errors.Is(err, os.ErrNotExist) {
+			content = []byte(labelMapPath)
 		}
 		if err := json.Unmarshal(content, &res.PluginConfig.LabelMap); err != nil {
 			return fmt.Errorf("failed to Unmarshal LabelMap file: %s", err)
