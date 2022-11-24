@@ -23,6 +23,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 )
 
+// Handler returns http.Handler
 func Handler(flbListeningIP, port string) http.Handler {
 	if flbListeningIP == "" {
 		flbListeningIP = "127.0.0.1"

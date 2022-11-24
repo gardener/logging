@@ -23,6 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/validation"
 )
 
+// Validate validates the Options
 func (o *Options) Validate() []error {
 	allErrors := []error{}
 	if o.Kubeconfig != "inClusterConfig" && o.Kubeconfig != "" {
@@ -40,6 +41,7 @@ func (o *Options) Validate() []error {
 	return allErrors
 }
 
+// ApplyTo applies the Options to an EventWatcherConfig
 func (o *Options) ApplyTo(config *EventWatcherConfig) error {
 	config.Kubeconfig = o.Kubeconfig
 	config.Namespaces = o.Namespaces
@@ -61,6 +63,7 @@ func (o *SeedOptions) Validate() []error {
 	return o.Options.Validate()
 }
 
+// ApplyTo applies the SeedOptions to an EventWatcherConfig
 func (o *SeedOptions) ApplyTo(config *EventWatcherConfig) error {
 	return o.Options.ApplyTo(config)
 }
@@ -80,6 +83,7 @@ func (o *ShootOptions) Validate() []error {
 	return o.Options.Validate()
 }
 
+// ApplyTo applies the ShootOptions to an EventWatcherConfig
 func (o *ShootOptions) ApplyTo(config *EventWatcherConfig) error {
 	return o.Options.ApplyTo(config)
 }

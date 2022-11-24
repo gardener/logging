@@ -19,18 +19,27 @@ import (
 	kubeinformers "k8s.io/client-go/informers"
 )
 
+// GardenerEventWatcherConfig contains configuration for the event logger run in gardener.
 type GardenerEventWatcherConfig struct {
-	SeedEventWatcherConfig     EventWatcherConfig
-	SeedKubeInformerFactories  []kubeinformers.SharedInformerFactory
-	ShootEventWatcherConfig    EventWatcherConfig
+	// SeedEventWatcherConfig is a configuration for the event watcher in the seed.
+	SeedEventWatcherConfig EventWatcherConfig
+	// SeedKubeInformerFactories contains the informer factories fot the seed event watcher
+	SeedKubeInformerFactories []kubeinformers.SharedInformerFactory
+	// SeedEventWatcherConfig is a configuration for the event watcher in the shoot.
+	ShootEventWatcherConfig EventWatcherConfig
+	// ShootKubeInformerFactories contains the informer factories fot the shoot event watcher
 	ShootKubeInformerFactories []kubeinformers.SharedInformerFactory
 }
 
+// GardenerEventWatcher is the event watcher for the gardener
 type GardenerEventWatcher struct {
-	SeedKubeInformerFactories  []kubeinformers.SharedInformerFactory
+	// SeedKubeInformerFactories contains the informer factories fot the seed event watcher
+	SeedKubeInformerFactories []kubeinformers.SharedInformerFactory
+	// ShootKubeInformerFactories contains the informer factories fot the shoot event watcher
 	ShootKubeInformerFactories []kubeinformers.SharedInformerFactory
 }
 
+// New returns new GardenerEventWatcherConfig
 func (e *GardenerEventWatcherConfig) New() *GardenerEventWatcher {
 	for indx, namespace := range e.SeedEventWatcherConfig.Namespaces {
 		_ = e.SeedKubeInformerFactories[indx].InformerFor(&v1.Event{},
@@ -56,6 +65,7 @@ func (e *GardenerEventWatcherConfig) New() *GardenerEventWatcher {
 	}
 }
 
+// Run start the GardenerEventWatcher lifecycle
 func (e *GardenerEventWatcher) Run(stopCh <-chan struct{}) {
 	for _, informerFactory := range e.SeedKubeInformerFactories {
 		informerFactory.Start(stopCh)

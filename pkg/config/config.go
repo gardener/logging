@@ -26,6 +26,7 @@ import (
 	lokiflag "github.com/grafana/loki/pkg/util/flagext"
 )
 
+// DefaultClientCfg is the default gardener lokiplugin client configuration.
 var DefaultClientCfg = client.Config{}
 
 func init() {
@@ -33,7 +34,7 @@ func init() {
 	flagext.RegisterFlags(&DefaultClientCfg)
 }
 
-// Getter get a configuration settings base on the passed key
+// Getter get a configuration settings base on the passed key.
 type Getter interface {
 	Get(key string) string
 }
@@ -173,6 +174,7 @@ type KubernetesMetadataExtraction struct {
 	TagExpression                      string
 }
 
+// DynamicTenant contains specs for the lokiplugin dynamic functionality
 type DynamicTenant struct {
 	Tenant                                string
 	Field                                 string
@@ -195,6 +197,7 @@ var DefaultDqueConfig = DqueConfig{
 	QueueName:        "dque",
 }
 
+// DefaultControllerClientConfig is the default controller client configuration
 var DefaultControllerClientConfig = ControllerClientConfiguration{
 	SendLogsWhenIsInCreationState:    true,
 	SendLogsWhenIsInReadyState:       false,
@@ -207,6 +210,7 @@ var DefaultControllerClientConfig = ControllerClientConfiguration{
 	SendLogsWhenIsInMigrationState:   true,
 }
 
+// MainControllerClientConfig is the main controller client configuration
 var MainControllerClientConfig = ControllerClientConfiguration{
 	SendLogsWhenIsInCreationState:    true,
 	SendLogsWhenIsInReadyState:       true,

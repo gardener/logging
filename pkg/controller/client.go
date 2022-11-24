@@ -147,12 +147,14 @@ type controllerClient struct {
 	name              string
 }
 
+// ControllerClient is a Loki client for the lokiplugin controller
 type ControllerClient interface {
 	types.LokiClient
 	GetState() clusterState
 	SetState(state clusterState)
 }
 
+// Handle processes and sends log to Loki
 func (c *controllerClient) Handle(ls model.LabelSet, t time.Time, s string) error {
 	var combineErr error
 	// Because we do not use thread save methods here we just copy the variables
@@ -230,6 +232,7 @@ func (c *controllerClient) SetState(state clusterState) {
 	c.state = state
 }
 
+// GetState returns the cluster state
 func (c *controllerClient) GetState() clusterState {
 	return c.state
 }

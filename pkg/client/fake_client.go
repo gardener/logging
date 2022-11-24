@@ -22,12 +22,17 @@ import (
 	"github.com/prometheus/common/model"
 )
 
+// FakeLokiClient mocks LokiClient
 type FakeLokiClient struct {
-	IsStopped           bool
+	// IsStopped show whether the client is stopped or not
+	IsStopped bool
+	// IsGracefullyStopped show whether the client is gracefully topped or not
 	IsGracefullyStopped bool
-	Entries             []Entry
+	// Entries is slice of all received entries
+	Entries []Entry
 }
 
+// Handle processes and stores the received entries.
 func (c *FakeLokiClient) Handle(labels model.LabelSet, timestamp time.Time, line string) error {
 	if c.IsStopped || c.IsGracefullyStopped {
 		return fmt.Errorf("client has been stopped")
@@ -40,10 +45,12 @@ func (c *FakeLokiClient) Handle(labels model.LabelSet, timestamp time.Time, line
 	return nil
 }
 
+// Stop stops the client
 func (c *FakeLokiClient) Stop() {
 	c.IsStopped = true
 }
 
+// StopWait gracefully stops the client
 func (c *FakeLokiClient) StopWait() {
 	c.IsGracefullyStopped = true
 }

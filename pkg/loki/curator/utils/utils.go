@@ -73,6 +73,7 @@ func deleteNOldestFiles(dirPath string, filePageSize int) (int, error) {
 	return deletedFiles, err
 }
 
+// GetNOldestFiles returns the N oldest files on success or empty file slice and an error.
 func GetNOldestFiles(dirPath string, filePageSize int) ([]file, error) {
 	var filePage []file
 	openedDir, err := os.Open(dirPath)
@@ -138,6 +139,7 @@ func sortFilesByModTime(files []file) {
 	})
 }
 
+// MemStat holds information about the current memory.
 type MemStat struct {
 	sb strings.Builder
 }
