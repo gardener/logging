@@ -34,7 +34,7 @@ logging:
             target: event-logger
     steps:
       verify:
-        image: 'golang:1.19.4'
+        image: 'golang:1.19.5'
   jobs:
     head-update:
       traits:
