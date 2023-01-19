@@ -27,24 +27,24 @@ import (
 )
 
 type packClient struct {
-	lokiClient     types.LokiClient
+	valiClient     types.ValiClient
 	excludedLabels model.LabelSet
 }
 
-// NewPackClientDecorator return loki client which pack all the labels except the explicitly excluded ones and forward them the the wrapped client.
-func NewPackClientDecorator(cfg config.Config, newClient NewLokiClientFunc, logger log.Logger) (types.LokiClient, error) {
-	client, err := newLokiClient(cfg, newClient, logger)
+// NewPackClientDecorator return vali client which pack all the labels except the explicitly excluded ones and forward them the the wrapped client.
+func NewPackClientDecorator(cfg config.Config, newClient NewValiClientFunc, logger log.Logger) (types.ValiClient, error) {
+	client, err := newValiClient(cfg, newClient, logger)
 	if err != nil {
 		return nil, err
 	}
 
 	return &packClient{
-		lokiClient:     client,
+		valiClient:     client,
 		excludedLabels: cfg.PluginConfig.PreservedLabels.Clone(),
 	}, nil
 }
 
-// Handle processes and sends logs to Loki.
+// Handle processes and sends logs to Vali.
 // This function can modify the label set so avoid concurrent use of it.
 func (c *packClient) Handle(ls model.LabelSet, t time.Time, s string) error {
 	if c.checkIfLabelSetContainsExcludedLabels(ls) {
@@ -66,23 +66,23 @@ func (c *packClient) Handle(ls model.LabelSet, t time.Time, s string) error {
 
 		s = string(jsonStr)
 		// It is important to set the log time as now in order to avoid "Entry Out Of Order".
-		// When couple of Loki streams are packed as one nothing guaranties that the logs will be time sequential.
-		// TODO: (vlvasilev) If one day we upgrade Loki above 2.2.1 to a version when logs are not obligated to be
+		// When couple of Vali streams are packed as one nothing guaranties that the logs will be time sequential.
+		// TODO: (vlvasilev) If one day we upgrade Vali above 2.2.1 to a version when logs are not obligated to be
 		// time sequential make this timestamp rewrite optional.
 		t = time.Now()
 	}
 
-	return c.lokiClient.Handle(ls, t, s)
+	return c.valiClient.Handle(ls, t, s)
 }
 
 // Stop the client.
 func (c *packClient) Stop() {
-	c.lokiClient.Stop()
+	c.valiClient.Stop()
 }
 
 // StopWait stops the client waiting all saved logs to be sent.
 func (c *packClient) StopWait() {
-	c.lokiClient.StopWait()
+	c.valiClient.StopWait()
 }
 
 func (c *packClient) checkIfLabelSetContainsExcludedLabels(ls model.LabelSet) bool {

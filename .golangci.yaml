@@ -4,7 +4,7 @@ run:
 
   skip-files:
   - ".*\\.pb\\.go$"
-  - ".*/out_loki\\.go$"
+  - ".*/out_vali\\.go$"
   - ".*/.*_test\\.go$"
   
 linters-settings:
@@ -38,6 +38,6 @@ issues:
   - linters:
     - staticcheck
     text: "SA1019:" # Excludes messages where deprecated variables are used
-  - path: cmd/out_loki\.go
+  - path: cmd/out_vali\.go
     linters:
     - deadcode

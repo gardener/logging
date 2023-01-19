@@ -28,7 +28,7 @@ var _ = AfterSuite(func() {
 	os.Remove(testFileName)
 })
 
-func TestLoki(t *testing.T) {
+func TestVali(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Loki Config Suite")
+	RunSpecs(t, "Vali Config Suite")
 }

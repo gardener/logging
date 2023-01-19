@@ -20,8 +20,8 @@ import (
 	"github.com/gardener/logging/pkg/config"
 	"github.com/gardener/logging/pkg/types"
 
+	"github.com/credativ/vali/pkg/valitail/client"
 	"github.com/go-kit/kit/log"
-	"github.com/grafana/loki/pkg/promtail/client"
 	"github.com/prometheus/common/model"
 )
 
@@ -30,7 +30,7 @@ const (
 	waitCheckFrequencyDelimiter = 10
 )
 
-// Options for creating a Loki client
+// Options for creating a Vali client
 type Options struct {
 	// RemoveTenantID flag removes the "__tenant_id_" label
 	RemoveTenantID bool
@@ -41,25 +41,25 @@ type Options struct {
 }
 
 // NewClient creates a new client based on the fluentbit configuration.
-func NewClient(cfg config.Config, logger log.Logger, options Options) (types.LokiClient, error) {
+func NewClient(cfg config.Config, logger log.Logger, options Options) (types.ValiClient, error) {
 	var (
-		ncf NewLokiClientFunc
+		ncf NewValiClientFunc
 	)
 
 	if cfg.ClientConfig.TestingClient == nil {
-		ncf = func(c config.Config, logger log.Logger) (types.LokiClient, error) {
-			return NewPromtailClient(c.ClientConfig.GrafanaLokiConfig, logger)
+		ncf = func(c config.Config, logger log.Logger) (types.ValiClient, error) {
+			return NewValitailClient(c.ClientConfig.ValiConfig, logger)
 		}
 	} else {
-		ncf = func(c config.Config, logger log.Logger) (types.LokiClient, error) {
-			return newTestingPromtailClient(cfg.ClientConfig.TestingClient, c.ClientConfig.GrafanaLokiConfig, logger)
+		ncf = func(c config.Config, logger log.Logger) (types.ValiClient, error) {
+			return newTestingValitailClient(cfg.ClientConfig.TestingClient, c.ClientConfig.ValiConfig, logger)
 		}
 	}
 
 	// When label processing is done the sorting client could be used.
 	if cfg.ClientConfig.SortByTimestamp {
 		tempNCF := ncf
-		ncf = func(c config.Config, l log.Logger) (types.LokiClient, error) {
+		ncf = func(c config.Config, l log.Logger) (types.ValiClient, error) {
 			return NewSortedClientDecorator(c, tempNCF, l)
 		}
 	}
@@ -69,33 +69,33 @@ func NewClient(cfg config.Config, logger log.Logger, options Options) (types.Lok
 	// cloud be packed and thus no long existing
 	if options.PreservedLabels != nil {
 		tempNCF := ncf
-		ncf = func(c config.Config, l log.Logger) (types.LokiClient, error) {
+		ncf = func(c config.Config, l log.Logger) (types.ValiClient, error) {
 			return NewPackClientDecorator(c, tempNCF, l)
 		}
 	}
 
 	if options.RemoveTenantID {
 		tempNCF := ncf
-		ncf = func(c config.Config, l log.Logger) (types.LokiClient, error) {
+		ncf = func(c config.Config, l log.Logger) (types.ValiClient, error) {
 			return NewRemoveTenantIdClientDecorator(c, tempNCF, l)
 		}
 	}
 
 	if options.MultiTenantClient {
 		tempNCF := ncf
-		ncf = func(c config.Config, l log.Logger) (types.LokiClient, error) {
+		ncf = func(c config.Config, l log.Logger) (types.ValiClient, error) {
 			return NewMultiTenantClientDecorator(c, tempNCF, l)
 		}
 	} else {
 		tempNCF := ncf
-		ncf = func(c config.Config, l log.Logger) (types.LokiClient, error) {
+		ncf = func(c config.Config, l log.Logger) (types.ValiClient, error) {
 			return NewRemoveMultiTenantIdClientDecorator(c, tempNCF, l)
 		}
 	}
 
 	if cfg.ClientConfig.BufferConfig.Buffer {
 		tempNCF := ncf
-		ncf = func(c config.Config, l log.Logger) (types.LokiClient, error) {
+		ncf = func(c config.Config, l log.Logger) (types.ValiClient, error) {
 			return NewBufferDecorator(c, tempNCF, l)
 		}
 	}
@@ -104,12 +104,12 @@ func NewClient(cfg config.Config, logger log.Logger, options Options) (types.Lok
 }
 
 type removeTenantIdClient struct {
-	lokiclient types.LokiClient
+	valiclient types.ValiClient
 }
 
-// NewRemoveTenantIdClientDecorator return loki client which removes the __tenant_id__ value fro the label set
-func NewRemoveTenantIdClientDecorator(cfg config.Config, newClient NewLokiClientFunc, logger log.Logger) (types.LokiClient, error) {
-	client, err := newLokiClient(cfg, newClient, logger)
+// NewRemoveTenantIdClientDecorator return vali client which removes the __tenant_id__ value fro the label set
+func NewRemoveTenantIdClientDecorator(cfg config.Config, newClient NewValiClientFunc, logger log.Logger) (types.ValiClient, error) {
+	client, err := newValiClient(cfg, newClient, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -119,22 +119,22 @@ func NewRemoveTenantIdClientDecorator(cfg config.Config, newClient NewLokiClient
 
 func (c *removeTenantIdClient) Handle(ls model.LabelSet, t time.Time, s string) error {
 	delete(ls, client.ReservedLabelTenantID)
-	return c.lokiclient.Handle(ls, t, s)
+	return c.valiclient.Handle(ls, t, s)
 }
 
 // Stop the client.
 func (c *removeTenantIdClient) Stop() {
-	c.lokiclient.Stop()
+	c.valiclient.Stop()
 }
 
 // StopWait stops the client waiting all saved logs to be sent.
 func (c *removeTenantIdClient) StopWait() {
-	c.lokiclient.StopWait()
+	c.valiclient.StopWait()
 }
 
-func newLokiClient(cfg config.Config, newClient NewLokiClientFunc, logger log.Logger) (types.LokiClient, error) {
+func newValiClient(cfg config.Config, newClient NewValiClientFunc, logger log.Logger) (types.ValiClient, error) {
 	if newClient != nil {
 		return newClient(cfg, logger)
 	}
-	return NewPromtailClient(cfg.ClientConfig.GrafanaLokiConfig, logger)
+	return NewValitailClient(cfg.ClientConfig.ValiConfig, logger)
 }

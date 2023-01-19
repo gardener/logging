@@ -18,12 +18,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/grafana/loki/pkg/logproto"
+	"github.com/credativ/vali/pkg/logproto"
 	"github.com/prometheus/common/model"
 )
 
-// FakeLokiClient mocks LokiClient
-type FakeLokiClient struct {
+// FakeValiClient mocks ValiClient
+type FakeValiClient struct {
 	// IsStopped show whether the client is stopped or not
 	IsStopped bool
 	// IsGracefullyStopped show whether the client is gracefully topped or not
@@ -33,7 +33,7 @@ type FakeLokiClient struct {
 }
 
 // Handle processes and stores the received entries.
-func (c *FakeLokiClient) Handle(labels model.LabelSet, timestamp time.Time, line string) error {
+func (c *FakeValiClient) Handle(labels model.LabelSet, timestamp time.Time, line string) error {
 	if c.IsStopped || c.IsGracefullyStopped {
 		return fmt.Errorf("client has been stopped")
 	}
@@ -46,11 +46,11 @@ func (c *FakeLokiClient) Handle(labels model.LabelSet, timestamp time.Time, line
 }
 
 // Stop stops the client
-func (c *FakeLokiClient) Stop() {
+func (c *FakeValiClient) Stop() {
 	c.IsStopped = true
 }
 
 // StopWait gracefully stops the client
-func (c *FakeLokiClient) StopWait() {
+func (c *FakeValiClient) StopWait() {
 	c.IsGracefullyStopped = true
 }

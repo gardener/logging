@@ -1,6 +1,6 @@
 /*
-This file was copied from the grafana/loki project
-https://github.com/grafana/loki/blob/v1.6.0/cmd/fluent-bit/dque.go
+This file was copied from the credativ/vali project
+https://github.com/credativ/vali/blob/v1.6.0/cmd/fluent-bit/dque.go
 
 Modifications Copyright (c) 2021 SAP SE or an SAP affiliate company. All rights reserved.
 */
@@ -17,9 +17,9 @@ import (
 	"github.com/gardener/logging/pkg/metrics"
 	"github.com/gardener/logging/pkg/types"
 
+	"github.com/credativ/vali/pkg/logproto"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	"github.com/grafana/loki/pkg/logproto"
 	"github.com/joncrlsn/dque"
 	"github.com/prometheus/common/model"
 )
@@ -36,7 +36,7 @@ func dqueEntryBuilder() interface{} {
 type dqueClient struct {
 	logger    log.Logger
 	queue     *dque.DQue
-	loki      types.LokiClient
+	vali      types.ValiClient
 	once      sync.Once
 	wg        sync.WaitGroup
 	url       string
@@ -44,8 +44,8 @@ type dqueClient struct {
 	lock      sync.Mutex
 }
 
-// NewDque makes a new dque loki client
-func NewDque(cfg config.Config, logger log.Logger, newClientFunc func(cfg config.Config, logger log.Logger) (types.LokiClient, error)) (types.LokiClient, error) {
+// NewDque makes a new dque vali client
+func NewDque(cfg config.Config, logger log.Logger, newClientFunc func(cfg config.Config, logger log.Logger) (types.ValiClient, error)) (types.ValiClient, error) {
 	var err error
 
 	q := &dqueClient{
@@ -62,13 +62,13 @@ func NewDque(cfg config.Config, logger log.Logger, newClientFunc func(cfg config
 		return nil, err
 	}
 
-	q.url = cfg.ClientConfig.GrafanaLokiConfig.URL.String()
+	q.url = cfg.ClientConfig.ValiConfig.URL.String()
 
 	if !cfg.ClientConfig.BufferConfig.DqueConfig.QueueSync {
 		_ = q.queue.TurboOn()
 	}
 
-	q.loki, err = newClientFunc(cfg, logger)
+	q.vali, err = newClientFunc(cfg, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -103,12 +103,12 @@ func (c *dqueClient) dequeuer() {
 			continue
 		}
 
-		_ = level.Debug(c.logger).Log("msg", "sending record to Loki", "url", c.url, "record", record)
-		if err := c.loki.Handle(record.LabelSet, record.Timestamp, record.Line); err != nil {
+		_ = level.Debug(c.logger).Log("msg", "sending record to Vali", "url", c.url, "record", record)
+		if err := c.vali.Handle(record.LabelSet, record.Timestamp, record.Line); err != nil {
 			metrics.Errors.WithLabelValues(metrics.ErrorDequeuerSendRecord).Inc()
-			_ = level.Error(c.logger).Log("msg", "error sending record to Loki", "host", c.url, "error", err)
+			_ = level.Error(c.logger).Log("msg", "error sending record to Vali", "host", c.url, "error", err)
 		}
-		_ = level.Debug(c.logger).Log("msg", "successful sent record to Loki", "host", c.url, "record", record)
+		_ = level.Debug(c.logger).Log("msg", "successful sent record to Vali", "host", c.url, "record", record)
 
 		c.lock.Lock()
 		if c.isStooped && c.queue.Size() <= 0 {
@@ -125,7 +125,7 @@ func (c *dqueClient) Stop() {
 		if err := c.closeQue(false); err != nil {
 			_ = level.Error(c.logger).Log("msg", "error closing buffered client", "queue", c.queue.Name, "err", err.Error())
 		}
-		c.loki.Stop()
+		c.vali.Stop()
 	})
 }
 
@@ -138,7 +138,7 @@ func (c *dqueClient) StopWait() {
 		if err := c.closeQue(true); err != nil {
 			_ = level.Error(c.logger).Log("msg", "error closing buffered client", "queue", c.queue.Name, "err", err.Error())
 		}
-		c.loki.StopWait()
+		c.vali.StopWait()
 	})
 }
 

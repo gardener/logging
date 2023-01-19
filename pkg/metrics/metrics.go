@@ -20,7 +20,7 @@ import (
 )
 
 var (
-	namespace = "fluentbit_loki_gardener"
+	namespace = "fluentbit_vali_gardener"
 
 	// Errors is a prometheus which keeps total number of the errors
 	Errors = promauto.NewCounterVec(prometheus.CounterOpts{
@@ -33,28 +33,28 @@ var (
 	LogsWithoutMetadata = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: namespace,
 		Name:      "logs_without_metadata_total",
-		Help:      "Total numbers of logs without metadata in the Loki Gardener",
+		Help:      "Total numbers of logs without metadata in the Vali Gardener",
 	}, []string{"type"})
 
 	// IncomingLogs is a prometheus metric which keeps the number of incoming logs
 	IncomingLogs = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: namespace,
 		Name:      "incoming_logs_total",
-		Help:      "Total number of incoming logs in the Loki Gardener",
+		Help:      "Total number of incoming logs in the Vali Gardener",
 	}, []string{"host"})
 
 	// IncomingLogsWithEndpoint is a prometheus metric which keeps the number of incoming logs with endpoint
 	IncomingLogsWithEndpoint = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: namespace,
 		Name:      "incoming_logs_with_endpoint_total",
-		Help:      "Total number of incoming logs with endpoint in the Loki Gardener",
+		Help:      "Total number of incoming logs with endpoint in the Vali Gardener",
 	}, []string{"host"})
 
-	// ForwardedLogs is a prometheus metric which keeps forwarded logs to the Promtail Client
+	// ForwardedLogs is a prometheus metric which keeps forwarded logs to the Valitail Client
 	ForwardedLogs = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: namespace,
 		Name:      "forwarded_logs_total",
-		Help:      "Total number of the forwarded logs to Promtail client",
+		Help:      "Total number of the forwarded logs to Valitail client",
 	}, []string{"host"})
 
 	// DroppedLogs is a prometheus metric which keeps the number of dropt logs by the output plugin

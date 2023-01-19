@@ -40,13 +40,13 @@ const (
 )
 
 // Controller represent a k8s controller watching for resources and
-// create Loki clients base on them
+// create Vali clients base on them
 type Controller interface {
-	GetClient(name string) (types.LokiClient, bool)
+	GetClient(name string) (types.ValiClient, bool)
 	Stop()
 }
 type controller struct {
-	defaultClient types.LokiClient
+	defaultClient types.ValiClient
 	conf          *config.Config
 	lock          sync.RWMutex
 	clients       map[string]ControllerClient
@@ -58,7 +58,7 @@ type controller struct {
 }
 
 // NewController return Controller interface
-func NewController(informer cache.SharedIndexInformer, conf *config.Config, defaultClient types.LokiClient, logger log.Logger) (Controller, error) {
+func NewController(informer cache.SharedIndexInformer, conf *config.Config, defaultClient types.ValiClient, logger log.Logger) (Controller, error) {
 	decoder, err := extensioncontroller.NewGardenDecoder()
 	if err != nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorCreateDecoder).Inc()
@@ -201,7 +201,7 @@ func (ctl *controller) getClientConfig(namespace string) *config.Config {
 	}
 
 	conf := *ctl.conf
-	conf.ClientConfig.GrafanaLokiConfig.URL = clientURL
+	conf.ClientConfig.ValiConfig.URL = clientURL
 	conf.ClientConfig.BufferConfig.DqueConfig.QueueName = namespace
 
 	return &conf

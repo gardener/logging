@@ -1,6 +1,6 @@
 /*
-This file was copied from the grafana/loki project
-https://github.com/grafana/loki/blob/v1.6.0/cmd/fluent-bit/config.go
+This file was copied from the credativ/vali project
+https://github.com/credativ/vali/blob/v1.6.0/cmd/fluent-bit/config.go
 
 Modifications Copyright (c) 2020 SAP SE or an SAP affiliate company. All rights reserved.
 */
@@ -21,12 +21,12 @@ import (
 	"github.com/prometheus/common/model"
 	"github.com/weaveworks/common/logging"
 
-	"github.com/grafana/loki/pkg/logql"
-	"github.com/grafana/loki/pkg/promtail/client"
-	lokiflag "github.com/grafana/loki/pkg/util/flagext"
+	"github.com/credativ/vali/pkg/logql"
+	valiflag "github.com/credativ/vali/pkg/util/flagext"
+	"github.com/credativ/vali/pkg/valitail/client"
 )
 
-// DefaultClientCfg is the default gardener lokiplugin client configuration.
+// DefaultClientCfg is the default gardener valiplugin client configuration.
 var DefaultClientCfg = client.Config{}
 
 func init() {
@@ -57,7 +57,7 @@ const (
 	DefaultKubernetesMetadataTagPrefix = "kubernetes\\.var\\.log\\.containers"
 )
 
-// Config holds all of the needet properties of the loki output plugin
+// Config holds all of the needet properties of the vali output plugin
 type Config struct {
 	ClientConfig     ClientConfig
 	ControllerConfig ControllerConfig
@@ -68,22 +68,22 @@ type Config struct {
 
 // ClientConfig holds configuration for the clients
 type ClientConfig struct {
-	// GrafanaLokiConfig holds the configuration for the grafana/loki client
-	GrafanaLokiConfig client.Config
+	// ValiConfig holds the configuration for the credativ/vali client
+	ValiConfig client.Config
 	// BufferConfig holds the configuration for the buffered client
 	BufferConfig BufferConfig
 	// SortByTimestamp indicates whether the logs should be sorted ot not
 	SortByTimestamp bool
 	// NumberOfBatchIDs is number of id per batch.
-	// This increase the number of loki label streams
+	// This increase the number of vali label streams
 	NumberOfBatchIDs uint64
 	// IdLabelName is the name of the batch id label key.
 	IdLabelName model.LabelName
-	// TestingClient is mocked grafana/loki client used for testing purposes
+	// TestingClient is mocked credativ/vali client used for testing purposes
 	TestingClient client.Client
 }
 
-// ControllerConfig hold the configuration fot the Loki client controller
+// ControllerConfig hold the configuration fot the Vali client controller
 type ControllerConfig struct {
 	// CtlSyncTimeout for resource synchronization
 	CtlSyncTimeout time.Duration
@@ -95,15 +95,15 @@ type ControllerConfig struct {
 	// deleted shoot should be cosidered for removal
 	DeletedClientTimeExpiration time.Duration
 	// MainControllerClientConfig configure to whether to send or not the log to the shoot
-	// Loki for a particular shoot state.
+	// Vali for a particular shoot state.
 	MainControllerClientConfig ControllerClientConfiguration
 	// DefaultControllerClientConfig configure to whether to send or not the log to the shoot
-	// Loki for a particular shoot state.
+	// Vali for a particular shoot state.
 	DefaultControllerClientConfig ControllerClientConfiguration
 }
 
 // ControllerClientConfiguration contains flags which
-// mutes/unmutes Shoot's and Seed Loki for a given Shoot state.
+// mutes/unmutes Shoot's and Seed Vali for a given Shoot state.
 type ControllerClientConfiguration struct {
 	SendLogsWhenIsInCreationState    bool
 	SendLogsWhenIsInReadyState       bool
@@ -116,7 +116,7 @@ type ControllerClientConfiguration struct {
 	SendLogsWhenIsInMigrationState   bool
 }
 
-// PluginConfig contains the configuration mostly related to the Loki plugin.
+// PluginConfig contains the configuration mostly related to the Vali plugin.
 type PluginConfig struct {
 	// AutoKubernetesLabels extact all key/values from the kubernetes field.
 	AutoKubernetesLabels bool
@@ -127,7 +127,7 @@ type PluginConfig struct {
 	// LineFormat is the format to use when flattening the record to a log line.
 	LineFormat Format
 	// DropSingleKey if set to true and after extracting label_keys a record only
-	// has a single key remaining, the log line sent to Loki will just be
+	// has a single key remaining, the log line sent to Vali will just be
 	// the value of the record key.
 	DropSingleKey bool
 	// LabelMap is path to a json file defining how to transform nested records.
@@ -174,7 +174,7 @@ type KubernetesMetadataExtraction struct {
 	TagExpression                      string
 }
 
-// DynamicTenant contains specs for the lokiplugin dynamic functionality
+// DynamicTenant contains specs for the valiplugin dynamic functionality
 type DynamicTenant struct {
 	Tenant                                string
 	Field                                 string
@@ -191,7 +191,7 @@ var DefaultBufferConfig = BufferConfig{
 
 // DefaultDqueConfig holds dque configurations for the buffer
 var DefaultDqueConfig = DqueConfig{
-	QueueDir:         "/tmp/flb-storage/loki",
+	QueueDir:         "/tmp/flb-storage/vali",
 	QueueSegmentSize: 500,
 	QueueSync:        false,
 	QueueName:        "dque",
@@ -223,7 +223,7 @@ var MainControllerClientConfig = ControllerClientConfiguration{
 	SendLogsWhenIsInMigrationState:   true,
 }
 
-// ParseConfig parse a Loki plugin configuration
+// ParseConfig parse a Vali plugin configuration
 func ParseConfig(cfg Getter) (*Config, error) {
 	var err error
 	res := &Config{}
@@ -260,26 +260,26 @@ func ParseConfig(cfg Getter) (*Config, error) {
 }
 
 func initClientConfig(cfg Getter, res *Config) error {
-	res.ClientConfig.GrafanaLokiConfig = DefaultClientCfg
+	res.ClientConfig.ValiConfig = DefaultClientCfg
 	res.ClientConfig.BufferConfig = DefaultBufferConfig
 
 	url := cfg.Get("URL")
 	var clientURL flagext.URLValue
 	if url == "" {
-		url = "http://localhost:3100/loki/api/v1/push"
+		url = "http://localhost:3100/vali/api/v1/push"
 	}
 	err := clientURL.Set(url)
 	if err != nil {
 		return errors.New("failed to parse client URL")
 	}
-	res.ClientConfig.GrafanaLokiConfig.URL = clientURL
+	res.ClientConfig.ValiConfig.URL = clientURL
 
 	// cfg.Get will return empty string if not set, which is handled by the client library as no tenant
-	res.ClientConfig.GrafanaLokiConfig.TenantID = cfg.Get("TenantID")
+	res.ClientConfig.ValiConfig.TenantID = cfg.Get("TenantID")
 
 	batchWait := cfg.Get("BatchWait")
 	if batchWait != "" {
-		res.ClientConfig.GrafanaLokiConfig.BatchWait, err = time.ParseDuration(batchWait)
+		res.ClientConfig.ValiConfig.BatchWait, err = time.ParseDuration(batchWait)
 		if err != nil {
 			return fmt.Errorf("failed to parse BatchWait: %s :%v", batchWait, err)
 		}
@@ -291,7 +291,7 @@ func initClientConfig(cfg Getter, res *Config) error {
 		if err != nil {
 			return fmt.Errorf("failed to parse BatchSize: %s", batchSize)
 		}
-		res.ClientConfig.GrafanaLokiConfig.BatchSize = batchSizeValue
+		res.ClientConfig.ValiConfig.BatchSize = batchSizeValue
 	}
 
 	labels := cfg.Get("Labels")
@@ -306,11 +306,11 @@ func initClientConfig(cfg Getter, res *Config) error {
 	for _, m := range matchers {
 		labelSet[model.LabelName(m.Name)] = model.LabelValue(m.Value)
 	}
-	res.ClientConfig.GrafanaLokiConfig.ExternalLabels = lokiflag.LabelSet{LabelSet: labelSet}
+	res.ClientConfig.ValiConfig.ExternalLabels = valiflag.LabelSet{LabelSet: labelSet}
 
 	maxRetries := cfg.Get("MaxRetries")
 	if maxRetries != "" {
-		res.ClientConfig.GrafanaLokiConfig.BackoffConfig.MaxRetries, err = strconv.Atoi(maxRetries)
+		res.ClientConfig.ValiConfig.BackoffConfig.MaxRetries, err = strconv.Atoi(maxRetries)
 		if err != nil {
 			return fmt.Errorf("failed to parse MaxRetries: %s", maxRetries)
 		}
@@ -318,7 +318,7 @@ func initClientConfig(cfg Getter, res *Config) error {
 
 	timeout := cfg.Get("Timeout")
 	if timeout != "" {
-		res.ClientConfig.GrafanaLokiConfig.Timeout, err = time.ParseDuration(timeout)
+		res.ClientConfig.ValiConfig.Timeout, err = time.ParseDuration(timeout)
 		if err != nil {
 			return fmt.Errorf("failed to parse Timeout: %s : %v", timeout, err)
 		}
@@ -326,7 +326,7 @@ func initClientConfig(cfg Getter, res *Config) error {
 
 	minBackoff := cfg.Get("MinBackoff")
 	if minBackoff != "" {
-		res.ClientConfig.GrafanaLokiConfig.BackoffConfig.MinBackoff, err = time.ParseDuration(minBackoff)
+		res.ClientConfig.ValiConfig.BackoffConfig.MinBackoff, err = time.ParseDuration(minBackoff)
 		if err != nil {
 			return fmt.Errorf("failed to parse MinBackoff: %s : %v", minBackoff, err)
 		}
@@ -334,13 +334,13 @@ func initClientConfig(cfg Getter, res *Config) error {
 
 	maxBackoff := cfg.Get("MaxBackoff")
 	if maxBackoff != "" {
-		res.ClientConfig.GrafanaLokiConfig.BackoffConfig.MaxBackoff, err = time.ParseDuration(maxBackoff)
+		res.ClientConfig.ValiConfig.BackoffConfig.MaxBackoff, err = time.ParseDuration(maxBackoff)
 		if err != nil {
 			return fmt.Errorf("failed to parse MaxBackoff: %s : %v", maxBackoff, err)
 		}
 	}
 
-	// enable loki plugin buffering
+	// enable vali plugin buffering
 	buffer := cfg.Get("Buffer")
 	if buffer != "" {
 		res.ClientConfig.BufferConfig.Buffer, err = strconv.ParseBool(buffer)

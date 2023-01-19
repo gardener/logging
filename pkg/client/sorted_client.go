@@ -22,15 +22,15 @@ import (
 	"github.com/gardener/logging/pkg/config"
 	"github.com/gardener/logging/pkg/types"
 
+	"github.com/credativ/vali/pkg/logproto"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	"github.com/grafana/loki/pkg/logproto"
 	"github.com/prometheus/common/model"
 )
 
 type sortedClient struct {
 	logger           log.Logger
-	lokiclient       multiTenantClient
+	valiclient       multiTenantClient
 	batch            *batch.Batch
 	batchWait        time.Duration
 	batchLock        sync.Mutex
@@ -45,21 +45,21 @@ type sortedClient struct {
 }
 
 // NewSortedClientDecorator returns client which sorts the logs based their timestamp.
-func NewSortedClientDecorator(cfg config.Config, newClient NewLokiClientFunc, logger log.Logger) (types.LokiClient, error) {
+func NewSortedClientDecorator(cfg config.Config, newClient NewValiClientFunc, logger log.Logger) (types.ValiClient, error) {
 	var err error
-	batchWait := cfg.ClientConfig.GrafanaLokiConfig.BatchWait
-	cfg.ClientConfig.GrafanaLokiConfig.BatchWait = batchWait + (5 * time.Second)
+	batchWait := cfg.ClientConfig.ValiConfig.BatchWait
+	cfg.ClientConfig.ValiConfig.BatchWait = batchWait + (5 * time.Second)
 
-	client, err := newLokiClient(cfg, newClient, logger)
+	client, err := newValiClient(cfg, newClient, logger)
 	if err != nil {
 		return nil, err
 	}
 
 	c := &sortedClient{
-		logger:           log.With(logger, "component", "client", "host", cfg.ClientConfig.GrafanaLokiConfig.URL.Host),
-		lokiclient:       multiTenantClient{lokiclient: client},
+		logger:           log.With(logger, "component", "client", "host", cfg.ClientConfig.ValiConfig.URL.Host),
+		valiclient:       multiTenantClient{valiclient: client},
 		batchWait:        batchWait,
-		batchSize:        cfg.ClientConfig.GrafanaLokiConfig.BatchSize,
+		batchSize:        cfg.ClientConfig.ValiConfig.BatchSize,
 		batchID:          0,
 		numberOfBatchIDs: cfg.ClientConfig.NumberOfBatchIDs,
 		batch:            batch.NewBatch(cfg.ClientConfig.IdLabelName, 0),
@@ -139,7 +139,7 @@ func (c *sortedClient) sendBatch() {
 	c.batch.Sort()
 
 	for _, stream := range c.batch.GetStreams() {
-		if err := c.lokiclient.handleStream(*stream); err != nil {
+		if err := c.valiclient.handleStream(*stream); err != nil {
 			_ = level.Error(c.logger).Log("msg", "error sending stream", "stream", stream.Labels.String(), "error", err.Error())
 		}
 	}
@@ -166,7 +166,7 @@ func (c *sortedClient) Stop() {
 	c.once.Do(func() {
 		close(c.quit)
 		c.wg.Wait()
-		c.lokiclient.Stop()
+		c.valiclient.Stop()
 	})
 
 }
@@ -178,7 +178,7 @@ func (c *sortedClient) StopWait() {
 		if c.batch != nil {
 			c.sendBatch()
 		}
-		c.lokiclient.StopWait()
+		c.valiclient.StopWait()
 	})
 
 }
