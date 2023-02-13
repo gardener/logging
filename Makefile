@@ -79,12 +79,13 @@ revendor:
 	@GO111MODULE=on go mod vendor
 
 .PHONY: check
-check:
+check:	
+	@chmod +x $(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/check.sh
 	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/check.sh --golangci-lint-config=./.golangci.yaml ./cmd/... ./pkg/...
 
 .PHONY: format
 format:
-	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/format.sh ./cmd ./pkg
+	@sh $(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/format.sh ./cmd ./pkg
 
 .PHONY: test
 test:

@@ -6,6 +6,7 @@ run:
   - ".*\\.pb\\.go$"
   - ".*/out_loki\\.go$"
   - ".*/.*_test\\.go$"
+  - "tests/.*"
   
 linters-settings:
   errcheck:
