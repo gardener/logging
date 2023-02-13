@@ -55,11 +55,11 @@ FROM golang:1.19.5 AS telegraf-builder
 
 RUN git clone https://github.com/influxdata/telegraf.git
 WORKDIR /go/telegraf
-RUN git checkout v1.25.0
+RUN git checkout v1.25.1
 RUN CGO_ENABLED=0 make build
 
 #############      iptables-builder       #############
-FROM alpine:3.17.1 as iptables-builder
+FROM alpine:3.17.2 as iptables-builder
 
 RUN apk add --update bash sudo iptables && \
     rm -rf /var/cache/apk/*
