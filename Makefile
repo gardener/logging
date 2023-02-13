@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-REPO_ROOT                   := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+REPO_ROOT                             := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 VERSION                               := $(shell cat VERSION)
 REGISTRY                              := eu.gcr.io/gardener-project/gardener
 FLUENT_BIT_TO_LOKI_IMAGE_REPOSITORY   := $(REGISTRY)/fluent-bit-to-loki
