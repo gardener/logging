@@ -66,6 +66,7 @@ It also adds additional configurations that aim to improve plugin's performance 
 | SendLogsToDefaultClientWhenClusterIsInRestoreState | Send log to the default URL when it is in restoration state | `true`
 | SendLogsToDefaultClientWhenClusterIsInMigrationState | Send log to the default URL when it is in migration state | `true`
 | `__gardener_multitenant_id__` | A reserved label for multiple tenants separated by semicolon(e.g. "operator;user") | empty string
+| EnableMultiTenancy | Switch on and off the parsing of `__gardener_multitenant_id__` label and the multi-tenancy feature | `false`
 
 ### Labels
 
