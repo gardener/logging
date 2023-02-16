@@ -27,7 +27,7 @@ const (
 	podName                           = "pod_name"
 	namespaceName                     = "namespace_name"
 	containerName                     = "container_name"
-	dockerID                          = "docker_id"
+	containerID                       = "container_id"
 	subExpresionNumber                = 5
 	inCaseKubernetesMetadataIsMissing = 1
 )
@@ -112,7 +112,7 @@ func extractKubernetesMetadataFromTag(records map[string]interface{}, tagKey str
 		podName:       kubernetesMetaData[1],
 		namespaceName: kubernetesMetaData[2],
 		containerName: kubernetesMetaData[3],
-		dockerID:      kubernetesMetaData[4],
+		containerID:   kubernetesMetaData[4],
 	}
 
 	return nil

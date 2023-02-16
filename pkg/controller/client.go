@@ -49,7 +49,7 @@ func (ctl *controller) GetClient(name string) (types.LokiClient, bool) {
 }
 
 func (ctl *controller) newControllerClient(clientConf *config.Config) (ControllerClient, error) {
-	mainClient, err := client.NewClient(*clientConf, ctl.logger, client.Options{MultiTenantClient: true})
+	mainClient, err := client.NewClient(*clientConf, ctl.logger, client.Options{MultiTenantClient: clientConf.PluginConfig.EnableMultiTenancy})
 	if err != nil {
 		return nil, err
 	}
