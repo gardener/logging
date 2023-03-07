@@ -7,9 +7,6 @@ import (
 	"strings"
 
 	"github.com/prometheus/common/model"
-	"gopkg.in/yaml.v2"
-
-	"github.com/grafana/loki/pkg/util"
 )
 
 // LabelSet is a labelSet that can be used as a flag.
@@ -80,13 +77,4 @@ func (v *LabelSet) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	}
 	v.LabelSet = lbSet
 	return nil
-}
-
-// MarshalYAML implements yaml.Marshaller.
-func (v LabelSet) MarshalYAML() (interface{}, error) {
-	out, err := yaml.Marshal(util.ModelLabelSetToMap(v.LabelSet))
-	if err != nil {
-		return nil, err
-	}
-	return string(out), nil
 }
