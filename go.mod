@@ -1,6 +1,6 @@
 module github.com/gardener/logging
 
-go 1.19
+go 1.20
 
 require (
 	github.com/ahmetb/gen-crd-api-reference-docs v0.2.0
