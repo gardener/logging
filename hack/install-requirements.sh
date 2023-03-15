@@ -21,7 +21,7 @@ set -e
 echo "> [DEPRECATED] Installing requirements"
 
 export GO111MODULE=on
-curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.50.1
+curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.51.2
 curl -s "https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3" | bash -s -- --version 'v3.6.3'
 
 platform=$(uname -s)
