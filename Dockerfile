@@ -1,5 +1,5 @@
 #############      builder       #############
-FROM golang:1.19.5 AS plugin-builder
+FROM golang:1.20.2 AS plugin-builder
 
 WORKDIR /go/src/github.com/gardener/logging
 COPY . .
@@ -22,7 +22,7 @@ WORKDIR /
 CMD /bin/cp /source/plugins/. /plugins
 
 #############      image-builder       #############
-FROM golang:1.19.5 AS image-builder
+FROM golang:1.20.2 AS image-builder
 
 WORKDIR /go/src/github.com/gardener/logging
 COPY . .
@@ -51,11 +51,11 @@ WORKDIR /
 ENTRYPOINT [ "/event-logger" ]
 
 #############      telegraf-builder       #############
-FROM golang:1.19.5 AS telegraf-builder
+FROM golang:1.20.2 AS telegraf-builder
 
 RUN git clone https://github.com/influxdata/telegraf.git
 WORKDIR /go/telegraf
-RUN git checkout v1.25.1
+RUN git checkout v1.26.0
 RUN CGO_ENABLED=0 make build
 
 #############      iptables-builder       #############
@@ -104,3 +104,42 @@ COPY --from=iptables-builder /volume /
 COPY --from=telegraf-builder /go/telegraf/telegraf /usr/bin/telegraf
 
 CMD [ "/usr/bin/telegraf"]
+
+#############      tune2fs-builder       #############
+FROM alpine:3.17.2 as tune2fs-builder
+
+RUN apk add --update bash e2fsprogs-extra util-linux gawk && \
+    rm -rf /var/cache/apk/*
+
+WORKDIR /volume
+
+RUN mkdir -p ./lib ./usr/bin/ ./bin ./etc/bash ./usr/lib/bash ./usr/sbin/ ./etc/terminfo \
+    && cp -d /usr/bin/gawk ./usr/bin                                        && echo "package gawk" \
+    && cp -d /lib/ld-musl-* ./lib                                           && echo "package musl" \
+    && cp -d /lib/libc.musl-* ./lib                                         && echo "package musl" \
+    && cp -d /lib/libblkid.so.* ./lib                                       && echo "package util-linux" \
+    && cp -d /lib/libmount.so.* ./lib                                       && echo "package util-linux" \
+    && cp -d /lib/libsmartcols.so.* ./lib                                   && echo "package util-linux" \
+    && cp -d /bin/lsblk ./bin                                               && echo "package util-linux" \
+    && cp -d -r /etc/terminfo/* ./etc/terminfo                              && echo "package ncurses-terminfo-base" \
+    && cp -d /usr/lib/libformw.so.* ./usr/lib                               && echo "package ncurses-libs" \
+    && cp -d /usr/lib/libmenuw.so.* ./usr/lib                               && echo "package ncurses-libs" \
+    && cp -d /usr/lib/libncursesw.so.* ./usr/lib                            && echo "package ncurses-libs" \
+    && cp -d /usr/lib/libpanelw.so.* ./usr/lib                              && echo "package ncurses-libs" \
+    && cp -d /usr/lib/libreadline.so.* ./usr/lib                            && echo "package readline" \
+    && cp -d /etc/inputrc ./etc                                             && echo "package readline" \
+    && cp -d /bin/bash ./bin                                                && echo "package bash" \
+    && cp -d /etc/bash/bashrc ./etc/bash                                    && echo "package bash" \
+    && cp -d /usr/lib/bash/* ./usr/lib/bash                                 && echo "package bash" \
+    && cp -d /lib/libext2fs.so.* ./lib                                      && echo "package e2fsprogs-extra" \
+    && cp -d /lib/libcom_err.so.* ./lib                                     && echo "package e2fsprogs-extra" \
+    && cp -d /lib/libuuid.so.* ./lib                                        && echo "package e2fsprogs-extra" \
+    && cp -d /lib/libe2p.so.* ./lib                                         && echo "package e2fsprogs-extra" \
+    && cp -d /usr/sbin/tune2fs ./usr/sbin                                 && echo "package e2fsprogs-extra"
+
+#############      tune2fs       #############
+FROM scratch AS tune2fs
+
+COPY --from=tune2fs-builder /volume /
+
+CMD [ "/usr/sbin/tune2fs"]

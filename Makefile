@@ -18,6 +18,7 @@ REGISTRY                              := eu.gcr.io/gardener-project/gardener
 FLUENT_BIT_TO_LOKI_IMAGE_REPOSITORY   := $(REGISTRY)/fluent-bit-to-loki
 LOKI_CURATOR_IMAGE_REPOSITORY         := $(REGISTRY)/loki-curator
 TELEGRAF_IMAGE_REPOSITORY             := $(REGISTRY)/telegraf-iptables
+TUNE2FS_IMAGE_REPOSITORY              := $(REGISTRY)/tune2fs
 EVENT_LOGGER_IMAGE_REPOSITORY         := $(REGISTRY)/event-logger
 IMAGE_TAG                             := $(VERSION)
 EFFECTIVE_VERSION                     := $(VERSION)-$(shell git rev-parse HEAD)
@@ -61,6 +62,7 @@ docker-images:
 	@docker build -t $(LOKI_CURATOR_IMAGE_REPOSITORY):$(IMAGE_TAG) -t $(LOKI_CURATOR_IMAGE_REPOSITORY):latest -f Dockerfile --target curator .
 	@docker build -t $(TELEGRAF_IMAGE_REPOSITORY):$(IMAGE_TAG) -t $(TELEGRAF_IMAGE_REPOSITORY):latest -f Dockerfile --target telegraf .
 	@docker build --build-arg EFFECTIVE_VERSION=$(EFFECTIVE_VERSION) -t $(EVENT_LOGGER_IMAGE_REPOSITORY):$(IMAGE_TAG) -t $(EVENT_LOGGER_IMAGE_REPOSITORY):latest -f Dockerfile --target event-logger .
+	@docker build -t $(TUNE2FS_IMAGE_REPOSITORY):$(IMAGE_TAG) -t $(TUNE2FS_IMAGE_REPOSITORY):latest -f Dockerfile --target tune2fs .
 
 .PHONY: docker-push
 docker-push:
@@ -72,6 +74,8 @@ docker-push:
 	@gcloud docker -- push $(TELEGRAF_IMAGE_REPOSITORY):$(IMAGE_TAG)
 	@if ! docker images $(EVENT_LOGGER_IMAGE_REPOSITORY) | awk '{ print $$2 }' | grep -q -F $(IMAGE_TAG); then echo "$(EVENT_LOGGER_IMAGE_REPOSITORY) version $(IMAGE_TAG) is not yet built. Please run 'make docker-images'"; false; fi
 	@gcloud docker -- push $(EVENT_LOGGER_IMAGE_REPOSITORY):$(IMAGE_TAG)
+	@if ! docker images $(TUNE2FS_IMAGE_REPOSITORY) | awk '{ print $$2 }' | grep -q -F $(IMAGE_TAG); then echo "$(TUNE2FS_IMAGE_REPOSITORY) version $(IMAGE_TAG) is not yet built. Please run 'make docker-images'"; false; fi
+	@gcloud docker -- push $(TUNE2FS_IMAGE_REPOSITORY):$(IMAGE_TAG)
 
 .PHONY: revendor
 revendor:
