@@ -70,6 +70,20 @@ logging:
                 confidentiality_requirement: 'high'
                 integrity_requirement: 'high'
                 availability_requirement: 'low'
+          tune2fs:
+            registry: 'gcr-readwrite'
+            image: 'eu.gcr.io/gardener-project/gardener/tune2fs'
+            dockerfile: './Dockerfile'
+            target: tune2fs
+            resource_labels:
+            - name: 'gardener.cloud/cve-categorisation'
+              value:
+                network_exposure: 'private'
+                authentication_enforced: false
+                user_interaction: 'gardener-operator'
+                confidentiality_requirement: 'none'
+                integrity_requirement: 'none'
+                availability_requirement: 'low'
     steps:
       verify:
         image: 'golang:1.20.2'
