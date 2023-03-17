@@ -108,7 +108,7 @@ CMD [ "/usr/bin/telegraf"]
 #############      tune2fs-builder       #############
 FROM alpine:3.17.2 as tune2fs-builder
 
-RUN apk add --update bash e2fsprogs-extra util-linux gawk && \
+RUN apk add --update bash e2fsprogs-extra mount gawk && \
     rm -rf /var/cache/apk/*
 
 WORKDIR /volume
@@ -117,10 +117,9 @@ RUN mkdir -p ./lib ./usr/bin/ ./bin ./etc/bash ./usr/lib/bash ./usr/sbin/ ./etc/
     && cp -d /usr/bin/gawk ./usr/bin                                        && echo "package gawk" \
     && cp -d /lib/ld-musl-* ./lib                                           && echo "package musl" \
     && cp -d /lib/libc.musl-* ./lib                                         && echo "package musl" \
-    && cp -d /lib/libblkid.so.* ./lib                                       && echo "package util-linux" \
-    && cp -d /lib/libmount.so.* ./lib                                       && echo "package util-linux" \
-    && cp -d /lib/libsmartcols.so.* ./lib                                   && echo "package util-linux" \
-    && cp -d /bin/lsblk ./bin                                               && echo "package util-linux" \
+    && cp -d /lib/libmount.so.* ./lib                                       && echo "package mount" \
+    && cp -d /lib/libblkid.so.* ./lib                                       && echo "package mount" \
+    && cp -d /bin/mount ./bin                                               && echo "package mount" \
     && cp -d -r /etc/terminfo/* ./etc/terminfo                              && echo "package ncurses-terminfo-base" \
     && cp -d /usr/lib/libformw.so.* ./usr/lib                               && echo "package ncurses-libs" \
     && cp -d /usr/lib/libmenuw.so.* ./usr/lib                               && echo "package ncurses-libs" \
@@ -135,7 +134,7 @@ RUN mkdir -p ./lib ./usr/bin/ ./bin ./etc/bash ./usr/lib/bash ./usr/sbin/ ./etc/
     && cp -d /lib/libcom_err.so.* ./lib                                     && echo "package e2fsprogs-extra" \
     && cp -d /lib/libuuid.so.* ./lib                                        && echo "package e2fsprogs-extra" \
     && cp -d /lib/libe2p.so.* ./lib                                         && echo "package e2fsprogs-extra" \
-    && cp -d /usr/sbin/tune2fs ./usr/sbin                                 && echo "package e2fsprogs-extra"
+    && cp -d /usr/sbin/tune2fs ./usr/sbin                                   && echo "package e2fsprogs-extra"
 
 #############      tune2fs       #############
 FROM scratch AS tune2fs
