@@ -48,7 +48,7 @@ const (
 	DefaultKubernetesMetadataTagPrefix = "kubernetes\\.var\\.log\\.containers"
 )
 
-// Config holds all of the needet properties of the loki output plugin
+// Config holds all of the needed properties of the loki output plugin
 type Config struct {
 	ClientConfig     ClientConfig
 	ControllerConfig ControllerConfig

@@ -61,11 +61,11 @@ func init() {
 		}
 	}()
 
-	kubernetesCleint, err := getInclusterKubernetsClient()
+	kubernetesClient, err := getInclusterKubernetsClient()
 	if err != nil {
 		panic(err)
 	}
-	kubeInformerFactory := gardeninternalcoreinformers.NewSharedInformerFactory(kubernetesCleint, time.Second*30)
+	kubeInformerFactory := gardeninternalcoreinformers.NewSharedInformerFactory(kubernetesClient, time.Second*30)
 	informer = kubeInformerFactory.Extensions().V1alpha1().Clusters().Informer()
 	informerStopChan = make(chan struct{})
 	kubeInformerFactory.Start(informerStopChan)
