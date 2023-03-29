@@ -178,7 +178,7 @@ var _ = Describe("Controller", func() {
 			Expect(err).ToNot(HaveOccurred())
 			conf = &config.Config{
 				ClientConfig: config.ClientConfig{
-					GrafanaLokiConfig: valiclient.Config{
+					CredativValiConfig: valiclient.Config{
 						URL:       defaultURL,
 						BatchWait: 5 * time.Second,
 						BatchSize: 1024 * 1024,
@@ -217,8 +217,8 @@ var _ = Describe("Controller", func() {
 				newNameCluster.Name = name
 				ctl.addFunc(hibernatedCluster)
 				ctl.addFunc(newNameCluster)
-				Expect(ctl.conf.ClientConfig.GrafanaLokiConfig.URL.String()).ToNot(Equal(ctl.conf.ControllerConfig.DynamicHostPrefix + name + ctl.conf.ControllerConfig.DynamicHostSuffix))
-				Expect(ctl.conf.ClientConfig.GrafanaLokiConfig.URL.String()).ToNot(Equal(ctl.conf.ControllerConfig.DynamicHostPrefix + hibernatedCluster.Name + ctl.conf.ControllerConfig.DynamicHostSuffix))
+				Expect(ctl.conf.ClientConfig.CredativValiConfig.URL.String()).ToNot(Equal(ctl.conf.ControllerConfig.DynamicHostPrefix + name + ctl.conf.ControllerConfig.DynamicHostSuffix))
+				Expect(ctl.conf.ClientConfig.CredativValiConfig.URL.String()).ToNot(Equal(ctl.conf.ControllerConfig.DynamicHostPrefix + hibernatedCluster.Name + ctl.conf.ControllerConfig.DynamicHostSuffix))
 			})
 		})
 

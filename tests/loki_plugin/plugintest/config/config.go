@@ -43,7 +43,7 @@ func NewConfiguration() (config.Config, error) {
 
 	cfg := config.Config{
 		ClientConfig: config.ClientConfig{
-			GrafanaLokiConfig: config.DefaultClientCfg,
+			CredativValiConfig: config.DefaultClientCfg,
 			BufferConfig: config.BufferConfig{
 				Buffer:     true,
 				BufferType: "dque",
@@ -113,7 +113,7 @@ func NewConfiguration() (config.Config, error) {
 		LogLevel: getLogLevel(),
 		Pprof:    false,
 	}
-	cfg.ClientConfig.GrafanaLokiConfig.URL = clientURL
+	cfg.ClientConfig.CredativValiConfig.URL = clientURL
 
 	return cfg, nil
 }

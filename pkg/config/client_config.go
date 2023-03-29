@@ -23,8 +23,8 @@ import (
 
 // ClientConfig holds configuration for the clients
 type ClientConfig struct {
-	// GrafanaLokiConfig holds the configuration for the grafana/vali client
-	GrafanaLokiConfig client.Config
+	// CredativValiConfig holds the configuration for the grafana/vali client
+	CredativValiConfig client.Config
 	// BufferConfig holds the configuration for the buffered client
 	BufferConfig BufferConfig
 	// SortByTimestamp indicates whether the logs should be sorted ot not
@@ -69,7 +69,7 @@ var DefaultDqueConfig = DqueConfig{
 }
 
 func initClientConfig(cfg Getter, res *Config) error {
-	res.ClientConfig.GrafanaLokiConfig = DefaultClientCfg
+	res.ClientConfig.CredativValiConfig = DefaultClientCfg
 	res.ClientConfig.BufferConfig = DefaultBufferConfig
 
 	url := cfg.Get("URL")
@@ -81,14 +81,14 @@ func initClientConfig(cfg Getter, res *Config) error {
 	if err != nil {
 		return errors.New("failed to parse client URL")
 	}
-	res.ClientConfig.GrafanaLokiConfig.URL = clientURL
+	res.ClientConfig.CredativValiConfig.URL = clientURL
 
 	// cfg.Get will return empty string if not set, which is handled by the client library as no tenant
-	res.ClientConfig.GrafanaLokiConfig.TenantID = cfg.Get("TenantID")
+	res.ClientConfig.CredativValiConfig.TenantID = cfg.Get("TenantID")
 
 	batchWait := cfg.Get("BatchWait")
 	if batchWait != "" {
-		res.ClientConfig.GrafanaLokiConfig.BatchWait, err = time.ParseDuration(batchWait)
+		res.ClientConfig.CredativValiConfig.BatchWait, err = time.ParseDuration(batchWait)
 		if err != nil {
 			return fmt.Errorf("failed to parse BatchWait: %s :%v", batchWait, err)
 		}
@@ -100,7 +100,7 @@ func initClientConfig(cfg Getter, res *Config) error {
 		if err != nil {
 			return fmt.Errorf("failed to parse BatchSize: %s", batchSize)
 		}
-		res.ClientConfig.GrafanaLokiConfig.BatchSize = batchSizeValue
+		res.ClientConfig.CredativValiConfig.BatchSize = batchSizeValue
 	}
 
 	labels := cfg.Get("Labels")
@@ -115,11 +115,11 @@ func initClientConfig(cfg Getter, res *Config) error {
 	for _, m := range matchers {
 		labelSet[model.LabelName(m.Name)] = model.LabelValue(m.Value)
 	}
-	res.ClientConfig.GrafanaLokiConfig.ExternalLabels = valiflag.LabelSet{LabelSet: labelSet}
+	res.ClientConfig.CredativValiConfig.ExternalLabels = valiflag.LabelSet{LabelSet: labelSet}
 
 	maxRetries := cfg.Get("MaxRetries")
 	if maxRetries != "" {
-		res.ClientConfig.GrafanaLokiConfig.BackoffConfig.MaxRetries, err = strconv.Atoi(maxRetries)
+		res.ClientConfig.CredativValiConfig.BackoffConfig.MaxRetries, err = strconv.Atoi(maxRetries)
 		if err != nil {
 			return fmt.Errorf("failed to parse MaxRetries: %s", maxRetries)
 		}
@@ -127,7 +127,7 @@ func initClientConfig(cfg Getter, res *Config) error {
 
 	timeout := cfg.Get("Timeout")
 	if timeout != "" {
-		res.ClientConfig.GrafanaLokiConfig.Timeout, err = time.ParseDuration(timeout)
+		res.ClientConfig.CredativValiConfig.Timeout, err = time.ParseDuration(timeout)
 		if err != nil {
 			return fmt.Errorf("failed to parse Timeout: %s : %v", timeout, err)
 		}
@@ -135,7 +135,7 @@ func initClientConfig(cfg Getter, res *Config) error {
 
 	minBackoff := cfg.Get("MinBackoff")
 	if minBackoff != "" {
-		res.ClientConfig.GrafanaLokiConfig.BackoffConfig.MinBackoff, err = time.ParseDuration(minBackoff)
+		res.ClientConfig.CredativValiConfig.BackoffConfig.MinBackoff, err = time.ParseDuration(minBackoff)
 		if err != nil {
 			return fmt.Errorf("failed to parse MinBackoff: %s : %v", minBackoff, err)
 		}
@@ -143,7 +143,7 @@ func initClientConfig(cfg Getter, res *Config) error {
 
 	maxBackoff := cfg.Get("MaxBackoff")
 	if maxBackoff != "" {
-		res.ClientConfig.GrafanaLokiConfig.BackoffConfig.MaxBackoff, err = time.ParseDuration(maxBackoff)
+		res.ClientConfig.CredativValiConfig.BackoffConfig.MaxBackoff, err = time.ParseDuration(maxBackoff)
 		if err != nil {
 			return fmt.Errorf("failed to parse MaxBackoff: %s : %v", maxBackoff, err)
 		}

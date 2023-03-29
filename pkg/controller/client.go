@@ -61,7 +61,7 @@ func (ctl *controller) newControllerClient(clientConf *config.Config) (Controlle
 		defaultClientConf: &ctl.conf.ControllerConfig.DefaultControllerClientConfig,
 		mainClientConf:    &ctl.conf.ControllerConfig.MainControllerClientConfig,
 		logger:            ctl.logger,
-		name:              clientConf.ClientConfig.GrafanaLokiConfig.URL.Host,
+		name:              clientConf.ClientConfig.CredativValiConfig.URL.Host,
 	}
 
 	c.muteDefaultClient = !c.defaultClientConf.SendLogsWhenIsInCreationState

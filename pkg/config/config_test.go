@@ -89,7 +89,7 @@ var (
 
 	defaultExternalLabels = valiflag.LabelSet{LabelSet: model.LabelSet{"job": "fluent-bit"}}
 
-	defaultGrafanaLokiConfig = client.Config{
+	defaultCredativValiConfig = client.Config{
 		URL:            defaultURL,
 		BatchSize:      defaultBatchSize,
 		BatchWait:      defaultBatchWait,
@@ -112,7 +112,7 @@ var (
 	}
 
 	defaultClientConfig = ClientConfig{
-		GrafanaLokiConfig: defaultGrafanaLokiConfig,
+		CredativValiConfig: defaultCredativValiConfig,
 		BufferConfig:      defaultBufferConfig,
 		NumberOfBatchIDs:  defaultNumberOfBatchIDs,
 		IdLabelName:       model.LabelName("id"),
@@ -220,7 +220,7 @@ var _ = Describe("Config", func() {
 				},
 
 				ClientConfig: ClientConfig{
-					GrafanaLokiConfig: client.Config{
+					CredativValiConfig: client.Config{
 						URL:            somewhereURL,
 						TenantID:       "my-tenant-id",
 						BatchSize:      100,
@@ -281,7 +281,7 @@ var _ = Describe("Config", func() {
 					PreservedLabels:      model.LabelSet{},
 				},
 				ClientConfig: ClientConfig{
-					GrafanaLokiConfig: client.Config{
+					CredativValiConfig: client.Config{
 						URL:            somewhereURL,
 						TenantID:       "", // empty as not set in fluent-bit plugin config map
 						BatchSize:      100,
@@ -332,7 +332,7 @@ var _ = Describe("Config", func() {
 					PreservedLabels:      model.LabelSet{},
 				},
 				ClientConfig: ClientConfig{
-					GrafanaLokiConfig: client.Config{
+					CredativValiConfig: client.Config{
 						URL:            somewhereURL,
 						TenantID:       "", // empty as not set in fluent-bit plugin config map
 						BatchSize:      100,
@@ -387,7 +387,7 @@ var _ = Describe("Config", func() {
 					PreservedLabels:      model.LabelSet{},
 				},
 				ClientConfig: ClientConfig{
-					GrafanaLokiConfig: client.Config{
+					CredativValiConfig: client.Config{
 						URL:            somewhereURL,
 						TenantID:       "", // empty as not set in fluent-bit plugin config map
 						BatchSize:      100,
@@ -442,7 +442,7 @@ var _ = Describe("Config", func() {
 					PreservedLabels:      model.LabelSet{},
 				},
 				ClientConfig: ClientConfig{
-					GrafanaLokiConfig: client.Config{
+					CredativValiConfig: client.Config{
 						URL:            somewhereURL,
 						TenantID:       "", // empty as not set in fluent-bit plugin config map
 						BatchSize:      100,
@@ -499,7 +499,7 @@ var _ = Describe("Config", func() {
 					PreservedLabels:      model.LabelSet{},
 				},
 				ClientConfig: ClientConfig{
-					GrafanaLokiConfig: client.Config{
+					CredativValiConfig: client.Config{
 						URL:            somewhereURL,
 						TenantID:       "", // empty as not set in fluent-bit plugin config map
 						BatchSize:      100,
@@ -544,7 +544,7 @@ var _ = Describe("Config", func() {
 				},
 
 				ClientConfig: ClientConfig{
-					GrafanaLokiConfig: client.Config{
+					CredativValiConfig: client.Config{
 						URL:            somewhereURL,
 						TenantID:       "", // empty as not set in fluent-bit plugin config map
 						BatchSize:      100,

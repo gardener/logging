@@ -62,7 +62,7 @@ func NewDque(cfg config.Config, logger log.Logger, newClientFunc func(cfg config
 		return nil, err
 	}
 
-	q.url = cfg.ClientConfig.GrafanaLokiConfig.URL.String()
+	q.url = cfg.ClientConfig.CredativValiConfig.URL.String()
 
 	if !cfg.ClientConfig.BufferConfig.DqueConfig.QueueSync {
 		_ = q.queue.TurboOn()

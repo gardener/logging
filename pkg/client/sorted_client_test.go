@@ -68,7 +68,7 @@ var _ = Describe("Sorted Client", func() {
 
 		sortedClient, err = client.NewSortedClientDecorator(config.Config{
 			ClientConfig: config.ClientConfig{
-				GrafanaLokiConfig: promtailclient.Config{
+				CredativValiConfig: promtailclient.Config{
 					BatchWait: 3 * time.Second,
 					BatchSize: 90,
 					URL:       clientURL,

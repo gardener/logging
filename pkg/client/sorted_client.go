@@ -47,8 +47,8 @@ type sortedClient struct {
 // NewSortedClientDecorator returns client which sorts the logs based their timestamp.
 func NewSortedClientDecorator(cfg config.Config, newClient NewLokiClientFunc, logger log.Logger) (types.LokiClient, error) {
 	var err error
-	batchWait := cfg.ClientConfig.GrafanaLokiConfig.BatchWait
-	cfg.ClientConfig.GrafanaLokiConfig.BatchWait = batchWait + (5 * time.Second)
+	batchWait := cfg.ClientConfig.CredativValiConfig.BatchWait
+	cfg.ClientConfig.CredativValiConfig.BatchWait = batchWait + (5 * time.Second)
 
 	client, err := newLokiClient(cfg, newClient, logger)
 	if err != nil {
@@ -56,10 +56,10 @@ func NewSortedClientDecorator(cfg config.Config, newClient NewLokiClientFunc, lo
 	}
 
 	c := &sortedClient{
-		logger:           log.With(logger, "component", "client", "host", cfg.ClientConfig.GrafanaLokiConfig.URL.Host),
+		logger:           log.With(logger, "component", "client", "host", cfg.ClientConfig.CredativValiConfig.URL.Host),
 		valiclient:       multiTenantClient{valiclient: client},
 		batchWait:        batchWait,
-		batchSize:        cfg.ClientConfig.GrafanaLokiConfig.BatchSize,
+		batchSize:        cfg.ClientConfig.CredativValiConfig.BatchSize,
 		batchID:          0,
 		numberOfBatchIDs: cfg.ClientConfig.NumberOfBatchIDs,
 		batch:            batch.NewBatch(cfg.ClientConfig.IdLabelName, 0),

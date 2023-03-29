@@ -48,11 +48,11 @@ func NewClient(cfg config.Config, logger log.Logger, options Options) (types.Lok
 
 	if cfg.ClientConfig.TestingClient == nil {
 		ncf = func(c config.Config, logger log.Logger) (types.LokiClient, error) {
-			return NewPromtailClient(c.ClientConfig.GrafanaLokiConfig, logger)
+			return NewPromtailClient(c.ClientConfig.CredativValiConfig, logger)
 		}
 	} else {
 		ncf = func(c config.Config, logger log.Logger) (types.LokiClient, error) {
-			return newTestingPromtailClient(cfg.ClientConfig.TestingClient, c.ClientConfig.GrafanaLokiConfig, logger)
+			return newTestingPromtailClient(cfg.ClientConfig.TestingClient, c.ClientConfig.CredativValiConfig, logger)
 		}
 	}
 
@@ -136,5 +136,5 @@ func newLokiClient(cfg config.Config, newClient NewLokiClientFunc, logger log.Lo
 	if newClient != nil {
 		return newClient(cfg, logger)
 	}
-	return NewPromtailClient(cfg.ClientConfig.GrafanaLokiConfig, logger)
+	return NewPromtailClient(cfg.ClientConfig.CredativValiConfig, logger)
 }

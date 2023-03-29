@@ -216,7 +216,7 @@ func (ctl *controller) getClientConfig(namespace string, checkTargetLoggingBacke
 	}
 
 	conf := *ctl.conf
-	conf.ClientConfig.GrafanaLokiConfig.URL = clientURL
+	conf.ClientConfig.CredativValiConfig.URL = clientURL
 	conf.ClientConfig.BufferConfig.DqueConfig.QueueName = namespace
 
 	return &conf

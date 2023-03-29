@@ -39,7 +39,7 @@ var _ = Describe("Client", func() {
 	_ = infoLogLevel.Set("info")
 	conf := config.Config{
 		ClientConfig: config.ClientConfig{
-			GrafanaLokiConfig: client.Config{
+			CredativValiConfig: client.Config{
 				URL:            defaultURL,
 				TenantID:       "", // empty as not set in fluent-bit plugin config map
 				BatchSize:      100,
