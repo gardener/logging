@@ -23,8 +23,8 @@ import (
 
 	"github.com/cortexproject/cortex/pkg/util"
 	"github.com/cortexproject/cortex/pkg/util/flagext"
-	"github.com/credativ/vali/pkg/valitail/client"
 	valiflag "github.com/credativ/vali/pkg/util/flagext"
+	"github.com/credativ/vali/pkg/valitail/client"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -113,9 +113,9 @@ var (
 
 	defaultClientConfig = ClientConfig{
 		CredativValiConfig: defaultCredativValiConfig,
-		BufferConfig:      defaultBufferConfig,
-		NumberOfBatchIDs:  defaultNumberOfBatchIDs,
-		IdLabelName:       model.LabelName("id"),
+		BufferConfig:       defaultBufferConfig,
+		NumberOfBatchIDs:   defaultNumberOfBatchIDs,
+		IdLabelName:        model.LabelName("id"),
 	}
 
 	defaultMainControllerClientConfig = ControllerClientConfiguration{

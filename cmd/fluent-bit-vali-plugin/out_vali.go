@@ -20,8 +20,8 @@ import (
 
 	"github.com/gardener/logging/pkg/config"
 	"github.com/gardener/logging/pkg/healthz"
-	"github.com/gardener/logging/pkg/valiplugin"
 	"github.com/gardener/logging/pkg/metrics"
+	"github.com/gardener/logging/pkg/valiplugin"
 
 	gardenerclientsetversioned "github.com/gardener/gardener/pkg/client/extensions/clientset/versioned"
 	versioned "github.com/gardener/gardener/pkg/client/extensions/clientset/versioned"

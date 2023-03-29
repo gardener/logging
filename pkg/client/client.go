@@ -20,8 +20,8 @@ import (
 	"github.com/gardener/logging/pkg/config"
 	"github.com/gardener/logging/pkg/types"
 
-	"github.com/go-kit/kit/log"
 	"github.com/credativ/vali/pkg/valitail/client"
+	"github.com/go-kit/kit/log"
 	"github.com/prometheus/common/model"
 )
 

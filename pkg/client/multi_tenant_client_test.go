@@ -23,9 +23,9 @@ import (
 	"github.com/gardener/logging/pkg/types"
 	"github.com/weaveworks/common/logging"
 
+	valitailclient "github.com/credativ/vali/pkg/valitail/client"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	valitailclient "github.com/credativ/vali/pkg/valitail/client"
 	. "github.com/onsi/ginkgo"
 	ginkotable "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"

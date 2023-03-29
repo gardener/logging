@@ -20,10 +20,10 @@ import (
 	"github.com/gardener/logging/pkg/metrics"
 	"github.com/gardener/logging/pkg/types"
 
-	"github.com/go-kit/kit/log"
 	"github.com/credativ/vali/pkg/logproto"
 	"github.com/credativ/vali/pkg/valitail/api"
 	"github.com/credativ/vali/pkg/valitail/client"
+	"github.com/go-kit/kit/log"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/model"
 )

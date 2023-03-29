@@ -24,10 +24,10 @@ import (
 	"github.com/gardener/logging/pkg/types"
 	"github.com/weaveworks/common/logging"
 
-	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/log/level"
 	"github.com/credativ/vali/pkg/logproto"
 	valitailclient "github.com/credativ/vali/pkg/valitail/client"
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/prometheus/common/model"

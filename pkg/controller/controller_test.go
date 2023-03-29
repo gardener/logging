@@ -23,9 +23,9 @@ import (
 	"github.com/gardener/logging/pkg/config"
 
 	"github.com/cortexproject/cortex/pkg/util/flagext"
+	valiclient "github.com/credativ/vali/pkg/valitail/client"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	valiclient "github.com/credativ/vali/pkg/valitail/client"
 	"github.com/prometheus/common/model"
 	"github.com/weaveworks/common/logging"
 
