@@ -21,9 +21,9 @@ import (
 	"github.com/gardener/logging/pkg/types"
 
 	"github.com/go-kit/kit/log"
-	"github.com/grafana/vali/pkg/logproto"
-	"github.com/grafana/vali/pkg/promtail/api"
-	"github.com/grafana/vali/pkg/promtail/client"
+	"github.com/credativ/vali/pkg/logproto"
+	"github.com/credativ/vali/pkg/promtail/api"
+	"github.com/credativ/vali/pkg/promtail/client"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/model"
 )

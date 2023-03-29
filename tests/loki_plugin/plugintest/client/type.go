@@ -15,7 +15,7 @@
 package client
 
 import (
-	"github.com/grafana/vali/pkg/promtail/api"
+	"github.com/credativ/vali/pkg/promtail/api"
 	"github.com/prometheus/common/model"
 )
 

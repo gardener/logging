@@ -1,6 +1,6 @@
 /*
 This file was copied from the grafana/vali project
-https://github.com/grafana/vali/blob/v1.6.0/cmd/fluent-bit/vali.go
+https://github.com/credativ/vali/blob/v1.6.0/cmd/fluent-bit/vali.go
 
 Modifications Copyright (c) 2020 SAP SE or an SAP affiliate company. All rights reserved.
 */

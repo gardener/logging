@@ -1,6 +1,6 @@
 /*
 This file was copied from the grafana/vali project
-https://github.com/grafana/vali/blob/v1.6.0/cmd/fluent-bit/dque.go
+https://github.com/credativ/vali/blob/v1.6.0/cmd/fluent-bit/dque.go
 
 Modifications Copyright (c) 2021 SAP SE or an SAP affiliate company. All rights reserved.
 */
@@ -19,7 +19,7 @@ import (
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	"github.com/grafana/vali/pkg/logproto"
+	"github.com/credativ/vali/pkg/logproto"
 	"github.com/joncrlsn/dque"
 	"github.com/prometheus/common/model"
 )

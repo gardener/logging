@@ -26,8 +26,8 @@ import (
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	"github.com/grafana/vali/pkg/logproto"
-	promtailclient "github.com/grafana/vali/pkg/promtail/client"
+	"github.com/credativ/vali/pkg/logproto"
+	promtailclient "github.com/credativ/vali/pkg/promtail/client"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/prometheus/common/model"

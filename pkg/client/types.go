@@ -21,7 +21,7 @@ import (
 	"github.com/gardener/logging/pkg/types"
 
 	"github.com/go-kit/kit/log"
-	"github.com/grafana/vali/pkg/logproto"
+	"github.com/credativ/vali/pkg/logproto"
 	"github.com/prometheus/common/model"
 )
 

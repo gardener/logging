@@ -25,7 +25,7 @@ import (
 	"github.com/cortexproject/cortex/pkg/util/flagext"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	valiclient "github.com/grafana/vali/pkg/promtail/client"
+	valiclient "github.com/credativ/vali/pkg/promtail/client"
 	"github.com/prometheus/common/model"
 	"github.com/weaveworks/common/logging"
 

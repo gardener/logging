@@ -1,6 +1,6 @@
 /*
 This file was copied from the grafana/vali project
-https://github.com/grafana/vali/blob/v1.6.0/cmd/fluent-bit/config.go
+https://github.com/credativ/vali/blob/v1.6.0/cmd/fluent-bit/config.go
 
 Modifications Copyright (c) 2020 SAP SE or an SAP affiliate company. All rights reserved.
 */
@@ -16,9 +16,9 @@ import (
 	"github.com/cortexproject/cortex/pkg/util/flagext"
 	"github.com/prometheus/common/model"
 
-	"github.com/grafana/vali/pkg/logql"
-	"github.com/grafana/vali/pkg/promtail/client"
-	valiflag "github.com/grafana/vali/pkg/util/flagext"
+	"github.com/credativ/vali/pkg/logql"
+	"github.com/credativ/vali/pkg/promtail/client"
+	valiflag "github.com/credativ/vali/pkg/util/flagext"
 )
 
 // ClientConfig holds configuration for the clients

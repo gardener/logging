@@ -3,7 +3,7 @@
 
 # Fluent Bit output plugin
 
-This plugin extends [Grafana,s Fluent Bit output plugin](https://github.com/grafana/vali/tree/v1.6.0/cmd/fluent-bit) which aims to forward log messages from fluent-bit to Loki.
+This plugin extends [Grafana,s Fluent Bit output plugin](https://github.com/credativ/vali/tree/v1.6.0/cmd/fluent-bit) which aims to forward log messages from fluent-bit to Loki.
 Тhe plugin meets the needs of the [Gardener](https://gardener.cloud/) by implementing a logic for dynamically forwarding log messages from one Fluent-bit to multiple Loki instances.
 It also adds additional configurations that aim to improve plugin's performance and user experience.
 
@@ -70,7 +70,7 @@ It also adds additional configurations that aim to improve plugin's performance 
 
 ### Labels
 
-Labels are used to [query logs](https://github.com/grafana/vali/blob/v1.5.0/docs/logql.md) `{container_name="nginx", cluster="us-west1"}`, they are usually metadata about the workload producing the log stream (`instance`, `container_name`, `region`, `cluster`, `level`).  In Loki labels are indexed consequently you should be cautious when choosing them (high cardinality label values can have performance drastic impact).
+Labels are used to [query logs](https://github.com/credativ/vali/blob/v1.5.0/docs/logql.md) `{container_name="nginx", cluster="us-west1"}`, they are usually metadata about the workload producing the log stream (`instance`, `container_name`, `region`, `cluster`, `level`).  In Loki labels are indexed consequently you should be cautious when choosing them (high cardinality label values can have performance drastic impact).
 
 You can use `Labels`, `RemoveKeys` , `LabelKeys` and `LabelMapPath` to how the output plugin will perform labels extraction.
 
@@ -81,7 +81,7 @@ If set to true, it will add all Kubernetes labels to Loki labels automatically a
 ### LabelMapPath
 
 When using the `Parser` and `Filter` plugins Fluent Bit can extract and add data to the current record/log data. While Loki labels are key value pair, record data can be nested structures.
-You can pass a json file that defines how to extract [labels](https://github.com/grafana/vali/blob/v1.5.0/docs/overview/README.md#overview-of-vali) from each record. Each json key from the file will be matched with the log record to find label values. Values from the configuration are used as label names.
+You can pass a json file that defines how to extract [labels](https://github.com/credativ/vali/blob/v1.5.0/docs/overview/README.md#overview-of-vali) from each record. Each json key from the file will be matched with the log record to find label values. Values from the configuration are used as label names.
 
 Considering the record below :
 

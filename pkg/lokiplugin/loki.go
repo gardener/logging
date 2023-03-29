@@ -1,6 +1,6 @@
 /*
 This file was copied from the grafana/vali project
-https://github.com/grafana/vali/blob/v1.6.0/cmd/fluent-bit/vali.go
+https://github.com/credativ/vali/blob/v1.6.0/cmd/fluent-bit/vali.go
 
 Modifications Copyright (c) 2020 SAP SE or an SAP affiliate company. All rights reserved.
 */
@@ -21,7 +21,7 @@ import (
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	grafanavaliclient "github.com/grafana/vali/pkg/promtail/client"
+	grafanavaliclient "github.com/credativ/vali/pkg/promtail/client"
 	"github.com/prometheus/common/model"
 	"k8s.io/client-go/tools/cache"
 )

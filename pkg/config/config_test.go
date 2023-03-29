@@ -23,8 +23,8 @@ import (
 
 	"github.com/cortexproject/cortex/pkg/util"
 	"github.com/cortexproject/cortex/pkg/util/flagext"
-	"github.com/grafana/vali/pkg/promtail/client"
-	valiflag "github.com/grafana/vali/pkg/util/flagext"
+	"github.com/credativ/vali/pkg/promtail/client"
+	valiflag "github.com/credativ/vali/pkg/util/flagext"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
