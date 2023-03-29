@@ -15,8 +15,12 @@
 package controller
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -125,7 +129,7 @@ func (ctl *controller) addFunc(obj interface{}) {
 	}
 
 	if ctl.matches(shoot) && !ctl.isDeletedShoot(shoot) {
-		ctl.createControllerClient(cluster.Name, shoot)
+		ctl.createControllerClient(cluster.Name, shoot, true)
 	}
 }
 
@@ -166,14 +170,14 @@ func (ctl *controller) updateFunc(oldObj interface{}, newObj interface{}) {
 		// Sanity check
 		if client == nil {
 			_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("The client for cluster %v is NIL. Will try to create new one", oldCluster.Name))
-			ctl.createControllerClient(newCluster.Name, shoot)
+			ctl.createControllerClient(newCluster.Name, shoot, false)
 		}
 
 		ctl.updateControllerClientState(client, shoot)
 	} else {
 		//The client does not exist and we will try to create a new one if the shoot is applicable for logging
 		if ctl.matches(shoot) {
-			ctl.createControllerClient(newCluster.Name, shoot)
+			ctl.createControllerClient(newCluster.Name, shoot, false)
 		}
 	}
 }
@@ -189,10 +193,21 @@ func (ctl *controller) delFunc(obj interface{}) {
 	ctl.deleteControllerClient(cluster.Name)
 }
 
-func (ctl *controller) getClientConfig(namespace string) *config.Config {
+func (ctl *controller) getClientConfig(namespace string, checkTargetLoggingBackend bool) *config.Config {
 	var clientURL flagext.URLValue
 
-	url := fmt.Sprintf("%s%s%s", ctl.conf.ControllerConfig.DynamicHostPrefix, namespace, ctl.conf.ControllerConfig.DynamicHostSuffix)
+	_ = level.Info(ctl.logger).Log("")
+
+	suffix := ctl.conf.ControllerConfig.DynamicHostSuffix
+	// TODO (nickytd) Here we try to check the target backend. If we succeed,
+	// it takes precedence over the DynamicHostSuffix.
+	if checkTargetLoggingBackend {
+		suffix = ctl.checkTargetLoggingBackend(ctl.conf.ControllerConfig.DynamicHostPrefix,
+			namespace)
+	}
+	url := fmt.Sprintf("%s%s%s", ctl.conf.ControllerConfig.DynamicHostPrefix, namespace, suffix)
+	_ = level.Info(ctl.logger).Log("msg", fmt.Sprintf("created url %v for %v", url, namespace))
+
 	err := clientURL.Set(url)
 	if err != nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorFailedToParseURL).Inc()
@@ -205,6 +220,49 @@ func (ctl *controller) getClientConfig(namespace string) *config.Config {
 	conf.ClientConfig.BufferConfig.DqueConfig.QueueName = namespace
 
 	return &conf
+}
+
+func (ctl *controller) checkTargetLoggingBackend(prefix string, namespace string) string {
+	httpClient := http.Client{
+		Timeout: 2 * time.Second,
+	}
+	resp, err := httpClient.Get(prefix + namespace + ":3100/config")
+	if err != nil {
+		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("error gettong /confg endpoint  for %v", namespace), "error", err.Error())
+		return ""
+	}
+
+	if resp.StatusCode != 200 {
+		_ = level.Error(ctl.logger).Log("msg", fmt.Errorf("response status code is not expected, got %d, expected 200", resp.StatusCode))
+		return ""
+	}
+
+	config, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("error reading config from the response for %v", namespace), "error", err.Error())
+		return ""
+	}
+	scanner := bufio.NewScanner(strings.NewReader(string(config)))
+	scanner.Split(bufio.ScanLines)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if strings.HasPrefix(line, "instance_id") {
+			instanceId := strings.Split(line, ":")
+			if len(instanceId) != 2 {
+				_ = level.Error(ctl.logger).Log("msg",
+					fmt.Sprintf("instance id is not in the expected format %s for %v", instanceId[0], namespace),
+					"error", err.Error())
+				return ""
+			}
+			switch {
+			case strings.Contains(instanceId[1], "loki"):
+				return ".svc:3100/loki/api/v1/push"
+			case strings.Contains(instanceId[1], "vali"):
+				return ".svc:3100/vali/api/v1/push"
+			}
+		}
+	}
+	return ""
 }
 
 func (ctl *controller) matches(shoot *gardenercorev1beta1.Shoot) bool {
