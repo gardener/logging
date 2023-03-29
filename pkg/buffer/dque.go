@@ -1,6 +1,6 @@
 /*
 This file was copied from the grafana/vali project
-https://github.com/credativ/vali/blob/v1.6.0/cmd/fluent-bit/dque.go
+https://github.com/credativ/vali/blob/v2.2.4/cmd/fluent-bit/dque.go
 
 Modifications Copyright (c) 2021 SAP SE or an SAP affiliate company. All rights reserved.
 */
