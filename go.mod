@@ -5,6 +5,7 @@ go 1.20
 require (
 	github.com/ahmetb/gen-crd-api-reference-docs v0.2.0
 	github.com/cortexproject/cortex v1.10.0
+	github.com/credativ/vali v0.0.0-20230322125549-22fdbf30c62a
 	github.com/fluent/fluent-bit-go v0.0.0-20190925192703-ea13c021720c
 	github.com/gardener/gardener v1.5.0
 	github.com/go-kit/kit v0.12.0
@@ -12,7 +13,6 @@ require (
 	github.com/go-logfmt/logfmt v0.5.1
 	github.com/gobuffalo/packr/v2 v2.8.0
 	github.com/golang/mock v1.6.0
-	github.com/credativ/vali v0.0.0-20230322125549-22fdbf30c62a
 	github.com/joncrlsn/dque v2.2.1-0.20200515025108-956d14155fa2+incompatible
 	github.com/json-iterator/go v1.1.12
 	github.com/onsi/ginkgo v1.16.2
