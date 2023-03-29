@@ -17,7 +17,7 @@ import (
 )
 
 // NewBufferDecorator makes a new buffered Client.
-func NewBufferDecorator(cfg config.Config, newClientFunc NewLokiClientFunc, logger log.Logger) (types.LokiClient, error) {
+func NewBufferDecorator(cfg config.Config, newClientFunc NewValiClientFunc, logger log.Logger) (types.ValiClient, error) {
 	switch cfg.ClientConfig.BufferConfig.BufferType {
 	case "dque":
 		return buffer.NewDque(cfg, logger, newClientFunc)

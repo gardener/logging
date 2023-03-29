@@ -25,12 +25,12 @@ import (
 
 type LoggerController struct {
 	config LoggerControllerConfig
-	plugin valiplugin.Loki
+	plugin valiplugin.Vali
 	pods   []Pod
 	wg     sync.WaitGroup
 }
 
-func NewLoggerController(plugin valiplugin.Loki, cfg LoggerControllerConfig) LoggerController {
+func NewLoggerController(plugin valiplugin.Vali, cfg LoggerControllerConfig) LoggerController {
 	return LoggerController{
 		config: cfg,
 		plugin: plugin,

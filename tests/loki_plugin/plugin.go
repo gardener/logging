@@ -36,10 +36,10 @@ const (
 
 var (
 	valiPluginConfiguration config.Config
-	testClient              *plugintestclient.BlackBoxTestingLokiClient
+	testClient              *plugintestclient.BlackBoxTestingValiClient
 	fakeInformer            *controllertest.FakeInformer
 	clusters                []plugintestcluster.Cluster
-	plugin                  valiplugin.Loki
+	plugin                  valiplugin.Vali
 )
 
 func main() {
@@ -52,7 +52,7 @@ func main() {
 	fakeInformer = &controllertest.FakeInformer{}
 	logger := plugintestconfig.NewLogger()
 
-	testClient = plugintestclient.NewBlackBoxTestingLokiClient()
+	testClient = plugintestclient.NewBlackBoxTestingValiClient()
 	valiPluginConfiguration.ClientConfig.TestingClient = testClient
 	go testClient.Run()
 
@@ -95,7 +95,7 @@ func main() {
 	// 	fmt.Println(entry)
 	// }
 
-	fmt.Println("Closing Loki plugin")
+	fmt.Println("Closing Vali plugin")
 	plugin.Close()
 	fmt.Println("Test ends")
 }

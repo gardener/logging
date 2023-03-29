@@ -37,7 +37,7 @@ var _ = AfterSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 })
 
-func TestLoki(t *testing.T) {
+func TestVali(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Curator Config Suite")
 }

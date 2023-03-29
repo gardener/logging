@@ -42,28 +42,28 @@ import (
 	"k8s.io/utils/pointer"
 )
 
-type fakeLokiClient struct {
+type fakeValiClient struct {
 	isStopped bool
 }
 
-func (c *fakeLokiClient) Handle(labels model.LabelSet, time time.Time, entry string) error {
+func (c *fakeValiClient) Handle(labels model.LabelSet, time time.Time, entry string) error {
 	if c.isStopped {
 		return fmt.Errorf("client has been stopped")
 	}
 	return nil
 }
 
-func (c *fakeLokiClient) Stop() {
+func (c *fakeValiClient) Stop() {
 	c.isStopped = true
 }
 
-func (c *fakeLokiClient) StopWait() {
+func (c *fakeValiClient) StopWait() {
 	c.isStopped = true
 }
 
-func (c *fakeLokiClient) SetState(state clusterState) {}
+func (c *fakeValiClient) SetState(state clusterState) {}
 
-func (c *fakeLokiClient) GetState() clusterState {
+func (c *fakeValiClient) GetState() clusterState {
 	return clusterStateReady
 }
 
@@ -71,7 +71,7 @@ var _ = Describe("Controller", func() {
 	Describe("#GetClient", func() {
 		ctl := &controller{
 			clients: map[string]ControllerClient{
-				"shoot--dev--test1": &fakeLokiClient{},
+				"shoot--dev--test1": &fakeValiClient{},
 			},
 		}
 
@@ -92,8 +92,8 @@ var _ = Describe("Controller", func() {
 	})
 
 	Describe("#Stop", func() {
-		shootDevTest1 := &fakeLokiClient{}
-		shootDevTest2 := &fakeLokiClient{}
+		shootDevTest1 := &fakeValiClient{}
+		shootDevTest2 := &fakeValiClient{}
 		ctl := &controller{
 			clients: map[string]ControllerClient{
 				"shoot--dev--test1": shootDevTest1,
@@ -247,7 +247,7 @@ var _ = Describe("Controller", func() {
 						oldCluster: developmentCluster,
 						newCluster: hibernatedCluster,
 						clients: map[string]ControllerClient{
-							shootName: &fakeLokiClient{},
+							shootName: &fakeValiClient{},
 						},
 						shouldClientExists: true,
 					},
@@ -257,7 +257,7 @@ var _ = Describe("Controller", func() {
 						oldCluster: developmentCluster,
 						newCluster: developmentCluster,
 						clients: map[string]ControllerClient{
-							shootName: &fakeLokiClient{},
+							shootName: &fakeValiClient{},
 						},
 						shouldClientExists: true,
 					},
@@ -297,7 +297,7 @@ var _ = Describe("Controller", func() {
 
 		Context("#deleteFunc", func() {
 			It("should delete cluster client when cluster is deleted", func() {
-				ctl.clients[shootName] = &fakeLokiClient{}
+				ctl.clients[shootName] = &fakeValiClient{}
 				ctl.delFunc(developmentCluster)
 				c, ok := ctl.clients[shootName]
 				Expect(c).To(BeNil())

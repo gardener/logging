@@ -25,7 +25,7 @@ type EndClient interface {
 	GetLogsCount(ls model.LabelSet) int
 }
 
-type BlackBoxTestingLokiClient struct {
+type BlackBoxTestingValiClient struct {
 	entries         chan api.Entry
 	receivedEntries []api.Entry
 	localStreams    map[string]localStream

@@ -33,21 +33,21 @@ var (
 	LogsWithoutMetadata = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: namespace,
 		Name:      "logs_without_metadata_total",
-		Help:      "Total numbers of logs without metadata in the Loki Gardener",
+		Help:      "Total numbers of logs without metadata in the Vali Gardener",
 	}, []string{"type"})
 
 	// IncomingLogs is a prometheus metric which keeps the number of incoming logs
 	IncomingLogs = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: namespace,
 		Name:      "incoming_logs_total",
-		Help:      "Total number of incoming logs in the Loki Gardener",
+		Help:      "Total number of incoming logs in the Vali Gardener",
 	}, []string{"host"})
 
 	// IncomingLogsWithEndpoint is a prometheus metric which keeps the number of incoming logs with endpoint
 	IncomingLogsWithEndpoint = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: namespace,
 		Name:      "incoming_logs_with_endpoint_total",
-		Help:      "Total number of incoming logs with endpoint in the Loki Gardener",
+		Help:      "Total number of incoming logs with endpoint in the Vali Gardener",
 	}, []string{"host"})
 
 	// ForwardedLogs is a prometheus metric which keeps forwarded logs to the Promtail Client

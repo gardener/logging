@@ -21,7 +21,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestLoki(t *testing.T) {
+func TestVali(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "LokiPlugin Suite")
+	RunSpecs(t, "ValiPlugin Suite")
 }

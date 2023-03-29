@@ -41,8 +41,8 @@ var _ = Describe("Sorted Client", func() {
 	)
 
 	var (
-		fakeClient           *client.FakeLokiClient
-		sortedClient         types.LokiClient
+		fakeClient           *client.FakeValiClient
+		sortedClient         types.ValiClient
 		timestampNow         = time.Now()
 		timestampNowPlus1Sec = timestampNow.Add(time.Second)
 		timestampNowPlus2Sec = timestampNowPlus1Sec.Add(time.Second)
@@ -59,7 +59,7 @@ var _ = Describe("Sorted Client", func() {
 
 	BeforeEach(func() {
 		var err error
-		fakeClient = &client.FakeLokiClient{}
+		fakeClient = &client.FakeValiClient{}
 		var infoLogLevel logging.Level
 		_ = infoLogLevel.Set("info")
 		var clientURL flagext.URLValue
@@ -77,7 +77,7 @@ var _ = Describe("Sorted Client", func() {
 				IdLabelName:      model.LabelName("id"),
 			},
 		},
-			func(_ config.Config, _ log.Logger) (types.LokiClient, error) {
+			func(_ config.Config, _ log.Logger) (types.ValiClient, error) {
 				return fakeClient, nil
 			},
 			level.NewFilter(log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr)), infoLogLevel.Gokit))

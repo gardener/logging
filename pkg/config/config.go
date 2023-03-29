@@ -57,7 +57,7 @@ type Config struct {
 	Pprof            bool
 }
 
-// ParseConfig parse a Loki plugin configuration
+// ParseConfig parse a Vali plugin configuration
 func ParseConfig(cfg Getter) (*Config, error) {
 	var err error
 	res := &Config{}

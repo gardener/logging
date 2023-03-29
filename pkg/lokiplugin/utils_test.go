@@ -80,7 +80,7 @@ type fallbackToTagWhenMetadataIsMissing struct {
 	err       error
 }
 
-var _ = Describe("Loki plugin utils", func() {
+var _ = Describe("Vali plugin utils", func() {
 	DescribeTable("#createLine",
 		func(args createLineArgs) {
 			got, err := createLine(args.records, args.f)

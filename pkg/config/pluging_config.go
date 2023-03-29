@@ -19,7 +19,7 @@ import (
 	"github.com/prometheus/common/model"
 )
 
-// PluginConfig contains the configuration mostly related to the Loki plugin.
+// PluginConfig contains the configuration mostly related to the Vali plugin.
 type PluginConfig struct {
 	// AutoKubernetesLabels extact all key/values from the kubernetes field.
 	AutoKubernetesLabels bool
@@ -30,7 +30,7 @@ type PluginConfig struct {
 	// LineFormat is the format to use when flattening the record to a log line.
 	LineFormat Format
 	// DropSingleKey if set to true and after extracting label_keys a record only
-	// has a single key remaining, the log line sent to Loki will just be
+	// has a single key remaining, the log line sent to Vali will just be
 	// the value of the record key.
 	DropSingleKey bool
 	// LabelMap is path to a json file defining how to transform nested records.

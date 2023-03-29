@@ -14,7 +14,7 @@ This is why the default log storage solution is considered short-lived and not s
 Gardener, as an advanced Kubernetes management solution, follows the general recommendations and offers a cluster level logging solution to ensure proper log storage for all managed Kubernetes resources.
 The log management is setup when a new cluster is created.
 Log collection is organized using [fluent-bit](https://fluentbit.io).
-Log storage and search is organized using [Loki](https://grafana.com/oss/vali).
+Log storage and search is organized using [Vali](https://grafana.com/oss/vali).
 Log visualization is available using [Grafana](https://grafana.com/grafana) that is deployed with predefined dashboard and visualization for every shoot cluster.
 
 
@@ -74,11 +74,11 @@ To enable this option you need to authenticate in front of the Grafana UI.
 2. Log in following the steps described in the [Acccessing Grafana](#accessing-grafana) section.
 3. Choose the ***Explore*** tab (upper left side of the screen).
 ![Grafana Explore Tab](images/explore-logs.png)
-You can create a custom log filters based on the predefined labels used in `Loki`.
+You can create a custom log filters based on the predefined labels used in `Vali`.
 The following properties can be managed in the `Explore` tab:
-- `Datasource` (top left corner) should be set on Loki
+- `Datasource` (top left corner) should be set on Vali
 - `Timerange` (top right corner) is used to filter logs over a different period of time
-- `Label Selector` (top left corner) is used to filter logs based on the `Loki`'s labels and their values.
+- `Label Selector` (top left corner) is used to filter logs based on the `Vali`'s labels and their values.
 For example:
 `pod_name="kube-apiserver-1234-1234"` or you can use a regular expression (regex): `pod_name=~"kube-apiserver.+"`
 - `Severity` (left side of the screen). This option is used to filter log messages with specific severity.

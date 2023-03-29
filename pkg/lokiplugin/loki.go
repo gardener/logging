@@ -26,15 +26,15 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
-// Loki plugin interface
-type Loki interface {
+// Vali plugin interface
+type Vali interface {
 	SendRecord(r map[interface{}]interface{}, ts time.Time) error
 	Close()
 }
 
 type vali struct {
 	cfg                             *config.Config
-	defaultClient                   types.LokiClient
+	defaultClient                   types.ValiClient
 	dynamicHostRegexp               *regexp.Regexp
 	dynamicTenantRegexp             *regexp.Regexp
 	dynamicTenant                   string
@@ -44,8 +44,8 @@ type vali struct {
 	logger                          log.Logger
 }
 
-// NewPlugin returns Loki output plugin
-func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger log.Logger) (Loki, error) {
+// NewPlugin returns Vali output plugin
+func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger log.Logger) (Vali, error) {
 	var err error
 	vali := &vali{cfg: cfg, logger: logger}
 
@@ -166,8 +166,8 @@ func (l *vali) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 		for _, v := range records {
 			err := l.send(client, lbs, ts, fmt.Sprintf("%v", v))
 			if err != nil {
-				_ = level.Error(l.logger).Log("msg", "error sending record to Loki", "host", dynamicHostName, "error", err)
-				metrics.Errors.WithLabelValues(metrics.ErrorSendRecordToLoki).Inc()
+				_ = level.Error(l.logger).Log("msg", "error sending record to Vali", "host", dynamicHostName, "error", err)
+				metrics.Errors.WithLabelValues(metrics.ErrorSendRecordToVali).Inc()
 			}
 			return err
 		}
@@ -181,8 +181,8 @@ func (l *vali) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 
 	err = l.send(client, lbs, ts, line)
 	if err != nil {
-		_ = level.Error(l.logger).Log("msg", "error sending record to Loki", "host", dynamicHostName, "error", err)
-		metrics.Errors.WithLabelValues(metrics.ErrorSendRecordToLoki).Inc()
+		_ = level.Error(l.logger).Log("msg", "error sending record to Vali", "host", dynamicHostName, "error", err)
+		metrics.Errors.WithLabelValues(metrics.ErrorSendRecordToVali).Inc()
 
 		return err
 	}
@@ -197,7 +197,7 @@ func (l *vali) Close() {
 	}
 }
 
-func (l *vali) getClient(dynamicHosName string) types.LokiClient {
+func (l *vali) getClient(dynamicHosName string) types.ValiClient {
 	if l.isDynamicHost(dynamicHosName) && l.controller != nil {
 		if c, isStopped := l.controller.GetClient(dynamicHosName); !isStopped {
 			return c
@@ -229,7 +229,7 @@ func (l *vali) setDynamicTenant(record map[string]interface{}, lbs model.LabelSe
 	return lbs
 }
 
-func (l *vali) send(client types.LokiClient, lbs model.LabelSet, ts time.Time, line string) error {
+func (l *vali) send(client types.ValiClient, lbs model.LabelSet, ts time.Time, line string) error {
 	return client.Handle(lbs, ts, line)
 }
 

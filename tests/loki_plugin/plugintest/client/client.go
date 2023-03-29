@@ -21,13 +21,13 @@ import (
 	"github.com/prometheus/common/model"
 )
 
-func NewBlackBoxTestingLokiClient() *BlackBoxTestingLokiClient {
-	return &BlackBoxTestingLokiClient{
+func NewBlackBoxTestingValiClient() *BlackBoxTestingValiClient {
+	return &BlackBoxTestingValiClient{
 		entries: make(chan api.Entry),
 	}
 }
 
-func (c *BlackBoxTestingLokiClient) Run() {
+func (c *BlackBoxTestingValiClient) Run() {
 	c.localStreams = make(map[string]localStream)
 
 	for e := range c.entries {
@@ -47,27 +47,27 @@ func (c *BlackBoxTestingLokiClient) Run() {
 	}
 }
 
-func (c *BlackBoxTestingLokiClient) Chan() chan<- api.Entry {
+func (c *BlackBoxTestingValiClient) Chan() chan<- api.Entry {
 	return c.entries
 }
 
-func (c *BlackBoxTestingLokiClient) Stop() {
+func (c *BlackBoxTestingValiClient) Stop() {
 	c.stopped++
 }
 
-func (c *BlackBoxTestingLokiClient) StopNow() {
+func (c *BlackBoxTestingValiClient) StopNow() {
 	c.stopped++
 }
 
-func (c *BlackBoxTestingLokiClient) Shutdown() {
+func (c *BlackBoxTestingValiClient) Shutdown() {
 	close(c.entries)
 }
 
-func (c *BlackBoxTestingLokiClient) GetEntries() []api.Entry {
+func (c *BlackBoxTestingValiClient) GetEntries() []api.Entry {
 	return c.receivedEntries
 }
 
-func (c *BlackBoxTestingLokiClient) GetLogsCount(ls model.LabelSet) int {
+func (c *BlackBoxTestingValiClient) GetLogsCount(ls model.LabelSet) int {
 	var logsCount int
 	for _, entry := range c.receivedEntries {
 		// take into account the id labels which cannot be predicted

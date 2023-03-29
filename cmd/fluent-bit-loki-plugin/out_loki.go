@@ -39,7 +39,7 @@ import (
 
 var (
 	// registered vali plugin instances, required for disposal during shutdown
-	plugins          []valiplugin.Loki
+	plugins          []valiplugin.Vali
 	logger           log.Logger
 	informer         cache.SharedIndexInformer
 	informerStopChan chan struct{}
@@ -194,7 +194,7 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 
 //export FLBPluginFlushCtx
 func FLBPluginFlushCtx(ctx, data unsafe.Pointer, length C.int, _ *C.char) int {
-	plugin := output.FLBPluginGetContext(ctx).(valiplugin.Loki)
+	plugin := output.FLBPluginGetContext(ctx).(valiplugin.Vali)
 	if plugin == nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorFLBPluginFlushCtx).Inc()
 		level.Error(logger).Log("[flb-go]", "plugin not initialized")

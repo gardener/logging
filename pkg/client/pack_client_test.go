@@ -36,8 +36,8 @@ import (
 var _ = Describe("Pack Client", func() {
 
 	var (
-		fakeClient *client.FakeLokiClient
-		//packClient      types.LokiClient
+		fakeClient *client.FakeValiClient
+		//packClient      types.ValiClient
 		preservedLabels = model.LabelSet{
 			"origin":    "",
 			"namespace": "",
@@ -51,7 +51,7 @@ var _ = Describe("Pack Client", func() {
 		timeNow, timeNowPlus1Sec, timeNowPlus2Seconds = time.Now(), time.Now().Add(1 * time.Second), time.Now().Add(2 * time.Second)
 		firstLog, secondLog, thirdLog                 = "I am the first log.", "And I am the second one", "I guess bronze is good, too"
 		cfg                                           config.Config
-		newLokiClientFunc                             = func(_ config.Config, _ log.Logger) (types.LokiClient, error) {
+		newValiClientFunc                             = func(_ config.Config, _ log.Logger) (types.ValiClient, error) {
 			return fakeClient, nil
 		}
 
@@ -59,7 +59,7 @@ var _ = Describe("Pack Client", func() {
 	)
 
 	BeforeEach(func() {
-		fakeClient = &client.FakeLokiClient{}
+		fakeClient = &client.FakeValiClient{}
 		cfg = config.Config{}
 
 		var infoLogLevel logging.Level
@@ -76,7 +76,7 @@ var _ = Describe("Pack Client", func() {
 
 	ginkotable.DescribeTable("#Handle", func(args handleArgs) {
 		cfg.PluginConfig.PreservedLabels = args.preservedLabels
-		packClient, err := client.NewPackClientDecorator(cfg, newLokiClientFunc, logger)
+		packClient, err := client.NewPackClientDecorator(cfg, newValiClientFunc, logger)
 		Expect(err).ToNot(HaveOccurred())
 
 		for _, entry := range args.incomingEntries {
@@ -253,7 +253,7 @@ var _ = Describe("Pack Client", func() {
 
 	Describe("#Stop", func() {
 		It("should stop", func() {
-			packClient, err := client.NewPackClientDecorator(cfg, newLokiClientFunc, logger)
+			packClient, err := client.NewPackClientDecorator(cfg, newValiClientFunc, logger)
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(fakeClient.IsGracefullyStopped).To(BeFalse())
@@ -267,7 +267,7 @@ var _ = Describe("Pack Client", func() {
 
 	Describe("#StopWait", func() {
 		It("should stop", func() {
-			packClient, err := client.NewPackClientDecorator(cfg, newLokiClientFunc, logger)
+			packClient, err := client.NewPackClientDecorator(cfg, newValiClientFunc, logger)
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(fakeClient.IsGracefullyStopped).To(BeFalse())

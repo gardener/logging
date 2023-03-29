@@ -29,11 +29,11 @@ const (
 	ErrorDeleteFuncNotAcluster        = "DeleteFuncNotAcluster"
 	ErrorFailedToParseURL             = "FailedToParseUrl"
 	ErrorCanNotExtractShoot           = "CanNotExtractShoot"
-	ErrorFailedToMakeLokiClient       = "FailedToMakeLokiClient"
+	ErrorFailedToMakeValiClient       = "FailedToMakeValiClient"
 	ErrorCanNotExtractMetadataFromTag = "CanNotExtractMetadataFromTag"
 	ErrorK8sLabelsNotFound            = "K8sLabelsNotFound"
 	ErrorCreateLine                   = "CreateLine"
-	ErrorSendRecordToLoki             = "SendRecordToLoki"
+	ErrorSendRecordToVali             = "SendRecordToVali"
 
 	MissingMetadataType = "Kubernetes"
 )

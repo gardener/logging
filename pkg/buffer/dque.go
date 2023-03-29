@@ -36,7 +36,7 @@ func dqueEntryBuilder() interface{} {
 type dqueClient struct {
 	logger    log.Logger
 	queue     *dque.DQue
-	vali      types.LokiClient
+	vali      types.ValiClient
 	once      sync.Once
 	wg        sync.WaitGroup
 	url       string
@@ -45,7 +45,7 @@ type dqueClient struct {
 }
 
 // NewDque makes a new dque vali client
-func NewDque(cfg config.Config, logger log.Logger, newClientFunc func(cfg config.Config, logger log.Logger) (types.LokiClient, error)) (types.LokiClient, error) {
+func NewDque(cfg config.Config, logger log.Logger, newClientFunc func(cfg config.Config, logger log.Logger) (types.ValiClient, error)) (types.ValiClient, error) {
 	var err error
 
 	q := &dqueClient{
@@ -103,12 +103,12 @@ func (c *dqueClient) dequeuer() {
 			continue
 		}
 
-		_ = level.Debug(c.logger).Log("msg", "sending record to Loki", "url", c.url, "record", record)
+		_ = level.Debug(c.logger).Log("msg", "sending record to Vali", "url", c.url, "record", record)
 		if err := c.vali.Handle(record.LabelSet, record.Timestamp, record.Line); err != nil {
 			metrics.Errors.WithLabelValues(metrics.ErrorDequeuerSendRecord).Inc()
-			_ = level.Error(c.logger).Log("msg", "error sending record to Loki", "host", c.url, "error", err)
+			_ = level.Error(c.logger).Log("msg", "error sending record to Vali", "host", c.url, "error", err)
 		}
-		_ = level.Debug(c.logger).Log("msg", "successful sent record to Loki", "host", c.url, "record", record)
+		_ = level.Debug(c.logger).Log("msg", "successful sent record to Vali", "host", c.url, "record", record)
 
 		c.lock.Lock()
 		if c.isStooped && c.queue.Size() <= 0 {

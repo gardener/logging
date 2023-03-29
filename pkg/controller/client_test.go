@@ -50,8 +50,8 @@ var _ = Describe("Controller Client", func() {
 
 	BeforeEach(func() {
 		ctlClient = controllerClient{
-			mainClient:    &client.FakeLokiClient{},
-			defaultClient: &client.FakeLokiClient{},
+			mainClient:    &client.FakeValiClient{},
+			defaultClient: &client.FakeValiClient{},
 			logger:        logger,
 			name:          "test",
 		}
@@ -76,8 +76,8 @@ var _ = Describe("Controller Client", func() {
 			err := ctlClient.Handle(entry.Labels, entry.Timestamp, entry.Line)
 			Expect(err).ToNot(HaveOccurred())
 		}
-		Expect(ctlClient.mainClient.(*client.FakeLokiClient).Entries).To(Equal(args.want.mainEntries))
-		Expect(ctlClient.defaultClient.(*client.FakeLokiClient).Entries).To(Equal(args.want.defaultEntries))
+		Expect(ctlClient.mainClient.(*client.FakeValiClient).Entries).To(Equal(args.want.mainEntries))
+		Expect(ctlClient.defaultClient.(*client.FakeValiClient).Entries).To(Equal(args.want.defaultEntries))
 	},
 		Entry("Should send only to the main client", handleArgs{
 			config: struct {
@@ -216,14 +216,14 @@ var _ = Describe("Controller Client", func() {
 	Describe("#Stop", func() {
 		It("Should stop immediately", func() {
 			ctlClient.Stop()
-			Expect(ctlClient.mainClient.(*client.FakeLokiClient).IsStopped).To(BeTrue())
-			Expect(ctlClient.defaultClient.(*client.FakeLokiClient).IsStopped).To(BeFalse())
+			Expect(ctlClient.mainClient.(*client.FakeValiClient).IsStopped).To(BeTrue())
+			Expect(ctlClient.defaultClient.(*client.FakeValiClient).IsStopped).To(BeFalse())
 		})
 
 		It("Should stop gracefully", func() {
 			ctlClient.StopWait()
-			Expect(ctlClient.mainClient.(*client.FakeLokiClient).IsGracefullyStopped).To(BeTrue())
-			Expect(ctlClient.defaultClient.(*client.FakeLokiClient).IsGracefullyStopped).To(BeFalse())
+			Expect(ctlClient.mainClient.(*client.FakeValiClient).IsGracefullyStopped).To(BeTrue())
+			Expect(ctlClient.defaultClient.(*client.FakeValiClient).IsGracefullyStopped).To(BeFalse())
 		})
 	})
 
@@ -242,7 +242,7 @@ var _ = Describe("Controller Client", func() {
 			ctl                  *controller
 			clientName           = "test-client"
 			testControllerClient = &fakeControllerClient{
-				FakeLokiClient: client.FakeLokiClient{},
+				FakeValiClient: client.FakeValiClient{},
 				name:           clientName,
 				state:          clusterStateCreation,
 			}
@@ -279,13 +279,13 @@ var _ = Describe("Controller Client", func() {
 })
 
 type fakeControllerClient struct {
-	client.FakeLokiClient
+	client.FakeValiClient
 	state clusterState
 	name  string
 }
 
 func (c *fakeControllerClient) Handle(labels model.LabelSet, time time.Time, entry string) error {
-	return c.FakeLokiClient.Handle(labels, time, entry)
+	return c.FakeValiClient.Handle(labels, time, entry)
 }
 
 func (c *fakeControllerClient) SetState(state clusterState) {

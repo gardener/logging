@@ -33,7 +33,7 @@ import (
 
 // GetClient search a client with <name> and returned if found.
 // In case the controller is closed it returns true as second return value.
-func (ctl *controller) GetClient(name string) (types.LokiClient, bool) {
+func (ctl *controller) GetClient(name string) (types.ValiClient, bool) {
 	ctl.lock.RLocker().Lock()
 	defer ctl.lock.RLocker().Unlock()
 
@@ -82,7 +82,7 @@ func (ctl *controller) createControllerClient(clusterName string, shoot *gardene
 
 	client, err := ctl.newControllerClient(clientConf)
 	if err != nil {
-		metrics.Errors.WithLabelValues(metrics.ErrorFailedToMakeLokiClient).Inc()
+		metrics.Errors.WithLabelValues(metrics.ErrorFailedToMakeValiClient).Inc()
 		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("failed to make new vali client for cluster %v", clusterName), "error", err.Error())
 		return
 	}
@@ -140,8 +140,8 @@ const (
 
 // Because loosing some logs when switching on and off client is not important we are omiting the synchronization.
 type controllerClient struct {
-	mainClient        types.LokiClient
-	defaultClient     types.LokiClient
+	mainClient        types.ValiClient
+	defaultClient     types.ValiClient
 	muteMainClient    bool
 	muteDefaultClient bool
 	state             clusterState
@@ -151,14 +151,14 @@ type controllerClient struct {
 	name              string
 }
 
-// ControllerClient is a Loki client for the valiplugin controller
+// ControllerClient is a Vali client for the valiplugin controller
 type ControllerClient interface {
-	types.LokiClient
+	types.ValiClient
 	GetState() clusterState
 	SetState(state clusterState)
 }
 
-// Handle processes and sends log to Loki
+// Handle processes and sends log to Vali
 func (c *controllerClient) Handle(ls model.LabelSet, t time.Time, s string) error {
 	var combineErr error
 	// Because we do not use thread save methods here we just copy the variables

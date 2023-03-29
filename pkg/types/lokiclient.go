@@ -20,8 +20,8 @@ import (
 	"github.com/prometheus/common/model"
 )
 
-// LokiClient is a client which sends logs to Loki
-type LokiClient interface {
+// ValiClient is a client which sends logs to Vali
+type ValiClient interface {
 	// Handle processes and sends logs
 	Handle(labels model.LabelSet, time time.Time, entry string) error
 	// Stop shut down the client immediately without waiting to send the saved logs

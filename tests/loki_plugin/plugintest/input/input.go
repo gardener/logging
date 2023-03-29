@@ -52,7 +52,7 @@ func NewOperatorPod(namespace, podName, container string) Pod {
 	}
 }
 
-// GenerateLogRecord generate log record passed to the Loki plugin as is from a real pod.
+// GenerateLogRecord generate log record passed to the Vali plugin as is from a real pod.
 func (p *operatorPod) GenerateLogRecord() map[interface{}]interface{} {
 	defer func() { p.podOutput.generatedLogsCount++ }()
 	return map[interface{}]interface{}{
@@ -82,7 +82,7 @@ func NewUserPod(namespace, podName, container string) Pod {
 	}
 }
 
-// GenerateLogRecord generate log record passed to the Loki plugin as is from a real pod.
+// GenerateLogRecord generate log record passed to the Vali plugin as is from a real pod.
 func (p *userPod) GenerateLogRecord() map[interface{}]interface{} {
 	defer func() { p.podOutput.generatedLogsCount++ }()
 	return map[interface{}]interface{}{

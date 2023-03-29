@@ -45,12 +45,12 @@ type sortedClient struct {
 }
 
 // NewSortedClientDecorator returns client which sorts the logs based their timestamp.
-func NewSortedClientDecorator(cfg config.Config, newClient NewLokiClientFunc, logger log.Logger) (types.LokiClient, error) {
+func NewSortedClientDecorator(cfg config.Config, newClient NewValiClientFunc, logger log.Logger) (types.ValiClient, error) {
 	var err error
 	batchWait := cfg.ClientConfig.CredativValiConfig.BatchWait
 	cfg.ClientConfig.CredativValiConfig.BatchWait = batchWait + (5 * time.Second)
 
-	client, err := newLokiClient(cfg, newClient, logger)
+	client, err := newValiClient(cfg, newClient, logger)
 	if err != nil {
 		return nil, err
 	}

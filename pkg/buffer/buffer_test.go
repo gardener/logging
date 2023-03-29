@@ -60,7 +60,7 @@ var _ = Describe("Buffer", func() {
 		It("should create a buffered client when buffer is set", func() {
 			conf := conf
 			conf.ClientConfig.BufferConfig.Buffer = true
-			c, err := NewBuffer(conf, logger, newFakeLokiClient)
+			c, err := NewBuffer(conf, logger, newFakeValiClient)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(c).ToNot(BeNil())
 		})
@@ -68,14 +68,14 @@ var _ = Describe("Buffer", func() {
 		It("should not create a buffered client when buffer type is wrong", func() {
 			conf := conf
 			conf.ClientConfig.BufferConfig.BufferType = "wrong-buffer"
-			c, err := NewBuffer(conf, logger, newFakeLokiClient)
+			c, err := NewBuffer(conf, logger, newFakeValiClient)
 			Expect(err).To(HaveOccurred())
 			Expect(c).To(BeNil())
 		})
 	})
 
 	Describe("newDque", func() {
-		var valiclient types.LokiClient
+		var valiclient types.ValiClient
 
 		BeforeEach(func() {
 			var err error
@@ -93,7 +93,7 @@ var _ = Describe("Buffer", func() {
 					},
 				},
 			}
-			valiclient, err = NewDque(conf, logger, newFakeLokiClient)
+			valiclient, err = NewDque(conf, logger, newFakeValiClient)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(valiclient).ToNot(BeNil())
 		})
@@ -111,10 +111,10 @@ var _ = Describe("Buffer", func() {
 			Expect(err).ToNot(HaveOccurred())
 			dQueCleint, ok := valiclient.(*dqueClient)
 			Expect(ok).To(BeTrue())
-			fakeLoki, ok := dQueCleint.vali.(*fakeLokiclient)
+			fakeVali, ok := dQueCleint.vali.(*fakeValiclient)
 			Expect(ok).To(BeTrue())
 			time.Sleep(2 * time.Second)
-			log := fakeLoki.sentLogs[0]
+			log := fakeVali.sentLogs[0]
 			Expect(log.labelSet).To(Equal(ls))
 			Expect(log.timestamp).To(Equal(ts))
 			Expect(log.line).To(Equal(line))
@@ -123,10 +123,10 @@ var _ = Describe("Buffer", func() {
 			valiclient.Stop()
 			dQueCleint, ok := valiclient.(*dqueClient)
 			Expect(ok).To(BeTrue())
-			fakeLoki, ok := dQueCleint.vali.(*fakeLokiclient)
+			fakeVali, ok := dQueCleint.vali.(*fakeValiclient)
 			Expect(ok).To(BeTrue())
 			time.Sleep(2 * time.Second)
-			Expect(fakeLoki.stopped).To(BeTrue())
+			Expect(fakeVali.stopped).To(BeTrue())
 			_, err := os.Stat("/tmp/gardener")
 			Expect(os.IsNotExist(err)).To(BeFalse())
 		})
@@ -134,10 +134,10 @@ var _ = Describe("Buffer", func() {
 			valiclient.StopWait()
 			dQueCleint, ok := valiclient.(*dqueClient)
 			Expect(ok).To(BeTrue())
-			fakeLoki, ok := dQueCleint.vali.(*fakeLokiclient)
+			fakeVali, ok := dQueCleint.vali.(*fakeValiclient)
 			Expect(ok).To(BeTrue())
 			time.Sleep(2 * time.Second)
-			Expect(fakeLoki.stopped).To(BeTrue())
+			Expect(fakeVali.stopped).To(BeTrue())
 			_, err := os.Stat("/tmp/gardener")
 			Expect(os.IsNotExist(err)).To(BeTrue())
 		})
@@ -145,25 +145,25 @@ var _ = Describe("Buffer", func() {
 
 })
 
-type fakeLokiclient struct {
+type fakeValiclient struct {
 	stopped  bool
 	sentLogs []logEntry
 }
 
-func newFakeLokiClient(c config.Config, logger log.Logger) (types.LokiClient, error) {
-	return &fakeLokiclient{}, nil
+func newFakeValiClient(c config.Config, logger log.Logger) (types.ValiClient, error) {
+	return &fakeValiclient{}, nil
 }
 
-func (c *fakeLokiclient) Handle(labels model.LabelSet, time time.Time, entry string) error {
+func (c *fakeValiclient) Handle(labels model.LabelSet, time time.Time, entry string) error {
 	c.sentLogs = append(c.sentLogs, logEntry{time, labels, entry})
 	return nil
 }
 
-func (c *fakeLokiclient) Stop() {
+func (c *fakeValiclient) Stop() {
 	c.stopped = true
 }
 
-func (c *fakeLokiclient) StopWait() {
+func (c *fakeValiclient) StopWait() {
 	c.stopped = true
 }
 

@@ -62,20 +62,20 @@ type sendRecordArgs struct {
 	wantErr bool
 }
 
-type fakeLokiClient struct{}
+type fakeValiClient struct{}
 
-func (c *fakeLokiClient) Handle(labels model.LabelSet, time time.Time, entry string) error {
+func (c *fakeValiClient) Handle(labels model.LabelSet, time time.Time, entry string) error {
 	return nil
 }
 
-func (c *fakeLokiClient) Stop()     {}
-func (c *fakeLokiClient) StopWait() {}
+func (c *fakeValiClient) Stop()     {}
+func (c *fakeValiClient) StopWait() {}
 
 type fakeController struct {
-	clients map[string]types.LokiClient
+	clients map[string]types.ValiClient
 }
 
-func (ctl *fakeController) GetClient(name string) (types.LokiClient, bool) {
+func (ctl *fakeController) GetClient(name string) (types.ValiClient, bool) {
 	if client, ok := ctl.clients[name]; ok {
 		return client, false
 	}
@@ -90,7 +90,7 @@ var (
 	logger   = log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
 )
 
-var _ = Describe("Loki plugin", func() {
+var _ = Describe("Vali plugin", func() {
 	var (
 		simpleRecordFixture = map[interface{}]interface{}{
 			"foo":   "bar",
@@ -257,14 +257,14 @@ var _ = Describe("Loki plugin", func() {
 
 	Describe("#getClient", func() {
 		fc := fakeController{
-			clients: map[string]types.LokiClient{
-				"shoot--dev--test1": &fakeLokiClient{},
-				"shoot--dev--test2": &fakeLokiClient{},
+			clients: map[string]types.ValiClient{
+				"shoot--dev--test1": &fakeValiClient{},
+				"shoot--dev--test2": &fakeValiClient{},
 			},
 		}
 		valiplug := vali{
 			dynamicHostRegexp: regexp.MustCompile("shoot--.*"),
-			defaultClient:     &fakeLokiClient{},
+			defaultClient:     &fakeValiClient{},
 			controller:        &fc,
 		}
 
@@ -328,7 +328,7 @@ var _ = Describe("Loki plugin", func() {
 						dynamicTenantRegexp: regexp.MustCompile("user-exposed.kubernetes"),
 						dynamicTenant:       "test-user",
 						dynamicTenantField:  "tag",
-						defaultClient:       &fakeLokiClient{},
+						defaultClient:       &fakeValiClient{},
 					},
 					labelSet: model.LabelSet{
 						"foo": "bar",
@@ -357,7 +357,7 @@ var _ = Describe("Loki plugin", func() {
 						dynamicTenantRegexp: regexp.MustCompile("user-exposed.kubernetes"),
 						dynamicTenant:       "test-user",
 						dynamicTenantField:  "tag",
-						defaultClient:       &fakeLokiClient{},
+						defaultClient:       &fakeValiClient{},
 					},
 					labelSet: model.LabelSet{
 						"foo": "bar",
@@ -385,7 +385,7 @@ var _ = Describe("Loki plugin", func() {
 						dynamicTenantRegexp: regexp.MustCompile("user-exposed.kubernetes"),
 						dynamicTenant:       "test-user",
 						dynamicTenantField:  "tag",
-						defaultClient:       &fakeLokiClient{},
+						defaultClient:       &fakeValiClient{},
 					},
 					labelSet: model.LabelSet{
 						"foo": "bar",

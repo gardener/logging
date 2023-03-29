@@ -3,8 +3,8 @@
 
 # Fluent Bit output plugin
 
-This plugin extends [Grafana,s Fluent Bit output plugin](https://github.com/credativ/vali/tree/v1.6.0/cmd/fluent-bit) which aims to forward log messages from fluent-bit to Loki.
-Тhe plugin meets the needs of the [Gardener](https://gardener.cloud/) by implementing a logic for dynamically forwarding log messages from one Fluent-bit to multiple Loki instances.
+This plugin extends [Grafana,s Fluent Bit output plugin](https://github.com/credativ/vali/tree/v1.6.0/cmd/fluent-bit) which aims to forward log messages from fluent-bit to Vali.
+Тhe plugin meets the needs of the [Gardener](https://gardener.cloud/) by implementing a logic for dynamically forwarding log messages from one Fluent-bit to multiple Vali instances.
 It also adds additional configurations that aim to improve plugin's performance and user experience.
 
 ## Configuration Options
@@ -12,9 +12,9 @@ It also adds additional configurations that aim to improve plugin's performance 
 | Key           | Description                                   | Default                             |
 | --------------|-----------------------------------------------|-------------------------------------|
 | Url           | Url of vali server API endpoint.               | http://localhost:3100/vali/api/v1/push |
-| TenantID      | The tenant ID used by default to push logs to Loki. If omitted or empty it assumes Loki is running in single-tenant mode and no `X-Scope-OrgID` header is sent.               | "" |
-| BatchWait     | Time to wait before send a log batch to Loki, full or not. (unit: sec) | 1 second   |
-| BatchSize     | Log batch size to send a log batch to Loki (unit: Bytes).    | 10 KiB (10 * 1024 Bytes) |
+| TenantID      | The tenant ID used by default to push logs to Vali. If omitted or empty it assumes Vali is running in single-tenant mode and no `X-Scope-OrgID` header is sent.               | "" |
+| BatchWait     | Time to wait before send a log batch to Vali, full or not. (unit: sec) | 1 second   |
+| BatchSize     | Log batch size to send a log batch to Vali (unit: Bytes).    | 10 KiB (10 * 1024 Bytes) |
 | MaxRetries     | Number of times the vali client will try to send unsuccessful sent record to vali.    | 10 |
 | Timeout     | The duration which vali client will wait for response.   | 10 |
 | MinBackoff     | The first wait after unsuccessful sent log.    | 0.5s |
@@ -22,10 +22,10 @@ It also adds additional configurations that aim to improve plugin's performance 
 | Labels        | labels for API requests.                       | {job="fluent-bit"}                    |
 | LogLevel      | LogLevel for plugin logger.                    | "info"                              |
 | RemoveKeys    | Specify removing keys.                         | none                                |
-| AutoKubernetesLabels | If set to true, it will add all Kubernetes labels to Loki labels | false    |
+| AutoKubernetesLabels | If set to true, it will add all Kubernetes labels to Vali labels | false    |
 | LabelKeys     | Comma separated list of keys to use as stream labels. All other keys will be placed into the log line. LabelKeys is deactivated when using `LabelMapPath` label mapping configuration. | none |
-| LineFormat    | Format to use when flattening the record to a log line. Valid values are "json" or "key_value". If set to "json" the log line sent to Loki will be the fluentd record (excluding any keys extracted out as labels) dumped as json. If set to "key_value", the log line will be each item in the record concatenated together (separated by a single space) in the format <key>=<value>. | json |
-| DropSingleKey | If set to true and after extracting label_keys a record only has a single key remaining, the log line sent to Loki will just be the value of the record key.| true |
+| LineFormat    | Format to use when flattening the record to a log line. Valid values are "json" or "key_value". If set to "json" the log line sent to Vali will be the fluentd record (excluding any keys extracted out as labels) dumped as json. If set to "key_value", the log line will be each item in the record concatenated together (separated by a single space) in the format <key>=<value>. | json |
+| DropSingleKey | If set to true and after extracting label_keys a record only has a single key remaining, the log line sent to Vali will just be the value of the record key.| true |
 | LabelMapPath | Path to a json file defining how to transform nested records. | none
 | DynamicHostPath | Jsonpath in the log labels to the dynamic host. | none
 | DynamicHostPrefix | String to prepend to the dynamic host. | none
@@ -70,17 +70,17 @@ It also adds additional configurations that aim to improve plugin's performance 
 
 ### Labels
 
-Labels are used to [query logs](https://github.com/credativ/vali/blob/v1.5.0/docs/logql.md) `{container_name="nginx", cluster="us-west1"}`, they are usually metadata about the workload producing the log stream (`instance`, `container_name`, `region`, `cluster`, `level`).  In Loki labels are indexed consequently you should be cautious when choosing them (high cardinality label values can have performance drastic impact).
+Labels are used to [query logs](https://github.com/credativ/vali/blob/v1.5.0/docs/logql.md) `{container_name="nginx", cluster="us-west1"}`, they are usually metadata about the workload producing the log stream (`instance`, `container_name`, `region`, `cluster`, `level`).  In Vali labels are indexed consequently you should be cautious when choosing them (high cardinality label values can have performance drastic impact).
 
 You can use `Labels`, `RemoveKeys` , `LabelKeys` and `LabelMapPath` to how the output plugin will perform labels extraction.
 
 ### AutoKubernetesLabels
 
-If set to true, it will add all Kubernetes labels to Loki labels automatically and ignore parameters `LabelKeys`, LabelMapPath.
+If set to true, it will add all Kubernetes labels to Vali labels automatically and ignore parameters `LabelKeys`, LabelMapPath.
 
 ### LabelMapPath
 
-When using the `Parser` and `Filter` plugins Fluent Bit can extract and add data to the current record/log data. While Loki labels are key value pair, record data can be nested structures.
+When using the `Parser` and `Filter` plugins Fluent Bit can extract and add data to the current record/log data. While Vali labels are key value pair, record data can be nested structures.
 You can pass a json file that defines how to extract [labels](https://github.com/credativ/vali/blob/v1.5.0/docs/overview/README.md#overview-of-vali) from each record. Each json key from the file will be matched with the log record to find label values. Values from the configuration are used as label names.
 
 Considering the record below :
@@ -122,7 +122,7 @@ If you don't want the `kubernetes` and `HOSTNAME` fields to appear in the log li
 
 ### Configuration examples
 
-To configure the Loki output plugin add this section to fluent-bit.conf
+To configure the Vali output plugin add this section to fluent-bit.conf
 
 ```properties
 [Output]
@@ -188,7 +188,7 @@ A full [example configuration file](example.config) is also available in this re
 
 ### Running multiple plugin instances
 
-You can run multiple plugin instances in the same fluent-bit process, for example if you want to push to different Loki servers or route logs into different Loki tenant IDs. To do so, add additional `[Output]` sections.
+You can run multiple plugin instances in the same fluent-bit process, for example if you want to push to different Vali servers or route logs into different Vali tenant IDs. To do so, add additional `[Output]` sections.
 
 ## Building
 

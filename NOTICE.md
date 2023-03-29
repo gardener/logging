@@ -1,6 +1,6 @@
-# Notices for GardenerLoki output plugin
+# Notices for GardenerVali output plugin
 
-This plugin extends [Credativ/Vali](https://github.com/credativ/vali) [fluent-bit output plugin v1.6.0](https://github.com/credativ/vali/tree/v1.6.0/cmd/fluent-bit) which aims to forward log messages from fluent-bit to Loki. It is maintained by SAP.
+This plugin extends [Credativ/Vali](https://github.com/credativ/vali) [fluent-bit output plugin v1.6.0](https://github.com/credativ/vali/tree/v1.6.0/cmd/fluent-bit) which aims to forward log messages from fluent-bit to Vali. It is maintained by SAP.
 
 ## Copyright
 

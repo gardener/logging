@@ -33,10 +33,10 @@ type promtailClientWithForwardedLogsMetricCounter struct {
 	host       string
 }
 
-// NewPromtailClient return LokiClient which wraps the original Promtail client.
+// NewPromtailClient return ValiClient which wraps the original Promtail client.
 // It increments the ForwardedLogs counter on successful call of the Handle function.
 // !!!This must be the bottom wrapper!!!
-func NewPromtailClient(cfg client.Config, logger log.Logger) (types.LokiClient, error) {
+func NewPromtailClient(cfg client.Config, logger log.Logger) (types.ValiClient, error) {
 	c, err := client.New(prometheus.DefaultRegisterer, cfg, logger)
 	if err != nil {
 		return nil, err
@@ -48,7 +48,7 @@ func NewPromtailClient(cfg client.Config, logger log.Logger) (types.LokiClient, 
 }
 
 // newTestingPromtailClient is wrapping fake grafana/vali client used for testing
-func newTestingPromtailClient(c client.Client, cfg client.Config, logger log.Logger) (types.LokiClient, error) {
+func newTestingPromtailClient(c client.Client, cfg client.Config, logger log.Logger) (types.ValiClient, error) {
 	return &promtailClientWithForwardedLogsMetricCounter{
 		valiclient: c,
 		host:       cfg.URL.Hostname(),

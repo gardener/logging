@@ -30,7 +30,7 @@ import (
 )
 
 type multiTenantClient struct {
-	valiclient types.LokiClient
+	valiclient types.ValiClient
 }
 
 const (
@@ -40,10 +40,10 @@ const (
 	MultiTenantClientsSeparator = ";"
 )
 
-// NewMultiTenantClientDecorator returns Loki client which supports more than one tenant id specified
+// NewMultiTenantClientDecorator returns Vali client which supports more than one tenant id specified
 // under `_gardener_multitenamt_id__` label. The tenants are separated by semicolon.
-func NewMultiTenantClientDecorator(cfg config.Config, newClient NewLokiClientFunc, logger log.Logger) (types.LokiClient, error) {
-	client, err := newLokiClient(cfg, newClient, logger)
+func NewMultiTenantClientDecorator(cfg config.Config, newClient NewValiClientFunc, logger log.Logger) (types.ValiClient, error) {
+	client, err := newValiClient(cfg, newClient, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -150,12 +150,12 @@ func (c *multiTenantClient) handleEntries(ls model.LabelSet, entries []batch.Ent
 }
 
 type removeMultiTenantIdClient struct {
-	valiclient types.LokiClient
+	valiclient types.ValiClient
 }
 
 // NewRemoveMultiTenantIdClientDecorator wraps vali client which removes the __gardener_multitenant_id__ label from the label set
-func NewRemoveMultiTenantIdClientDecorator(cfg config.Config, newClient NewLokiClientFunc, logger log.Logger) (types.LokiClient, error) {
-	client, err := newLokiClient(cfg, newClient, logger)
+func NewRemoveMultiTenantIdClientDecorator(cfg config.Config, newClient NewValiClientFunc, logger log.Logger) (types.ValiClient, error) {
+	client, err := newValiClient(cfg, newClient, logger)
 	if err != nil {
 		return nil, err
 	}

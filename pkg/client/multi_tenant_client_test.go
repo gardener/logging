@@ -34,18 +34,18 @@ import (
 
 var _ = Describe("Multi Tenant Client", func() {
 	var (
-		fakeClient *client.FakeLokiClient
-		mtc        types.LokiClient
+		fakeClient *client.FakeValiClient
+		mtc        types.ValiClient
 	)
 
 	BeforeEach(func() {
 		var err error
-		fakeClient = &client.FakeLokiClient{}
+		fakeClient = &client.FakeValiClient{}
 		var infoLogLevel logging.Level
 		_ = infoLogLevel.Set("info")
 
 		mtc, err = client.NewMultiTenantClientDecorator(config.Config{},
-			func(_ config.Config, _ log.Logger) (types.LokiClient, error) {
+			func(_ config.Config, _ log.Logger) (types.ValiClient, error) {
 				return fakeClient, nil
 			},
 			level.NewFilter(log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr)), infoLogLevel.Gokit))
@@ -152,18 +152,18 @@ var _ = Describe("Multi Tenant Client", func() {
 
 var _ = Describe("Remove Multi Tenant Client", func() {
 	var (
-		fakeClient *client.FakeLokiClient
-		mtc        types.LokiClient
+		fakeClient *client.FakeValiClient
+		mtc        types.ValiClient
 	)
 
 	BeforeEach(func() {
 		var err error
-		fakeClient = &client.FakeLokiClient{}
+		fakeClient = &client.FakeValiClient{}
 		var infoLogLevel logging.Level
 		_ = infoLogLevel.Set("info")
 
 		mtc, err = client.NewRemoveMultiTenantIdClientDecorator(config.Config{},
-			func(_ config.Config, _ log.Logger) (types.LokiClient, error) {
+			func(_ config.Config, _ log.Logger) (types.ValiClient, error) {
 				return fakeClient, nil
 			},
 			level.NewFilter(log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr)), infoLogLevel.Gokit))
