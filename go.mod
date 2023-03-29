@@ -12,7 +12,7 @@ require (
 	github.com/go-logfmt/logfmt v0.5.1
 	github.com/gobuffalo/packr/v2 v2.8.0
 	github.com/golang/mock v1.6.0
-	github.com/grafana/loki v1.6.2-0.20210406003638-babea82ef558
+	github.com/credativ/vali v0.0.0-20230322125549-22fdbf30c62a
 	github.com/joncrlsn/dque v2.2.1-0.20200515025108-956d14155fa2+incompatible
 	github.com/json-iterator/go v1.1.12
 	github.com/onsi/ginkgo v1.16.2
