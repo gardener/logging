@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package lokiplugin
+package valiplugin
 
 import (
 	"os"
@@ -138,7 +138,7 @@ var _ = Describe("Loki plugin", func() {
 	DescribeTable("#SendRecord",
 		func(args sendRecordArgs) {
 			rec := &recorder{}
-			l := &loki{
+			l := &vali{
 				cfg:           args.cfg,
 				defaultClient: rec,
 				logger:        logger,
@@ -262,7 +262,7 @@ var _ = Describe("Loki plugin", func() {
 				"shoot--dev--test2": &fakeLokiClient{},
 			},
 		}
-		lokiplug := loki{
+		valiplug := vali{
 			dynamicHostRegexp: regexp.MustCompile("shoot--.*"),
 			defaultClient:     &fakeLokiClient{},
 			controller:        &fc,
@@ -275,7 +275,7 @@ var _ = Describe("Loki plugin", func() {
 
 		DescribeTable("#getClient",
 			func(args getClientArgs) {
-				c := lokiplug.getClient(args.dynamicHostName)
+				c := valiplug.getClient(args.dynamicHostName)
 				if args.expectToExists {
 					Expect(c).ToNot(BeNil())
 				} else {
@@ -307,7 +307,7 @@ var _ = Describe("Loki plugin", func() {
 
 	Describe("#setDynamicTenant", func() {
 		type setDynamicTenantArgs struct {
-			lokiplugin loki
+			valiplugin vali
 			labelSet   model.LabelSet
 			records    map[string]interface{}
 			want       struct {
@@ -318,13 +318,13 @@ var _ = Describe("Loki plugin", func() {
 
 		DescribeTable("#setDynamicTenant",
 			func(args setDynamicTenantArgs) {
-				args.lokiplugin.setDynamicTenant(args.records, args.labelSet)
+				args.valiplugin.setDynamicTenant(args.records, args.labelSet)
 				Expect(args.want.records).To(Equal(args.records))
 				Expect(args.want.labelSet).To(Equal(args.labelSet))
 			},
 			Entry("Existing field with maching regex",
 				setDynamicTenantArgs{
-					lokiplugin: loki{
+					valiplugin: vali{
 						dynamicTenantRegexp: regexp.MustCompile("user-exposed.kubernetes"),
 						dynamicTenant:       "test-user",
 						dynamicTenantField:  "tag",
@@ -353,7 +353,7 @@ var _ = Describe("Loki plugin", func() {
 				}),
 			Entry("Existing field with no maching regex",
 				setDynamicTenantArgs{
-					lokiplugin: loki{
+					valiplugin: vali{
 						dynamicTenantRegexp: regexp.MustCompile("user-exposed.kubernetes"),
 						dynamicTenant:       "test-user",
 						dynamicTenantField:  "tag",
@@ -381,7 +381,7 @@ var _ = Describe("Loki plugin", func() {
 				}),
 			Entry("Not Existing field with maching regex",
 				setDynamicTenantArgs{
-					lokiplugin: loki{
+					valiplugin: vali{
 						dynamicTenantRegexp: regexp.MustCompile("user-exposed.kubernetes"),
 						dynamicTenant:       "test-user",
 						dynamicTenantField:  "tag",
@@ -412,7 +412,7 @@ var _ = Describe("Loki plugin", func() {
 
 	Describe("#addHostnameAsLabel", func() {
 		type addHostnameAsLabelArgs struct {
-			lokiplugin loki
+			valiplugin vali
 			labelSet   model.LabelSet
 			want       struct {
 				labelSet model.LabelSet
@@ -426,12 +426,12 @@ var _ = Describe("Loki plugin", func() {
 
 		DescribeTable("#addHostnameAsLabel",
 			func(args addHostnameAsLabelArgs) {
-				Expect(args.lokiplugin.addHostnameAsLabel(args.labelSet)).To(Succeed())
+				Expect(args.valiplugin.addHostnameAsLabel(args.labelSet)).To(Succeed())
 				Expect(args.want.labelSet).To(Equal(args.labelSet))
 			},
 			Entry("HostnameKey and HostnameValue are nil",
 				addHostnameAsLabelArgs{
-					lokiplugin: loki{
+					valiplugin: vali{
 						cfg: &config.Config{
 							PluginConfig: config.PluginConfig{
 								HostnameKey:   nil,
@@ -452,7 +452,7 @@ var _ = Describe("Loki plugin", func() {
 				}),
 			Entry("HostnameKey is not nil and HostnameValue is nil",
 				addHostnameAsLabelArgs{
-					lokiplugin: loki{
+					valiplugin: vali{
 						cfg: &config.Config{
 							PluginConfig: config.PluginConfig{
 								HostnameKey:   hostnameKeyPtr,
@@ -474,7 +474,7 @@ var _ = Describe("Loki plugin", func() {
 				}),
 			Entry("HostnameKey and HostnameValue are not nil",
 				addHostnameAsLabelArgs{
-					lokiplugin: loki{
+					valiplugin: vali{
 						cfg: &config.Config{
 							PluginConfig: config.PluginConfig{
 								HostnameKey:   hostnameKeyPtr,

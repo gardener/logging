@@ -75,7 +75,7 @@ var _ = Describe("Buffer", func() {
 	})
 
 	Describe("newDque", func() {
-		var lokiclient types.LokiClient
+		var valiclient types.LokiClient
 
 		BeforeEach(func() {
 			var err error
@@ -93,9 +93,9 @@ var _ = Describe("Buffer", func() {
 					},
 				},
 			}
-			lokiclient, err = NewDque(conf, logger, newFakeLokiClient)
+			valiclient, err = NewDque(conf, logger, newFakeLokiClient)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(lokiclient).ToNot(BeNil())
+			Expect(valiclient).ToNot(BeNil())
 		})
 		AfterEach(func() {
 			err := os.RemoveAll("/tmp/gardener")
@@ -107,11 +107,11 @@ var _ = Describe("Buffer", func() {
 			}
 			ts := time.Now()
 			line := "this is the message"
-			err := lokiclient.Handle(ls, ts, line)
+			err := valiclient.Handle(ls, ts, line)
 			Expect(err).ToNot(HaveOccurred())
-			dQueCleint, ok := lokiclient.(*dqueClient)
+			dQueCleint, ok := valiclient.(*dqueClient)
 			Expect(ok).To(BeTrue())
-			fakeLoki, ok := dQueCleint.loki.(*fakeLokiclient)
+			fakeLoki, ok := dQueCleint.vali.(*fakeLokiclient)
 			Expect(ok).To(BeTrue())
 			time.Sleep(2 * time.Second)
 			log := fakeLoki.sentLogs[0]
@@ -120,10 +120,10 @@ var _ = Describe("Buffer", func() {
 			Expect(log.line).To(Equal(line))
 		})
 		It("should stop correctly", func() {
-			lokiclient.Stop()
-			dQueCleint, ok := lokiclient.(*dqueClient)
+			valiclient.Stop()
+			dQueCleint, ok := valiclient.(*dqueClient)
 			Expect(ok).To(BeTrue())
-			fakeLoki, ok := dQueCleint.loki.(*fakeLokiclient)
+			fakeLoki, ok := dQueCleint.vali.(*fakeLokiclient)
 			Expect(ok).To(BeTrue())
 			time.Sleep(2 * time.Second)
 			Expect(fakeLoki.stopped).To(BeTrue())
@@ -131,10 +131,10 @@ var _ = Describe("Buffer", func() {
 			Expect(os.IsNotExist(err)).To(BeFalse())
 		})
 		It("should gracefully stop correctly", func() {
-			lokiclient.StopWait()
-			dQueCleint, ok := lokiclient.(*dqueClient)
+			valiclient.StopWait()
+			dQueCleint, ok := valiclient.(*dqueClient)
 			Expect(ok).To(BeTrue())
-			fakeLoki, ok := dQueCleint.loki.(*fakeLokiclient)
+			fakeLoki, ok := dQueCleint.vali.(*fakeLokiclient)
 			Expect(ok).To(BeTrue())
 			time.Sleep(2 * time.Second)
 			Expect(fakeLoki.stopped).To(BeTrue())

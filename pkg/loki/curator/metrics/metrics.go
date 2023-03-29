@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	namespace = "loki_curator"
+	namespace = "vali_curator"
 
 	// Errors is a prometheus metric which keeps total number of the errors
 	Errors = promauto.NewCounterVec(prometheus.CounterOpts{

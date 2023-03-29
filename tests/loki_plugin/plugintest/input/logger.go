@@ -20,17 +20,17 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gardener/logging/pkg/lokiplugin"
+	"github.com/gardener/logging/pkg/valiplugin"
 )
 
 type LoggerController struct {
 	config LoggerControllerConfig
-	plugin lokiplugin.Loki
+	plugin valiplugin.Loki
 	pods   []Pod
 	wg     sync.WaitGroup
 }
 
-func NewLoggerController(plugin lokiplugin.Loki, cfg LoggerControllerConfig) LoggerController {
+func NewLoggerController(plugin valiplugin.Loki, cfg LoggerControllerConfig) LoggerController {
 	return LoggerController{
 		config: cfg,
 		plugin: plugin,

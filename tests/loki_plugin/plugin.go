@@ -19,12 +19,12 @@ import (
 	"time"
 
 	"github.com/gardener/logging/pkg/config"
-	"github.com/gardener/logging/pkg/lokiplugin"
-	plugintestclient "github.com/gardener/logging/tests/loki_plugin/plugintest/client"
-	plugintestcluster "github.com/gardener/logging/tests/loki_plugin/plugintest/cluster"
-	plugintestconfig "github.com/gardener/logging/tests/loki_plugin/plugintest/config"
-	"github.com/gardener/logging/tests/loki_plugin/plugintest/input"
-	"github.com/gardener/logging/tests/loki_plugin/plugintest/matcher"
+	"github.com/gardener/logging/pkg/valiplugin"
+	plugintestclient "github.com/gardener/logging/tests/vali_plugin/plugintest/client"
+	plugintestcluster "github.com/gardener/logging/tests/vali_plugin/plugintest/cluster"
+	plugintestconfig "github.com/gardener/logging/tests/vali_plugin/plugintest/config"
+	"github.com/gardener/logging/tests/vali_plugin/plugintest/input"
+	"github.com/gardener/logging/tests/vali_plugin/plugintest/matcher"
 
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllertest"
 )
@@ -35,17 +35,17 @@ const (
 )
 
 var (
-	lokiPluginConfiguration config.Config
+	valiPluginConfiguration config.Config
 	testClient              *plugintestclient.BlackBoxTestingLokiClient
 	fakeInformer            *controllertest.FakeInformer
 	clusters                []plugintestcluster.Cluster
-	plugin                  lokiplugin.Loki
+	plugin                  valiplugin.Loki
 )
 
 func main() {
 	var err error
 
-	lokiPluginConfiguration, err = plugintestconfig.NewConfiguration()
+	valiPluginConfiguration, err = plugintestconfig.NewConfiguration()
 	if err != nil {
 		panic(err)
 	}
@@ -53,12 +53,12 @@ func main() {
 	logger := plugintestconfig.NewLogger()
 
 	testClient = plugintestclient.NewBlackBoxTestingLokiClient()
-	lokiPluginConfiguration.ClientConfig.TestingClient = testClient
+	valiPluginConfiguration.ClientConfig.TestingClient = testClient
 	go testClient.Run()
 
 	fakeInformer.Synced = true
 	fmt.Println("Creating new plugin")
-	plugin, err = lokiplugin.NewPlugin(fakeInformer, &lokiPluginConfiguration, logger)
+	plugin, err = valiplugin.NewPlugin(fakeInformer, &valiPluginConfiguration, logger)
 	if err != nil {
 		panic(err)
 	}

@@ -24,13 +24,13 @@ import (
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	"github.com/grafana/loki/pkg/logproto"
+	"github.com/grafana/vali/pkg/logproto"
 	"github.com/prometheus/common/model"
 )
 
 type sortedClient struct {
 	logger           log.Logger
-	lokiclient       multiTenantClient
+	valiclient       multiTenantClient
 	batch            *batch.Batch
 	batchWait        time.Duration
 	batchLock        sync.Mutex
@@ -57,7 +57,7 @@ func NewSortedClientDecorator(cfg config.Config, newClient NewLokiClientFunc, lo
 
 	c := &sortedClient{
 		logger:           log.With(logger, "component", "client", "host", cfg.ClientConfig.GrafanaLokiConfig.URL.Host),
-		lokiclient:       multiTenantClient{lokiclient: client},
+		valiclient:       multiTenantClient{valiclient: client},
 		batchWait:        batchWait,
 		batchSize:        cfg.ClientConfig.GrafanaLokiConfig.BatchSize,
 		batchID:          0,
@@ -139,7 +139,7 @@ func (c *sortedClient) sendBatch() {
 	c.batch.Sort()
 
 	for _, stream := range c.batch.GetStreams() {
-		if err := c.lokiclient.handleStream(*stream); err != nil {
+		if err := c.valiclient.handleStream(*stream); err != nil {
 			_ = level.Error(c.logger).Log("msg", "error sending stream", "stream", stream.Labels.String(), "error", err.Error())
 		}
 	}
@@ -166,7 +166,7 @@ func (c *sortedClient) Stop() {
 	c.once.Do(func() {
 		close(c.quit)
 		c.wg.Wait()
-		c.lokiclient.Stop()
+		c.valiclient.Stop()
 	})
 
 }
@@ -178,7 +178,7 @@ func (c *sortedClient) StopWait() {
 		if c.batch != nil {
 			c.sendBatch()
 		}
-		c.lokiclient.StopWait()
+		c.valiclient.StopWait()
 	})
 
 }

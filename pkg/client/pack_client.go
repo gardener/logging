@@ -27,11 +27,11 @@ import (
 )
 
 type packClient struct {
-	lokiClient     types.LokiClient
+	valiClient     types.LokiClient
 	excludedLabels model.LabelSet
 }
 
-// NewPackClientDecorator return loki client which pack all the labels except the explicitly excluded ones and forward them the the wrapped client.
+// NewPackClientDecorator return vali client which pack all the labels except the explicitly excluded ones and forward them the the wrapped client.
 func NewPackClientDecorator(cfg config.Config, newClient NewLokiClientFunc, logger log.Logger) (types.LokiClient, error) {
 	client, err := newLokiClient(cfg, newClient, logger)
 	if err != nil {
@@ -39,7 +39,7 @@ func NewPackClientDecorator(cfg config.Config, newClient NewLokiClientFunc, logg
 	}
 
 	return &packClient{
-		lokiClient:     client,
+		valiClient:     client,
 		excludedLabels: cfg.PluginConfig.PreservedLabels.Clone(),
 	}, nil
 }
@@ -72,17 +72,17 @@ func (c *packClient) Handle(ls model.LabelSet, t time.Time, s string) error {
 		t = time.Now()
 	}
 
-	return c.lokiClient.Handle(ls, t, s)
+	return c.valiClient.Handle(ls, t, s)
 }
 
 // Stop the client.
 func (c *packClient) Stop() {
-	c.lokiClient.Stop()
+	c.valiClient.Stop()
 }
 
 // StopWait stops the client waiting all saved logs to be sent.
 func (c *packClient) StopWait() {
-	c.lokiClient.StopWait()
+	c.valiClient.StopWait()
 }
 
 func (c *packClient) checkIfLabelSetContainsExcludedLabels(ls model.LabelSet) bool {

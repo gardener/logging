@@ -72,7 +72,7 @@ func (ctl *controller) newControllerClient(clientConf *config.Config) (Controlle
 
 // TODO (nickytd) The checkTargetLoggingBackend parameter is only used to reckognize initial start of the cluster
 // informer and propagate further down to getClientConfig if this is an add callback or update callback.
-// Once loki to vali migration is done then we shall revert the original state and remove this parameter.
+// Once vali to vali migration is done then we shall revert the original state and remove this parameter.
 func (ctl *controller) createControllerClient(clusterName string, shoot *gardenercorev1beta1.Shoot,
 	checkTargetLoggingBackend bool) {
 	clientConf := ctl.getClientConfig(clusterName, checkTargetLoggingBackend)
@@ -83,7 +83,7 @@ func (ctl *controller) createControllerClient(clusterName string, shoot *gardene
 	client, err := ctl.newControllerClient(clientConf)
 	if err != nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorFailedToMakeLokiClient).Inc()
-		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("failed to make new loki client for cluster %v", clusterName), "error", err.Error())
+		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("failed to make new vali client for cluster %v", clusterName), "error", err.Error())
 		return
 	}
 
@@ -151,7 +151,7 @@ type controllerClient struct {
 	name              string
 }
 
-// ControllerClient is a Loki client for the lokiplugin controller
+// ControllerClient is a Loki client for the valiplugin controller
 type ControllerClient interface {
 	types.LokiClient
 	GetState() clusterState

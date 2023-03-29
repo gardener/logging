@@ -14,7 +14,7 @@ This is why the default log storage solution is considered short-lived and not s
 Gardener, as an advanced Kubernetes management solution, follows the general recommendations and offers a cluster level logging solution to ensure proper log storage for all managed Kubernetes resources.
 The log management is setup when a new cluster is created.
 Log collection is organized using [fluent-bit](https://fluentbit.io).
-Log storage and search is organized using [Loki](https://grafana.com/oss/loki).
+Log storage and search is organized using [Loki](https://grafana.com/oss/vali).
 Log visualization is available using [Grafana](https://grafana.com/grafana) that is deployed with predefined dashboard and visualization for every shoot cluster.
 
 

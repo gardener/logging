@@ -18,7 +18,7 @@ import (
 	"flag"
 	"os"
 
-	config "github.com/gardener/logging/pkg/loki/curator/config"
+	config "github.com/gardener/logging/pkg/vali/curator/config"
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
@@ -31,7 +31,7 @@ var (
 
 // ParseConfiguration parses the Curator's inode and storage configurations.
 func ParseConfiguration() (*config.CuratorConfig, log.Logger, error) {
-	curatorConfigPath := flag.String("config", "/etc/loki/curator.yaml", "A path to the curator's configuration file")
+	curatorConfigPath := flag.String("config", "/etc/vali/curator.yaml", "A path to the curator's configuration file")
 	flag.Parse()
 	conf, err := config.ParseConfigurations(*curatorConfigPath)
 	if err != nil {

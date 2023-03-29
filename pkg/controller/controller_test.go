@@ -25,7 +25,7 @@ import (
 	"github.com/cortexproject/cortex/pkg/util/flagext"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	lokiclient "github.com/grafana/loki/pkg/promtail/client"
+	valiclient "github.com/grafana/vali/pkg/promtail/client"
 	"github.com/prometheus/common/model"
 	"github.com/weaveworks/common/logging"
 
@@ -115,9 +115,9 @@ var _ = Describe("Controller", func() {
 			logLevel logging.Level
 		)
 		defaultURL := flagext.URLValue{}
-		_ = defaultURL.Set("http://loki.garden.svc:3100/loki/api/v1/push")
-		dynamicHostPrefix := "http://loki."
-		dynamicHostSulfix := ".svc:3100/loki/api/v1/push"
+		_ = defaultURL.Set("http://vali.garden.svc:3100/vali/api/v1/push")
+		dynamicHostPrefix := "http://vali."
+		dynamicHostSulfix := ".svc:3100/vali/api/v1/push"
 		_ = logLevel.Set("error")
 		logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
 		logger = level.NewFilter(logger, logLevel.Gokit)
@@ -178,7 +178,7 @@ var _ = Describe("Controller", func() {
 			Expect(err).ToNot(HaveOccurred())
 			conf = &config.Config{
 				ClientConfig: config.ClientConfig{
-					GrafanaLokiConfig: lokiclient.Config{
+					GrafanaLokiConfig: valiclient.Config{
 						URL:       defaultURL,
 						BatchWait: 5 * time.Second,
 						BatchSize: 1024 * 1024,

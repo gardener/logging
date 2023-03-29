@@ -26,8 +26,8 @@ import (
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	"github.com/grafana/loki/pkg/logproto"
-	promtailclient "github.com/grafana/loki/pkg/promtail/client"
+	"github.com/grafana/vali/pkg/logproto"
+	promtailclient "github.com/grafana/vali/pkg/promtail/client"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/prometheus/common/model"
@@ -63,7 +63,7 @@ var _ = Describe("Sorted Client", func() {
 		var infoLogLevel logging.Level
 		_ = infoLogLevel.Set("info")
 		var clientURL flagext.URLValue
-		err = clientURL.Set("http://localhost:3100/loki/api/v1/push")
+		err = clientURL.Set("http://localhost:3100/vali/api/v1/push")
 		Expect(err).ToNot(HaveOccurred())
 
 		sortedClient, err = client.NewSortedClientDecorator(config.Config{

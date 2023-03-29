@@ -3,7 +3,7 @@
 
 # Fluent Bit output plugin
 
-This plugin extends [Grafana,s Fluent Bit output plugin](https://github.com/grafana/loki/tree/v1.6.0/cmd/fluent-bit) which aims to forward log messages from fluent-bit to Loki.
+This plugin extends [Grafana,s Fluent Bit output plugin](https://github.com/grafana/vali/tree/v1.6.0/cmd/fluent-bit) which aims to forward log messages from fluent-bit to Loki.
 Тhe plugin meets the needs of the [Gardener](https://gardener.cloud/) by implementing a logic for dynamically forwarding log messages from one Fluent-bit to multiple Loki instances.
 It also adds additional configurations that aim to improve plugin's performance and user experience.
 
@@ -11,12 +11,12 @@ It also adds additional configurations that aim to improve plugin's performance 
 
 | Key           | Description                                   | Default                             |
 | --------------|-----------------------------------------------|-------------------------------------|
-| Url           | Url of loki server API endpoint.               | http://localhost:3100/loki/api/v1/push |
+| Url           | Url of vali server API endpoint.               | http://localhost:3100/vali/api/v1/push |
 | TenantID      | The tenant ID used by default to push logs to Loki. If omitted or empty it assumes Loki is running in single-tenant mode and no `X-Scope-OrgID` header is sent.               | "" |
 | BatchWait     | Time to wait before send a log batch to Loki, full or not. (unit: sec) | 1 second   |
 | BatchSize     | Log batch size to send a log batch to Loki (unit: Bytes).    | 10 KiB (10 * 1024 Bytes) |
-| MaxRetries     | Number of times the loki client will try to send unsuccessful sent record to loki.    | 10 |
-| Timeout     | The duration which loki client will wait for response.   | 10 |
+| MaxRetries     | Number of times the vali client will try to send unsuccessful sent record to vali.    | 10 |
+| Timeout     | The duration which vali client will wait for response.   | 10 |
 | MinBackoff     | The first wait after unsuccessful sent log.    | 0.5s |
 | MaxBackoff     | The maximum duration after  unsuccessful sent log.  | 5m |
 | Labels        | labels for API requests.                       | {job="fluent-bit"}                    |
@@ -33,7 +33,7 @@ It also adds additional configurations that aim to improve plugin's performance 
 | DynamicHostRegex | Regex to check if the dynamic host is valid. | '*'
 | Buffer | If set to true, a buffered client will be used. | none
 | BufferType | The buffer type to use when using buffered client is unable. "Dque" is the only available. | "dque"
-| QueueDir | Path to a directory where the buffer will store its records. | '/tmp/flb-storage/loki'
+| QueueDir | Path to a directory where the buffer will store its records. | '/tmp/flb-storage/vali'
 | QueueSegmentSize | The number of entries stored into the buffer. | 500
 | QueueName | The name of the file where the log entries will be stored | `dque`
 | SortByTimestamp | Sort the logs by their timestamps. | `false`
@@ -43,7 +43,7 @@ It also adds additional configurations that aim to improve plugin's performance 
 | TagExpression | The regex expression which will be used for matching the metadata retrieved from the tag. It contains 3 group expressions (`()`): `pod name`, `namespace` and the `container name` | "\\.(.*)_(.*)_(.*)-.*\\.log"
 | DropLogEntryWithoutK8sMetadata | When metadata is missing for the log entry, it will be dropped | `false`
 | ControllerSyncTimeout | Time to wait for cluster object synchronization | 60 seconds
-| NumberOfBatchIDs | The number of id per batch. This increase the number of loki label streams | 10
+| NumberOfBatchIDs | The number of id per batch. This increase the number of vali label streams | 10
 | IdLabelName | The name of the batch ID label kye in the stream label set | `id`
 | DeletedClientTimeExpiration | The time duration after a client for deleted cluster will be considered for expired | 1 hour
 | DynamicTenant | When set the value is split on space delimiter to 3 tokens. The first token is the tenant to use, the second one is the field to search for matching. The third is the regex to match token 2. | none
@@ -70,7 +70,7 @@ It also adds additional configurations that aim to improve plugin's performance 
 
 ### Labels
 
-Labels are used to [query logs](https://github.com/grafana/loki/blob/v1.5.0/docs/logql.md) `{container_name="nginx", cluster="us-west1"}`, they are usually metadata about the workload producing the log stream (`instance`, `container_name`, `region`, `cluster`, `level`).  In Loki labels are indexed consequently you should be cautious when choosing them (high cardinality label values can have performance drastic impact).
+Labels are used to [query logs](https://github.com/grafana/vali/blob/v1.5.0/docs/logql.md) `{container_name="nginx", cluster="us-west1"}`, they are usually metadata about the workload producing the log stream (`instance`, `container_name`, `region`, `cluster`, `level`).  In Loki labels are indexed consequently you should be cautious when choosing them (high cardinality label values can have performance drastic impact).
 
 You can use `Labels`, `RemoveKeys` , `LabelKeys` and `LabelMapPath` to how the output plugin will perform labels extraction.
 
@@ -81,7 +81,7 @@ If set to true, it will add all Kubernetes labels to Loki labels automatically a
 ### LabelMapPath
 
 When using the `Parser` and `Filter` plugins Fluent Bit can extract and add data to the current record/log data. While Loki labels are key value pair, record data can be nested structures.
-You can pass a json file that defines how to extract [labels](https://github.com/grafana/loki/blob/v1.5.0/docs/overview/README.md#overview-of-loki) from each record. Each json key from the file will be matched with the log record to find label values. Values from the configuration are used as label names.
+You can pass a json file that defines how to extract [labels](https://github.com/grafana/vali/blob/v1.5.0/docs/overview/README.md#overview-of-vali) from each record. Each json key from the file will be matched with the log record to find label values. Values from the configuration are used as label names.
 
 Considering the record below :
 
@@ -126,9 +126,9 @@ To configure the Loki output plugin add this section to fluent-bit.conf
 
 ```properties
 [Output]
-    Name gardenerloki
+    Name gardenervali
     Match kubernetes.*
-    Url http://loki.garden.svc:3100/loki/api/v1/push
+    Url http://vali.garden.svc:3100/vali/api/v1/push
     LogLevel info
     BatchWait 40
     BatchSize 30720
@@ -141,8 +141,8 @@ To configure the Loki output plugin add this section to fluent-bit.conf
     RemoveKeys kubernetes,stream,time,tag
     LabelMapPath /fluent-bit/etc/kubernetes_label_map.json
     DynamicHostPath {"kubernetes": {"namespace_name": "namespace"}}
-    DynamicHostPrefix http://loki.
-    DynamicHostSuffix .svc:3100/loki/api/v1/push
+    DynamicHostPrefix http://vali.
+    DynamicHostSuffix .svc:3100/vali/api/v1/push
     DynamicHostRegex ^shoot-
     DynamicTenant user gardener user
     MaxRetries 3
@@ -162,9 +162,9 @@ To configure the Loki output plugin add this section to fluent-bit.conf
 
 ```properties
 [Output]
-    Name gardenerloki
+    Name gardenervali
     Match journald.*
-    Url http://loki.garden.svc:3100/loki/api/v1/push
+    Url http://vali.garden.svc:3100/vali/api/v1/push
     LogLevel info
     BatchWait 60
     BatchSize 30720
@@ -207,12 +207,12 @@ make plugin
 If you have Fluent Bit installed in your `$PATH` you can run the plugin using:
 
 ```bash
-fluent-bit -e /path/to/built/out_loki.so -c fluent-bit.conf
+fluent-bit -e /path/to/built/out_vali.so -c fluent-bit.conf
 ```
 
 You can also adapt your plugins.conf, removing the need to change the command line options:
 
 ```
 [PLUGINS]
-    Path /path/to/built/out_loki.so
+    Path /path/to/built/out_vali.so
 ```

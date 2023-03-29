@@ -36,7 +36,7 @@ func NewConfiguration() (config.Config, error) {
 	}
 
 	clientURL := flagext.URLValue{}
-	err = clientURL.Set("http://localhost:3100/loki/api/v1/push")
+	err = clientURL.Set("http://localhost:3100/vali/api/v1/push")
 	if err != nil {
 		return config.Config{}, err
 	}
@@ -60,8 +60,8 @@ func NewConfiguration() (config.Config, error) {
 		},
 		ControllerConfig: config.ControllerConfig{
 			CtlSyncTimeout:                60 * time.Minute,
-			DynamicHostPrefix:             "http://loki.",
-			DynamicHostSuffix:             ".svc:3100/loki/api/v1/push",
+			DynamicHostPrefix:             "http://vali.",
+			DynamicHostSuffix:             ".svc:3100/vali/api/v1/push",
 			DeletedClientTimeExpiration:   time.Hour,
 			MainControllerClientConfig:    config.MainControllerClientConfig,
 			DefaultControllerClientConfig: config.DefaultControllerClientConfig,

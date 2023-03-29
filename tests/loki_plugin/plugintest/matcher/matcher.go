@@ -17,8 +17,8 @@ package matcher
 import (
 	"fmt"
 
-	"github.com/gardener/logging/tests/loki_plugin/plugintest/client"
-	"github.com/gardener/logging/tests/loki_plugin/plugintest/input"
+	"github.com/gardener/logging/tests/vali_plugin/plugintest/client"
+	"github.com/gardener/logging/tests/vali_plugin/plugintest/input"
 	"github.com/prometheus/common/model"
 )
 

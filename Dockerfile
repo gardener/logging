@@ -34,7 +34,7 @@ RUN make install EFFECTIVE_VERSION=$EFFECTIVE_VERSION GOARCH=$TARGETARCH
 #############      curator       #############
 FROM distroless-static AS curator
 
-COPY --from=image-builder /go/bin/loki-curator /curator
+COPY --from=image-builder /go/bin/vali-curator /curator
 
 WORKDIR /
 EXPOSE 2718

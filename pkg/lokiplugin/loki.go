@@ -1,11 +1,11 @@
 /*
-This file was copied from the grafana/loki project
-https://github.com/grafana/loki/blob/v1.6.0/cmd/fluent-bit/loki.go
+This file was copied from the grafana/vali project
+https://github.com/grafana/vali/blob/v1.6.0/cmd/fluent-bit/vali.go
 
 Modifications Copyright (c) 2020 SAP SE or an SAP affiliate company. All rights reserved.
 */
 
-package lokiplugin
+package valiplugin
 
 import (
 	"fmt"
@@ -21,7 +21,7 @@ import (
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	grafanalokiclient "github.com/grafana/loki/pkg/promtail/client"
+	grafanavaliclient "github.com/grafana/vali/pkg/promtail/client"
 	"github.com/prometheus/common/model"
 	"k8s.io/client-go/tools/cache"
 )
@@ -32,7 +32,7 @@ type Loki interface {
 	Close()
 }
 
-type loki struct {
+type vali struct {
 	cfg                             *config.Config
 	defaultClient                   types.LokiClient
 	dynamicHostRegexp               *regexp.Regexp
@@ -47,9 +47,9 @@ type loki struct {
 // NewPlugin returns Loki output plugin
 func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger log.Logger) (Loki, error) {
 	var err error
-	loki := &loki{cfg: cfg, logger: logger}
+	vali := &vali{cfg: cfg, logger: logger}
 
-	loki.defaultClient, err = client.NewClient(*cfg, logger, client.Options{
+	vali.defaultClient, err = client.NewClient(*cfg, logger, client.Options{
 		RemoveTenantID:    cfg.PluginConfig.DynamicTenant.RemoveTenantIdWhenSendingToDefaultURL,
 		MultiTenantClient: false,
 	})
@@ -58,7 +58,7 @@ func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger lo
 	}
 
 	if cfg.PluginConfig.DynamicHostPath != nil {
-		loki.dynamicHostRegexp = regexp.MustCompile(cfg.PluginConfig.DynamicHostRegex)
+		vali.dynamicHostRegexp = regexp.MustCompile(cfg.PluginConfig.DynamicHostRegex)
 
 		cfgShallowCopy := *cfg
 		cfgShallowCopy.ClientConfig.BufferConfig.DqueConfig.QueueName = cfg.ClientConfig.BufferConfig.DqueConfig.QueueName + "-controller"
@@ -71,27 +71,27 @@ func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger lo
 			return nil, err
 		}
 
-		loki.controller, err = controller.NewController(informer, cfg, controllerDefaultClient, logger)
+		vali.controller, err = controller.NewController(informer, cfg, controllerDefaultClient, logger)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	if cfg.PluginConfig.KubernetesMetadata.FallbackToTagWhenMetadataIsMissing {
-		loki.extractKubernetesMetadataRegexp = regexp.MustCompile(cfg.PluginConfig.KubernetesMetadata.TagPrefix + cfg.PluginConfig.KubernetesMetadata.TagExpression)
+		vali.extractKubernetesMetadataRegexp = regexp.MustCompile(cfg.PluginConfig.KubernetesMetadata.TagPrefix + cfg.PluginConfig.KubernetesMetadata.TagExpression)
 	}
 
 	if cfg.PluginConfig.DynamicTenant.Tenant != "" && cfg.PluginConfig.DynamicTenant.Field != "" && cfg.PluginConfig.DynamicTenant.Regex != "" {
-		loki.dynamicTenantRegexp = regexp.MustCompile(cfg.PluginConfig.DynamicTenant.Regex)
-		loki.dynamicTenant = cfg.PluginConfig.DynamicTenant.Tenant
-		loki.dynamicTenantField = cfg.PluginConfig.DynamicTenant.Field
+		vali.dynamicTenantRegexp = regexp.MustCompile(cfg.PluginConfig.DynamicTenant.Regex)
+		vali.dynamicTenant = cfg.PluginConfig.DynamicTenant.Tenant
+		vali.dynamicTenantField = cfg.PluginConfig.DynamicTenant.Field
 	}
 
-	return loki, nil
+	return vali, nil
 }
 
-// sendRecord send fluentbit records to loki as an entry.
-func (l *loki) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
+// sendRecord send fluentbit records to vali as an entry.
+func (l *vali) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 	records := toStringMap(r)
 	_ = level.Debug(l.logger).Log("msg", "processing records", "records", fluentBitRecords(records))
 	lbs := make(model.LabelSet, l.cfg.PluginConfig.LabelSetInitCapacity)
@@ -190,14 +190,14 @@ func (l *loki) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 	return nil
 }
 
-func (l *loki) Close() {
+func (l *vali) Close() {
 	l.defaultClient.Stop()
 	if l.controller != nil {
 		l.controller.Stop()
 	}
 }
 
-func (l *loki) getClient(dynamicHosName string) types.LokiClient {
+func (l *vali) getClient(dynamicHosName string) types.LokiClient {
 	if l.isDynamicHost(dynamicHosName) && l.controller != nil {
 		if c, isStopped := l.controller.GetClient(dynamicHosName); !isStopped {
 			return c
@@ -208,13 +208,13 @@ func (l *loki) getClient(dynamicHosName string) types.LokiClient {
 	return l.defaultClient
 }
 
-func (l *loki) isDynamicHost(dynamicHostName string) bool {
+func (l *vali) isDynamicHost(dynamicHostName string) bool {
 	return dynamicHostName != "" &&
 		l.dynamicHostRegexp != nil &&
 		l.dynamicHostRegexp.MatchString(dynamicHostName)
 }
 
-func (l *loki) setDynamicTenant(record map[string]interface{}, lbs model.LabelSet) model.LabelSet {
+func (l *vali) setDynamicTenant(record map[string]interface{}, lbs model.LabelSet) model.LabelSet {
 	if l.dynamicTenantRegexp == nil {
 		return lbs
 	}
@@ -224,16 +224,16 @@ func (l *loki) setDynamicTenant(record map[string]interface{}, lbs model.LabelSe
 	}
 	s, ok := dynamicTenantFieldValue.(string)
 	if ok && l.dynamicTenantRegexp.MatchString(s) {
-		lbs[grafanalokiclient.ReservedLabelTenantID] = model.LabelValue(l.dynamicTenant)
+		lbs[grafanavaliclient.ReservedLabelTenantID] = model.LabelValue(l.dynamicTenant)
 	}
 	return lbs
 }
 
-func (l *loki) send(client types.LokiClient, lbs model.LabelSet, ts time.Time, line string) error {
+func (l *vali) send(client types.LokiClient, lbs model.LabelSet, ts time.Time, line string) error {
 	return client.Handle(lbs, ts, line)
 }
 
-func (l *loki) addHostnameAsLabel(res model.LabelSet) error {
+func (l *vali) addHostnameAsLabel(res model.LabelSet) error {
 	if l.cfg.PluginConfig.HostnameKey == nil {
 		return nil
 	}

@@ -23,14 +23,14 @@ import (
 	"github.com/gardener/logging/pkg/types"
 	"github.com/go-kit/kit/log"
 
-	"github.com/grafana/loki/pkg/promtail/client"
+	"github.com/grafana/vali/pkg/promtail/client"
 	"github.com/prometheus/common/model"
 
 	giterrors "github.com/pkg/errors"
 )
 
 type multiTenantClient struct {
-	lokiclient types.LokiClient
+	valiclient types.LokiClient
 }
 
 const (
@@ -49,20 +49,20 @@ func NewMultiTenantClientDecorator(cfg config.Config, newClient NewLokiClientFun
 	}
 
 	return &multiTenantClient{
-		lokiclient: client,
+		valiclient: client,
 	}, nil
 }
 
 func (c *multiTenantClient) Handle(ls model.LabelSet, t time.Time, s string) error {
 	ids, ok := ls[MultiTenantClientLabel]
 	if !ok {
-		return c.lokiclient.Handle(ls, t, s)
+		return c.valiclient.Handle(ls, t, s)
 	}
 
 	tenants := getTenants(string(ids))
 	delete(ls, MultiTenantClientLabel)
 	if len(tenants) < 1 {
-		return c.lokiclient.Handle(ls, t, s)
+		return c.valiclient.Handle(ls, t, s)
 	}
 
 	var errs []error
@@ -70,7 +70,7 @@ func (c *multiTenantClient) Handle(ls model.LabelSet, t time.Time, s string) err
 		tmpLs := ls.Clone()
 		tmpLs[client.ReservedLabelTenantID] = model.LabelValue(tenant)
 
-		err := c.lokiclient.Handle(tmpLs, t, s)
+		err := c.valiclient.Handle(tmpLs, t, s)
 		if err != nil {
 			errs = append(errs, err)
 		}
@@ -105,12 +105,12 @@ func getTenants(rawIdsStr string) []string {
 
 // Stop the client.
 func (c *multiTenantClient) Stop() {
-	c.lokiclient.Stop()
+	c.valiclient.Stop()
 }
 
 // StopWait stops the client waiting all saved logs to be sent.
 func (c *multiTenantClient) StopWait() {
-	c.lokiclient.StopWait()
+	c.valiclient.StopWait()
 }
 
 func (c *multiTenantClient) handleStream(stream batch.Stream) error {
@@ -141,7 +141,7 @@ func (c *multiTenantClient) handleStream(stream batch.Stream) error {
 func (c *multiTenantClient) handleEntries(ls model.LabelSet, entries []batch.Entry) error {
 	var combineErr error
 	for _, entry := range entries {
-		err := c.lokiclient.Handle(ls, entry.Timestamp, entry.Line)
+		err := c.valiclient.Handle(ls, entry.Timestamp, entry.Line)
 		if err != nil {
 			combineErr = giterrors.Wrap(combineErr, err.Error())
 		}
@@ -150,10 +150,10 @@ func (c *multiTenantClient) handleEntries(ls model.LabelSet, entries []batch.Ent
 }
 
 type removeMultiTenantIdClient struct {
-	lokiclient types.LokiClient
+	valiclient types.LokiClient
 }
 
-// NewRemoveMultiTenantIdClientDecorator wraps loki client which removes the __gardener_multitenant_id__ label from the label set
+// NewRemoveMultiTenantIdClientDecorator wraps vali client which removes the __gardener_multitenant_id__ label from the label set
 func NewRemoveMultiTenantIdClientDecorator(cfg config.Config, newClient NewLokiClientFunc, logger log.Logger) (types.LokiClient, error) {
 	client, err := newLokiClient(cfg, newClient, logger)
 	if err != nil {
@@ -165,15 +165,15 @@ func NewRemoveMultiTenantIdClientDecorator(cfg config.Config, newClient NewLokiC
 
 func (c *removeMultiTenantIdClient) Handle(ls model.LabelSet, t time.Time, s string) error {
 	delete(ls, MultiTenantClientLabel)
-	return c.lokiclient.Handle(ls, t, s)
+	return c.valiclient.Handle(ls, t, s)
 }
 
 // Stop the client.
 func (c *removeMultiTenantIdClient) Stop() {
-	c.lokiclient.Stop()
+	c.valiclient.Stop()
 }
 
 // StopWait stops the client waiting all saved logs to be sent.
 func (c *removeMultiTenantIdClient) StopWait() {
-	c.lokiclient.StopWait()
+	c.valiclient.StopWait()
 }

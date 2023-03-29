@@ -42,7 +42,7 @@ type Config struct {
 // DefaultCuratorConfig holds default configurations for the curator
 var DefaultCuratorConfig = CuratorConfig{
 	LogLevel:        "info",
-	DiskPath:        "/data/loki/chunks",
+	DiskPath:        "/data/vali/chunks",
 	TriggerInterval: 60 * time.Minute,
 	InodeConfig: Config{
 		MinFreePercentages:             10,

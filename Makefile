@@ -15,8 +15,8 @@
 REPO_ROOT                             := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 VERSION                               := $(shell cat VERSION)
 REGISTRY                              := eu.gcr.io/gardener-project/gardener
-FLUENT_BIT_TO_LOKI_IMAGE_REPOSITORY   := $(REGISTRY)/fluent-bit-to-loki
-LOKI_CURATOR_IMAGE_REPOSITORY         := $(REGISTRY)/loki-curator
+FLUENT_BIT_TO_LOKI_IMAGE_REPOSITORY   := $(REGISTRY)/fluent-bit-to-vali
+LOKI_CURATOR_IMAGE_REPOSITORY         := $(REGISTRY)/vali-curator
 TELEGRAF_IMAGE_REPOSITORY             := $(REGISTRY)/telegraf-iptables
 TUNE2FS_IMAGE_REPOSITORY              := $(REGISTRY)/tune2fs
 EVENT_LOGGER_IMAGE_REPOSITORY         := $(REGISTRY)/event-logger
@@ -26,12 +26,12 @@ GOARCH                                := amd64
 
 .PHONY: plugin
 plugin:
-	go build -mod=vendor -buildmode=c-shared -o build/out_loki.so ./cmd/fluent-bit-loki-plugin
+	go build -mod=vendor -buildmode=c-shared -o build/out_vali.so ./cmd/fluent-bit-vali-plugin
 
 .PHONY: curator
 curator:
 	CGO_ENABLED=0 GOOS=linux GOARCH=$(GOARCH) GO111MODULE=on \
-	  go build -mod=vendor -o build/curator ./cmd/loki-curator
+	  go build -mod=vendor -o build/curator ./cmd/vali-curator
 
 .PHONY: event-logger
 event-logger:
@@ -42,11 +42,11 @@ event-logger:
 build: plugin
 
 .PHONY: install
-install: install-loki-curator install-event-logger
+install: install-vali-curator install-event-logger
 
-.PHONY: install-loki-curator
-install-loki-curator:
-	@EFFECTIVE_VERSION=$(EFFECTIVE_VERSION) ./hack/install.sh ./cmd/loki-curator
+.PHONY: install-vali-curator
+install-vali-curator:
+	@EFFECTIVE_VERSION=$(EFFECTIVE_VERSION) ./hack/install.sh ./cmd/vali-curator
 
 .PHONY: install-event-logger
 install-event-logger:

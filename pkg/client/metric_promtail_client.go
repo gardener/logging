@@ -21,15 +21,15 @@ import (
 	"github.com/gardener/logging/pkg/types"
 
 	"github.com/go-kit/kit/log"
-	"github.com/grafana/loki/pkg/logproto"
-	"github.com/grafana/loki/pkg/promtail/api"
-	"github.com/grafana/loki/pkg/promtail/client"
+	"github.com/grafana/vali/pkg/logproto"
+	"github.com/grafana/vali/pkg/promtail/api"
+	"github.com/grafana/vali/pkg/promtail/client"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/model"
 )
 
 type promtailClientWithForwardedLogsMetricCounter struct {
-	lokiclient client.Client
+	valiclient client.Client
 	host       string
 }
 
@@ -42,31 +42,31 @@ func NewPromtailClient(cfg client.Config, logger log.Logger) (types.LokiClient, 
 		return nil, err
 	}
 	return &promtailClientWithForwardedLogsMetricCounter{
-		lokiclient: c,
+		valiclient: c,
 		host:       cfg.URL.Hostname(),
 	}, nil
 }
 
-// newTestingPromtailClient is wrapping fake grafana/loki client used for testing
+// newTestingPromtailClient is wrapping fake grafana/vali client used for testing
 func newTestingPromtailClient(c client.Client, cfg client.Config, logger log.Logger) (types.LokiClient, error) {
 	return &promtailClientWithForwardedLogsMetricCounter{
-		lokiclient: c,
+		valiclient: c,
 		host:       cfg.URL.Hostname(),
 	}, nil
 }
 
 func (c *promtailClientWithForwardedLogsMetricCounter) Handle(ls model.LabelSet, t time.Time, s string) error {
-	c.lokiclient.Chan() <- api.Entry{Labels: ls, Entry: logproto.Entry{Timestamp: t, Line: s}}
+	c.valiclient.Chan() <- api.Entry{Labels: ls, Entry: logproto.Entry{Timestamp: t, Line: s}}
 	metrics.ForwardedLogs.WithLabelValues(c.host).Inc()
 	return nil
 }
 
 // Stop the client.
 func (c *promtailClientWithForwardedLogsMetricCounter) Stop() {
-	c.lokiclient.Stop()
+	c.valiclient.Stop()
 }
 
 // StopWait stops the client waiting all saved logs to be sent.
 func (c *promtailClientWithForwardedLogsMetricCounter) StopWait() {
-	c.lokiclient.Stop()
+	c.valiclient.Stop()
 }

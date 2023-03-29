@@ -15,7 +15,7 @@
 package client
 
 import (
-	"github.com/grafana/loki/pkg/promtail/api"
+	"github.com/grafana/vali/pkg/promtail/api"
 	"github.com/prometheus/common/model"
 )
 

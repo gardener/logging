@@ -18,9 +18,9 @@ import (
 	"runtime"
 	"time"
 
-	config "github.com/gardener/logging/pkg/loki/curator/config"
-	"github.com/gardener/logging/pkg/loki/curator/metrics"
-	"github.com/gardener/logging/pkg/loki/curator/utils"
+	config "github.com/gardener/logging/pkg/vali/curator/config"
+	"github.com/gardener/logging/pkg/vali/curator/metrics"
+	"github.com/gardener/logging/pkg/vali/curator/utils"
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"

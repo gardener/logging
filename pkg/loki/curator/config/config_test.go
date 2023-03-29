@@ -18,7 +18,7 @@ import (
 	"io/ioutil"
 	"time"
 
-	. "github.com/gardener/logging/pkg/loki/curator/config"
+	. "github.com/gardener/logging/pkg/vali/curator/config"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"

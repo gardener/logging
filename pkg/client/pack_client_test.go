@@ -26,7 +26,7 @@ import (
 	"github.com/go-kit/kit/log/level"
 	"github.com/weaveworks/common/logging"
 
-	"github.com/grafana/loki/pkg/logproto"
+	"github.com/grafana/vali/pkg/logproto"
 	. "github.com/onsi/ginkgo"
 	ginkotable "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"

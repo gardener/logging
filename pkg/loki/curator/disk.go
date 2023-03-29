@@ -18,8 +18,8 @@ import (
 	"fmt"
 	"syscall"
 
-	"github.com/gardener/logging/pkg/loki/curator/metrics"
-	"github.com/gardener/logging/pkg/loki/curator/utils"
+	"github.com/gardener/logging/pkg/vali/curator/metrics"
+	"github.com/gardener/logging/pkg/vali/curator/utils"
 
 	"github.com/go-kit/kit/log/level"
 )

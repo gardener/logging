@@ -20,8 +20,8 @@ import (
 	"os/signal"
 	"runtime"
 
-	"github.com/gardener/logging/cmd/loki-curator/app"
-	"github.com/gardener/logging/pkg/loki/curator"
+	"github.com/gardener/logging/cmd/vali-curator/app"
+	"github.com/gardener/logging/pkg/vali/curator"
 	"github.com/go-kit/kit/log/level"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"

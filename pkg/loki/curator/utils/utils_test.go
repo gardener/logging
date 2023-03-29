@@ -18,7 +18,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/gardener/logging/pkg/loki/curator/utils"
+	"github.com/gardener/logging/pkg/vali/curator/utils"
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"

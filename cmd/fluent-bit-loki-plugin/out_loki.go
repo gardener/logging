@@ -1,6 +1,6 @@
 /*
-This file was copied from the grafana/loki project
-https://github.com/grafana/loki/blob/v1.6.0/cmd/fluent-bit/out_loki.go
+This file was copied from the grafana/vali project
+https://github.com/grafana/vali/blob/v1.6.0/cmd/fluent-bit/out_vali.go
 
 Modifications Copyright (c) 2020 SAP SE or an SAP affiliate company. All rights reserved.
 */
@@ -20,7 +20,7 @@ import (
 
 	"github.com/gardener/logging/pkg/config"
 	"github.com/gardener/logging/pkg/healthz"
-	"github.com/gardener/logging/pkg/lokiplugin"
+	"github.com/gardener/logging/pkg/valiplugin"
 	"github.com/gardener/logging/pkg/metrics"
 
 	gardenerclientsetversioned "github.com/gardener/gardener/pkg/client/extensions/clientset/versioned"
@@ -38,8 +38,8 @@ import (
 )
 
 var (
-	// registered loki plugin instances, required for disposal during shutdown
-	plugins          []lokiplugin.Loki
+	// registered vali plugin instances, required for disposal during shutdown
+	plugins          []valiplugin.Loki
 	logger           log.Logger
 	informer         cache.SharedIndexInformer
 	informerStopChan chan struct{}
@@ -88,7 +88,7 @@ func (c *pluginConfig) Get(key string) string {
 
 //export FLBPluginRegister
 func FLBPluginRegister(ctx unsafe.Pointer) int {
-	return output.FLBPluginRegister(ctx, "gardenerloki", "Ship fluent-bit logs to Grafana Loki")
+	return output.FLBPluginRegister(ctx, "gardenervali", "Ship fluent-bit logs to Grafana Loki")
 }
 
 // (fluentbit will call this)
@@ -111,7 +111,7 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 	id := len(plugins)
 	logger := log.With(newLogger(conf.LogLevel), "ts", log.DefaultTimestampUTC, "id", id)
 
-	level.Info(logger).Log("[flb-go]", "Starting fluent-bit-go-loki", "version", version.Info())
+	level.Info(logger).Log("[flb-go]", "Starting fluent-bit-go-vali", "version", version.Info())
 	paramLogger := log.With(logger, "[flb-go]", "provided parameter")
 	level.Info(paramLogger).Log("URL", conf.ClientConfig.GrafanaLokiConfig.URL)
 	level.Info(paramLogger).Log("TenantID", conf.ClientConfig.GrafanaLokiConfig.TenantID)
@@ -177,7 +177,7 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 	level.Info(paramLogger).Log("SendLogsToDefaultClientWhenClusterIsInRestoreState", fmt.Sprintf("%+v", conf.ControllerConfig.DefaultControllerClientConfig.SendLogsWhenIsInRestoreState))
 	level.Info(paramLogger).Log("SendLogsToDefaultClientWhenClusterIsInMigrationState", fmt.Sprintf("%+v", conf.ControllerConfig.DefaultControllerClientConfig.SendLogsWhenIsInMigrationState))
 
-	plugin, err := lokiplugin.NewPlugin(informer, conf, logger)
+	plugin, err := valiplugin.NewPlugin(informer, conf, logger)
 	if err != nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorNewPlugin).Inc()
 		level.Error(logger).Log("newPlugin", err)
@@ -194,7 +194,7 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 
 //export FLBPluginFlushCtx
 func FLBPluginFlushCtx(ctx, data unsafe.Pointer, length C.int, _ *C.char) int {
-	plugin := output.FLBPluginGetContext(ctx).(lokiplugin.Loki)
+	plugin := output.FLBPluginGetContext(ctx).(valiplugin.Loki)
 	if plugin == nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorFLBPluginFlushCtx).Inc()
 		level.Error(logger).Log("[flb-go]", "plugin not initialized")

@@ -21,7 +21,7 @@ import (
 	"github.com/gardener/logging/pkg/types"
 
 	"github.com/go-kit/kit/log"
-	"github.com/grafana/loki/pkg/promtail/client"
+	"github.com/grafana/vali/pkg/promtail/client"
 	"github.com/prometheus/common/model"
 )
 
@@ -104,10 +104,10 @@ func NewClient(cfg config.Config, logger log.Logger, options Options) (types.Lok
 }
 
 type removeTenantIdClient struct {
-	lokiclient types.LokiClient
+	valiclient types.LokiClient
 }
 
-// NewRemoveTenantIdClientDecorator return loki client which removes the __tenant_id__ value fro the label set
+// NewRemoveTenantIdClientDecorator return vali client which removes the __tenant_id__ value fro the label set
 func NewRemoveTenantIdClientDecorator(cfg config.Config, newClient NewLokiClientFunc, logger log.Logger) (types.LokiClient, error) {
 	client, err := newLokiClient(cfg, newClient, logger)
 	if err != nil {
@@ -119,17 +119,17 @@ func NewRemoveTenantIdClientDecorator(cfg config.Config, newClient NewLokiClient
 
 func (c *removeTenantIdClient) Handle(ls model.LabelSet, t time.Time, s string) error {
 	delete(ls, client.ReservedLabelTenantID)
-	return c.lokiclient.Handle(ls, t, s)
+	return c.valiclient.Handle(ls, t, s)
 }
 
 // Stop the client.
 func (c *removeTenantIdClient) Stop() {
-	c.lokiclient.Stop()
+	c.valiclient.Stop()
 }
 
 // StopWait stops the client waiting all saved logs to be sent.
 func (c *removeTenantIdClient) StopWait() {
-	c.lokiclient.StopWait()
+	c.valiclient.StopWait()
 }
 
 func newLokiClient(cfg config.Config, newClient NewLokiClientFunc, logger log.Logger) (types.LokiClient, error) {

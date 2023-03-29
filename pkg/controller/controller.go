@@ -255,8 +255,8 @@ func (ctl *controller) checkTargetLoggingBackend(prefix string, namespace string
 				return ""
 			}
 			switch {
-			case strings.Contains(instanceId[1], "loki"):
-				return ".svc:3100/loki/api/v1/push"
+			case strings.Contains(instanceId[1], "vali"):
+				return ".svc:3100/vali/api/v1/push"
 			case strings.Contains(instanceId[1], "vali"):
 				return ".svc:3100/vali/api/v1/push"
 			}

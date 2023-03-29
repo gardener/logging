@@ -20,7 +20,7 @@ import (
 )
 
 var (
-	namespace = "fluentbit_loki_gardener"
+	namespace = "fluentbit_vali_gardener"
 
 	// Errors is a prometheus which keeps total number of the errors
 	Errors = promauto.NewCounterVec(prometheus.CounterOpts{
