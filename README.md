@@ -88,8 +88,8 @@ Considering the record below :
 ```json
 {
   "kubernetes": {
-    "container_name": "promtail",
-    "pod_name": "promtail-xxx",
+    "container_name": "valitail",
+    "pod_name": "valitail-xxx",
     "namespace_name": "prod",
     "labels" : {
         "team": "x-men",
@@ -116,7 +116,7 @@ and a LabelMap file as follow :
 }
 ```
 
-The labels extracted will be `{team="x-men", container="promtail", pod="promtail-xxx", namespace="prod"}`.
+The labels extracted will be `{team="x-men", container="valitail", pod="valitail-xxx", namespace="prod"}`.
 
 If you don't want the `kubernetes` and `HOSTNAME` fields to appear in the log line you can use the `RemoveKeys` configuration field. (e.g. `RemoveKeys kubernetes,HOSTNAME`).
 

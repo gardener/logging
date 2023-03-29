@@ -17,7 +17,7 @@ package client
 import (
 	"fmt"
 
-	"github.com/credativ/vali/pkg/promtail/api"
+	"github.com/credativ/vali/pkg/valitail/api"
 	"github.com/prometheus/common/model"
 )
 

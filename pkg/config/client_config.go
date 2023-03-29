@@ -17,7 +17,7 @@ import (
 	"github.com/prometheus/common/model"
 
 	"github.com/credativ/vali/pkg/logql"
-	"github.com/credativ/vali/pkg/promtail/client"
+	"github.com/credativ/vali/pkg/valitail/client"
 	valiflag "github.com/credativ/vali/pkg/util/flagext"
 )
 

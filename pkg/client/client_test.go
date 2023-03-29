@@ -25,7 +25,7 @@ import (
 	"github.com/cortexproject/cortex/pkg/util/flagext"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	"github.com/credativ/vali/pkg/promtail/client"
+	"github.com/credativ/vali/pkg/valitail/client"
 	valiflag "github.com/credativ/vali/pkg/util/flagext"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

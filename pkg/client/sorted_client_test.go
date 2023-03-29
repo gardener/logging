@@ -27,7 +27,7 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/credativ/vali/pkg/logproto"
-	promtailclient "github.com/credativ/vali/pkg/promtail/client"
+	valitailclient "github.com/credativ/vali/pkg/valitail/client"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/prometheus/common/model"
@@ -68,7 +68,7 @@ var _ = Describe("Sorted Client", func() {
 
 		sortedClient, err = client.NewSortedClientDecorator(config.Config{
 			ClientConfig: config.ClientConfig{
-				CredativValiConfig: promtailclient.Config{
+				CredativValiConfig: valitailclient.Config{
 					BatchWait: 3 * time.Second,
 					BatchSize: 90,
 					URL:       clientURL,

@@ -21,7 +21,7 @@ import (
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	grafanavaliclient "github.com/credativ/vali/pkg/promtail/client"
+	grafanavaliclient "github.com/credativ/vali/pkg/valitail/client"
 	"github.com/prometheus/common/model"
 	"k8s.io/client-go/tools/cache"
 )

@@ -25,7 +25,7 @@ import (
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	promtailclient "github.com/credativ/vali/pkg/promtail/client"
+	valitailclient "github.com/credativ/vali/pkg/valitail/client"
 	. "github.com/onsi/ginkgo"
 	ginkotable "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -69,7 +69,7 @@ var _ = Describe("Multi Tenant Client", func() {
 			_, ok := entry.Labels[client.MultiTenantClientLabel]
 			Expect(ok).To(BeFalse())
 			// Each tenant in the MultiTenantClientLabel should be transferred to __tenant_id__
-			if tenant, ok := entry.Labels[promtailclient.ReservedLabelTenantID]; ok {
+			if tenant, ok := entry.Labels[valitailclient.ReservedLabelTenantID]; ok {
 				gotTenants = append(gotTenants, tenant)
 			}
 		}

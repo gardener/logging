@@ -22,13 +22,13 @@ import (
 
 	"github.com/go-kit/kit/log"
 	"github.com/credativ/vali/pkg/logproto"
-	"github.com/credativ/vali/pkg/promtail/api"
-	"github.com/credativ/vali/pkg/promtail/client"
+	"github.com/credativ/vali/pkg/valitail/api"
+	"github.com/credativ/vali/pkg/valitail/client"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/model"
 )
 
-type promtailClientWithForwardedLogsMetricCounter struct {
+type valitailClientWithForwardedLogsMetricCounter struct {
 	valiclient client.Client
 	host       string
 }
@@ -41,7 +41,7 @@ func NewPromtailClient(cfg client.Config, logger log.Logger) (types.ValiClient, 
 	if err != nil {
 		return nil, err
 	}
-	return &promtailClientWithForwardedLogsMetricCounter{
+	return &valitailClientWithForwardedLogsMetricCounter{
 		valiclient: c,
 		host:       cfg.URL.Hostname(),
 	}, nil
@@ -49,24 +49,24 @@ func NewPromtailClient(cfg client.Config, logger log.Logger) (types.ValiClient, 
 
 // newTestingPromtailClient is wrapping fake grafana/vali client used for testing
 func newTestingPromtailClient(c client.Client, cfg client.Config, logger log.Logger) (types.ValiClient, error) {
-	return &promtailClientWithForwardedLogsMetricCounter{
+	return &valitailClientWithForwardedLogsMetricCounter{
 		valiclient: c,
 		host:       cfg.URL.Hostname(),
 	}, nil
 }
 
-func (c *promtailClientWithForwardedLogsMetricCounter) Handle(ls model.LabelSet, t time.Time, s string) error {
+func (c *valitailClientWithForwardedLogsMetricCounter) Handle(ls model.LabelSet, t time.Time, s string) error {
 	c.valiclient.Chan() <- api.Entry{Labels: ls, Entry: logproto.Entry{Timestamp: t, Line: s}}
 	metrics.ForwardedLogs.WithLabelValues(c.host).Inc()
 	return nil
 }
 
 // Stop the client.
-func (c *promtailClientWithForwardedLogsMetricCounter) Stop() {
+func (c *valitailClientWithForwardedLogsMetricCounter) Stop() {
 	c.valiclient.Stop()
 }
 
 // StopWait stops the client waiting all saved logs to be sent.
-func (c *promtailClientWithForwardedLogsMetricCounter) StopWait() {
+func (c *valitailClientWithForwardedLogsMetricCounter) StopWait() {
 	c.valiclient.Stop()
 }

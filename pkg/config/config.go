@@ -14,7 +14,7 @@ import (
 	"github.com/cortexproject/cortex/pkg/util/flagext"
 	"github.com/weaveworks/common/logging"
 
-	"github.com/credativ/vali/pkg/promtail/client"
+	"github.com/credativ/vali/pkg/valitail/client"
 )
 
 // DefaultClientCfg is the default gardener valiplugin client configuration.
