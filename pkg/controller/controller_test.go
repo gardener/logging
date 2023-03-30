@@ -136,6 +136,12 @@ var _ = Describe("Controller", func() {
 				Purpose:     &testingPurpuse,
 				Hibernation: &notHibernation,
 			},
+			Status: core.ShootStatus{
+				LastOperation: &core.LastOperation{
+					Type:     "Reconcile",
+					Progress: 100,
+				},
+			},
 		}
 		testingShootRaw, _ := json.Marshal(testingShoot)
 		developmentShoot := &core.Shoot{
@@ -254,8 +260,8 @@ var _ = Describe("Controller", func() {
 				),
 				Entry("client exists and after update cluster has no changes",
 					args{
-						oldCluster: developmentCluster,
-						newCluster: developmentCluster,
+						oldCluster: testingCluster,
+						newCluster: testingCluster,
 						clients: map[string]ControllerClient{
 							shootName: &fakeValiClient{},
 						},
