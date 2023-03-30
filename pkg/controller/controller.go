@@ -148,16 +148,21 @@ func (ctl *controller) updateFunc(oldObj interface{}, newObj interface{}) {
 		return
 	}
 
-	if bytes.Equal(oldCluster.Spec.Shoot.Raw, newCluster.Spec.Shoot.Raw) {
-		return
-	}
-
 	shoot, err := extensioncontroller.ShootFromCluster(ctl.decoder, newCluster)
 	if err != nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorCanNotExtractShoot).Inc()
 		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("can't extract shoot from cluster %v", newCluster.Name))
 		return
 	}
+
+	if bytes.Equal(oldCluster.Spec.Shoot.Raw, newCluster.Spec.Shoot.Raw) &&
+		shoot.Status.LastOperation.Progress == 100 &&
+		shoot.Status.LastOperation.Type == "Reconcile" {
+		_ = level.Debug(ctl.logger).Log("msg", fmt.Sprintf("return from the informer update callback %v", newCluster.Name))
+		return
+	}
+
+	_ = level.Info(ctl.logger).Log("msg", fmt.Sprintf("reconciling %v", newCluster.Name))
 
 	client, ok := ctl.clients[newCluster.Name]
 	//The client exist in the list so we have to update it
@@ -173,6 +178,8 @@ func (ctl *controller) updateFunc(oldObj interface{}, newObj interface{}) {
 			ctl.createControllerClient(newCluster.Name, shoot, false)
 		}
 
+		ctl.deleteControllerClient(oldCluster.Name)
+		ctl.createControllerClient(newCluster.Name, shoot, false)
 		ctl.updateControllerClientState(client, shoot)
 	} else {
 		//The client does not exist and we will try to create a new one if the shoot is applicable for logging
@@ -202,11 +209,13 @@ func (ctl *controller) getClientConfig(namespace string, checkTargetLoggingBacke
 	// TODO (nickytd) Here we try to check the target backend. If we succeed,
 	// it takes precedence over the DynamicHostSuffix.
 	if checkTargetLoggingBackend {
-		suffix = ctl.checkTargetLoggingBackend(ctl.conf.ControllerConfig.DynamicHostPrefix,
-			namespace)
+		if t := ctl.checkTargetLoggingBackend(ctl.conf.ControllerConfig.DynamicHostPrefix,
+			namespace); len(t) > 0 {
+			suffix = t
+		}
 	}
 	url := fmt.Sprintf("%s%s%s", ctl.conf.ControllerConfig.DynamicHostPrefix, namespace, suffix)
-	_ = level.Info(ctl.logger).Log("msg", fmt.Sprintf("created url %v for %v", url, namespace))
+	_ = level.Info(ctl.logger).Log("msg", fmt.Sprintf("set URL %v for %v", url, namespace))
 
 	err := clientURL.Set(url)
 	if err != nil {
@@ -226,9 +235,9 @@ func (ctl *controller) checkTargetLoggingBackend(prefix string, namespace string
 	httpClient := http.Client{
 		Timeout: 2 * time.Second,
 	}
-	resp, err := httpClient.Get(prefix + namespace + ":3100/config")
+	resp, err := httpClient.Get(prefix + namespace + ".svc:3100/config")
 	if err != nil {
-		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("error gettong /confg endpoint  for %v", namespace), "error", err.Error())
+		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("error getting /config endpoint  for %v", namespace), "error", err.Error())
 		return ""
 	}
 
@@ -255,8 +264,8 @@ func (ctl *controller) checkTargetLoggingBackend(prefix string, namespace string
 				return ""
 			}
 			switch {
-			case strings.Contains(instanceId[1], "vali"):
-				return ".svc:3100/vali/api/v1/push"
+			case strings.Contains(instanceId[1], "loki"):
+				return ".svc:3100/loki/api/v1/push"
 			case strings.Contains(instanceId[1], "vali"):
 				return ".svc:3100/vali/api/v1/push"
 			}
