@@ -1,4 +1,4 @@
-// Copyright (c) 2018 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// Copyright 2018 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,15 +17,10 @@ package kubernetes
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strings"
-	"time"
-
-	"github.com/gardener/gardener/pkg/utils"
 
 	corev1 "k8s.io/api/core/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -34,6 +29,8 @@ import (
 	"k8s.io/client-go/tools/portforward"
 	"k8s.io/client-go/tools/remotecommand"
 	"k8s.io/client-go/transport/spdy"
+
+	"github.com/gardener/gardener/pkg/utils"
 )
 
 // NewPodExecutor returns a podExecutor
@@ -45,7 +42,7 @@ func NewPodExecutor(config *rest.Config) PodExecutor {
 
 // PodExecutor is the pod executor interface
 type PodExecutor interface {
-	Execute(ctx context.Context, namespace, name, containerName, command, commandArg string) (io.Reader, error)
+	Execute(namespace, name, containerName, command, commandArg string) (io.Reader, error)
 }
 
 type podExecutor struct {
@@ -53,7 +50,7 @@ type podExecutor struct {
 }
 
 // Execute executes a command on a pod
-func (p *podExecutor) Execute(ctx context.Context, namespace, name, containerName, command, commandArg string) (io.Reader, error) {
+func (p *podExecutor) Execute(namespace, name, containerName, command, commandArg string) (io.Reader, error) {
 	client, err := corev1client.NewForConfig(p.config)
 	if err != nil {
 		return nil, err
@@ -71,12 +68,11 @@ func (p *podExecutor) Execute(ctx context.Context, namespace, name, containerNam
 		Param("stdin", "true").
 		Param("stdout", "true").
 		Param("stderr", "true").
-		Param("tty", "false").
-		Context(ctx)
+		Param("tty", "false")
 
 	executor, err := remotecommand.NewSPDYExecutor(p.config, http.MethodPost, request.URL())
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialized the command exector: %v", err)
+		return nil, fmt.Errorf("failed to initialized the command exector: %w", err)
 	}
 
 	err = executor.Stream(remotecommand.StreamOptions{
@@ -93,80 +89,83 @@ func (p *podExecutor) Execute(ctx context.Context, namespace, name, containerNam
 }
 
 // GetPodLogs retrieves the pod logs of the pod of the given name with the given options.
-func GetPodLogs(podInterface corev1client.PodInterface, name string, options *corev1.PodLogOptions) ([]byte, error) {
+func GetPodLogs(ctx context.Context, podInterface corev1client.PodInterface, name string, options *corev1.PodLogOptions) ([]byte, error) {
 	request := podInterface.GetLogs(name, options)
 
-	stream, err := request.Stream()
+	stream, err := request.Stream(ctx)
 	if err != nil {
 		return nil, err
 	}
 	defer func() { utilruntime.HandleError(stream.Close()) }()
 
-	return ioutil.ReadAll(stream)
+	return io.ReadAll(stream)
 }
 
-// ForwardPodPort tries to forward the <remote> port of the pod with name <name> in namespace <namespace> to
-// the <local> port. If <local> equals zero, a free port will be chosen randomly.
-// It returns the stop channel which must be closed when the port forward connection should be terminated.
-func (c *Clientset) ForwardPodPort(namespace, name string, local, remote int) (chan struct{}, error) {
-	fw, stopChan, err := c.setupForwardPodPort(namespace, name, local, remote)
-	if err != nil {
-		return nil, err
-	}
-	return stopChan, fw.ForwardPorts()
-}
-
-// CheckForwardPodPort tries to forward the <remote> port of the pod with name <name> in namespace <namespace> to
-// the <local> port. If <local> equals zero, a free port will be chosen randomly.
-// It returns true if the port forward connection has been established successfully or false otherwise.
-func (c *Clientset) CheckForwardPodPort(namespace, name string, local, remote int) error {
-	fw, stopChan, err := c.setupForwardPodPort(namespace, name, local, remote)
-	if err != nil {
-		return fmt.Errorf("could not setup pod port forwarding: %v", err)
-	}
-
-	errChan := make(chan error)
+// CheckForwardPodPort tries to open a portForward connection with the passed PortForwarder.
+// It returns nil if the port forward connection has been established successfully or an error otherwise.
+func CheckForwardPodPort(fw PortForwarder) error {
+	errChan := make(chan error, 1)
 	go func() {
 		errChan <- fw.ForwardPorts()
 	}()
-	defer close(stopChan)
 
 	select {
-	case err = <-errChan:
-		return fmt.Errorf("error forwarding ports: %v", err)
-	case <-fw.Ready:
+	case err := <-errChan:
+		return fmt.Errorf("error forwarding ports: %w", err)
+	case <-fw.Ready():
 		return nil
-	case <-time.After(time.Second * 5):
-		return errors.New("port forward connection could not be established within five seconds")
 	}
 }
 
-func (c *Clientset) setupForwardPodPort(namespace, name string, local, remote int) (*portforward.PortForwarder, chan struct{}, error) {
+// PortForwarder knows how to forward a port connection
+// Ready channel is expected to be closed once the connection becomes ready
+type PortForwarder interface {
+	ForwardPorts() error
+	Ready() chan struct{}
+}
+
+// SetupPortForwarder sets up a PortForwarder which forwards the <remote> port of the pod with name <name> in namespace <namespace>
+// to the <local> port. If <local> equals zero, a free port will be chosen randomly.
+// When calling ForwardPorts on the returned PortForwarder, it will run until the given context is cancelled.
+// Hence, the given context should carry a timeout and should be cancelled once the forwarding is no longer needed.
+func SetupPortForwarder(ctx context.Context, config *rest.Config, namespace, name string, local, remote int) (PortForwarder, error) {
 	var (
-		stopChan  = make(chan struct{}, 1)
 		readyChan = make(chan struct{}, 1)
-		out       = ioutil.Discard
+		out       = io.Discard
 		localPort int
 	)
 
-	u := c.kubernetes.CoreV1().RESTClient().Post().Resource("pods").Namespace(namespace).Name(name).SubResource("portforward").URL()
-
-	transport, upgrader, err := spdy.RoundTripperFor(c.config)
+	client, err := corev1client.NewForConfig(config)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
+	}
+
+	u := client.RESTClient().Post().Resource("pods").Namespace(namespace).Name(name).SubResource("portforward").URL()
+
+	transport, upgrader, err := spdy.RoundTripperFor(config)
+	if err != nil {
+		return nil, err
 	}
 	dialer := spdy.NewDialer(upgrader, &http.Client{Transport: transport}, "POST", u)
 
 	if local == 0 {
 		localPort, err = utils.FindFreePort()
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 	}
 
-	fw, err := portforward.New(dialer, []string{fmt.Sprintf("%d:%d", localPort, remote)}, stopChan, readyChan, out, out)
+	fw, err := portforward.New(dialer, []string{fmt.Sprintf("%d:%d", localPort, remote)}, ctx.Done(), readyChan, out, out)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	return fw, stopChan, nil
+	return portForwarder{fw}, nil
+}
+
+type portForwarder struct {
+	*portforward.PortForwarder
+}
+
+func (p portForwarder) Ready() chan struct{} {
+	return p.PortForwarder.Ready
 }

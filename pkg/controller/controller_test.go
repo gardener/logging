@@ -29,7 +29,6 @@ import (
 	"github.com/prometheus/common/model"
 	"github.com/weaveworks/common/logging"
 
-	extensioncontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/pkg/apis/core"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 
@@ -180,8 +179,6 @@ var _ = Describe("Controller", func() {
 		}
 
 		BeforeEach(func() {
-			decoder, err := extensioncontroller.NewGardenDecoder()
-			Expect(err).ToNot(HaveOccurred())
 			conf = &config.Config{
 				ClientConfig: config.ClientConfig{
 					CredativValiConfig: valiclient.Config{
@@ -199,7 +196,6 @@ var _ = Describe("Controller", func() {
 			ctl = &controller{
 				clients: make(map[string]ControllerClient),
 				conf:    conf,
-				decoder: decoder,
 				logger:  logger,
 			}
 		})

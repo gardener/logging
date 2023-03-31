@@ -1,4 +1,4 @@
-// Copyright (c) 2018 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// Copyright 2018 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,8 +19,9 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 
-	"github.com/gardener/gardener/pkg/utils"
 	"golang.org/x/crypto/ssh"
+
+	"github.com/gardener/gardener/pkg/utils"
 )
 
 const (
@@ -54,13 +55,8 @@ func (s *RSASecretConfig) GetName() string {
 }
 
 // Generate implements ConfigInterface.
-func (s *RSASecretConfig) Generate() (Interface, error) {
-	return s.GenerateRSAKeys()
-}
-
-// GenerateRSAKeys computes a RSA private key based on the configured number of bits.
-func (s *RSASecretConfig) GenerateRSAKeys() (*RSAKeys, error) {
-	privateKey, err := generateRSAPrivateKey(s.Bits)
+func (s *RSASecretConfig) Generate() (DataInterface, error) {
+	privateKey, err := GenerateKey(rand.Reader, s.Bits)
 	if err != nil {
 		return nil, err
 	}
@@ -94,11 +90,6 @@ func (r *RSAKeys) SecretData() map[string][]byte {
 	}
 
 	return data
-}
-
-// generateRSAPrivateKey generates a RSA private for the given number of <bits>.
-func generateRSAPrivateKey(bits int) (*rsa.PrivateKey, error) {
-	return rsa.GenerateKey(rand.Reader, bits)
 }
 
 // generateSSHAuthorizedKeys takes a RSA private key <privateKey> and generates the corresponding public key.

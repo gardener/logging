@@ -17,9 +17,9 @@ limitations under the License.
 package fake
 
 import (
-	clientset "github.com/gardener/gardener/pkg/client/extensions/clientset/versioned"
-	extensionsv1alpha1 "github.com/gardener/gardener/pkg/client/extensions/clientset/versioned/typed/extensions/v1alpha1"
-	fakeextensionsv1alpha1 "github.com/gardener/gardener/pkg/client/extensions/clientset/versioned/typed/extensions/v1alpha1/fake"
+	clientset "github.com/gardener/logging/pkg/cluster/clientset/versioned"
+	extensionsv1alpha1 "github.com/gardener/logging/pkg/cluster/clientset/versioned/typed/extensions/v1alpha1"
+	fakeextensionsv1alpha1 "github.com/gardener/logging/pkg/cluster/clientset/versioned/typed/extensions/v1alpha1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"

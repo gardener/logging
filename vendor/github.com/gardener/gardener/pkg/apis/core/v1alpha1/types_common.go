@@ -1,4 +1,4 @@
-// Copyright (c) 2018 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// Copyright 2018 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,20 +20,35 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 type ErrorCode string
 
 const (
-	// ErrorInfraUnauthorized indicates that the last error occurred due to invalid infrastructure credentials.
+	// ErrorInfraUnauthenticated indicates that the last error occurred due to the client request not being completed because it lacks valid authentication credentials for the requested resource.
+	// It is classified as a non-retryable error code.
+	ErrorInfraUnauthenticated ErrorCode = "ERR_INFRA_UNAUTHENTICATED"
+	// ErrorInfraUnauthorized indicates that the last error occurred due to the server understanding the request but refusing to authorize it.
+	// It is classified as a non-retryable error code.
 	ErrorInfraUnauthorized ErrorCode = "ERR_INFRA_UNAUTHORIZED"
-	// ErrorInfraInsufficientPrivileges indicates that the last error occurred due to insufficient infrastructure privileges.
-	ErrorInfraInsufficientPrivileges ErrorCode = "ERR_INFRA_INSUFFICIENT_PRIVILEGES"
 	// ErrorInfraQuotaExceeded indicates that the last error occurred due to infrastructure quota limits.
+	// It is classified as a non-retryable error code.
 	ErrorInfraQuotaExceeded ErrorCode = "ERR_INFRA_QUOTA_EXCEEDED"
+	// ErrorInfraRateLimitsExceeded indicates that the last error occurred due to exceeded infrastructure request rate limits.
+	ErrorInfraRateLimitsExceeded ErrorCode = "ERR_INFRA_RATE_LIMITS_EXCEEDED"
 	// ErrorInfraDependencies indicates that the last error occurred due to dependent objects on the infrastructure level.
+	// It is classified as a non-retryable error code.
 	ErrorInfraDependencies ErrorCode = "ERR_INFRA_DEPENDENCIES"
+	// ErrorRetryableInfraDependencies indicates that the last error occurred due to dependent objects on the infrastructure level, but operation should be retried.
+	ErrorRetryableInfraDependencies ErrorCode = "ERR_RETRYABLE_INFRA_DEPENDENCIES"
 	// ErrorInfraResourcesDepleted indicates that the last error occurred due to depleted resource in the infrastructure.
 	ErrorInfraResourcesDepleted ErrorCode = "ERR_INFRA_RESOURCES_DEPLETED"
-	// ErrorCleanupClusterResources indicates that the last error occurred due to resources in the cluster are stuck in deletion.
+	// ErrorCleanupClusterResources indicates that the last error occurred due to resources in the cluster that are stuck in deletion.
 	ErrorCleanupClusterResources ErrorCode = "ERR_CLEANUP_CLUSTER_RESOURCES"
-	// ErrorConfigurationProblem indicates that the last error occurred due a configuration problem.
+	// ErrorConfigurationProblem indicates that the last error occurred due to a configuration problem.
+	// It is classified as a non-retryable error code.
 	ErrorConfigurationProblem ErrorCode = "ERR_CONFIGURATION_PROBLEM"
+	// ErrorRetryableConfigurationProblem indicates that the last error occurred due to a retryable configuration problem.
+	ErrorRetryableConfigurationProblem ErrorCode = "ERR_RETRYABLE_CONFIGURATION_PROBLEM"
+	// ErrorProblematicWebhook indicates that the last error occurred due to a webhook not following the Kubernetes
+	// best practices (https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/#best-practices-and-warnings).
+	// It is classified as a non-retryable error code.
+	ErrorProblematicWebhook ErrorCode = "ERR_PROBLEMATIC_WEBHOOK"
 )
 
 // LastError indicates the last occurred error for an operation on a resource.
@@ -96,7 +111,7 @@ type LastOperation struct {
 	Progress int32 `json:"progress" protobuf:"varint,3,opt,name=progress"`
 	// Status of the last operation, one of Aborted, Processing, Succeeded, Error, Failed.
 	State LastOperationState `json:"state" protobuf:"bytes,4,opt,name=state,casttype=LastOperationState"`
-	// Type of the last operation, one of Create, Reconcile, Delete.
+	// Type of the last operation, one of Create, Reconcile, Delete, Migrate, Restore.
 	Type LastOperationType `json:"type" protobuf:"bytes,5,opt,name=type,casttype=LastOperationType"`
 }
 
@@ -117,11 +132,6 @@ const (
 	// ExternalGardenerName is the value in a Kubernetes core resources `.metadata.finalizers[]` array on which the
 	// Gardener will react when performing a delete request on a resource.
 	ExternalGardenerName = "gardener.cloud/gardener"
-	// ExternalGardenerNameDeprecated is the value in a Kubernetes core resources `.metadata.finalizers[]` array on which the
-	// Gardener will react when performing a delete request on a resource.
-	//
-	// Deprecated: Use `ExternalGardenerName` instead.
-	ExternalGardenerNameDeprecated = "garden.sapcloud.io/gardener"
 )
 
 const (
@@ -137,12 +147,36 @@ const (
 	EventDeleted = "Deleted"
 	// EventDeleteError indicates that the a Delete operation failed.
 	EventDeleteError = "DeleteError"
-	// EventOperationPending
-	EventOperationPending = "OperationPending"
 	// EventPrepareMigration indicates that a Prepare Migration operation started.
 	EventPrepareMigration = "PrepareMigration"
 	// EventMigrationPrepared indicates that Migration preparation was successful.
 	EventMigrationPrepared = "MigrationPrepared"
 	// EventMigrationPreparationFailed indicates that Migration preparation failed.
 	EventMigrationPreparationFailed = "MigrationPreparationFailed"
+)
+
+// HighAvailability specifies the configuration settings for high availability for a resource. Typical
+// usages could be to configure HA for shoot control plane or for seed system components.
+type HighAvailability struct {
+	// FailureTolerance holds information about failure tolerance level of a highly available resource.
+	FailureTolerance FailureTolerance `json:"failureTolerance" protobuf:"bytes,1,name=failureTolerance"`
+}
+
+// FailureTolerance describes information about failure tolerance level of a highly available resource.
+type FailureTolerance struct {
+	// Type specifies the type of failure that the highly available resource can tolerate
+	Type FailureToleranceType `json:"type" protobuf:"bytes,1,name=type"`
+}
+
+// FailureToleranceType specifies the type of failure that a highly available
+// shoot control plane that can tolerate.
+type FailureToleranceType string
+
+const (
+	// FailureToleranceTypeNode specifies that a highly available resource can tolerate the
+	// failure of one or more nodes within a single-zone setup and still be available.
+	FailureToleranceTypeNode FailureToleranceType = "node"
+	// FailureToleranceTypeZone specifies that a highly available resource can tolerate the
+	// failure of one or more zones within a multi-zone setup and still be available.
+	FailureToleranceTypeZone FailureToleranceType = "zone"
 )

@@ -1,4 +1,4 @@
-// Copyright (c) 2018 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// Copyright 2018 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@
 // +k8s:defaulter-gen=TypeMeta
 // +k8s:protobuf-gen=package
 
-//go:generate gen-crd-api-reference-docs -api-dir . -config ../../../../hack/api-reference/core-config.json -template-dir ../../../../hack/api-reference/template -out-file ../../../../hack/api-reference/core.md
+//go:generate gen-crd-api-reference-docs -api-dir . -config ../../../../hack/api-reference/core-config.json -template-dir ../../../../hack/api-reference/template -out-file ../../../../docs/api-reference/core.md
 
 // Package v1beta1 is a version of the API.
 // +groupName=core.gardener.cloud

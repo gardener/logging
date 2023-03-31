@@ -51,7 +51,7 @@ func NewCommandStartGardenerEventLogger() *cobra.Command {
 			}
 
 			stopCh := signals.SetupSignalHandler()
-			return opts.Run(stopCh)
+			return opts.Run(stopCh.Done())
 		},
 		SilenceUsage: true,
 	}
@@ -129,9 +129,11 @@ func (o *Options) config(seedKubeAPIServerConfig *rest.Config, seedKubeClient *k
 
 // Run runs gardener-apiserver with the given Options.
 func (o *Options) Run(stopCh <-chan struct{}) error {
-	logger := logger.NewLogger("")
-	logger.Info("Starting Gardener Event Logger...")
-	logger.Infof("Version: %+v", version.Get())
+	logger, err := logger.NewZapLogger(logger.InfoLevel, logger.FormatJSON)
+	if err != nil {
+		return err
+	}
+	logger.Info("Starting Gardener Event Logger...", "Version", version.Get())
 
 	// Create clientset for the native Kubernetes API group
 	// Use remote kubeconfig file (if set) or in-cluster config to create a new Kubernetes client for the native Kubernetes API groups

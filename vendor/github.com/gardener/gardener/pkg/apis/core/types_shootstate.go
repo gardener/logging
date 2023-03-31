@@ -1,4 +1,4 @@
-// Copyright (c) 2018 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// Copyright 2018 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -61,6 +61,8 @@ type GardenerResourceData struct {
 	Type string
 	// Data contains the payload required to generate resources
 	Data runtime.RawExtension
+	// Labels are labels of the object
+	Labels map[string]string
 }
 
 // ExtensionResourceState contains the kind of the extension custom resource and its last observed state in the Shoot's

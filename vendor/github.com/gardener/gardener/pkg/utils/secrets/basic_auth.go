@@ -1,4 +1,4 @@
-// Copyright (c) 2018 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// Copyright 2018 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,13 +15,7 @@
 package secrets
 
 import (
-	"fmt"
-	"strings"
-
 	"github.com/gardener/gardener/pkg/utils"
-	"k8s.io/apiserver/pkg/authentication/user"
-
-	"golang.org/x/crypto/bcrypt"
 )
 
 type formatType string
@@ -30,37 +24,36 @@ const (
 	// BasicAuthFormatNormal indicates that the data map should be rendered the normal way (dedicated keys for
 	// username and password.
 	BasicAuthFormatNormal formatType = "normal"
-	// BasicAuthFormatCSV indicates that the data map should be rendered in the CSV-format.
-	BasicAuthFormatCSV formatType = "csv"
 
-	// DataKeyCSV is the key in a secret data holding the CSV format of a secret.
-	DataKeyCSV = "basic_auth.csv"
 	// DataKeyUserName is the key in a secret data holding the username.
 	DataKeyUserName = "username"
 	// DataKeyPassword is the key in a secret data holding the password.
 	DataKeyPassword = "password"
-	// DataKeyPasswordBcryptHash is the key in a secret data holding the bcrypt hash of the password.
-	DataKeyPasswordBcryptHash = "bcryptPasswordHash"
+	// DataKeySHA1Auth is the key in a secret data holding the sha1-schemed credentials pair as string.
+	DataKeySHA1Auth = "auth"
 )
 
-// BasicAuthSecretConfig contains the specification a to-be-generated basic authentication secret.
+// BasicAuthSecretConfig contains the specification for a to-be-generated basic authentication secret.
 type BasicAuthSecretConfig struct {
-	Name   string
+	Name string
+	// Format is the format type.
+	//
+	// Do not remove this field, even though the field is not used and there is only one supported format ("normal").
+	// The secret manager computes the Secret hash based on the config object (BasicAuthSecretConfig). A field removal in the
+	// BasicAuthSecretConfig object would compute a new Secret hash and this would lead the existing Secrets to be regenerated.
+	// Hence, usages of the BasicAuthSecretConfig should continue to pass the Format field with value "normal".
 	Format formatType
 
-	Username                  string
-	PasswordLength            int
-	BcryptPasswordHashRequest bool
+	Username       string
+	PasswordLength int
 }
 
-// BasicAuth contains the username, the password, optionally hash of the password and the format for serializing the basic authentication
+// BasicAuth contains the username, the password and optionally hash of the password.
 type BasicAuth struct {
-	Name   string
-	Format formatType
+	Name string
 
-	Username           string
-	Password           string
-	BcryptPasswordHash string
+	Username string
+	Password string
 }
 
 // GetName returns the name of the secret.
@@ -69,33 +62,17 @@ func (s *BasicAuthSecretConfig) GetName() string {
 }
 
 // Generate implements ConfigInterface.
-func (s *BasicAuthSecretConfig) Generate() (Interface, error) {
-	return s.GenerateBasicAuth()
-}
-
-// GenerateBasicAuth computes a username,password and the hash of the password keypair. It uses "admin" as username and generates a
-// random password of length 32.
-func (s *BasicAuthSecretConfig) GenerateBasicAuth() (*BasicAuth, error) {
-	password, err := utils.GenerateRandomString(s.PasswordLength)
+func (s *BasicAuthSecretConfig) Generate() (DataInterface, error) {
+	password, err := GenerateRandomString(s.PasswordLength)
 	if err != nil {
 		return nil, err
 	}
 
 	basicAuth := &BasicAuth{
-		Name:   s.Name,
-		Format: s.Format,
+		Name: s.Name,
 
 		Username: s.Username,
 		Password: password,
-	}
-
-	if s.BcryptPasswordHashRequest {
-		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), 16)
-		if err != nil {
-			return nil, err
-		}
-
-		basicAuth.BcryptPasswordHash = string(hashedPassword)
 	}
 
 	return basicAuth, nil
@@ -105,35 +82,9 @@ func (s *BasicAuthSecretConfig) GenerateBasicAuth() (*BasicAuth, error) {
 func (b *BasicAuth) SecretData() map[string][]byte {
 	data := map[string][]byte{}
 
-	switch b.Format {
-	case BasicAuthFormatNormal:
-		data[DataKeyUserName] = []byte(b.Username)
-		data[DataKeyPassword] = []byte(b.Password)
-
-		if b.BcryptPasswordHash != "" {
-			data[DataKeyPasswordBcryptHash] = []byte(b.BcryptPasswordHash)
-		}
-
-		fallthrough
-
-	case BasicAuthFormatCSV:
-		data[DataKeyCSV] = []byte(fmt.Sprintf("%s,%s,%s,%s", b.Password, b.Username, b.Username, user.SystemPrivilegedGroup))
-	}
+	data[DataKeyUserName] = []byte(b.Username)
+	data[DataKeyPassword] = []byte(b.Password)
+	data[DataKeySHA1Auth] = utils.CreateSHA1Secret(data[DataKeyUserName], data[DataKeyPassword])
 
 	return data
-}
-
-// LoadBasicAuthFromCSV loads the basic auth. username and the password from the given CSV-formatted <data>.
-func LoadBasicAuthFromCSV(name string, data []byte) (*BasicAuth, error) {
-	csv := strings.Split(string(data), ",")
-	if len(csv) < 2 {
-		return nil, fmt.Errorf("invalid CSV for loading basic auth data: %s", string(data))
-	}
-
-	return &BasicAuth{
-		Name: name,
-
-		Username: csv[1],
-		Password: csv[0],
-	}, nil
 }

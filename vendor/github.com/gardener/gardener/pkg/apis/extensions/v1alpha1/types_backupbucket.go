@@ -1,4 +1,4 @@
-// Copyright (c) 2019 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// Copyright 2019 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,14 +27,22 @@ const BackupBucketResource = "BackupBucket"
 // +genclient
 // +genclient:nonNamespaced
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:resource:scope=Cluster,path=backupbuckets,shortName=bb,singular=backupbucket
+// +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name=Type,JSONPath=".spec.type",type=string,description="The type of the cloud provider for this resource."
+// +kubebuilder:printcolumn:name=Region,JSONPath=".spec.region",type=string,description="The region into which the backup bucket should be created."
+// +kubebuilder:printcolumn:name=State,JSONPath=".status.lastOperation.state",type=string,description="status of the last operation, one of Aborted, Processing, Succeeded, Error, Failed"
+// +kubebuilder:printcolumn:name=Age,JSONPath=".metadata.creationTimestamp",type=date,description="creation timestamp"
 
 // BackupBucket is a specification for backup bucket.
 type BackupBucket struct {
 	metav1.TypeMeta `json:",inline"`
 	// +optional
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-
-	Spec   BackupBucketSpec   `json:"spec"`
+	// Specification of the BackupBucket.
+	// If the object's deletion timestamp is set, this field is immutable.
+	Spec BackupBucketSpec `json:"spec"`
+	// +optional
 	Status BackupBucketStatus `json:"status"`
 }
 
@@ -64,7 +72,7 @@ type BackupBucketList struct {
 type BackupBucketSpec struct {
 	// DefaultSpec is a structure containing common fields used by all extension resources.
 	DefaultSpec `json:",inline"`
-	// Region is the region of this bucket.
+	// Region is the region of this bucket. This field is immutable.
 	Region string `json:"region"`
 	// SecretRef is a reference to a secret that contains the credentials to access object store.
 	SecretRef corev1.SecretReference `json:"secretRef"`

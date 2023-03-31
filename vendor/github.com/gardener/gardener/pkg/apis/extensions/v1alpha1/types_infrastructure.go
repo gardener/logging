@@ -1,4 +1,4 @@
-// Copyright (c) 2019 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// Copyright 2019 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,14 +26,22 @@ const InfrastructureResource = "Infrastructure"
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:resource:scope=Namespaced,path=infrastructures,shortName=infra,singular=infrastructure
+// +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name=Type,JSONPath=".spec.type",type=string,description="The type of the cloud provider for this resource."
+// +kubebuilder:printcolumn:name=Region,JSONPath=".spec.region",type=string,description="The region into which the infrastructure should be deployed."
+// +kubebuilder:printcolumn:name=Status,JSONPath=".status.lastOperation.state",type=string,description="Status of infrastructure resource."
+// +kubebuilder:printcolumn:name=Age,JSONPath=".metadata.creationTimestamp",type=date,description="creation timestamp"
 
 // Infrastructure is a specification for cloud provider infrastructure.
 type Infrastructure struct {
 	metav1.TypeMeta `json:",inline"`
 	// +optional
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-
-	Spec   InfrastructureSpec   `json:"spec"`
+	// Specification of the Infrastructure.
+	// If the object's deletion timestamp is set, this field is immutable.
+	Spec InfrastructureSpec `json:"spec"`
+	// +optional
 	Status InfrastructureStatus `json:"status"`
 }
 
@@ -63,9 +71,9 @@ type InfrastructureList struct {
 type InfrastructureSpec struct {
 	// DefaultSpec is a structure containing common fields used by all extension resources.
 	DefaultSpec `json:",inline"`
-	// Region is the region of this infrastructure.
+	// Region is the region of this infrastructure. This field is immutable.
 	Region string `json:"region"`
-	// SecretRef is a reference to a secret that contains the actual result of the generated cloud config.
+	// SecretRef is a reference to a secret that contains the cloud provider credentials.
 	SecretRef corev1.SecretReference `json:"secretRef"`
 	// SSHPublicKey is the public SSH key that should be used with this infrastructure.
 	// +optional

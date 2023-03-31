@@ -1,4 +1,4 @@
-// Copyright (c) 2018 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// Copyright 2018 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 )
 
 const (
@@ -26,22 +25,6 @@ const (
 	EventSchedulingFailed = "SchedulingFailed"
 )
 
-// ProviderConfig is a workaround for missing OpenAPI functions on runtime.RawExtension struct.
-// https://github.com/kubernetes/kubernetes/issues/55890
-// https://github.com/kubernetes-sigs/cluster-api/issues/137
-type ProviderConfig struct {
-	runtime.RawExtension `json:",inline" protobuf:"bytes,1,opt,name=rawExtension"`
-}
-
-// OpenAPISchemaType is used by the kube-openapi generator when constructing
-// the OpenAPI spec of this type.
-// See: https://github.com/kubernetes/kube-openapi/tree/master/pkg/generators
-func (ProviderConfig) OpenAPISchemaType() []string { return []string{"object"} }
-
-// OpenAPISchemaFormat is used by the kube-openapi generator when constructing
-// the OpenAPI spec of this type.
-func (ProviderConfig) OpenAPISchemaFormat() string { return "" }
-
 // ConditionStatus is the status of a condition.
 type ConditionStatus string
 
@@ -50,7 +33,7 @@ type ConditionType string
 
 // Condition holds the information about the state of a resource.
 type Condition struct {
-	// Type of the Shoot condition.
+	// Type of the condition.
 	Type ConditionType `json:"type" protobuf:"bytes,1,opt,name=type,casttype=ConditionType"`
 	// Status of the condition, one of True, False, Unknown.
 	Status ConditionStatus `json:"status" protobuf:"bytes,2,opt,name=status,casttype=ConditionStatus"`
@@ -80,4 +63,10 @@ const (
 
 	// ConditionCheckError is a constant for a reason in condition.
 	ConditionCheckError = "ConditionCheckError"
+	// ManagedResourceMissingConditionError is a constant for a reason in a condition that indicates
+	// one or multiple missing conditions in the observed managed resource.
+	ManagedResourceMissingConditionError = "MissingManagedResourceCondition"
+	// OutdatedStatusError is a constant for a reason in a condition that indicates
+	// that the observed generation in a status is outdated.
+	OutdatedStatusError = "OutdatedStatus"
 )

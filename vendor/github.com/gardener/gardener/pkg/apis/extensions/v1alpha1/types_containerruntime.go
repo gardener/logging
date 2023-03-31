@@ -1,4 +1,4 @@
-// Copyright (c) 2020 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// Copyright 2020 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,14 +31,22 @@ const (
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:resource:scope=Namespaced,path=containerruntimes,shortName=cr,singular=containerruntime
+// +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name=Type,JSONPath=".spec.type",type=string,description="The type of the Container Runtime resource."
+// +kubebuilder:printcolumn:name=Status,JSONPath=".status.lastOperation.state",type=string,description="status of the last operation, one of Aborted, Processing, Succeeded, Error, Failed"
+// +kubebuilder:printcolumn:name=Age,JSONPath=".metadata.creationTimestamp",type=date,description="creation timestamp"
 
 // ContainerRuntime is a specification for a container runtime resource.
 type ContainerRuntime struct {
 	metav1.TypeMeta `json:",inline"`
 	// +optional
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              ContainerRuntimeSpec   `json:"spec"`
-	Status            ContainerRuntimeStatus `json:"status"`
+	// Specification of the ContainerRuntime.
+	// If the object's deletion timestamp is set, this field is immutable.
+	Spec ContainerRuntimeSpec `json:"spec"`
+	// +optional
+	Status ContainerRuntimeStatus `json:"status"`
 }
 
 // GetExtensionSpec implements Object.
@@ -73,8 +81,10 @@ type ContainerRuntimeSpec struct {
 	DefaultSpec `json:",inline"`
 }
 
+// ContainerRuntimeWorkerPool identifies a Shoot worker pool by its name and selector.
 type ContainerRuntimeWorkerPool struct {
 	// Name specifies the name of the worker pool the container runtime should be available for.
+	// This field is immutable.
 	Name string `json:"name"`
 	// Selector is the label selector used by the extension to match the nodes belonging to the worker pool.
 	Selector metav1.LabelSelector `json:"selector"`
