@@ -131,7 +131,7 @@ github.com/gardener/gardener/pkg/client/core/clientset/versioned/typed/core/v1be
 github.com/gardener/gardener/pkg/client/extensions/clientset/versioned
 github.com/gardener/gardener/pkg/client/extensions/clientset/versioned/scheme
 github.com/gardener/gardener/pkg/client/extensions/clientset/versioned/typed/extensions/v1alpha1
-github.com/gardener/gardener/pkg/client/extensions/informers/externalversions
+github.com/gardener/gardener/pkg/client/extensions/clientset/versioned/typed/extensions/v1alpha1/fake
 github.com/gardener/gardener/pkg/client/extensions/informers/externalversions/extensions
 github.com/gardener/gardener/pkg/client/extensions/informers/externalversions/extensions/v1alpha1
 github.com/gardener/gardener/pkg/client/extensions/informers/externalversions/internalinterfaces
@@ -919,6 +919,7 @@ k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1beta2
 ## explicit; go 1.12
 k8s.io/client-go/discovery
 k8s.io/client-go/discovery/cached/memory
+k8s.io/client-go/discovery/fake
 k8s.io/client-go/dynamic
 k8s.io/client-go/informers
 k8s.io/client-go/informers/admissionregistration
@@ -1063,6 +1064,7 @@ k8s.io/client-go/plugin/pkg/client/auth/exec
 k8s.io/client-go/rest
 k8s.io/client-go/rest/watch
 k8s.io/client-go/restmapper
+k8s.io/client-go/testing
 k8s.io/client-go/tools/auth
 k8s.io/client-go/tools/cache
 k8s.io/client-go/tools/clientcmd

@@ -23,9 +23,9 @@ import (
 	sync "sync"
 	time "time"
 
-	versioned "github.com/gardener/gardener/pkg/client/extensions/clientset/versioned"
-	extensions "github.com/gardener/gardener/pkg/client/extensions/informers/externalversions/extensions"
-	internalinterfaces "github.com/gardener/gardener/pkg/client/extensions/informers/externalversions/internalinterfaces"
+	versioned "github.com/gardener/logging/pkg/cluster/clientset/versioned"
+	extensions "github.com/gardener/logging/pkg/cluster/informers/externalversions/extensions"
+	internalinterfaces "github.com/gardener/logging/pkg/cluster/informers/externalversions/internalinterfaces"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"

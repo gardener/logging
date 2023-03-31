@@ -7,7 +7,7 @@ require (
 	github.com/cortexproject/cortex v1.10.0
 	github.com/credativ/vali v0.0.0-20230322125549-22fdbf30c62a
 	github.com/fluent/fluent-bit-go v0.0.0-20190925192703-ea13c021720c
-	github.com/gardener/gardener v1.5.0
+	github.com/gardener/gardener v1.67.0
 	github.com/go-kit/kit v0.12.0
 	github.com/go-kit/log v0.2.0
 	github.com/go-logfmt/logfmt v0.5.1
@@ -170,17 +170,17 @@ replace (
 	github.com/prometheus/common => github.com/prometheus/common v0.15.0
 	github.com/weaveworks/common => github.com/weaveworks/common v0.0.0-20210419092856-009d1eebd624
 
-	golang.org/x/net v0.0.0-20190813000000-74dc4d7220e7 => golang.org/x/net v0.0.0-20190813141303-74dc4d7220e7
-	k8s.io/api => k8s.io/api v0.17.9
+	//golang.org/x/net v0.0.0-20190813000000-74dc4d7220e7 => golang.org/x/net v0.0.0-20190813141303-74dc4d7220e7
+	//k8s.io/api => k8s.io/api v0.17.9
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.17.9
-	k8s.io/apimachinery => k8s.io/apimachinery v0.17.9
-	k8s.io/apiserver => k8s.io/apiserver v0.17.9
-	k8s.io/client-go => k8s.io/client-go v0.17.9
-	k8s.io/cluster-bootstrap => k8s.io/cluster-bootstrap v0.17.9
-	k8s.io/code-generator => k8s.io/code-generator v0.17.9
-	k8s.io/component-base => k8s.io/component-base v0.17.9
+	//k8s.io/apimachinery => k8s.io/apimachinery v0.17.9
+	//k8s.io/apiserver => k8s.io/apiserver v0.17.9
+	k8s.io/client-go => k8s.io/client-go v0.26.2
+	//k8s.io/cluster-bootstrap => k8s.io/cluster-bootstrap v0.17.9
+	//k8s.io/code-generator => k8s.io/code-generator v0.17.9
+	//k8s.io/component-base => k8s.io/component-base v0.17.9
 	k8s.io/helm => k8s.io/helm v2.13.1+incompatible
-	k8s.io/kube-aggregator => k8s.io/kube-aggregator v0.17.9
+	//k8s.io/kube-aggregator => k8s.io/kube-aggregator v0.17.9
 	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.4.0
 	sigs.k8s.io/controller-runtime/pkg/manager/signals => sigs.k8s.io/controller-runtime/pkg/manager/signals v0.7.0
 // Override reference that causes an error from Go proxy - see https://github.com/golang/go/issues/33558
