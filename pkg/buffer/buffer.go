@@ -9,10 +9,10 @@ package buffer
 import (
 	"fmt"
 
+	"github.com/go-kit/kit/log"
+
 	"github.com/gardener/logging/pkg/config"
 	"github.com/gardener/logging/pkg/types"
-
-	"github.com/go-kit/kit/log"
 )
 
 // NewBuffer makes a new buffered Client.

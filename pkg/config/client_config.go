@@ -14,11 +14,10 @@ import (
 	"time"
 
 	"github.com/cortexproject/cortex/pkg/util/flagext"
-	"github.com/prometheus/common/model"
-
 	"github.com/credativ/vali/pkg/logql"
 	valiflag "github.com/credativ/vali/pkg/util/flagext"
 	"github.com/credativ/vali/pkg/valitail/client"
+	"github.com/prometheus/common/model"
 )
 
 // ClientConfig holds configuration for the clients

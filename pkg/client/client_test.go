@@ -19,8 +19,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/gardener/logging/pkg/config"
-
 	"github.com/cortexproject/cortex/pkg/util"
 	"github.com/cortexproject/cortex/pkg/util/flagext"
 	valiflag "github.com/credativ/vali/pkg/util/flagext"
@@ -31,6 +29,8 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/prometheus/common/model"
 	"github.com/weaveworks/common/logging"
+
+	"github.com/gardener/logging/pkg/config"
 )
 
 var _ = Describe("Client", func() {

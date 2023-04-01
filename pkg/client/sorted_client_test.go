@@ -18,12 +18,11 @@ import (
 	"os"
 	"time"
 
-	"github.com/cortexproject/cortex/pkg/util/flagext"
 	"github.com/gardener/logging/pkg/client"
 	"github.com/gardener/logging/pkg/config"
 	"github.com/gardener/logging/pkg/types"
-	"github.com/weaveworks/common/logging"
 
+	"github.com/cortexproject/cortex/pkg/util/flagext"
 	"github.com/credativ/vali/pkg/logproto"
 	valitailclient "github.com/credativ/vali/pkg/valitail/client"
 	"github.com/go-kit/kit/log"
@@ -31,6 +30,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/prometheus/common/model"
+	"github.com/weaveworks/common/logging"
 )
 
 var _ = Describe("Sorted Client", func() {

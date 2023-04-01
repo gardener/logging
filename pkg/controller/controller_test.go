@@ -24,18 +24,15 @@ import (
 
 	"github.com/cortexproject/cortex/pkg/util/flagext"
 	valiclient "github.com/credativ/vali/pkg/valitail/client"
-	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/log/level"
-	"github.com/prometheus/common/model"
-	"github.com/weaveworks/common/logging"
-
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
-
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-
+	"github.com/prometheus/common/model"
+	"github.com/weaveworks/common/logging"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/pointer"
@@ -135,8 +132,8 @@ var _ = Describe("Controller", func() {
 				Purpose:     &testingPurpuse,
 				Hibernation: &notHibernation,
 			},
-			Status: core.ShootStatus{
-				LastOperation: &core.LastOperation{
+			Status: gardencorev1beta1.ShootStatus{
+				LastOperation: &gardencorev1beta1.LastOperation{
 					Type:     "Reconcile",
 					Progress: 100,
 				},

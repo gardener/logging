@@ -21,7 +21,6 @@ import (
 	"github.com/gardener/logging/pkg/client"
 	"github.com/gardener/logging/pkg/config"
 	"github.com/gardener/logging/pkg/types"
-	"github.com/weaveworks/common/logging"
 
 	valitailclient "github.com/credativ/vali/pkg/valitail/client"
 	"github.com/go-kit/kit/log"
@@ -30,6 +29,7 @@ import (
 	ginkotable "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	"github.com/prometheus/common/model"
+	"github.com/weaveworks/common/logging"
 )
 
 var _ = Describe("Multi Tenant Client", func() {

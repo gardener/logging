@@ -15,10 +15,10 @@
 package metrics
 
 import (
-	"github.com/gardener/logging/pkg/metrics"
-
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+
+	"github.com/gardener/logging/pkg/metrics"
 )
 
 var (

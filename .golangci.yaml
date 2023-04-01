@@ -35,6 +35,7 @@ issues:
   - "invalid operation: cannot compare .*"
   - "client.StopWait undefined .*"
   - "could not import github.com/gardener/gardener/pkg/apis/core/v1beta1/constants .*"
+  - "Error return value of `informer.AddEventHandler` is not checked"
   exclude-rules:
   - linters:
     - staticcheck

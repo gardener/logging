@@ -18,9 +18,6 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/gardener/logging/pkg/config"
-	"github.com/gardener/logging/pkg/types"
-
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	. "github.com/onsi/ginkgo"
@@ -29,6 +26,9 @@ import (
 	"github.com/prometheus/common/model"
 	"github.com/weaveworks/common/logging"
 	"k8s.io/utils/pointer"
+
+	"github.com/gardener/logging/pkg/config"
+	"github.com/gardener/logging/pkg/types"
 )
 
 type entry struct {

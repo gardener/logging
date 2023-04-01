@@ -19,11 +19,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-kit/kit/log"
+	"github.com/prometheus/common/model"
+
 	"github.com/gardener/logging/pkg/config"
 	"github.com/gardener/logging/pkg/types"
-	"github.com/go-kit/kit/log"
-
-	"github.com/prometheus/common/model"
 )
 
 type packClient struct {

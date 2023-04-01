@@ -19,9 +19,6 @@ import (
 	"flag"
 
 	"github.com/gardener/gardener/pkg/logger"
-
-	"github.com/gardener/logging/pkg/events"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -33,6 +30,8 @@ import (
 	"k8s.io/component-base/version"
 	"k8s.io/component-base/version/verflag"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
+
+	"github.com/gardener/logging/pkg/events"
 )
 
 // NewCommandStartGardenerEventLogger creates a *cobra.Command object with default parameters.

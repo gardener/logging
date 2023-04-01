@@ -20,14 +20,13 @@ import (
 	"reflect"
 	"regexp"
 
+	jsoniter "github.com/json-iterator/go"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+	"github.com/prometheus/common/model"
 
 	"github.com/gardener/logging/pkg/config"
-
-	jsoniter "github.com/json-iterator/go"
-	"github.com/prometheus/common/model"
 )
 
 type createLineArgs struct {

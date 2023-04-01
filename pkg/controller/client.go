@@ -18,17 +18,16 @@ import (
 	"fmt"
 	"time"
 
-	client "github.com/gardener/logging/pkg/client"
-	"github.com/gardener/logging/pkg/config"
-	"github.com/gardener/logging/pkg/metrics"
-	"github.com/gardener/logging/pkg/types"
-
 	gardenercorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
-
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	giterrors "github.com/pkg/errors"
 	"github.com/prometheus/common/model"
+
+	client "github.com/gardener/logging/pkg/client"
+	"github.com/gardener/logging/pkg/config"
+	"github.com/gardener/logging/pkg/metrics"
+	"github.com/gardener/logging/pkg/types"
 )
 
 // GetClient search a client with <name> and returned if found.

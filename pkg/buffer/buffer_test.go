@@ -19,15 +19,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gardener/logging/pkg/config"
-	"github.com/gardener/logging/pkg/types"
-
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/prometheus/common/model"
 	"github.com/weaveworks/common/logging"
+
+	"github.com/gardener/logging/pkg/config"
+	"github.com/gardener/logging/pkg/types"
 )
 
 var _ = Describe("Buffer", func() {
@@ -115,9 +115,9 @@ var _ = Describe("Buffer", func() {
 			fakeVali, ok := dQueCleint.vali.(*fakeValiclient)
 			Expect(ok).To(BeTrue())
 			time.Sleep(2 * time.Second)
-			fakeLoki.mu.Lock()
-			defer fakeLoki.mu.Unlock()
-			log := fakeLoki.sentLogs[0]
+			fakeVali.mu.Lock()
+			defer fakeVali.mu.Unlock()
+			log := fakeVali.sentLogs[0]
 			Expect(log.labelSet).To(Equal(ls))
 			Expect(log.timestamp).To(Equal(ts))
 			Expect(log.line).To(Equal(line))
@@ -129,9 +129,9 @@ var _ = Describe("Buffer", func() {
 			fakeVali, ok := dQueCleint.vali.(*fakeValiclient)
 			Expect(ok).To(BeTrue())
 			time.Sleep(2 * time.Second)
-			fakeLoki.mu.Lock()
-			defer fakeLoki.mu.Unlock()
-			Expect(fakeLoki.stopped).To(BeTrue())
+			fakeVali.mu.Lock()
+			defer fakeVali.mu.Unlock()
+			Expect(fakeVali.stopped).To(BeTrue())
 			_, err := os.Stat("/tmp/gardener")
 			Expect(os.IsNotExist(err)).To(BeFalse())
 		})
@@ -142,9 +142,9 @@ var _ = Describe("Buffer", func() {
 			fakeVali, ok := dQueCleint.vali.(*fakeValiclient)
 			Expect(ok).To(BeTrue())
 			time.Sleep(2 * time.Second)
-			fakeLoki.mu.Lock()
-			defer fakeLoki.mu.Unlock()
-			Expect(fakeLoki.stopped).To(BeTrue())
+			fakeVali.mu.Lock()
+			defer fakeVali.mu.Unlock()
+			Expect(fakeVali.stopped).To(BeTrue())
 			_, err := os.Stat("/tmp/gardener")
 			Expect(os.IsNotExist(err)).To(BeTrue())
 		})
@@ -162,7 +162,7 @@ func newFakeValiClient(c config.Config, logger log.Logger) (types.ValiClient, er
 	return &fakeValiclient{}, nil
 }
 
-func (c *fakeLokiclient) Handle(labels model.LabelSet, time time.Time, entry string) error {
+func (c *fakeValiclient) Handle(labels model.LabelSet, time time.Time, entry string) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.sentLogs = append(c.sentLogs, logEntry{time, labels, entry})

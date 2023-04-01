@@ -9,12 +9,11 @@ package config
 
 import (
 	"fmt"
-	"github.com/cortexproject/cortex/pkg/util/flagext"
 	"strconv"
 
-	"github.com/weaveworks/common/logging"
-
+	"github.com/cortexproject/cortex/pkg/util/flagext"
 	"github.com/credativ/vali/pkg/valitail/client"
+	"github.com/weaveworks/common/logging"
 )
 
 // DefaultClientCfg is the default gardener vali plugin client configuration.

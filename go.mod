@@ -167,25 +167,13 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
-//github.com/Azure/azure-sdk-for-go => github.com/Azure/azure-sdk-for-go v36.2.0+incompatible
+replace (
 
-//github.com/Azure/go-autorest => github.com/Azure/go-autorest v13.3.0+incompatible
-
-//github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.4.0
-//github.com/hpcloud/tail => github.com/grafana/tail v0.0.0-20191024143944-0b54ddf21fe7
-//github.com/prometheus/common => github.com/prometheus/common v0.15.0
-
-//These two comes together
-replace github.com/weaveworks/common => github.com/weaveworks/common v0.0.0-20210419092856-009d1eebd624
-
-replace google.golang.org/grpc => google.golang.org/grpc v1.40.0
-
-// Loki 2.2.1 requere this
-replace github.com/prometheus/common => github.com/prometheus/common v0.20.0
-
-//golang.org/x/net v0.0.0-20190813000000-74dc4d7220e7 => golang.org/x/net v0.0.0-20190813141303-74dc4d7220e7
-//k8s.io/api => k8s.io/api v0.17.9
-//k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.17.9
-//k8s.io/apimachinery => k8s.io/apimachinery v0.17.9
-//k8s.io/apiserver => k8s.io/apiserver v0.17.9
-replace k8s.io/client-go => k8s.io/client-go v0.26.2
+	// Vali requere this
+	github.com/prometheus/common => github.com/prometheus/common v0.20.0
+	//These two comes together
+	github.com/weaveworks/common => github.com/weaveworks/common v0.0.0-20210419092856-009d1eebd624
+	google.golang.org/grpc => google.golang.org/grpc v1.40.0
+	// From Gardener
+	k8s.io/client-go => k8s.io/client-go v0.26.2
+)
