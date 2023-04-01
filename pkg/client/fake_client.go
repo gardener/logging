@@ -16,6 +16,7 @@ package client
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/credativ/vali/pkg/logproto"
@@ -30,6 +31,7 @@ type FakeValiClient struct {
 	IsGracefullyStopped bool
 	// Entries is slice of all received entries
 	Entries []Entry
+	Mu      sync.Mutex
 }
 
 // Handle processes and stores the received entries.
@@ -37,11 +39,12 @@ func (c *FakeValiClient) Handle(labels model.LabelSet, timestamp time.Time, line
 	if c.IsStopped || c.IsGracefullyStopped {
 		return fmt.Errorf("client has been stopped")
 	}
-
+	c.Mu.Lock()
 	c.Entries = append(c.Entries, Entry{
 		Labels: labels.Clone(),
 		Entry:  logproto.Entry{Timestamp: timestamp, Line: line},
 	})
+	c.Mu.Unlock()
 	return nil
 }
 

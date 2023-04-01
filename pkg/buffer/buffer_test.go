@@ -16,6 +16,7 @@ package buffer
 
 import (
 	"os"
+	"sync"
 	"time"
 
 	"github.com/gardener/logging/pkg/config"
@@ -114,7 +115,9 @@ var _ = Describe("Buffer", func() {
 			fakeVali, ok := dQueCleint.vali.(*fakeValiclient)
 			Expect(ok).To(BeTrue())
 			time.Sleep(2 * time.Second)
-			log := fakeVali.sentLogs[0]
+			fakeLoki.mu.Lock()
+			defer fakeLoki.mu.Unlock()
+			log := fakeLoki.sentLogs[0]
 			Expect(log.labelSet).To(Equal(ls))
 			Expect(log.timestamp).To(Equal(ts))
 			Expect(log.line).To(Equal(line))
@@ -126,7 +129,9 @@ var _ = Describe("Buffer", func() {
 			fakeVali, ok := dQueCleint.vali.(*fakeValiclient)
 			Expect(ok).To(BeTrue())
 			time.Sleep(2 * time.Second)
-			Expect(fakeVali.stopped).To(BeTrue())
+			fakeLoki.mu.Lock()
+			defer fakeLoki.mu.Unlock()
+			Expect(fakeLoki.stopped).To(BeTrue())
 			_, err := os.Stat("/tmp/gardener")
 			Expect(os.IsNotExist(err)).To(BeFalse())
 		})
@@ -137,7 +142,9 @@ var _ = Describe("Buffer", func() {
 			fakeVali, ok := dQueCleint.vali.(*fakeValiclient)
 			Expect(ok).To(BeTrue())
 			time.Sleep(2 * time.Second)
-			Expect(fakeVali.stopped).To(BeTrue())
+			fakeLoki.mu.Lock()
+			defer fakeLoki.mu.Unlock()
+			Expect(fakeLoki.stopped).To(BeTrue())
 			_, err := os.Stat("/tmp/gardener")
 			Expect(os.IsNotExist(err)).To(BeTrue())
 		})
@@ -148,13 +155,16 @@ var _ = Describe("Buffer", func() {
 type fakeValiclient struct {
 	stopped  bool
 	sentLogs []logEntry
+	mu       sync.Mutex
 }
 
 func newFakeValiClient(c config.Config, logger log.Logger) (types.ValiClient, error) {
 	return &fakeValiclient{}, nil
 }
 
-func (c *fakeValiclient) Handle(labels model.LabelSet, time time.Time, entry string) error {
+func (c *fakeLokiclient) Handle(labels model.LabelSet, time time.Time, entry string) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	c.sentLogs = append(c.sentLogs, logEntry{time, labels, entry})
 	return nil
 }

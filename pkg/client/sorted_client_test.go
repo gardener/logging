@@ -120,6 +120,8 @@ var _ = Describe("Sorted Client", func() {
 				}
 
 				time.Sleep(4 * time.Second)
+				fakeClient.Mu.Lock()
+				defer fakeClient.Mu.Unlock()
 				Expect(len(fakeClient.Entries)).To(Equal(3))
 				Expect(fakeClient.Entries[0]).To(Equal(client.Entry{
 					Labels: MergeLabelSets(streamFoo, model.LabelSet{"id": "0"}),
@@ -216,6 +218,8 @@ var _ = Describe("Sorted Client", func() {
 				}
 
 				time.Sleep(4 * time.Second)
+				fakeClient.Mu.Lock()
+				defer fakeClient.Mu.Unlock()
 				Expect(len(fakeClient.Entries)).To(Equal(9))
 				for _, stream := range []model.LabelSet{
 					streamFoo,
@@ -279,6 +283,8 @@ var _ = Describe("Sorted Client", func() {
 				time.Sleep(time.Second)
 				// Only the first entry will be flushed.
 				// The second one stays in the next batch.
+				fakeClient.Mu.Lock()
+				defer fakeClient.Mu.Unlock()
 				Expect(len(fakeClient.Entries)).To(Equal(1))
 			})
 		})
@@ -297,6 +303,8 @@ var _ = Describe("Sorted Client", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				time.Sleep(time.Second)
+				fakeClient.Mu.Lock()
+				defer fakeClient.Mu.Unlock()
 				Expect(len(fakeClient.Entries)).To(Equal(0))
 			})
 
@@ -313,6 +321,8 @@ var _ = Describe("Sorted Client", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				time.Sleep(4 * time.Second)
+				fakeClient.Mu.Lock()
+				defer fakeClient.Mu.Unlock()
 				Expect(len(fakeClient.Entries)).To(Equal(1))
 
 				entry.Labels = MergeLabelSets(entry.Labels, model.LabelSet{"id": "0"})

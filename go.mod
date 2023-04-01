@@ -180,6 +180,9 @@ replace github.com/weaveworks/common => github.com/weaveworks/common v0.0.0-2021
 
 replace google.golang.org/grpc => google.golang.org/grpc v1.40.0
 
+// Loki 2.2.1 requere this
+replace github.com/prometheus/common => github.com/prometheus/common v0.20.0
+
 //golang.org/x/net v0.0.0-20190813000000-74dc4d7220e7 => golang.org/x/net v0.0.0-20190813141303-74dc4d7220e7
 //k8s.io/api => k8s.io/api v0.17.9
 //k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.17.9

@@ -29,7 +29,7 @@ import (
 	"github.com/prometheus/common/model"
 	"github.com/weaveworks/common/logging"
 
-	"github.com/gardener/gardener/pkg/apis/core"
+	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 
 	. "github.com/onsi/ginkgo"
@@ -122,16 +122,16 @@ var _ = Describe("Controller", func() {
 		logger = level.NewFilter(logger, logLevel.Gokit)
 		shootName := "shoot--dev--logging"
 
-		testingPurpuse := core.ShootPurpose("testing")
-		developmentPurpuse := core.ShootPurpose("development")
-		notHibernation := core.Hibernation{Enabled: pointer.BoolPtr(false)}
-		hibernation := core.Hibernation{Enabled: pointer.BoolPtr(true)}
+		testingPurpuse := gardencorev1beta1.ShootPurpose("testing")
+		developmentPurpuse := gardencorev1beta1.ShootPurpose("development")
+		notHibernation := gardencorev1beta1.Hibernation{Enabled: pointer.BoolPtr(false)}
+		hibernation := gardencorev1beta1.Hibernation{Enabled: pointer.BoolPtr(true)}
 		shootObjectMeta := v1.ObjectMeta{
 			Name: shootName,
 		}
-		testingShoot := &core.Shoot{
+		testingShoot := &gardencorev1beta1.Shoot{
 			ObjectMeta: shootObjectMeta,
-			Spec: core.ShootSpec{
+			Spec: gardencorev1beta1.ShootSpec{
 				Purpose:     &testingPurpuse,
 				Hibernation: &notHibernation,
 			},
@@ -142,18 +142,18 @@ var _ = Describe("Controller", func() {
 				},
 			},
 		}
-		testingShootRaw, _ := json.Marshal(testingShoot)
-		developmentShoot := &core.Shoot{
+		testingShootRaw, _ := json.MarshalIndent(testingShoot, "", "  ")
+		developmentShoot := &gardencorev1beta1.Shoot{
 			ObjectMeta: shootObjectMeta,
-			Spec: core.ShootSpec{
+			Spec: gardencorev1beta1.ShootSpec{
 				Purpose:     &developmentPurpuse,
 				Hibernation: &notHibernation,
 			},
 		}
 		developmentShootRaw, _ := json.Marshal(developmentShoot)
-		hibernatedShoot := &core.Shoot{
+		hibernatedShoot := &gardencorev1beta1.Shoot{
 			ObjectMeta: shootObjectMeta,
-			Spec: core.ShootSpec{
+			Spec: gardencorev1beta1.ShootSpec{
 				Purpose:     &developmentPurpuse,
 				Hibernation: &hibernation,
 			},
