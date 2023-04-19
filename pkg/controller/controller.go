@@ -231,13 +231,35 @@ func (ctl *controller) getClientConfig(namespace string, checkTargetLoggingBacke
 	return &conf
 }
 
+type getter func(client http.Client, url string) (*http.Response, error)
+
+func retry(g getter, retries int, delay time.Duration) getter {
+	return func(client http.Client, url string) (*http.Response, error) {
+		for r := 0; ; r++ {
+			response, err := g(client, url)
+			if err == nil || r >= retries {
+				return response, err
+			}
+			time.Sleep(delay)
+		}
+	}
+}
+
 func (ctl *controller) checkTargetLoggingBackend(prefix string, namespace string) string {
 	httpClient := http.Client{
-		Timeout: 2 * time.Second,
+		Timeout: 5 * time.Second,
 	}
-	resp, err := httpClient.Get(prefix + namespace + ".svc:3100/config")
+	//let's create a Retriable Get
+	g := func(client http.Client, url string) (*http.Response, error) {
+		return client.Get(url)
+	}
+	retriableGet := retry(g, 5, 2*time.Second)
+	//we perform a retriable get
+	url := prefix + namespace + ".svc:3100/config"
+	resp, err := retriableGet(httpClient, url)
 	if err != nil {
-		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("error getting /config endpoint  for %v", namespace), "error", err.Error())
+		_ = level.Error(ctl.logger).Log("msg",
+			fmt.Errorf("give up, can not connect to the target config endpoint %s after 5 retries", url))
 		return ""
 	}
 
