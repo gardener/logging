@@ -73,9 +73,8 @@ func (ctl *controller) newControllerClient(clientConf *config.Config) (Controlle
 // TODO (nickytd) The checkTargetLoggingBackend parameter is only used to reckognize initial start of the cluster
 // informer and propagate further down to getClientConfig if this is an add callback or update callback.
 // Once vali to vali migration is done then we shall revert the original state and remove this parameter.
-func (ctl *controller) createControllerClient(clusterName string, shoot *gardenercorev1beta1.Shoot,
-	checkTargetLoggingBackend bool) {
-	clientConf := ctl.getClientConfig(clusterName, checkTargetLoggingBackend)
+func (ctl *controller) createControllerClient(clusterName string, shoot *gardenercorev1beta1.Shoot) {
+	clientConf := ctl.getClientConfig(clusterName)
 	if clientConf == nil {
 		return
 	}

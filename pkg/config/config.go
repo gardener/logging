@@ -9,15 +9,15 @@ package config
 
 import (
 	"fmt"
+	"github.com/cortexproject/cortex/pkg/util/flagext"
 	"strconv"
 
-	"github.com/cortexproject/cortex/pkg/util/flagext"
 	"github.com/weaveworks/common/logging"
 
 	"github.com/credativ/vali/pkg/valitail/client"
 )
 
-// DefaultClientCfg is the default gardener valiplugin client configuration.
+// DefaultClientCfg is the default gardener vali plugin client configuration.
 var DefaultClientCfg = client.Config{}
 
 func init() {
@@ -48,7 +48,7 @@ const (
 	DefaultKubernetesMetadataTagPrefix = "kubernetes\\.var\\.log\\.containers"
 )
 
-// Config holds all of the needed properties of the vali output plugin
+// Config holds the needed properties of the vali output plugin
 type Config struct {
 	ClientConfig     ClientConfig
 	ControllerConfig ControllerConfig

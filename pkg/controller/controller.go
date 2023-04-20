@@ -40,7 +40,10 @@ import (
 )
 
 const (
-	expectedActiveClusters = 128
+	expectedActiveClusters       = 128
+	loggingBackendConfigEndPoint = ".svc:3100/config"
+	lokiAPIPushEndPoint          = ".svc:3100/loki/api/v1/push"
+	valiAPIPushEndPoint          = ".svc:3100/vali/api/v1/push"
 )
 
 // Controller represent a k8s controller watching for resources and
@@ -60,6 +63,9 @@ type controller struct {
 	decoder       runtime.Decoder
 	logger        log.Logger
 }
+
+// getter is a function definition which is turned into a repeatbale call
+type getter func(client http.Client, url string) (*http.Response, error)
 
 // NewController return Controller interface
 func NewController(informer cache.SharedIndexInformer, conf *config.Config, defaultClient types.ValiClient, logger log.Logger) (Controller, error) {
@@ -129,7 +135,7 @@ func (ctl *controller) addFunc(obj interface{}) {
 	}
 
 	if ctl.matches(shoot) && !ctl.isDeletedShoot(shoot) {
-		ctl.createControllerClient(cluster.Name, shoot, true)
+		ctl.createControllerClient(cluster.Name, shoot)
 	}
 }
 
@@ -157,7 +163,7 @@ func (ctl *controller) updateFunc(oldObj interface{}, newObj interface{}) {
 
 	if bytes.Equal(oldCluster.Spec.Shoot.Raw, newCluster.Spec.Shoot.Raw) &&
 		shoot.Status.LastOperation.Progress == 100 &&
-		shoot.Status.LastOperation.Type == "Reconcile" {
+		(shoot.Status.LastOperation.Type == "Reconcile" || shoot.Status.LastOperation.Type == "Create") {
 		_ = level.Debug(ctl.logger).Log("msg", fmt.Sprintf("return from the informer update callback %v", newCluster.Name))
 		return
 	}
@@ -175,16 +181,16 @@ func (ctl *controller) updateFunc(oldObj interface{}, newObj interface{}) {
 		// Sanity check
 		if client == nil {
 			_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("The client for cluster %v is NIL. Will try to create new one", oldCluster.Name))
-			ctl.createControllerClient(newCluster.Name, shoot, false)
+			ctl.createControllerClient(newCluster.Name, shoot)
 		}
 
 		ctl.deleteControllerClient(oldCluster.Name)
-		ctl.createControllerClient(newCluster.Name, shoot, false)
+		ctl.createControllerClient(newCluster.Name, shoot)
 		ctl.updateControllerClientState(client, shoot)
 	} else {
 		//The client does not exist and we will try to create a new one if the shoot is applicable for logging
 		if ctl.matches(shoot) {
-			ctl.createControllerClient(newCluster.Name, shoot, false)
+			ctl.createControllerClient(newCluster.Name, shoot)
 		}
 	}
 }
@@ -200,20 +206,17 @@ func (ctl *controller) delFunc(obj interface{}) {
 	ctl.deleteControllerClient(cluster.Name)
 }
 
-func (ctl *controller) getClientConfig(namespace string, checkTargetLoggingBackend bool) *config.Config {
+func (ctl *controller) getClientConfig(namespace string) *config.Config {
 	var clientURL flagext.URLValue
 
-	_ = level.Info(ctl.logger).Log("")
-
 	suffix := ctl.conf.ControllerConfig.DynamicHostSuffix
-	// TODO (nickytd) Here we try to check the target backend. If we succeed,
+	// Here we try to check the target logging backend. If we succeed,
 	// it takes precedence over the DynamicHostSuffix.
-	if checkTargetLoggingBackend {
-		if t := ctl.checkTargetLoggingBackend(ctl.conf.ControllerConfig.DynamicHostPrefix,
-			namespace); len(t) > 0 {
-			suffix = t
-		}
+	//TODO (nickytd) to remove the target logging backend check after the migration from loki to vali
+	if t := ctl.checkTargetLoggingBackend(ctl.conf.ControllerConfig.DynamicHostPrefix, namespace); len(t) > 0 {
+		suffix = t
 	}
+
 	url := fmt.Sprintf("%s%s%s", ctl.conf.ControllerConfig.DynamicHostPrefix, namespace, suffix)
 	_ = level.Info(ctl.logger).Log("msg", fmt.Sprintf("set URL %v for %v", url, namespace))
 
@@ -231,31 +234,19 @@ func (ctl *controller) getClientConfig(namespace string, checkTargetLoggingBacke
 	return &conf
 }
 
-type getter func(client http.Client, url string) (*http.Response, error)
-
-func retry(g getter, retries int, delay time.Duration) getter {
-	return func(client http.Client, url string) (*http.Response, error) {
-		for r := 0; ; r++ {
-			response, err := g(client, url)
-			if err == nil || r >= retries {
-				return response, err
-			}
-			time.Sleep(delay)
-		}
-	}
-}
-
 func (ctl *controller) checkTargetLoggingBackend(prefix string, namespace string) string {
 	httpClient := http.Client{
 		Timeout: 5 * time.Second,
 	}
-	//let's create a Retriable Get
+	// let's create a Retriable Get
 	g := func(client http.Client, url string) (*http.Response, error) {
 		return client.Get(url)
 	}
+
+	// turning a logging backend config endpoint getter to a retryable with 5 retries and 2 seconds delay in between
 	retriableGet := retry(g, 5, 2*time.Second)
 	//we perform a retriable get
-	url := prefix + namespace + ".svc:3100/config"
+	url := prefix + namespace + loggingBackendConfigEndPoint
 	resp, err := retriableGet(httpClient, url)
 	if err != nil {
 		_ = level.Error(ctl.logger).Log("msg",
@@ -268,12 +259,12 @@ func (ctl *controller) checkTargetLoggingBackend(prefix string, namespace string
 		return ""
 	}
 
-	config, err := ioutil.ReadAll(resp.Body)
+	cfg, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("error reading config from the response for %v", namespace), "error", err.Error())
 		return ""
 	}
-	scanner := bufio.NewScanner(strings.NewReader(string(config)))
+	scanner := bufio.NewScanner(strings.NewReader(string(cfg)))
 	scanner.Split(bufio.ScanLines)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
@@ -287,9 +278,9 @@ func (ctl *controller) checkTargetLoggingBackend(prefix string, namespace string
 			}
 			switch {
 			case strings.Contains(instanceId[1], "loki"):
-				return ".svc:3100/loki/api/v1/push"
+				return lokiAPIPushEndPoint
 			case strings.Contains(instanceId[1], "vali"):
-				return ".svc:3100/vali/api/v1/push"
+				return valiAPIPushEndPoint
 			}
 		}
 	}
@@ -306,4 +297,17 @@ func (ctl *controller) isDeletedShoot(shoot *gardenercorev1beta1.Shoot) bool {
 
 func (ctl *controller) isStopped() bool {
 	return ctl.clients == nil
+}
+
+// Returns a getter function turned into a repeatable call with a retry limit and a delay
+func retry(g getter, retries int, delay time.Duration) getter {
+	return func(client http.Client, url string) (*http.Response, error) {
+		for r := 0; ; r++ {
+			response, err := g(client, url)
+			if err == nil || r >= retries {
+				return response, err
+			}
+			time.Sleep(delay)
+		}
+	}
 }
