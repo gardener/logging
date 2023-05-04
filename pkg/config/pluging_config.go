@@ -1,6 +1,6 @@
 /*
-This file was copied from the grafana/loki project
-https://github.com/grafana/loki/blob/v1.6.0/cmd/fluent-bit/config.go
+This file was copied from the grafana/vali project
+https://github.com/credativ/vali/blob/v2.2.4/cmd/fluent-bit/config.go
 
 Modifications Copyright (c) 2020 SAP SE or an SAP affiliate company. All rights reserved.
 */
@@ -19,7 +19,7 @@ import (
 	"github.com/prometheus/common/model"
 )
 
-// PluginConfig contains the configuration mostly related to the Loki plugin.
+// PluginConfig contains the configuration mostly related to the Vali plugin.
 type PluginConfig struct {
 	// AutoKubernetesLabels extact all key/values from the kubernetes field.
 	AutoKubernetesLabels bool
@@ -30,7 +30,7 @@ type PluginConfig struct {
 	// LineFormat is the format to use when flattening the record to a log line.
 	LineFormat Format
 	// DropSingleKey if set to true and after extracting label_keys a record only
-	// has a single key remaining, the log line sent to Loki will just be
+	// has a single key remaining, the log line sent to Vali will just be
 	// the value of the record key.
 	DropSingleKey bool
 	// LabelMap is path to a json file defining how to transform nested records.
@@ -64,7 +64,7 @@ type KubernetesMetadataExtraction struct {
 	TagExpression                      string
 }
 
-// DynamicTenant contains specs for the lokiplugin dynamic functionality
+// DynamicTenant contains specs for the valiplugin dynamic functionality
 type DynamicTenant struct {
 	Tenant                                string
 	Field                                 string

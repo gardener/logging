@@ -1,6 +1,6 @@
 /*
-This file was copied from the grafana/loki project
-https://github.com/grafana/loki/blob/v1.6.0/cmd/fluent-bit/buffer.go
+This file was copied from the grafana/vali project
+https://github.com/credativ/vali/blob/v2.2.4/cmd/fluent-bit/buffer.go
 
 Modifications Copyright (c) 2022 SAP SE or an SAP affiliate company. All rights reserved.
 */
@@ -17,7 +17,7 @@ import (
 )
 
 // NewBufferDecorator makes a new buffered Client.
-func NewBufferDecorator(cfg config.Config, newClientFunc NewLokiClientFunc, logger log.Logger) (types.LokiClient, error) {
+func NewBufferDecorator(cfg config.Config, newClientFunc NewValiClientFunc, logger log.Logger) (types.ValiClient, error) {
 	switch cfg.ClientConfig.BufferConfig.BufferType {
 	case "dque":
 		return buffer.NewDque(cfg, logger, newClientFunc)

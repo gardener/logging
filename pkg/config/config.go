@@ -1,6 +1,6 @@
 /*
-This file was copied from the grafana/loki project
-https://github.com/grafana/loki/blob/v1.6.0/cmd/fluent-bit/config.go
+This file was copied from the grafana/vali project
+https://github.com/credativ/vali/blob/v2.2.4/cmd/fluent-bit/config.go
 
 Modifications Copyright (c) 2020 SAP SE or an SAP affiliate company. All rights reserved.
 */
@@ -9,15 +9,15 @@ package config
 
 import (
 	"fmt"
+	"github.com/cortexproject/cortex/pkg/util/flagext"
 	"strconv"
 
-	"github.com/cortexproject/cortex/pkg/util/flagext"
 	"github.com/weaveworks/common/logging"
 
-	"github.com/grafana/loki/pkg/promtail/client"
+	"github.com/credativ/vali/pkg/valitail/client"
 )
 
-// DefaultClientCfg is the default gardener lokiplugin client configuration.
+// DefaultClientCfg is the default gardener vali plugin client configuration.
 var DefaultClientCfg = client.Config{}
 
 func init() {
@@ -48,7 +48,7 @@ const (
 	DefaultKubernetesMetadataTagPrefix = "kubernetes\\.var\\.log\\.containers"
 )
 
-// Config holds all of the needet properties of the loki output plugin
+// Config holds the needed properties of the vali output plugin
 type Config struct {
 	ClientConfig     ClientConfig
 	ControllerConfig ControllerConfig
@@ -57,7 +57,7 @@ type Config struct {
 	Pprof            bool
 }
 
-// ParseConfig parse a Loki plugin configuration
+// ParseConfig parse a Vali plugin configuration
 func ParseConfig(cfg Getter) (*Config, error) {
 	var err error
 	res := &Config{}

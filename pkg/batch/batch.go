@@ -21,9 +21,9 @@ import (
 	"github.com/prometheus/common/model"
 )
 
-// Batch holds pending logs waiting to be sent to Loki.
+// Batch holds pending logs waiting to be sent to Vali.
 // The aggregation of the logs is used to reduce the number
-// of push request to the Loki
+// of push request to the Vali
 type Batch struct {
 	streams     map[string]*Stream
 	bytes       int

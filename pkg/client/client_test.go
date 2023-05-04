@@ -23,10 +23,10 @@ import (
 
 	"github.com/cortexproject/cortex/pkg/util"
 	"github.com/cortexproject/cortex/pkg/util/flagext"
+	valiflag "github.com/credativ/vali/pkg/util/flagext"
+	"github.com/credativ/vali/pkg/valitail/client"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	"github.com/grafana/loki/pkg/promtail/client"
-	lokiflag "github.com/grafana/loki/pkg/util/flagext"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/prometheus/common/model"
@@ -34,17 +34,17 @@ import (
 )
 
 var _ = Describe("Client", func() {
-	defaultURL, _ := parseURL("http://localhost:3100/loki/api/v1/push")
+	defaultURL, _ := parseURL("http://localhost:3100/vali/api/v1/push")
 	var infoLogLevel logging.Level
 	_ = infoLogLevel.Set("info")
 	conf := config.Config{
 		ClientConfig: config.ClientConfig{
-			GrafanaLokiConfig: client.Config{
+			CredativValiConfig: client.Config{
 				URL:            defaultURL,
 				TenantID:       "", // empty as not set in fluent-bit plugin config map
 				BatchSize:      100,
 				BatchWait:      30 * time.Second,
-				ExternalLabels: lokiflag.LabelSet{LabelSet: model.LabelSet{"app": "foo"}},
+				ExternalLabels: valiflag.LabelSet{LabelSet: model.LabelSet{"app": "foo"}},
 				BackoffConfig: util.BackoffConfig{
 					MinBackoff: (1 * time.Second),
 					MaxBackoff: 300 * time.Second,
@@ -77,8 +77,8 @@ var _ = Describe("Client", func() {
 		},
 		LogLevel: infoLogLevel,
 		ControllerConfig: config.ControllerConfig{
-			DynamicHostPrefix: "http://loki.",
-			DynamicHostSuffix: ".svc:3100/loki/api/v1/push",
+			DynamicHostPrefix: "http://vali.",
+			DynamicHostSuffix: ".svc:3100/vali/api/v1/push",
 		},
 	}
 

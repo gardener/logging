@@ -20,14 +20,14 @@ import (
 	"github.com/gardener/logging/pkg/config"
 	"github.com/gardener/logging/pkg/types"
 
+	"github.com/credativ/vali/pkg/logproto"
 	"github.com/go-kit/kit/log"
-	"github.com/grafana/loki/pkg/logproto"
 	"github.com/prometheus/common/model"
 )
 
-// LokiClient represents an instance which sends logs to Loki ingester
-type LokiClient interface {
-	// Handle processes logs and then sends them to Loki ingester
+// ValiClient represents an instance which sends logs to Vali ingester
+type ValiClient interface {
+	// Handle processes logs and then sends them to Vali ingester
 	Handle(labels model.LabelSet, time time.Time, entry string) error
 	// Stop shut down the client immediately without waiting to send the saved logs
 	Stop()
@@ -35,14 +35,14 @@ type LokiClient interface {
 	StopWait()
 }
 
-// Entry represent a Loki log record.
+// Entry represent a Vali log record.
 type Entry struct {
 	Labels model.LabelSet
 	logproto.Entry
 }
 
-// NewLokiClientFunc returns a LokiClient on success.
-type NewLokiClientFunc func(cfg config.Config, logger log.Logger) (types.LokiClient, error)
+// NewValiClientFunc returns a ValiClient on success.
+type NewValiClientFunc func(cfg config.Config, logger log.Logger) (types.ValiClient, error)
 
-// NewLokiClientDecoratorFunc return LokiClient which wraps another LokiClient
-type NewLokiClientDecoratorFunc func(cfg config.Config, client LokiClient, logger log.Logger) (types.LokiClient, error)
+// NewValiClientDecoratorFunc return ValiClient which wraps another ValiClient
+type NewValiClientDecoratorFunc func(cfg config.Config, client ValiClient, logger log.Logger) (types.ValiClient, error)

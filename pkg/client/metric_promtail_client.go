@@ -20,53 +20,53 @@ import (
 	"github.com/gardener/logging/pkg/metrics"
 	"github.com/gardener/logging/pkg/types"
 
+	"github.com/credativ/vali/pkg/logproto"
+	"github.com/credativ/vali/pkg/valitail/api"
+	"github.com/credativ/vali/pkg/valitail/client"
 	"github.com/go-kit/kit/log"
-	"github.com/grafana/loki/pkg/logproto"
-	"github.com/grafana/loki/pkg/promtail/api"
-	"github.com/grafana/loki/pkg/promtail/client"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/model"
 )
 
-type promtailClientWithForwardedLogsMetricCounter struct {
-	lokiclient client.Client
+type valitailClientWithForwardedLogsMetricCounter struct {
+	valiclient client.Client
 	host       string
 }
 
-// NewPromtailClient return LokiClient which wraps the original Promtail client.
+// NewPromtailClient return ValiClient which wraps the original Promtail client.
 // It increments the ForwardedLogs counter on successful call of the Handle function.
 // !!!This must be the bottom wrapper!!!
-func NewPromtailClient(cfg client.Config, logger log.Logger) (types.LokiClient, error) {
+func NewPromtailClient(cfg client.Config, logger log.Logger) (types.ValiClient, error) {
 	c, err := client.New(prometheus.DefaultRegisterer, cfg, logger)
 	if err != nil {
 		return nil, err
 	}
-	return &promtailClientWithForwardedLogsMetricCounter{
-		lokiclient: c,
+	return &valitailClientWithForwardedLogsMetricCounter{
+		valiclient: c,
 		host:       cfg.URL.Hostname(),
 	}, nil
 }
 
-// newTestingPromtailClient is wrapping fake grafana/loki client used for testing
-func newTestingPromtailClient(c client.Client, cfg client.Config, logger log.Logger) (types.LokiClient, error) {
-	return &promtailClientWithForwardedLogsMetricCounter{
-		lokiclient: c,
+// newTestingPromtailClient is wrapping fake grafana/vali client used for testing
+func newTestingPromtailClient(c client.Client, cfg client.Config, logger log.Logger) (types.ValiClient, error) {
+	return &valitailClientWithForwardedLogsMetricCounter{
+		valiclient: c,
 		host:       cfg.URL.Hostname(),
 	}, nil
 }
 
-func (c *promtailClientWithForwardedLogsMetricCounter) Handle(ls model.LabelSet, t time.Time, s string) error {
-	c.lokiclient.Chan() <- api.Entry{Labels: ls, Entry: logproto.Entry{Timestamp: t, Line: s}}
+func (c *valitailClientWithForwardedLogsMetricCounter) Handle(ls model.LabelSet, t time.Time, s string) error {
+	c.valiclient.Chan() <- api.Entry{Labels: ls, Entry: logproto.Entry{Timestamp: t, Line: s}}
 	metrics.ForwardedLogs.WithLabelValues(c.host).Inc()
 	return nil
 }
 
 // Stop the client.
-func (c *promtailClientWithForwardedLogsMetricCounter) Stop() {
-	c.lokiclient.Stop()
+func (c *valitailClientWithForwardedLogsMetricCounter) Stop() {
+	c.valiclient.Stop()
 }
 
 // StopWait stops the client waiting all saved logs to be sent.
-func (c *promtailClientWithForwardedLogsMetricCounter) StopWait() {
-	c.lokiclient.Stop()
+func (c *valitailClientWithForwardedLogsMetricCounter) StopWait() {
+	c.valiclient.Stop()
 }

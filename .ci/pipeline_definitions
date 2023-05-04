@@ -12,9 +12,9 @@ logging:
         - linux/amd64
         - linux/arm64
         dockerimages:
-          fluent-bit-to-loki:
+          fluent-bit-to-vali:
             registry: 'gcr-readwrite'
-            image: 'eu.gcr.io/gardener-project/gardener/fluent-bit-to-loki'
+            image: 'eu.gcr.io/gardener-project/gardener/fluent-bit-to-vali'
             dockerfile: './Dockerfile'
             target: fluent-bit-plugin
             resource_labels:
@@ -27,9 +27,9 @@ logging:
                 integrity_requirement: 'none'
                 availability_requirement: 'none'
                 comment: no data is stored or processed by the installer
-          loki-curator:
+          vali-curator:
             registry: 'gcr-readwrite'
-            image: 'eu.gcr.io/gardener-project/gardener/loki-curator'
+            image: 'eu.gcr.io/gardener-project/gardener/vali-curator'
             dockerfile: './Dockerfile'
             target: curator
             resource_labels:

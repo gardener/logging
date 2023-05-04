@@ -23,8 +23,8 @@ import (
 
 	"github.com/cortexproject/cortex/pkg/util"
 	"github.com/cortexproject/cortex/pkg/util/flagext"
-	"github.com/grafana/loki/pkg/promtail/client"
-	lokiflag "github.com/grafana/loki/pkg/util/flagext"
+	valiflag "github.com/credativ/vali/pkg/util/flagext"
+	"github.com/credativ/vali/pkg/valitail/client"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -50,7 +50,7 @@ const (
 	defaultMaxBackoff                  = 300 * time.Second
 	defaultMaxRetries                  = 10
 	defaultTimeout                     = 10 * time.Second
-	defaultQueueDir                    = "/tmp/flb-storage/loki"
+	defaultQueueDir                    = "/tmp/flb-storage/vali"
 	defaultQueueSegmentSize            = 500
 	defaultQueueSync                   = false
 	defaultQueueName                   = "dque"
@@ -87,9 +87,9 @@ var (
 		MaxRetries: defaultMaxRetries,
 	}
 
-	defaultExternalLabels = lokiflag.LabelSet{LabelSet: model.LabelSet{"job": "fluent-bit"}}
+	defaultExternalLabels = valiflag.LabelSet{LabelSet: model.LabelSet{"job": "fluent-bit"}}
 
-	defaultGrafanaLokiConfig = client.Config{
+	defaultCredativValiConfig = client.Config{
 		URL:            defaultURL,
 		BatchSize:      defaultBatchSize,
 		BatchWait:      defaultBatchWait,
@@ -112,10 +112,10 @@ var (
 	}
 
 	defaultClientConfig = ClientConfig{
-		GrafanaLokiConfig: defaultGrafanaLokiConfig,
-		BufferConfig:      defaultBufferConfig,
-		NumberOfBatchIDs:  defaultNumberOfBatchIDs,
-		IdLabelName:       model.LabelName("id"),
+		CredativValiConfig: defaultCredativValiConfig,
+		BufferConfig:       defaultBufferConfig,
+		NumberOfBatchIDs:   defaultNumberOfBatchIDs,
+		IdLabelName:        model.LabelName("id"),
 	}
 
 	defaultMainControllerClientConfig = ControllerClientConfiguration{
@@ -149,7 +149,7 @@ var (
 		DefaultControllerClientConfig: defaultControllerClientConfig,
 	}
 
-	defaultURL = parseURL("http://localhost:3100/loki/api/v1/push")
+	defaultURL = parseURL("http://localhost:3100/vali/api/v1/push")
 )
 
 var _ = Describe("Config", func() {
@@ -164,7 +164,7 @@ var _ = Describe("Config", func() {
 
 	_ = warnLogLevel.Set("warn")
 	_ = infoLogLevel.Set("info")
-	somewhereURL := parseURL("http://somewhere.com:3100/loki/api/v1/push")
+	somewhereURL := parseURL("http://somewhere.com:3100/vali/api/v1/push")
 
 	DescribeTable("Test Config",
 		func(args testArgs) {
@@ -191,7 +191,7 @@ var _ = Describe("Config", func() {
 		),
 		Entry("setting values", testArgs{
 			map[string]string{
-				"URL":             "http://somewhere.com:3100/loki/api/v1/push",
+				"URL":             "http://somewhere.com:3100/vali/api/v1/push",
 				"TenantID":        "my-tenant-id",
 				"LineFormat":      "key_value",
 				"LogLevel":        "warn",
@@ -220,12 +220,12 @@ var _ = Describe("Config", func() {
 				},
 
 				ClientConfig: ClientConfig{
-					GrafanaLokiConfig: client.Config{
+					CredativValiConfig: client.Config{
 						URL:            somewhereURL,
 						TenantID:       "my-tenant-id",
 						BatchSize:      100,
 						BatchWait:      30 * time.Second,
-						ExternalLabels: lokiflag.LabelSet{LabelSet: model.LabelSet{"app": "foo"}},
+						ExternalLabels: valiflag.LabelSet{LabelSet: model.LabelSet{"app": "foo"}},
 						BackoffConfig:  defaultBackoffConfig,
 						Timeout:        defaultTimeout,
 					},
@@ -245,7 +245,7 @@ var _ = Describe("Config", func() {
 		),
 		Entry("with label map", testArgs{
 			map[string]string{
-				"URL":           "http://somewhere.com:3100/loki/api/v1/push",
+				"URL":           "http://somewhere.com:3100/vali/api/v1/push",
 				"LineFormat":    "key_value",
 				"LogLevel":      "warn",
 				"Labels":        `{app="foo"}`,
@@ -281,12 +281,12 @@ var _ = Describe("Config", func() {
 					PreservedLabels:      model.LabelSet{},
 				},
 				ClientConfig: ClientConfig{
-					GrafanaLokiConfig: client.Config{
+					CredativValiConfig: client.Config{
 						URL:            somewhereURL,
 						TenantID:       "", // empty as not set in fluent-bit plugin config map
 						BatchSize:      100,
 						BatchWait:      30 * time.Second,
-						ExternalLabels: lokiflag.LabelSet{LabelSet: model.LabelSet{"app": "foo"}},
+						ExternalLabels: valiflag.LabelSet{LabelSet: model.LabelSet{"app": "foo"}},
 						BackoffConfig:  defaultBackoffConfig,
 						Timeout:        defaultTimeout,
 					},
@@ -301,7 +301,7 @@ var _ = Describe("Config", func() {
 		),
 		Entry("with dynamic configuration", testArgs{
 			map[string]string{
-				"URL":               "http://somewhere.com:3100/loki/api/v1/push",
+				"URL":               "http://somewhere.com:3100/vali/api/v1/push",
 				"LineFormat":        "key_value",
 				"LogLevel":          "warn",
 				"Labels":            `{app="foo"}`,
@@ -311,8 +311,8 @@ var _ = Describe("Config", func() {
 				"LabelKeys":         "foo,bar",
 				"DropSingleKey":     "false",
 				"DynamicHostPath":   "{\"kubernetes\": {\"namespace_name\" : \"namespace\"}}",
-				"DynamicHostPrefix": "http://loki.",
-				"DynamicHostSuffix": ".svc:3100/loki/api/v1/push",
+				"DynamicHostPrefix": "http://vali.",
+				"DynamicHostSuffix": ".svc:3100/vali/api/v1/push",
 				"DynamicHostRegex":  "shoot--",
 			},
 			&Config{
@@ -332,12 +332,12 @@ var _ = Describe("Config", func() {
 					PreservedLabels:      model.LabelSet{},
 				},
 				ClientConfig: ClientConfig{
-					GrafanaLokiConfig: client.Config{
+					CredativValiConfig: client.Config{
 						URL:            somewhereURL,
 						TenantID:       "", // empty as not set in fluent-bit plugin config map
 						BatchSize:      100,
 						BatchWait:      30 * time.Second,
-						ExternalLabels: lokiflag.LabelSet{LabelSet: model.LabelSet{"app": "foo"}},
+						ExternalLabels: valiflag.LabelSet{LabelSet: model.LabelSet{"app": "foo"}},
 						BackoffConfig:  defaultBackoffConfig,
 						Timeout:        defaultTimeout,
 					},
@@ -346,8 +346,8 @@ var _ = Describe("Config", func() {
 					NumberOfBatchIDs: defaultNumberOfBatchIDs,
 				},
 				ControllerConfig: ControllerConfig{
-					DynamicHostPrefix:             "http://loki.",
-					DynamicHostSuffix:             ".svc:3100/loki/api/v1/push",
+					DynamicHostPrefix:             "http://vali.",
+					DynamicHostSuffix:             ".svc:3100/vali/api/v1/push",
 					CtlSyncTimeout:                defaultCtlSyncTimeout,
 					DeletedClientTimeExpiration:   defaultDeletedClientTimeExpiration,
 					MainControllerClientConfig:    defaultMainControllerClientConfig,
@@ -359,7 +359,7 @@ var _ = Describe("Config", func() {
 		),
 		Entry("with Buffer configuration", testArgs{
 			map[string]string{
-				"URL":              "http://somewhere.com:3100/loki/api/v1/push",
+				"URL":              "http://somewhere.com:3100/vali/api/v1/push",
 				"LineFormat":       "key_value",
 				"LogLevel":         "warn",
 				"Labels":           `{app="foo"}`,
@@ -387,12 +387,12 @@ var _ = Describe("Config", func() {
 					PreservedLabels:      model.LabelSet{},
 				},
 				ClientConfig: ClientConfig{
-					GrafanaLokiConfig: client.Config{
+					CredativValiConfig: client.Config{
 						URL:            somewhereURL,
 						TenantID:       "", // empty as not set in fluent-bit plugin config map
 						BatchSize:      100,
 						BatchWait:      30 * time.Second,
-						ExternalLabels: lokiflag.LabelSet{LabelSet: model.LabelSet{"app": "foo"}},
+						ExternalLabels: valiflag.LabelSet{LabelSet: model.LabelSet{"app": "foo"}},
 						BackoffConfig:  defaultBackoffConfig,
 						Timeout:        defaultTimeout,
 					},
@@ -416,7 +416,7 @@ var _ = Describe("Config", func() {
 		),
 		Entry("with retries and timeouts configuration", testArgs{
 			map[string]string{
-				"URL":           "http://somewhere.com:3100/loki/api/v1/push",
+				"URL":           "http://somewhere.com:3100/vali/api/v1/push",
 				"LineFormat":    "key_value",
 				"LogLevel":      "warn",
 				"Labels":        `{app="foo"}`,
@@ -442,12 +442,12 @@ var _ = Describe("Config", func() {
 					PreservedLabels:      model.LabelSet{},
 				},
 				ClientConfig: ClientConfig{
-					GrafanaLokiConfig: client.Config{
+					CredativValiConfig: client.Config{
 						URL:            somewhereURL,
 						TenantID:       "", // empty as not set in fluent-bit plugin config map
 						BatchSize:      100,
 						BatchWait:      30 * time.Second,
-						ExternalLabels: lokiflag.LabelSet{LabelSet: model.LabelSet{"app": "foo"}},
+						ExternalLabels: valiflag.LabelSet{LabelSet: model.LabelSet{"app": "foo"}},
 						Timeout:        time.Second * 20,
 						BackoffConfig: util.BackoffConfig{
 							MinBackoff: 30 * time.Second,
@@ -466,7 +466,7 @@ var _ = Describe("Config", func() {
 		),
 		Entry("with kubernetes metadata configuration", testArgs{
 			map[string]string{
-				"URL":                                "http://somewhere.com:3100/loki/api/v1/push",
+				"URL":                                "http://somewhere.com:3100/vali/api/v1/push",
 				"LineFormat":                         "key_value",
 				"LogLevel":                           "warn",
 				"Labels":                             `{app="foo"}`,
@@ -499,12 +499,12 @@ var _ = Describe("Config", func() {
 					PreservedLabels:      model.LabelSet{},
 				},
 				ClientConfig: ClientConfig{
-					GrafanaLokiConfig: client.Config{
+					CredativValiConfig: client.Config{
 						URL:            somewhereURL,
 						TenantID:       "", // empty as not set in fluent-bit plugin config map
 						BatchSize:      100,
 						BatchWait:      30 * time.Second,
-						ExternalLabels: lokiflag.LabelSet{LabelSet: model.LabelSet{"app": "foo"}},
+						ExternalLabels: valiflag.LabelSet{LabelSet: model.LabelSet{"app": "foo"}},
 						BackoffConfig:  defaultBackoffConfig,
 						Timeout:        defaultTimeout,
 					},
@@ -519,7 +519,7 @@ var _ = Describe("Config", func() {
 		),
 		Entry("with metrics  configuration", testArgs{
 			map[string]string{
-				"URL":                 "http://somewhere.com:3100/loki/api/v1/push",
+				"URL":                 "http://somewhere.com:3100/vali/api/v1/push",
 				"LineFormat":          "key_value",
 				"LogLevel":            "warn",
 				"Labels":              `{app="foo"}`,
@@ -544,12 +544,12 @@ var _ = Describe("Config", func() {
 				},
 
 				ClientConfig: ClientConfig{
-					GrafanaLokiConfig: client.Config{
+					CredativValiConfig: client.Config{
 						URL:            somewhereURL,
 						TenantID:       "", // empty as not set in fluent-bit plugin config map
 						BatchSize:      100,
 						BatchWait:      30 * time.Second,
-						ExternalLabels: lokiflag.LabelSet{LabelSet: model.LabelSet{"app": "foo"}},
+						ExternalLabels: valiflag.LabelSet{LabelSet: model.LabelSet{"app": "foo"}},
 						BackoffConfig:  defaultBackoffConfig,
 						Timeout:        defaultTimeout,
 					},

@@ -1,6 +1,6 @@
 /*
-This file was copied from the grafana/loki project
-https://github.com/grafana/loki/blob/v1.6.0/cmd/fluent-bit/config.go
+This file was copied from the grafana/vali project
+https://github.com/credativ/vali/blob/v2.2.4/cmd/fluent-bit/config.go
 
 Modifications Copyright (c) 2020 SAP SE or an SAP affiliate company. All rights reserved.
 */
@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-// ControllerConfig hold the configuration fot the Loki client controller
+// ControllerConfig hold the configuration fot the Vali client controller
 type ControllerConfig struct {
 	// CtlSyncTimeout for resource synchronization
 	CtlSyncTimeout time.Duration
@@ -25,15 +25,15 @@ type ControllerConfig struct {
 	// deleted shoot should be cosidered for removal
 	DeletedClientTimeExpiration time.Duration
 	// MainControllerClientConfig configure to whether to send or not the log to the shoot
-	// Loki for a particular shoot state.
+	// Vali for a particular shoot state.
 	MainControllerClientConfig ControllerClientConfiguration
 	// DefaultControllerClientConfig configure to whether to send or not the log to the shoot
-	// Loki for a particular shoot state.
+	// Vali for a particular shoot state.
 	DefaultControllerClientConfig ControllerClientConfiguration
 }
 
 // ControllerClientConfiguration contains flags which
-// mutes/unmutes Shoot's and Seed Loki for a given Shoot state.
+// mutes/unmutes Shoot's and Seed Vali for a given Shoot state.
 type ControllerClientConfiguration struct {
 	SendLogsWhenIsInCreationState    bool
 	SendLogsWhenIsInReadyState       bool

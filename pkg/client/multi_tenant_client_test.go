@@ -23,9 +23,9 @@ import (
 	"github.com/gardener/logging/pkg/types"
 	"github.com/weaveworks/common/logging"
 
+	valitailclient "github.com/credativ/vali/pkg/valitail/client"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	promtailclient "github.com/grafana/loki/pkg/promtail/client"
 	. "github.com/onsi/ginkgo"
 	ginkotable "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -34,18 +34,18 @@ import (
 
 var _ = Describe("Multi Tenant Client", func() {
 	var (
-		fakeClient *client.FakeLokiClient
-		mtc        types.LokiClient
+		fakeClient *client.FakeValiClient
+		mtc        types.ValiClient
 	)
 
 	BeforeEach(func() {
 		var err error
-		fakeClient = &client.FakeLokiClient{}
+		fakeClient = &client.FakeValiClient{}
 		var infoLogLevel logging.Level
 		_ = infoLogLevel.Set("info")
 
 		mtc, err = client.NewMultiTenantClientDecorator(config.Config{},
-			func(_ config.Config, _ log.Logger) (types.LokiClient, error) {
+			func(_ config.Config, _ log.Logger) (types.ValiClient, error) {
 				return fakeClient, nil
 			},
 			level.NewFilter(log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr)), infoLogLevel.Gokit))
@@ -69,7 +69,7 @@ var _ = Describe("Multi Tenant Client", func() {
 			_, ok := entry.Labels[client.MultiTenantClientLabel]
 			Expect(ok).To(BeFalse())
 			// Each tenant in the MultiTenantClientLabel should be transferred to __tenant_id__
-			if tenant, ok := entry.Labels[promtailclient.ReservedLabelTenantID]; ok {
+			if tenant, ok := entry.Labels[valitailclient.ReservedLabelTenantID]; ok {
 				gotTenants = append(gotTenants, tenant)
 			}
 		}
@@ -152,18 +152,18 @@ var _ = Describe("Multi Tenant Client", func() {
 
 var _ = Describe("Remove Multi Tenant Client", func() {
 	var (
-		fakeClient *client.FakeLokiClient
-		mtc        types.LokiClient
+		fakeClient *client.FakeValiClient
+		mtc        types.ValiClient
 	)
 
 	BeforeEach(func() {
 		var err error
-		fakeClient = &client.FakeLokiClient{}
+		fakeClient = &client.FakeValiClient{}
 		var infoLogLevel logging.Level
 		_ = infoLogLevel.Set("info")
 
 		mtc, err = client.NewRemoveMultiTenantIdClientDecorator(config.Config{},
-			func(_ config.Config, _ log.Logger) (types.LokiClient, error) {
+			func(_ config.Config, _ log.Logger) (types.ValiClient, error) {
 				return fakeClient, nil
 			},
 			level.NewFilter(log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr)), infoLogLevel.Gokit))
