@@ -4,8 +4,7 @@ FROM golang:1.20.4 AS plugin-builder
 WORKDIR /go/src/github.com/gardener/logging
 COPY . .
 
-ARG TARGETARCH
-RUN make plugin GOARCH=$TARGETARCH
+RUN make plugin
 RUN make install-copy
 
 ############# distroless-static
@@ -52,7 +51,6 @@ ENTRYPOINT [ "/event-logger" ]
 
 #############      telegraf-builder       #############
 FROM golang:1.20.4 AS telegraf-builder
-
 RUN git clone https://github.com/influxdata/telegraf.git
 WORKDIR /go/telegraf
 RUN git checkout v1.26.0

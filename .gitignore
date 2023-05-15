@@ -1,5 +1,7 @@
 /build
 /test
+/tools
+bin
 *.test
 *.coverprofile
 *.html
