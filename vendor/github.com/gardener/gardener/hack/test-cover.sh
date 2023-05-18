@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Copyright (c) 2020 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
 #
@@ -13,20 +13,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-set -e
+
+set -o errexit
+set -o nounset
+set -o pipefail
 
 echo "> Test Cover"
 
-"$(dirname $0)"/test.sh -cover $@
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+COVERPROFILE="$REPO_ROOT/test.coverprofile"
+COVERPROFILE_TMP="$REPO_ROOT/test.coverprofile.tmp"
+COVERPROFILE_HTML="$REPO_ROOT/test.coverage.html"
 
-COVERPROFILE="$(dirname $0)/../test.coverprofile"
-COVERPROFILE_TMP="$(dirname $0)/../test.coverprofile.tmp"
-COVERPROFILE_HTML="$(dirname $0)/../test.coverage.html"
+trap "rm -rf \"$COVERPROFILE_TMP\"" EXIT ERR INT TERM
 
-echo "mode: set" > "$COVERPROFILE_TMP"
-find . -name "*.coverprofile" -type f | xargs cat | grep -v mode: | sort -r | awk '{if($$1 != last) {print $$0;last=$$1}}' >> "$COVERPROFILE_TMP"
-cat "$COVERPROFILE_TMP" | grep -vE "\.pb\.go|\/test\/|zz_generated" > "$COVERPROFILE"
-rm -rf "$COVERPROFILE_TMP"
+GO111MODULE=on go test -cover -coverprofile "$COVERPROFILE_TMP" -race -timeout=2m -mod=vendor $@ | grep -v 'no test files'
+
+cat "$COVERPROFILE_TMP" | grep -vE "\.pb\.go|zz_generated" > "$COVERPROFILE"
 go tool cover -html="$COVERPROFILE" -o="$COVERPROFILE_HTML"
 
 go tool cover -func="$COVERPROFILE"

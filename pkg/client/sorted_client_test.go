@@ -18,12 +18,11 @@ import (
 	"os"
 	"time"
 
-	"github.com/cortexproject/cortex/pkg/util/flagext"
 	"github.com/gardener/logging/pkg/client"
 	"github.com/gardener/logging/pkg/config"
 	"github.com/gardener/logging/pkg/types"
-	"github.com/weaveworks/common/logging"
 
+	"github.com/cortexproject/cortex/pkg/util/flagext"
 	"github.com/credativ/vali/pkg/logproto"
 	valitailclient "github.com/credativ/vali/pkg/valitail/client"
 	"github.com/go-kit/kit/log"
@@ -31,6 +30,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/prometheus/common/model"
+	"github.com/weaveworks/common/logging"
 )
 
 var _ = Describe("Sorted Client", func() {
@@ -120,6 +120,8 @@ var _ = Describe("Sorted Client", func() {
 				}
 
 				time.Sleep(4 * time.Second)
+				fakeClient.Mu.Lock()
+				defer fakeClient.Mu.Unlock()
 				Expect(len(fakeClient.Entries)).To(Equal(3))
 				Expect(fakeClient.Entries[0]).To(Equal(client.Entry{
 					Labels: MergeLabelSets(streamFoo, model.LabelSet{"id": "0"}),
@@ -216,6 +218,8 @@ var _ = Describe("Sorted Client", func() {
 				}
 
 				time.Sleep(4 * time.Second)
+				fakeClient.Mu.Lock()
+				defer fakeClient.Mu.Unlock()
 				Expect(len(fakeClient.Entries)).To(Equal(9))
 				for _, stream := range []model.LabelSet{
 					streamFoo,
@@ -279,6 +283,8 @@ var _ = Describe("Sorted Client", func() {
 				time.Sleep(time.Second)
 				// Only the first entry will be flushed.
 				// The second one stays in the next batch.
+				fakeClient.Mu.Lock()
+				defer fakeClient.Mu.Unlock()
 				Expect(len(fakeClient.Entries)).To(Equal(1))
 			})
 		})
@@ -297,6 +303,8 @@ var _ = Describe("Sorted Client", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				time.Sleep(time.Second)
+				fakeClient.Mu.Lock()
+				defer fakeClient.Mu.Unlock()
 				Expect(len(fakeClient.Entries)).To(Equal(0))
 			})
 
@@ -313,6 +321,8 @@ var _ = Describe("Sorted Client", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				time.Sleep(4 * time.Second)
+				fakeClient.Mu.Lock()
+				defer fakeClient.Mu.Unlock()
 				Expect(len(fakeClient.Entries)).To(Equal(1))
 
 				entry.Labels = MergeLabelSets(entry.Labels, model.LabelSet{"id": "0"})

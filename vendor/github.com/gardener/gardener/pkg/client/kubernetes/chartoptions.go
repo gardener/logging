@@ -1,4 +1,4 @@
-// Copyright (c) 2020 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// Copyright 2020 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,7 +14,9 @@
 
 package kubernetes
 
-import "k8s.io/apimachinery/pkg/runtime/schema"
+import (
+	"k8s.io/apimachinery/pkg/runtime/schema"
+)
 
 // ApplyOption is some configuration that modifies options for a apply request.
 type ApplyOption interface {
@@ -52,11 +54,11 @@ func (v withValue) MutateDeleteOptions(opts *DeleteOptions) {
 
 // MergeFuncs can be used modify the default merge functions for ApplyOptions:
 //
-// Apply(ctx, "chart", "my-ns", "my-release", MergeFuncs{
-// 		corev1.SchemeGroupVersion.WithKind("Service").GroupKind(): func(newObj, oldObj *unstructured.Unstructured) {
-// 			newObj.SetAnnotations(map[string]string{"foo":"bar"})
-// 		}
-// })
+//	Apply(ctx, "chart", "my-ns", "my-release", MergeFuncs{
+//			corev1.SchemeGroupVersion.WithKind("Service").GroupKind(): func(newObj, oldObj *unstructured.Unstructured) {
+//				newObj.SetAnnotations(map[string]string{"foo":"bar"})
+//			}
+//	})
 type MergeFuncs map[schema.GroupKind]MergeFunc
 
 // MutateApplyOptions applies this configuration to the given apply options.
@@ -98,4 +100,28 @@ type DeleteOptions struct {
 	// Forces the namespace for chart objects when applying the chart, this is because sometimes native chart
 	// objects do not come with a Release.Namespace option and leave the namespace field empty
 	ForceNamespace bool
+
+	// TolerateErrorFuncs are functions for which errors are tolerated.
+	TolerateErrorFuncs []TolerateErrorFunc
+}
+
+// TolerateErrorFunc is a function for which err is tolerated.
+type TolerateErrorFunc func(err error) bool
+
+// MutateDeleteOptions applies this configuration to the given delete options.
+func (t TolerateErrorFunc) MutateDeleteOptions(opts *DeleteOptions) {
+	if opts.TolerateErrorFuncs == nil {
+		opts.TolerateErrorFuncs = []TolerateErrorFunc{}
+	}
+
+	opts.TolerateErrorFuncs = append(opts.TolerateErrorFuncs, t)
+}
+
+// MutateDeleteManifestOptions applies this configuration to the given delete manifest options.
+func (t TolerateErrorFunc) MutateDeleteManifestOptions(opts *DeleteManifestOptions) {
+	if opts.TolerateErrorFuncs == nil {
+		opts.TolerateErrorFuncs = []TolerateErrorFunc{}
+	}
+
+	opts.TolerateErrorFuncs = append(opts.TolerateErrorFuncs, t)
 }

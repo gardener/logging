@@ -1,4 +1,4 @@
-// Copyright (c) 2019 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// Copyright 2019 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -55,7 +55,7 @@ type BackupEntryList struct {
 type BackupEntrySpec struct {
 	// BucketName is the name of backup bucket for this Backup Entry.
 	BucketName string `json:"bucketName" protobuf:"bytes,1,opt,name=bucketName"`
-	// Seed holds the name of the seed allocated to BackupEntry for running controller.
+	// SeedName holds the name of the seed to which this BackupEntry is scheduled
 	// +optional
 	Seed *string `json:"seed,omitempty" protobuf:"bytes,2,opt,name=seed"`
 }
@@ -72,4 +72,11 @@ type BackupEntryStatus struct {
 	// BackupEntry's generation, which is updated on mutation by the API Server.
 	// +optional
 	ObservedGeneration int64 `json:"observedGeneration,omitempty" protobuf:"varint,3,opt,name=observedGeneration"`
+	// SeedName is the name of the seed to which this BackupEntry is currently scheduled. This field is populated
+	// at the beginning of a create/reconcile operation. It is used when moving the BackupEntry between seeds.
+	// +optional
+	SeedName *string `json:"seedName,omitempty" protobuf:"bytes,4,opt,name=seedName"`
+	// MigrationStartTime is the time when a migration to a different seed was initiated.
+	// +optional
+	MigrationStartTime *metav1.Time `json:"migrationStartTime,omitempty" protobuf:"bytes,5,opt,name=migrationStartTime"`
 }

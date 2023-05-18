@@ -21,12 +21,11 @@ import (
 	"github.com/gardener/logging/pkg/batch"
 	"github.com/gardener/logging/pkg/config"
 	"github.com/gardener/logging/pkg/types"
-	"github.com/go-kit/kit/log"
 
 	"github.com/credativ/vali/pkg/valitail/client"
-	"github.com/prometheus/common/model"
-
+	"github.com/go-kit/kit/log"
 	giterrors "github.com/pkg/errors"
+	"github.com/prometheus/common/model"
 )
 
 type multiTenantClient struct {

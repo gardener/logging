@@ -1,4 +1,4 @@
-// Copyright (c) 2020 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// Copyright 2020 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,23 +14,11 @@
 
 package constants
 
-// GetShootUseAsSeedAnnotation fetches the value for AnnotationShootUseAsSeed annotation.
-// If not present, it fallbacks to AnnotationShootUseAsSeedDeprecated.
-func GetShootUseAsSeedAnnotation(annotations map[string]string) (string, bool) {
-	return getDeprecatedAnnotation(annotations, AnnotationShootUseAsSeed, AnnotationShootUseAsSeedDeprecated)
-}
-
-// GetShootIgnoreAlertsAnnotation fetches the value for AnnotationShootIgnoreAlerts annotation.
-// If not present, it fallbacks to AnnotationShootIgnoreAlertsDeprecated.
-func GetShootIgnoreAlertsAnnotation(annotations map[string]string) (string, bool) {
-	return getDeprecatedAnnotation(annotations, AnnotationShootIgnoreAlerts, AnnotationShootIgnoreAlertsDeprecated)
-}
-
-func getDeprecatedAnnotation(annotations map[string]string, annotationKey, deprecatedAnnotationKey string) (string, bool) {
-	val, ok := annotations[annotationKey]
-	if !ok {
-		val, ok = annotations[deprecatedAnnotationKey]
+// GetShootVPADeploymentNames returns the names of all VPA related deployments related to shoot clusters.
+func GetShootVPADeploymentNames() []string {
+	return []string{
+		DeploymentNameVPAAdmissionController,
+		DeploymentNameVPARecommender,
+		DeploymentNameVPAUpdater,
 	}
-
-	return val, ok
 }

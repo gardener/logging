@@ -1,4 +1,4 @@
-// Copyright (c) 2019 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// Copyright 2019 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,6 +23,20 @@ const (
 	// BackupEntrySeedName is the field selector path for finding
 	// the Seed cluster of a core.gardener.cloud/v1beta1 BackupEntry.
 	BackupEntrySeedName = "spec.seedName"
+	// BackupEntrySeedName is the field selector path for finding
+	// the BackupBucket for a core.gardener.cloud/v1beta1 BackupEntry.
+	BackupEntryBucketName = "spec.bucketName"
+
+	// ProjectNamespace is the field selector path for filtering by namespace
+	// for core.gardener.cloud/v1beta1 Project.
+	ProjectNamespace = "spec.namespace"
+
+	// RegistrationRefName is the field selector path for finding
+	// the ControllerRegistration name of a core.gardener.cloud/{v1alpha1,v1beta1} ControllerInstallation.
+	RegistrationRefName = "spec.registrationRef.name"
+	// SeedRefName is the field selector path for finding
+	// the Seed name of a core.gardener.cloud/{v1alpha1,v1beta1} ControllerInstallation.
+	SeedRefName = "spec.seedRef.name"
 
 	// ShootCloudProfileName is the field selector path for finding
 	// the CloudProfile name of a core.gardener.cloud/{v1alpha1,v1beta1} Shoot.
@@ -30,4 +44,8 @@ const (
 	// ShootSeedName is the field selector path for finding
 	// the Seed cluster of a core.gardener.cloud/{v1alpha1,v1beta1} Shoot.
 	ShootSeedName = "spec.seedName"
+	// ShootStatusSeedName is the field selector path for finding
+	// the Seed cluster of a core.gardener.cloud/{v1alpha1,v1beta1} Shoot
+	// referred in the status.
+	ShootStatusSeedName = "status.seedName"
 )

@@ -1,4 +1,4 @@
-// Copyright (c) 2018 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// Copyright 2018 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -55,10 +55,12 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&CloudProfileList{},
 		&ControllerRegistration{},
 		&ControllerRegistrationList{},
+		&ControllerDeployment{},
+		&ControllerDeploymentList{},
 		&ControllerInstallation{},
 		&ControllerInstallationList{},
-		&Plant{},
-		&PlantList{},
+		&ExposureClass{},
+		&ExposureClassList{},
 		&Project{},
 		&ProjectList{},
 		&Quota{},
@@ -69,6 +71,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&SeedList{},
 		&Shoot{},
 		&ShootList{},
+		&ShootState{},
+		&ShootStateList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil

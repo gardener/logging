@@ -1,4 +1,4 @@
-// Copyright (c) 2018 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// Copyright 2018 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package core
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // +genclient
@@ -29,6 +30,7 @@ type ControllerInstallation struct {
 	// Standard object metadata.
 	metav1.ObjectMeta
 	// Spec contains the specification of this installation.
+	// If the object's deletion timestamp is set, this field is immutable.
 	Spec ControllerInstallationSpec
 	// Status contains the status of this installation.
 	Status ControllerInstallationStatus
@@ -47,10 +49,13 @@ type ControllerInstallationList struct {
 
 // ControllerInstallationSpec is the specification of a ControllerInstallation.
 type ControllerInstallationSpec struct {
-	// RegistrationRef is used to reference a ControllerRegistration resources.
+	// RegistrationRef is used to reference a ControllerRegistration resource.
+	// The name field of the RegistrationRef is immutable.
 	RegistrationRef corev1.ObjectReference
-	// SeedRef is used to reference a Seed resources.
+	// SeedRef is used to reference a Seed resource. The name field of the SeedRef is immutable.
 	SeedRef corev1.ObjectReference
+	// DeploymentRef is used to reference a ControllerDeployment resource.
+	DeploymentRef *corev1.ObjectReference
 }
 
 // ControllerInstallationStatus is the status of a ControllerInstallation.
@@ -59,7 +64,7 @@ type ControllerInstallationStatus struct {
 	Conditions []Condition
 	// ProviderStatus contains type-specific status.
 	// +optional
-	ProviderStatus *ProviderConfig
+	ProviderStatus *runtime.RawExtension
 }
 
 const (
@@ -67,6 +72,8 @@ const (
 	ControllerInstallationHealthy ConditionType = "Healthy"
 	// ControllerInstallationInstalled is a condition type for indicating whether the controller has been installed.
 	ControllerInstallationInstalled ConditionType = "Installed"
+	// ControllerInstallationProgressing is a condition type for indicating whether the controller is progressing.
+	ControllerInstallationProgressing ConditionType = "Progressing"
 	// ControllerInstallationValid is a condition type for indicating whether the installation request is valid.
 	ControllerInstallationValid ConditionType = "Valid"
 	// ControllerInstallationRequired is a condition type for indicating that the respective extension controller is

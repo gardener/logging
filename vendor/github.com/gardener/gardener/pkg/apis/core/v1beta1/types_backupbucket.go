@@ -1,4 +1,4 @@
-// Copyright (c) 2019 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// Copyright 2019 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package v1beta1
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // +genclient
@@ -48,14 +49,15 @@ type BackupBucketList struct {
 
 // BackupBucketSpec is the specification of a Backup Bucket.
 type BackupBucketSpec struct {
-	// Provider hold the details of cloud provider of the object store.
+	// Provider holds the details of cloud provider of the object store. This field is immutable.
 	Provider BackupBucketProvider `json:"provider" protobuf:"bytes,1,opt,name=provider"`
 	// ProviderConfig is the configuration passed to BackupBucket resource.
 	// +optional
-	ProviderConfig *ProviderConfig `json:"providerConfig,omitempty" protobuf:"bytes,2,opt,name=providerConfig"`
+	ProviderConfig *runtime.RawExtension `json:"providerConfig,omitempty" protobuf:"bytes,2,opt,name=providerConfig"`
 	// SecretRef is a reference to a secret that contains the credentials to access object store.
 	SecretRef corev1.SecretReference `json:"secretRef" protobuf:"bytes,3,opt,name=secretRef"`
 	// SeedName holds the name of the seed allocated to BackupBucket for running controller.
+	// This field is immutable.
 	// +optional
 	SeedName *string `json:"seedName,omitempty" protobuf:"bytes,4,opt,name=seedName"`
 }
@@ -64,7 +66,7 @@ type BackupBucketSpec struct {
 type BackupBucketStatus struct {
 	// ProviderStatus is the configuration passed to BackupBucket resource.
 	// +optional
-	ProviderStatus *ProviderConfig `json:"providerStatus,omitempty" protobuf:"bytes,1,opt,name=providerStatus"`
+	ProviderStatus *runtime.RawExtension `json:"providerStatus,omitempty" protobuf:"bytes,1,opt,name=providerStatus"`
 	// LastOperation holds information about the last operation on the BackupBucket.
 	// +optional
 	LastOperation *LastOperation `json:"lastOperation,omitempty" protobuf:"bytes,2,opt,name=lastOperation"`

@@ -1,4 +1,4 @@
-// Copyright (c) 2018 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// Copyright 2018 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,11 +16,14 @@ package secrets
 
 // ConfigInterface define functions needed for generating a specific secret.
 type ConfigInterface interface {
+	// GetName returns the name of the configuration.
 	GetName() string
-	Generate() (Interface, error)
+	// Generate generates a secret interface
+	Generate() (DataInterface, error)
 }
 
-// Interface defines functions needed for defining the data map of a Kubernetes secret.
-type Interface interface {
+// DataInterface defines functions needed for defining the data map of a Kubernetes secret.
+type DataInterface interface {
+	// SecretData computes the data map which can be used in a Kubernetes secret.
 	SecretData() map[string][]byte
 }

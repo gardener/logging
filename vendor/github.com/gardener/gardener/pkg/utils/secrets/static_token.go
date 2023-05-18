@@ -1,4 +1,4 @@
-// Copyright (c) 2018 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// Copyright 2018 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,17 +17,11 @@ package secrets
 import (
 	"fmt"
 	"strings"
-
-	"github.com/gardener/gardener/pkg/utils"
 )
 
 const (
 	// DataKeyStaticTokenCSV is the key in a secret data holding the CSV format of a secret.
 	DataKeyStaticTokenCSV = "static_tokens.csv"
-	// DataKeyUserID is the key in a secret data holding the userID.
-	DataKeyUserID = "userID"
-	// DataKeyGroups is the key in a secret data holding the groups.
-	DataKeyGroups = "groups"
 	// DataKeyToken is the key in a secret data holding the token.
 	DataKeyToken = "token"
 )
@@ -36,7 +30,7 @@ const (
 type StaticTokenSecretConfig struct {
 	Name string
 
-	Tokens []TokenConfig
+	Tokens map[string]TokenConfig
 }
 
 // TokenConfig contains configuration for a token.
@@ -67,16 +61,11 @@ func (s *StaticTokenSecretConfig) GetName() string {
 }
 
 // Generate implements ConfigInterface.
-func (s *StaticTokenSecretConfig) Generate() (Interface, error) {
-	return s.GenerateStaticToken()
-}
-
-// GenerateStaticToken computes a random token of length 64.
-func (s *StaticTokenSecretConfig) GenerateStaticToken() (*StaticToken, error) {
+func (s *StaticTokenSecretConfig) Generate() (DataInterface, error) {
 	tokens := make([]Token, 0, len(s.Tokens))
 
 	for _, tokenConfig := range s.Tokens {
-		token, err := utils.GenerateRandomString(128)
+		token, err := GenerateRandomString(128)
 		if err != nil {
 			return nil, err
 		}

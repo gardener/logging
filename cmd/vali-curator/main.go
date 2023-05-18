@@ -16,6 +16,7 @@ package main
 
 import (
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"runtime"
@@ -23,10 +24,7 @@ import (
 	"github.com/gardener/logging/cmd/vali-curator/app"
 	"github.com/gardener/logging/pkg/vali/curator"
 	"github.com/go-kit/kit/log/level"
-
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-
-	_ "net/http/pprof"
 )
 
 func main() {

@@ -1,4 +1,4 @@
-// Copyright (c) 2019 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// Copyright 2019 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,6 +25,9 @@ const ClusterResource = "Cluster"
 // +genclient
 // +genclient:nonNamespaced
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:resource:scope=Cluster,path=clusters,singular=cluster
+// +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name=Age,JSONPath=".metadata.creationTimestamp",type=date,description="creation timestamp"
 
 // Cluster is a specification for a Cluster resource.
 type Cluster struct {
@@ -49,10 +52,16 @@ type ClusterList struct {
 type ClusterSpec struct {
 	// CloudProfile is a raw extension field that contains the cloudprofile resource referenced
 	// by the shoot that has to be reconciled.
+	// +kubebuilder:validation:XPreserveUnknownFields
+	// +kubebuilder:pruning:PreserveUnknownFields
 	CloudProfile runtime.RawExtension `json:"cloudProfile"`
 	// Seed is a raw extension field that contains the seed resource referenced by the shoot that
 	// has to be reconciled.
+	// +kubebuilder:validation:XPreserveUnknownFields
+	// +kubebuilder:pruning:PreserveUnknownFields
 	Seed runtime.RawExtension `json:"seed"`
 	// Shoot is a raw extension field that contains the shoot resource that has to be reconciled.
+	// +kubebuilder:validation:XPreserveUnknownFields
+	// +kubebuilder:pruning:PreserveUnknownFields
 	Shoot runtime.RawExtension `json:"shoot"`
 }

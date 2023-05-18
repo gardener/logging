@@ -24,19 +24,17 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gardener/logging/pkg/config"
-	"github.com/gardener/logging/pkg/metrics"
-	"github.com/gardener/logging/pkg/types"
-
+	"github.com/cortexproject/cortex/pkg/util/flagext"
 	extensioncontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	gardenercorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
-
-	"github.com/cortexproject/cortex/pkg/util/flagext"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/cache"
+
+	"github.com/gardener/logging/pkg/config"
+	"github.com/gardener/logging/pkg/metrics"
+	"github.com/gardener/logging/pkg/types"
 )
 
 const (
@@ -60,7 +58,6 @@ type controller struct {
 	once          sync.Once
 	done          chan bool
 	wg            sync.WaitGroup
-	decoder       runtime.Decoder
 	logger        log.Logger
 }
 
@@ -69,17 +66,10 @@ type getter func(client http.Client, url string) (*http.Response, error)
 
 // NewController return Controller interface
 func NewController(informer cache.SharedIndexInformer, conf *config.Config, defaultClient types.ValiClient, logger log.Logger) (Controller, error) {
-	decoder, err := extensioncontroller.NewGardenDecoder()
-	if err != nil {
-		metrics.Errors.WithLabelValues(metrics.ErrorCreateDecoder).Inc()
-		return nil, fmt.Errorf("can't make garden runtime decoder: %v", err)
-	}
-
 	controller := &controller{
 		clients:       make(map[string]ControllerClient, expectedActiveClusters),
 		conf:          conf,
 		defaultClient: defaultClient,
-		decoder:       decoder,
 		logger:        logger,
 	}
 
@@ -127,7 +117,7 @@ func (ctl *controller) addFunc(obj interface{}) {
 		return
 	}
 
-	shoot, err := extensioncontroller.ShootFromCluster(ctl.decoder, cluster)
+	shoot, err := extensioncontroller.ShootFromCluster(cluster)
 	if err != nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorCanNotExtractShoot).Inc()
 		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("can't extract shoot from cluster %v", cluster.Name))
@@ -154,7 +144,11 @@ func (ctl *controller) updateFunc(oldObj interface{}, newObj interface{}) {
 		return
 	}
 
-	shoot, err := extensioncontroller.ShootFromCluster(ctl.decoder, newCluster)
+	if bytes.Equal(oldCluster.Spec.Shoot.Raw, newCluster.Spec.Shoot.Raw) {
+		return
+	}
+
+	shoot, err := extensioncontroller.ShootFromCluster(newCluster)
 	if err != nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorCanNotExtractShoot).Inc()
 		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("can't extract shoot from cluster %v", newCluster.Name))

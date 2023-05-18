@@ -23,9 +23,8 @@ import (
 	"github.com/gardener/logging/pkg/metrics"
 	"github.com/gardener/logging/pkg/valiplugin"
 
-	gardenerclientsetversioned "github.com/gardener/gardener/pkg/client/extensions/clientset/versioned"
-	versioned "github.com/gardener/gardener/pkg/client/extensions/clientset/versioned"
-	gardeninternalcoreinformers "github.com/gardener/gardener/pkg/client/extensions/informers/externalversions"
+	gardenerclientsetversioned "github.com/gardener/logging/pkg/cluster/clientset/versioned"
+	gardeninternalcoreinformers "github.com/gardener/logging/pkg/cluster/informers/externalversions"
 
 	"github.com/fluent/fluent-bit-go/output"
 	"github.com/go-kit/kit/log"
@@ -258,7 +257,7 @@ func newLogger(logLevel logging.Level) log.Logger {
 	return logger
 }
 
-func getInclusterKubernetsClient() (versioned.Interface, error) {
+func getInclusterKubernetsClient() (gardenerclientsetversioned.Interface, error) {
 	config, err := rest.InClusterConfig()
 	if err != nil {
 		return nil, err

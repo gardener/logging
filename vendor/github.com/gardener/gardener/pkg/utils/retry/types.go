@@ -1,4 +1,4 @@
-// Copyright (c) 2019 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// Copyright 2019 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -45,7 +45,7 @@ type Ops interface {
 	// Until keeps retrying the given Func until it either errors severely or the context expires.
 	// Between each try, it waits for the given interval.
 	Until(ctx context.Context, interval time.Duration, f Func) error
-	// Until keeps retrying the given Func until it either errors severely or the context expires.
+	// UntilTimeout keeps retrying the given Func until it either errors severely or the context expires.
 	// Between each try, it waits for the given interval.
 	// It also passes down a modified context to the execution that times out after the given timeout.
 	UntilTimeout(ctx context.Context, interval, timeout time.Duration, f Func) error

@@ -19,8 +19,6 @@ import (
 	"net/url"
 	"time"
 
-	. "github.com/gardener/logging/pkg/config"
-
 	"github.com/cortexproject/cortex/pkg/util"
 	"github.com/cortexproject/cortex/pkg/util/flagext"
 	valiflag "github.com/credativ/vali/pkg/util/flagext"
@@ -31,6 +29,8 @@ import (
 	"github.com/prometheus/common/model"
 	"github.com/weaveworks/common/logging"
 	"k8s.io/utils/pointer"
+
+	. "github.com/gardener/logging/pkg/config"
 )
 
 type fakeConfig map[string]string

@@ -16,10 +16,8 @@ package buffer
 
 import (
 	"os"
+	"sync"
 	"time"
-
-	"github.com/gardener/logging/pkg/config"
-	"github.com/gardener/logging/pkg/types"
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
@@ -27,6 +25,9 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/prometheus/common/model"
 	"github.com/weaveworks/common/logging"
+
+	"github.com/gardener/logging/pkg/config"
+	"github.com/gardener/logging/pkg/types"
 )
 
 var _ = Describe("Buffer", func() {
@@ -114,6 +115,8 @@ var _ = Describe("Buffer", func() {
 			fakeVali, ok := dQueCleint.vali.(*fakeValiclient)
 			Expect(ok).To(BeTrue())
 			time.Sleep(2 * time.Second)
+			fakeVali.mu.Lock()
+			defer fakeVali.mu.Unlock()
 			log := fakeVali.sentLogs[0]
 			Expect(log.labelSet).To(Equal(ls))
 			Expect(log.timestamp).To(Equal(ts))
@@ -126,6 +129,8 @@ var _ = Describe("Buffer", func() {
 			fakeVali, ok := dQueCleint.vali.(*fakeValiclient)
 			Expect(ok).To(BeTrue())
 			time.Sleep(2 * time.Second)
+			fakeVali.mu.Lock()
+			defer fakeVali.mu.Unlock()
 			Expect(fakeVali.stopped).To(BeTrue())
 			_, err := os.Stat("/tmp/gardener")
 			Expect(os.IsNotExist(err)).To(BeFalse())
@@ -137,6 +142,8 @@ var _ = Describe("Buffer", func() {
 			fakeVali, ok := dQueCleint.vali.(*fakeValiclient)
 			Expect(ok).To(BeTrue())
 			time.Sleep(2 * time.Second)
+			fakeVali.mu.Lock()
+			defer fakeVali.mu.Unlock()
 			Expect(fakeVali.stopped).To(BeTrue())
 			_, err := os.Stat("/tmp/gardener")
 			Expect(os.IsNotExist(err)).To(BeTrue())
@@ -148,6 +155,7 @@ var _ = Describe("Buffer", func() {
 type fakeValiclient struct {
 	stopped  bool
 	sentLogs []logEntry
+	mu       sync.Mutex
 }
 
 func newFakeValiClient(c config.Config, logger log.Logger) (types.ValiClient, error) {
@@ -155,6 +163,8 @@ func newFakeValiClient(c config.Config, logger log.Logger) (types.ValiClient, er
 }
 
 func (c *fakeValiclient) Handle(labels model.LabelSet, time time.Time, entry string) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	c.sentLogs = append(c.sentLogs, logEntry{time, labels, entry})
 	return nil
 }

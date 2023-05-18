@@ -1,4 +1,4 @@
-// Copyright (c) 2018 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// Copyright 2018 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package core
 import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // +genclient
@@ -55,21 +56,34 @@ type CloudProfileSpec struct {
 	// MachineTypes contains constraints regarding allowed values for machine types in the 'workers' block in the Shoot specification.
 	MachineTypes []MachineType
 	// ProviderConfig contains provider-specific configuration for the profile.
-	ProviderConfig *ProviderConfig
+	ProviderConfig *runtime.RawExtension
 	// Regions contains constraints regarding allowed values for regions and zones.
 	Regions []Region
 	// SeedSelector contains an optional list of labels on `Seed` resources that marks those seeds whose shoots may use this provider profile.
 	// An empty list means that all seeds of the same provider type are supported.
 	// This is useful for environments that are of the same type (like openstack) but may have different "instances"/landscapes.
-	SeedSelector *metav1.LabelSelector
+	// Optionally a list of possible providers can be added to enable cross-provider scheduling. By default, the provider
+	// type of the seed must match the shoot's provider.
+	SeedSelector *SeedSelector
 	// Type is the name of the provider.
 	Type string
 	// VolumeTypes contains constraints regarding allowed values for volume types in the 'workers' block in the Shoot specification.
 	VolumeTypes []VolumeType
 }
 
+// GetProviderType gets the type of the provider.
 func (c *CloudProfile) GetProviderType() string {
 	return c.Spec.Type
+}
+
+// SeedSelector contains constraints for selecting seed to be usable for shoots using a profile
+type SeedSelector struct {
+	// LabelSelector is optional and can be used to select seeds by their label settings
+	metav1.LabelSelector
+	// ProviderTypes contains a list of allowed provider types used by the Gardener scheduler to restricting seeds by
+	// their provider type and enable cross-provider scheduling.
+	// By default, Shoots are only scheduled on Seeds having the same provider type.
+	ProviderTypes []string
 }
 
 // KubernetesSettings contains constraints regarding allowed values of the 'kubernetes' block in the Shoot specification.
@@ -82,8 +96,23 @@ type KubernetesSettings struct {
 type MachineImage struct {
 	// Name is the name of the image.
 	Name string
-	// Versions contains versions and expiration dates of the machine image
-	Versions []ExpirableVersion
+	// Versions contains versions, expiration dates and container runtimes of the machine image
+	Versions []MachineImageVersion
+}
+
+// MachineImageVersion is an expirable version with list of supported container runtimes and interfaces
+type MachineImageVersion struct {
+	ExpirableVersion
+	// CRI list of supported container runtime and interfaces supported by this version
+	CRI []CRI
+	// Architectures is the list of CPU architectures of the machine image in this version.
+	Architectures []string
+	// KubeletVersionConstraint is a constraint describing the supported kubelet versions by the machine image in this version.
+	// If the field is not specified, it is assumed that the machine image in this version supports all kubelet versions.
+	// Examples:
+	// - '>= 1.26' - supports only kubelet versions greater than or equal to 1.26
+	// - '< 1.26' - supports only kubelet versions less than 1.26
+	KubeletVersionConstraint *string
 }
 
 // ExpirableVersion contains a version and an expiration date.
@@ -110,6 +139,8 @@ type MachineType struct {
 	Storage *MachineTypeStorage
 	// Usable defines if the machine type can be used for shoot clusters.
 	Usable *bool
+	// Architecture is the CPU architecture of this machine type.
+	Architecture *string
 }
 
 // MachineTypeStorage is the amount of storage associated with the root volume of this machine type.
@@ -117,9 +148,12 @@ type MachineTypeStorage struct {
 	// Class is the class of the storage type.
 	Class string
 	// StorageSize is the storage size.
-	StorageSize resource.Quantity
+	StorageSize *resource.Quantity
 	// Type is the type of the storage.
 	Type string
+	// MinSize is the minimal supported storage size.
+	// This overrides any other common minimum size configuration in the `spec.volumeTypes[*].minSize`.
+	MinSize *resource.Quantity
 }
 
 // Region contains certain properties of a region.
@@ -136,7 +170,7 @@ type Region struct {
 
 // AvailabilityZone is an availability zone.
 type AvailabilityZone struct {
-	// Name is an an availability zone name.
+	// Name is an availability zone name.
 	Name string
 	// UnavailableMachineTypes is a list of machine type names that are not availability in this zone.
 	UnavailableMachineTypes []string
@@ -152,6 +186,8 @@ type VolumeType struct {
 	Name string
 	// Usable defines if the volume type can be used for shoot clusters.
 	Usable *bool
+	// MinSize is the minimal supported storage size.
+	MinSize *resource.Quantity
 }
 
 const (
@@ -161,7 +197,7 @@ const (
 	VolumeClassPremium string = "premium"
 )
 
-// VersionClassification is the logical state of a version according to https://github.com/gardener/gardener/blob/master/docs/operations/versioning.md
+// VersionClassification is the logical state of a version.
 type VersionClassification string
 
 const (
@@ -169,7 +205,7 @@ const (
 	// ClassificationPreview versions will not be considered for automatic Kubernetes and Machine Image patch version updates.
 	ClassificationPreview VersionClassification = "preview"
 	// ClassificationSupported indicates that a patch version is the recommended version for a shoot.
-	// Using VersionMaintenance (see: https://github.com/gardener/gardener/docs/operation/versioning.md) there is one supported version per maintained minor version.
+	// Only one "supported" version is allowed per minor version.
 	// Supported versions are eligible for the automated Kubernetes and Machine image patch version update for shoot clusters in Gardener.
 	ClassificationSupported VersionClassification = "supported"
 	// ClassificationDeprecated indicates that a patch version should not be used anymore, should be updated to a new version

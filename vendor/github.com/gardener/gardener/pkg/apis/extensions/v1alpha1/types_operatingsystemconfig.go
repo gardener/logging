@@ -1,4 +1,4 @@
-// Copyright (c) 2019 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// Copyright 2019 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,14 +26,22 @@ const OperatingSystemConfigResource = "OperatingSystemConfig"
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:resource:scope=Namespaced,path=operatingsystemconfigs,shortName=osc,singular=operatingsystemconfig
+// +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name=Type,JSONPath=".spec.type",type=string,description="The type of the operating system configuration."
+// +kubebuilder:printcolumn:name=Purpose,JSONPath=".spec.purpose",type=string,description="The purpose of the operating system configuration."
+// +kubebuilder:printcolumn:name=Status,JSONPath=".status.lastOperation.state",type=string,description="Status of operating system configuration."
+// +kubebuilder:printcolumn:name=Age,JSONPath=".metadata.creationTimestamp",type=date,description="creation timestamp"
 
 // OperatingSystemConfig is a specification for a OperatingSystemConfig resource
 type OperatingSystemConfig struct {
 	metav1.TypeMeta `json:",inline"`
 	// +optional
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-
-	Spec   OperatingSystemConfigSpec   `json:"spec"`
+	// Specification of the OperatingSystemConfig.
+	// If the object's deletion timestamp is set, this field is immutable.
+	Spec OperatingSystemConfigSpec `json:"spec"`
+	// +optional
 	Status OperatingSystemConfigStatus `json:"status"`
 }
 
@@ -75,6 +83,7 @@ type OperatingSystemConfigSpec struct {
 	// Purpose describes how the result of this OperatingSystemConfig is used by Gardener. Either it
 	// gets sent to the `Worker` extension controller to bootstrap a VM, or it is downloaded by the
 	// cloud-config-downloader script already running on a bootstrapped VM.
+	// This field is immutable.
 	Purpose OperatingSystemConfigPurpose `json:"purpose"`
 	// ReloadConfigFilePath is the path to the generated operating system configuration. If set, controllers
 	// are asked to use it when determining the .status.command of this resource. For example, if for CoreOS
@@ -143,6 +152,10 @@ type FileContent struct {
 	// Inline is a struct that contains information about the inlined data.
 	// +optional
 	Inline *FileContentInline `json:"inline,omitempty"`
+	// TransmitUnencoded set to true will ensure that the os-extension does not encode the file content when sent to the node.
+	// This for example can be used to manipulate the clear-text content before it reaches the node.
+	// +optional
+	TransmitUnencoded *bool `json:"transmitUnencoded,omitempty"`
 }
 
 // FileContentSecretRef contains keys for referencing a file content's data from a secret in the same namespace.
@@ -180,14 +193,14 @@ type OperatingSystemConfigStatus struct {
 	Units []string `json:"units,omitempty"`
 }
 
-// CloudConfig is a structure for containing the generated output for the given operating system
+// CloudConfig contains the generated output for the given operating system
 // config spec. It contains a reference to a secret as the result may contain confidential data.
 type CloudConfig struct {
 	// SecretRef is a reference to a secret that contains the actual result of the generated cloud config.
 	SecretRef corev1.SecretReference `json:"secretRef"`
 }
 
-// OperatingSystemConfigPurpose  is a string alias.
+// OperatingSystemConfigPurpose is a string alias.
 type OperatingSystemConfigPurpose string
 
 const (
@@ -205,9 +218,9 @@ const (
 	OperatingSystemConfigSecretDataKey = "cloud_config"
 )
 
-// CRI config is a structure contains configurations of the CRI library
+// CRIConfig contains configurations of the CRI library.
 type CRIConfig struct {
-	// Name is a mandatory string containing the name of the CRI library.
+	// Name is a mandatory string containing the name of the CRI library. Supported values are `docker` and `containerd`.
 	Name CRIName `json:"name"`
 }
 
@@ -216,8 +229,22 @@ type CRIName string
 
 const (
 	// CRINameContainerD is a constant for ContainerD CRI name
-	CRINameContainerD = "containerd"
+	CRINameContainerD CRIName = "containerd"
+	// CRINameDocker is a constant for Docker CRI name
+	CRINameDocker CRIName = "docker"
 )
 
 // ContainerDRuntimeContainersBinFolder is the folder where Container Runtime binaries should be saved for ContainerD usage
 const ContainerDRuntimeContainersBinFolder = "/var/bin/containerruntimes"
+
+// FileCodecID is the id of a FileCodec for cloud-init scripts.
+type FileCodecID string
+
+const (
+	// B64FileCodecID is the base64 file codec id.
+	B64FileCodecID FileCodecID = "b64"
+	// GZIPFileCodecID is the gzip file codec id.
+	GZIPFileCodecID FileCodecID = "gzip"
+	// GZIPB64FileCodecID is the gzip combined with base64 codec id.
+	GZIPB64FileCodecID FileCodecID = "gzip+b64"
+)

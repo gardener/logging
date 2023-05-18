@@ -24,19 +24,15 @@ import (
 
 	"github.com/cortexproject/cortex/pkg/util/flagext"
 	valiclient "github.com/credativ/vali/pkg/valitail/client"
+	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
+	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	"github.com/prometheus/common/model"
-	"github.com/weaveworks/common/logging"
-
-	extensioncontroller "github.com/gardener/gardener/extensions/pkg/controller"
-	"github.com/gardener/gardener/pkg/apis/core"
-	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-
+	"github.com/prometheus/common/model"
+	"github.com/weaveworks/common/logging"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/pointer"
@@ -123,38 +119,38 @@ var _ = Describe("Controller", func() {
 		logger = level.NewFilter(logger, logLevel.Gokit)
 		shootName := "shoot--dev--logging"
 
-		testingPurpuse := core.ShootPurpose("testing")
-		developmentPurpuse := core.ShootPurpose("development")
-		notHibernation := core.Hibernation{Enabled: pointer.BoolPtr(false)}
-		hibernation := core.Hibernation{Enabled: pointer.BoolPtr(true)}
+		testingPurpuse := gardencorev1beta1.ShootPurpose("testing")
+		developmentPurpuse := gardencorev1beta1.ShootPurpose("development")
+		notHibernation := gardencorev1beta1.Hibernation{Enabled: pointer.BoolPtr(false)}
+		hibernation := gardencorev1beta1.Hibernation{Enabled: pointer.BoolPtr(true)}
 		shootObjectMeta := v1.ObjectMeta{
 			Name: shootName,
 		}
-		testingShoot := &core.Shoot{
+		testingShoot := &gardencorev1beta1.Shoot{
 			ObjectMeta: shootObjectMeta,
-			Spec: core.ShootSpec{
+			Spec: gardencorev1beta1.ShootSpec{
 				Purpose:     &testingPurpuse,
 				Hibernation: &notHibernation,
 			},
-			Status: core.ShootStatus{
-				LastOperation: &core.LastOperation{
+			Status: gardencorev1beta1.ShootStatus{
+				LastOperation: &gardencorev1beta1.LastOperation{
 					Type:     "Reconcile",
 					Progress: 100,
 				},
 			},
 		}
-		testingShootRaw, _ := json.Marshal(testingShoot)
-		developmentShoot := &core.Shoot{
+		testingShootRaw, _ := json.MarshalIndent(testingShoot, "", "  ")
+		developmentShoot := &gardencorev1beta1.Shoot{
 			ObjectMeta: shootObjectMeta,
-			Spec: core.ShootSpec{
+			Spec: gardencorev1beta1.ShootSpec{
 				Purpose:     &developmentPurpuse,
 				Hibernation: &notHibernation,
 			},
 		}
 		developmentShootRaw, _ := json.Marshal(developmentShoot)
-		hibernatedShoot := &core.Shoot{
+		hibernatedShoot := &gardencorev1beta1.Shoot{
 			ObjectMeta: shootObjectMeta,
-			Spec: core.ShootSpec{
+			Spec: gardencorev1beta1.ShootSpec{
 				Purpose:     &developmentPurpuse,
 				Hibernation: &hibernation,
 			},
@@ -180,8 +176,6 @@ var _ = Describe("Controller", func() {
 		}
 
 		BeforeEach(func() {
-			decoder, err := extensioncontroller.NewGardenDecoder()
-			Expect(err).ToNot(HaveOccurred())
 			conf = &config.Config{
 				ClientConfig: config.ClientConfig{
 					CredativValiConfig: valiclient.Config{
@@ -199,7 +193,6 @@ var _ = Describe("Controller", func() {
 			ctl = &controller{
 				clients: make(map[string]ControllerClient),
 				conf:    conf,
-				decoder: decoder,
 				logger:  logger,
 			}
 		})
