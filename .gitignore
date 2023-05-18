@@ -1,6 +1,7 @@
 /build
 /test
 /tools
+/gardener
 bin
 *.test
 *.coverprofile
