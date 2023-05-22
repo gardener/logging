@@ -23,6 +23,8 @@ import (
 	"github.com/prometheus/common/model"
 )
 
+var _ ValiClient = &FakeValiClient{}
+
 // FakeValiClient mocks ValiClient
 type FakeValiClient struct {
 	// IsStopped show whether the client is stopped or not
@@ -32,6 +34,11 @@ type FakeValiClient struct {
 	// Entries is slice of all received entries
 	Entries []Entry
 	Mu      sync.Mutex
+}
+
+// GetEndPoint returns the target logging backend endpoint
+func (c *FakeValiClient) GetEndPoint() string {
+	return "http://localhost"
 }
 
 // Handle processes and stores the received entries.

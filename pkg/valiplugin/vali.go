@@ -13,11 +13,10 @@ import (
 	"regexp"
 	"time"
 
-	client "github.com/gardener/logging/pkg/client"
+	"github.com/gardener/logging/pkg/client"
 	"github.com/gardener/logging/pkg/config"
 	controller "github.com/gardener/logging/pkg/controller"
 	"github.com/gardener/logging/pkg/metrics"
-	"github.com/gardener/logging/pkg/types"
 
 	grafanavaliclient "github.com/credativ/vali/pkg/valitail/client"
 	"github.com/go-kit/kit/log"
@@ -34,7 +33,7 @@ type Vali interface {
 
 type vali struct {
 	cfg                             *config.Config
-	defaultClient                   types.ValiClient
+	defaultClient                   client.ValiClient
 	dynamicHostRegexp               *regexp.Regexp
 	dynamicTenantRegexp             *regexp.Regexp
 	dynamicTenant                   string
@@ -197,7 +196,7 @@ func (l *vali) Close() {
 	}
 }
 
-func (l *vali) getClient(dynamicHosName string) types.ValiClient {
+func (l *vali) getClient(dynamicHosName string) client.ValiClient {
 	if l.isDynamicHost(dynamicHosName) && l.controller != nil {
 		if c, isStopped := l.controller.GetClient(dynamicHosName); !isStopped {
 			return c
@@ -229,7 +228,7 @@ func (l *vali) setDynamicTenant(record map[string]interface{}, lbs model.LabelSe
 	return lbs
 }
 
-func (l *vali) send(client types.ValiClient, lbs model.LabelSet, ts time.Time, line string) error {
+func (l *vali) send(client client.ValiClient, lbs model.LabelSet, ts time.Time, line string) error {
 	return client.Handle(lbs, ts, line)
 }
 

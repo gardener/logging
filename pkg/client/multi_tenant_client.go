@@ -20,7 +20,6 @@ import (
 
 	"github.com/gardener/logging/pkg/batch"
 	"github.com/gardener/logging/pkg/config"
-	"github.com/gardener/logging/pkg/types"
 
 	"github.com/credativ/vali/pkg/valitail/client"
 	"github.com/go-kit/kit/log"
@@ -29,7 +28,7 @@ import (
 )
 
 type multiTenantClient struct {
-	valiclient types.ValiClient
+	valiclient ValiClient
 }
 
 const (
@@ -39,9 +38,11 @@ const (
 	MultiTenantClientsSeparator = ";"
 )
 
+var _ ValiClient = &multiTenantClient{}
+
 // NewMultiTenantClientDecorator returns Vali client which supports more than one tenant id specified
 // under `_gardener_multitenamt_id__` label. The tenants are separated by semicolon.
-func NewMultiTenantClientDecorator(cfg config.Config, newClient NewValiClientFunc, logger log.Logger) (types.ValiClient, error) {
+func NewMultiTenantClientDecorator(cfg config.Config, newClient NewValiClientFunc, logger log.Logger) (ValiClient, error) {
 	client, err := newValiClient(cfg, newClient, logger)
 	if err != nil {
 		return nil, err
@@ -112,6 +113,10 @@ func (c *multiTenantClient) StopWait() {
 	c.valiclient.StopWait()
 }
 
+func (c *multiTenantClient) GetEndPoint() string {
+	return c.valiclient.GetEndPoint()
+}
+
 func (c *multiTenantClient) handleStream(stream batch.Stream) error {
 	tenantsIDs, ok := stream.Labels[MultiTenantClientLabel]
 	if !ok {
@@ -148,12 +153,18 @@ func (c *multiTenantClient) handleEntries(ls model.LabelSet, entries []batch.Ent
 	return combineErr
 }
 
+var _ ValiClient = &removeMultiTenantIdClient{}
+
 type removeMultiTenantIdClient struct {
-	valiclient types.ValiClient
+	valiclient ValiClient
+}
+
+func (c *removeMultiTenantIdClient) GetEndPoint() string {
+	return c.valiclient.GetEndPoint()
 }
 
 // NewRemoveMultiTenantIdClientDecorator wraps vali client which removes the __gardener_multitenant_id__ label from the label set
-func NewRemoveMultiTenantIdClientDecorator(cfg config.Config, newClient NewValiClientFunc, logger log.Logger) (types.ValiClient, error) {
+func NewRemoveMultiTenantIdClientDecorator(cfg config.Config, newClient NewValiClientFunc, logger log.Logger) (ValiClient, error) {
 	client, err := newValiClient(cfg, newClient, logger)
 	if err != nil {
 		return nil, err

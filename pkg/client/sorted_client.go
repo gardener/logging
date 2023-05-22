@@ -20,7 +20,6 @@ import (
 
 	"github.com/gardener/logging/pkg/batch"
 	"github.com/gardener/logging/pkg/config"
-	"github.com/gardener/logging/pkg/types"
 
 	"github.com/credativ/vali/pkg/logproto"
 	"github.com/go-kit/kit/log"
@@ -44,8 +43,14 @@ type sortedClient struct {
 	wg               sync.WaitGroup
 }
 
+var _ ValiClient = &sortedClient{}
+
+func (c *sortedClient) GetEndPoint() string {
+	return c.valiclient.GetEndPoint()
+}
+
 // NewSortedClientDecorator returns client which sorts the logs based their timestamp.
-func NewSortedClientDecorator(cfg config.Config, newClient NewValiClientFunc, logger log.Logger) (types.ValiClient, error) {
+func NewSortedClientDecorator(cfg config.Config, newClient NewValiClientFunc, logger log.Logger) (ValiClient, error) {
 	var err error
 	batchWait := cfg.ClientConfig.CredativValiConfig.BatchWait
 	cfg.ClientConfig.CredativValiConfig.BatchWait = batchWait + (5 * time.Second)

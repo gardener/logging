@@ -27,12 +27,13 @@ import (
 	client "github.com/gardener/logging/pkg/client"
 	"github.com/gardener/logging/pkg/config"
 	"github.com/gardener/logging/pkg/metrics"
-	"github.com/gardener/logging/pkg/types"
 )
+
+var _ client.ValiClient = &controllerClient{}
 
 // GetClient search a client with <name> and returned if found.
 // In case the controller is closed it returns true as second return value.
-func (ctl *controller) GetClient(name string) (types.ValiClient, bool) {
+func (ctl *controller) GetClient(name string) (client.ValiClient, bool) {
 	ctl.lock.RLocker().Lock()
 	defer ctl.lock.RLocker().Unlock()
 
@@ -121,6 +122,43 @@ func (ctl *controller) updateControllerClientState(client ControllerClient, shoo
 	client.SetState(getShootState(shoot))
 }
 
+func (ctl *controller) recreateControllerClient(clusterName string, shoot *gardenercorev1beta1.Shoot) {
+	clientConf := ctl.getClientConfig(clusterName)
+	if clientConf == nil {
+		return
+	}
+
+	ctl.lock.Lock()
+	existing, ok := ctl.clients[clusterName]
+	ctl.lock.Unlock()
+
+	if ok && existing != nil && existing.GetEndPoint() == clientConf.ClientConfig.CredativValiConfig.URL.String() {
+		return
+	}
+
+	if ok && existing != nil {
+		existing.StopWait()
+	}
+
+	newClient, err := ctl.newControllerClient(clientConf)
+	if err != nil {
+		metrics.Errors.WithLabelValues(metrics.ErrorFailedToMakeValiClient).Inc()
+		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("failed to make new vali client for cluster %v", clusterName), "error", err.Error())
+		return
+	}
+
+	ctl.updateControllerClientState(newClient, shoot)
+
+	_ = level.Info(ctl.logger).Log("msg", fmt.Sprintf("Add client for cluster %v in %v state", clusterName, newClient.GetState()))
+	ctl.lock.Lock()
+	defer ctl.lock.Unlock()
+
+	if ctl.isStopped() {
+		return
+	}
+	ctl.clients[clusterName] = newClient
+}
+
 // ClusterState is a type alias for string.
 type clusterState string
 
@@ -138,8 +176,8 @@ const (
 
 // Because loosing some logs when switching on and off client is not important we are omiting the synchronization.
 type controllerClient struct {
-	mainClient        types.ValiClient
-	defaultClient     types.ValiClient
+	mainClient        client.ValiClient
+	defaultClient     client.ValiClient
 	muteMainClient    bool
 	muteDefaultClient bool
 	state             clusterState
@@ -149,9 +187,13 @@ type controllerClient struct {
 	name              string
 }
 
+func (c *controllerClient) GetEndPoint() string {
+	return c.mainClient.GetEndPoint()
+}
+
 // ControllerClient is a Vali client for the valiplugin controller
 type ControllerClient interface {
-	types.ValiClient
+	client.ValiClient
 	GetState() clusterState
 	SetState(state clusterState)
 }
