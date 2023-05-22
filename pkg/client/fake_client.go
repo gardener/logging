@@ -36,6 +36,7 @@ type FakeValiClient struct {
 	Mu      sync.Mutex
 }
 
+// GetEndPoint returns the target logging backend endpoint
 func (c *FakeValiClient) GetEndPoint() string {
 	return "http://localhost"
 }
