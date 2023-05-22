@@ -132,9 +132,17 @@ func (ctl *controller) recreateControllerClient(clusterName string, shoot *garde
 	existing, ok := ctl.clients[clusterName]
 	ctl.lock.Unlock()
 
-	if ok && existing != nil && existing.GetEndPoint() == clientConf.ClientConfig.CredativValiConfig.URL.String() {
+	if !ok || existing == nil {
+		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("############################################# Not existing client or nill in cluster %v.", clusterName))
 		return
 	}
+
+	if existing.GetEndPoint() == clientConf.ClientConfig.CredativValiConfig.URL.String() {
+		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("############################################# TRY to change the endpoint %v in cliuster %v, but they are the same.", existing.GetEndPoint(), clusterName))
+		return
+	}
+
+	_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("################################## CHANGING CLIENT ENDPOINT from %s to %s.", existing.GetEndPoint(), clientConf.ClientConfig.CredativValiConfig.URL.String()))
 
 	if ok && existing != nil {
 		existing.StopWait()

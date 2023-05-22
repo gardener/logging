@@ -18,12 +18,13 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"github.com/gardener/logging/pkg/client"
 	"io/ioutil"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/gardener/logging/pkg/client"
 
 	"github.com/cortexproject/cortex/pkg/util/flagext"
 	extensioncontroller "github.com/gardener/gardener/extensions/pkg/controller"
@@ -146,6 +147,7 @@ func (ctl *controller) updateFunc(oldObj interface{}, newObj interface{}) {
 	}
 
 	if bytes.Equal(oldCluster.Spec.Shoot.Raw, newCluster.Spec.Shoot.Raw) {
+		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("############################### Shoot same in cluster %v", newCluster.Name))
 		return
 	}
 
@@ -157,12 +159,13 @@ func (ctl *controller) updateFunc(oldObj interface{}, newObj interface{}) {
 		return
 	}
 
-	if shoot.Status.LastOperation != nil &&
-		shoot.Status.LastOperation.Progress == 100 &&
-		(shoot.Status.LastOperation.Type == "Reconcile" || shoot.Status.LastOperation.Type == "Create") {
-		_ = level.Debug(ctl.logger).Log("msg", fmt.Sprintf("return from the informer update callback %v", newCluster.Name))
-		return
-	}
+	// if shoot.Status.LastOperation != nil &&
+	// 	shoot.Status.LastOperation.Progress == 100 &&
+	// 	(shoot.Status.LastOperation.Type == "Reconcile" || shoot.Status.LastOperation.Type == "Create") {
+	// 	_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("############################### Shoot not same in cluster %v, but is in 100 progress", newCluster.Name))
+	// 	_ = level.Debug(ctl.logger).Log("msg", fmt.Sprintf("return from the informer update callback %v", newCluster.Name))
+	// 	return
+	// }
 
 	_ = level.Info(ctl.logger).Log("msg", fmt.Sprintf("reconciling %v", newCluster.Name))
 
@@ -178,6 +181,7 @@ func (ctl *controller) updateFunc(oldObj interface{}, newObj interface{}) {
 		if client == nil {
 			_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("The client for cluster %v is NIL. Will try to create new one", oldCluster.Name))
 			ctl.createControllerClient(newCluster.Name, shoot)
+			return
 		}
 
 		//TODO: replace createControllerClient with updateControllerClientState function once the loki->vali transition is over.
