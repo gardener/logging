@@ -177,7 +177,7 @@ func (ctl *controller) updateFunc(oldObj interface{}, newObj interface{}) {
 		}
 
 		//TODO: replace createControllerClient with updateControllerClientState function once the loki->vali transition is over.
-		ctl.createControllerClient(newCluster.Name, shoot)
+		ctl.recreateControllerClient(newCluster.Name, shoot)
 	} else {
 		//The client does not exist and we will try to create a new one if the shoot is applicable for logging
 		if ctl.matches(shoot) {

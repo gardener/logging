@@ -121,6 +121,38 @@ func (ctl *controller) updateControllerClientState(client ControllerClient, shoo
 	client.SetState(getShootState(shoot))
 }
 
+func (ctl *controller) recreateControllerClient(clusterName string, shoot *gardenercorev1beta1.Shoot) {
+	clientConf := ctl.getClientConfig(clusterName)
+	if clientConf == nil {
+		return
+	}
+
+	ctl.lock.Lock()
+	client, ok := ctl.clients[clusterName]
+	if ok && client != nil {
+		client.StopWait()
+	}
+	ctl.lock.Unlock()
+
+	client, err := ctl.newControllerClient(clientConf)
+	if err != nil {
+		metrics.Errors.WithLabelValues(metrics.ErrorFailedToMakeValiClient).Inc()
+		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("failed to make new vali client for cluster %v", clusterName), "error", err.Error())
+		return
+	}
+
+	ctl.updateControllerClientState(client, shoot)
+
+	_ = level.Info(ctl.logger).Log("msg", fmt.Sprintf("Add client for cluster %v in %v state", clusterName, client.GetState()))
+	ctl.lock.Lock()
+	defer ctl.lock.Unlock()
+
+	if ctl.isStopped() {
+		return
+	}
+	ctl.clients[clusterName] = client
+}
+
 // ClusterState is a type alias for string.
 type clusterState string
 
