@@ -20,7 +20,6 @@ import (
 
 	"github.com/gardener/logging/pkg/client"
 	"github.com/gardener/logging/pkg/config"
-	"github.com/gardener/logging/pkg/types"
 
 	"github.com/cortexproject/cortex/pkg/util/flagext"
 	"github.com/credativ/vali/pkg/logproto"
@@ -42,7 +41,7 @@ var _ = Describe("Sorted Client", func() {
 
 	var (
 		fakeClient           *client.FakeValiClient
-		sortedClient         types.ValiClient
+		sortedClient         client.ValiClient
 		timestampNow         = time.Now()
 		timestampNowPlus1Sec = timestampNow.Add(time.Second)
 		timestampNowPlus2Sec = timestampNowPlus1Sec.Add(time.Second)
@@ -77,7 +76,7 @@ var _ = Describe("Sorted Client", func() {
 				IdLabelName:      model.LabelName("id"),
 			},
 		},
-			func(_ config.Config, _ log.Logger) (types.ValiClient, error) {
+			func(_ config.Config, _ log.Logger) (client.ValiClient, error) {
 				return fakeClient, nil
 			},
 			level.NewFilter(log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr)), infoLogLevel.Gokit))

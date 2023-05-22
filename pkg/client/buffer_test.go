@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package buffer
+package client
 
 import (
 	"os"
@@ -27,7 +27,6 @@ import (
 	"github.com/weaveworks/common/logging"
 
 	"github.com/gardener/logging/pkg/config"
-	"github.com/gardener/logging/pkg/types"
 )
 
 var _ = Describe("Buffer", func() {
@@ -76,7 +75,7 @@ var _ = Describe("Buffer", func() {
 	})
 
 	Describe("newDque", func() {
-		var valiclient types.ValiClient
+		var valiclient ValiClient
 
 		BeforeEach(func() {
 			var err error
@@ -158,7 +157,13 @@ type fakeValiclient struct {
 	mu       sync.Mutex
 }
 
-func newFakeValiClient(c config.Config, logger log.Logger) (types.ValiClient, error) {
+func (c *fakeValiclient) GetEndPoint() string {
+	return "http://localhost"
+}
+
+var _ ValiClient = &fakeValiclient{}
+
+func newFakeValiClient(c config.Config, logger log.Logger) (ValiClient, error) {
 	return &fakeValiclient{}, nil
 }
 

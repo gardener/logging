@@ -23,16 +23,21 @@ import (
 	"github.com/prometheus/common/model"
 
 	"github.com/gardener/logging/pkg/config"
-	"github.com/gardener/logging/pkg/types"
 )
 
 type packClient struct {
-	valiClient     types.ValiClient
+	valiClient     ValiClient
 	excludedLabels model.LabelSet
 }
 
+func (c *packClient) GetEndPoint() string {
+	return c.valiClient.GetEndPoint()
+}
+
+var _ ValiClient = &packClient{}
+
 // NewPackClientDecorator return vali client which pack all the labels except the explicitly excluded ones and forward them the the wrapped client.
-func NewPackClientDecorator(cfg config.Config, newClient NewValiClientFunc, logger log.Logger) (types.ValiClient, error) {
+func NewPackClientDecorator(cfg config.Config, newClient NewValiClientFunc, logger log.Logger) (ValiClient, error) {
 	client, err := newValiClient(cfg, newClient, logger)
 	if err != nil {
 		return nil, err

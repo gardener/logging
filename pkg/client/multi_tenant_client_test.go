@@ -20,7 +20,6 @@ import (
 
 	"github.com/gardener/logging/pkg/client"
 	"github.com/gardener/logging/pkg/config"
-	"github.com/gardener/logging/pkg/types"
 
 	valitailclient "github.com/credativ/vali/pkg/valitail/client"
 	"github.com/go-kit/kit/log"
@@ -35,7 +34,7 @@ import (
 var _ = Describe("Multi Tenant Client", func() {
 	var (
 		fakeClient *client.FakeValiClient
-		mtc        types.ValiClient
+		mtc        client.ValiClient
 	)
 
 	BeforeEach(func() {
@@ -45,7 +44,7 @@ var _ = Describe("Multi Tenant Client", func() {
 		_ = infoLogLevel.Set("info")
 
 		mtc, err = client.NewMultiTenantClientDecorator(config.Config{},
-			func(_ config.Config, _ log.Logger) (types.ValiClient, error) {
+			func(_ config.Config, _ log.Logger) (client.ValiClient, error) {
 				return fakeClient, nil
 			},
 			level.NewFilter(log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr)), infoLogLevel.Gokit))
@@ -153,7 +152,7 @@ var _ = Describe("Multi Tenant Client", func() {
 var _ = Describe("Remove Multi Tenant Client", func() {
 	var (
 		fakeClient *client.FakeValiClient
-		mtc        types.ValiClient
+		mtc        client.ValiClient
 	)
 
 	BeforeEach(func() {
@@ -163,7 +162,7 @@ var _ = Describe("Remove Multi Tenant Client", func() {
 		_ = infoLogLevel.Set("info")
 
 		mtc, err = client.NewRemoveMultiTenantIdClientDecorator(config.Config{},
-			func(_ config.Config, _ log.Logger) (types.ValiClient, error) {
+			func(_ config.Config, _ log.Logger) (client.ValiClient, error) {
 				return fakeClient, nil
 			},
 			level.NewFilter(log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr)), infoLogLevel.Gokit))

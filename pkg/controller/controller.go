@@ -18,6 +18,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"github.com/gardener/logging/pkg/client"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -34,7 +35,6 @@ import (
 
 	"github.com/gardener/logging/pkg/config"
 	"github.com/gardener/logging/pkg/metrics"
-	"github.com/gardener/logging/pkg/types"
 )
 
 const (
@@ -47,11 +47,11 @@ const (
 // Controller represent a k8s controller watching for resources and
 // create Vali clients base on them
 type Controller interface {
-	GetClient(name string) (types.ValiClient, bool)
+	GetClient(name string) (client.ValiClient, bool)
 	Stop()
 }
 type controller struct {
-	defaultClient types.ValiClient
+	defaultClient client.ValiClient
 	conf          *config.Config
 	lock          sync.RWMutex
 	clients       map[string]ControllerClient
@@ -65,7 +65,8 @@ type controller struct {
 type getter func(client http.Client, url string) (*http.Response, error)
 
 // NewController return Controller interface
-func NewController(informer cache.SharedIndexInformer, conf *config.Config, defaultClient types.ValiClient, logger log.Logger) (Controller, error) {
+func NewController(informer cache.SharedIndexInformer, conf *config.Config, defaultClient client.ValiClient,
+	logger log.Logger) (Controller, error) {
 	controller := &controller{
 		clients:       make(map[string]ControllerClient, expectedActiveClusters),
 		conf:          conf,
@@ -95,8 +96,8 @@ func (ctl *controller) Stop() {
 	ctl.once.Do(func() {
 		ctl.lock.Lock()
 		defer ctl.lock.Unlock()
-		for _, client := range ctl.clients {
-			client.StopWait()
+		for _, cl := range ctl.clients {
+			cl.StopWait()
 		}
 		ctl.clients = nil
 		if ctl.defaultClient != nil {
@@ -144,6 +145,10 @@ func (ctl *controller) updateFunc(oldObj interface{}, newObj interface{}) {
 		return
 	}
 
+	if bytes.Equal(oldCluster.Spec.Shoot.Raw, newCluster.Spec.Shoot.Raw) {
+		return
+	}
+
 	//TODO: check for byte equality before extracting the shoot object after loki->vali transition is over.
 	shoot, err := extensioncontroller.ShootFromCluster(newCluster)
 	if err != nil {
@@ -152,8 +157,7 @@ func (ctl *controller) updateFunc(oldObj interface{}, newObj interface{}) {
 		return
 	}
 
-	if bytes.Equal(oldCluster.Spec.Shoot.Raw, newCluster.Spec.Shoot.Raw) &&
-		shoot.Status.LastOperation != nil &&
+	if shoot.Status.LastOperation != nil &&
 		shoot.Status.LastOperation.Progress == 100 &&
 		(shoot.Status.LastOperation.Type == "Reconcile" || shoot.Status.LastOperation.Type == "Create") {
 		_ = level.Debug(ctl.logger).Log("msg", fmt.Sprintf("return from the informer update callback %v", newCluster.Name))
@@ -177,7 +181,7 @@ func (ctl *controller) updateFunc(oldObj interface{}, newObj interface{}) {
 		}
 
 		//TODO: replace createControllerClient with updateControllerClientState function once the loki->vali transition is over.
-		ctl.createControllerClient(newCluster.Name, shoot)
+		ctl.recreateControllerClient(newCluster.Name, shoot)
 	} else {
 		//The client does not exist and we will try to create a new one if the shoot is applicable for logging
 		if ctl.matches(shoot) {

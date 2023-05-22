@@ -17,10 +17,8 @@ package client
 import (
 	"time"
 
-	"github.com/gardener/logging/pkg/config"
-	"github.com/gardener/logging/pkg/types"
-
 	"github.com/credativ/vali/pkg/logproto"
+	"github.com/gardener/logging/pkg/config"
 	"github.com/go-kit/kit/log"
 	"github.com/prometheus/common/model"
 )
@@ -33,6 +31,8 @@ type ValiClient interface {
 	Stop()
 	// StopWait stops the client of receiving new logs and waits all saved logs to be sent until shuting down
 	StopWait()
+	// GetEndPoint returns the target logging backend endpoint
+	GetEndPoint() string
 }
 
 // Entry represent a Vali log record.
@@ -42,7 +42,7 @@ type Entry struct {
 }
 
 // NewValiClientFunc returns a ValiClient on success.
-type NewValiClientFunc func(cfg config.Config, logger log.Logger) (types.ValiClient, error)
+type NewValiClientFunc func(cfg config.Config, logger log.Logger) (ValiClient, error)
 
 // NewValiClientDecoratorFunc return ValiClient which wraps another ValiClient
-type NewValiClientDecoratorFunc func(cfg config.Config, client ValiClient, logger log.Logger) (types.ValiClient, error)
+type NewValiClientDecoratorFunc func(cfg config.Config, client ValiClient, logger log.Logger) (ValiClient, error)
