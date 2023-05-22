@@ -14,6 +14,7 @@
 package valiplugin
 
 import (
+	"github.com/gardener/logging/pkg/client"
 	"os"
 	"regexp"
 	"time"
@@ -28,7 +29,6 @@ import (
 	"k8s.io/utils/pointer"
 
 	"github.com/gardener/logging/pkg/config"
-	"github.com/gardener/logging/pkg/types"
 )
 
 type entry struct {
@@ -37,8 +37,14 @@ type entry struct {
 	ts   time.Time
 }
 
+var _ client.ValiClient = &recorder{}
+
 type recorder struct {
 	*entry
+}
+
+func (r *recorder) GetEndPoint() string {
+	return "http://localhost"
 }
 
 func (r *recorder) Handle(labels model.LabelSet, time time.Time, e string) error {
@@ -64,6 +70,12 @@ type sendRecordArgs struct {
 
 type fakeValiClient struct{}
 
+func (c *fakeValiClient) GetEndPoint() string {
+	return "http://localhost"
+}
+
+var _ client.ValiClient = &fakeValiClient{}
+
 func (c *fakeValiClient) Handle(labels model.LabelSet, time time.Time, entry string) error {
 	return nil
 }
@@ -72,10 +84,10 @@ func (c *fakeValiClient) Stop()     {}
 func (c *fakeValiClient) StopWait() {}
 
 type fakeController struct {
-	clients map[string]types.ValiClient
+	clients map[string]client.ValiClient
 }
 
-func (ctl *fakeController) GetClient(name string) (types.ValiClient, bool) {
+func (ctl *fakeController) GetClient(name string) (client.ValiClient, bool) {
 	if client, ok := ctl.clients[name]; ok {
 		return client, false
 	}
@@ -257,7 +269,7 @@ var _ = Describe("Vali plugin", func() {
 
 	Describe("#getClient", func() {
 		fc := fakeController{
-			clients: map[string]types.ValiClient{
+			clients: map[string]client.ValiClient{
 				"shoot--dev--test1": &fakeValiClient{},
 				"shoot--dev--test2": &fakeValiClient{},
 			},

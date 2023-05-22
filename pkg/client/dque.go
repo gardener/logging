@@ -4,7 +4,7 @@ https://github.com/credativ/vali/blob/v2.2.4/cmd/fluent-bit/dque.go
 
 Modifications Copyright (c) 2021 SAP SE or an SAP affiliate company. All rights reserved.
 */
-package buffer
+package client
 
 import (
 	"fmt"
@@ -13,11 +13,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/credativ/vali/pkg/logproto"
 	"github.com/gardener/logging/pkg/config"
 	"github.com/gardener/logging/pkg/metrics"
-	"github.com/gardener/logging/pkg/types"
-
-	"github.com/credativ/vali/pkg/logproto"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/joncrlsn/dque"
@@ -36,7 +34,7 @@ func dqueEntryBuilder() interface{} {
 type dqueClient struct {
 	logger    log.Logger
 	queue     *dque.DQue
-	vali      types.ValiClient
+	vali      ValiClient
 	once      sync.Once
 	wg        sync.WaitGroup
 	url       string
@@ -44,8 +42,15 @@ type dqueClient struct {
 	lock      sync.Mutex
 }
 
+func (c *dqueClient) GetEndPoint() string {
+	return c.vali.GetEndPoint()
+}
+
+var _ ValiClient = &dqueClient{}
+
 // NewDque makes a new dque vali client
-func NewDque(cfg config.Config, logger log.Logger, newClientFunc func(cfg config.Config, logger log.Logger) (types.ValiClient, error)) (types.ValiClient, error) {
+func NewDque(cfg config.Config, logger log.Logger, newClientFunc func(cfg config.Config,
+	logger log.Logger) (ValiClient, error)) (ValiClient, error) {
 	var err error
 
 	q := &dqueClient{

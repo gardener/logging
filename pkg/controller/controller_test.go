@@ -17,6 +17,7 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/gardener/logging/pkg/client"
 	"os"
 	"time"
 
@@ -38,8 +39,14 @@ import (
 	"k8s.io/utils/pointer"
 )
 
+var _ client.ValiClient = &fakeValiClient{}
+
 type fakeValiClient struct {
 	isStopped bool
+}
+
+func (c *fakeValiClient) GetEndPoint() string {
+	return "http://localhost"
 }
 
 func (c *fakeValiClient) Handle(labels model.LabelSet, time time.Time, entry string) error {

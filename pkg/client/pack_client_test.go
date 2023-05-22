@@ -21,7 +21,6 @@ import (
 
 	"github.com/gardener/logging/pkg/client"
 	"github.com/gardener/logging/pkg/config"
-	"github.com/gardener/logging/pkg/types"
 
 	"github.com/credativ/vali/pkg/logproto"
 	"github.com/go-kit/kit/log"
@@ -51,7 +50,7 @@ var _ = Describe("Pack Client", func() {
 		timeNow, timeNowPlus1Sec, timeNowPlus2Seconds = time.Now(), time.Now().Add(1 * time.Second), time.Now().Add(2 * time.Second)
 		firstLog, secondLog, thirdLog                 = "I am the first log.", "And I am the second one", "I guess bronze is good, too"
 		cfg                                           config.Config
-		newValiClientFunc                             = func(_ config.Config, _ log.Logger) (types.ValiClient, error) {
+		newValiClientFunc                             = func(_ config.Config, _ log.Logger) (client.ValiClient, error) {
 			return fakeClient, nil
 		}
 
