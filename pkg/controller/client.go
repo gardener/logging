@@ -88,7 +88,7 @@ func (ctl *controller) createControllerClient(clusterName string, shoot *gardene
 
 	ctl.updateControllerClientState(client, shoot)
 
-	_ = level.Info(ctl.logger).Log("msg", fmt.Sprintf("Add client for cluster %v in %v state", clusterName, client.GetState()))
+	_ = level.Info(ctl.logger).Log("msg", "add client", "cluster", clusterName, "state", client.GetState())
 	ctl.lock.Lock()
 	defer ctl.lock.Unlock()
 
@@ -113,7 +113,7 @@ func (ctl *controller) deleteControllerClient(clusterName string) {
 
 	ctl.lock.Unlock()
 	if ok && client != nil {
-		_ = level.Info(ctl.logger).Log("msg", fmt.Sprintf("Delete client for cluster %v", clusterName))
+		_ = level.Info(ctl.logger).Log("msg", "delete client", "cluster", clusterName)
 		client.StopWait()
 	}
 }
@@ -133,8 +133,11 @@ func (ctl *controller) recreateControllerClient(clusterName string, shoot *garde
 	ctl.lock.Unlock()
 
 	if ok && existing != nil && existing.GetEndPoint() == clientConf.ClientConfig.CredativValiConfig.URL.String() {
+		_ = level.Debug(ctl.logger).Log("msg", "try to change the endpoint, but they are the same", "cluster", clusterName, "endpoint", existing.GetEndPoint())
 		return
 	}
+
+	_ = level.Info(ctl.logger).Log("msg", "changing client endpoint", "cluster", clusterName, "oldEndpoint", existing.GetEndPoint(), "newEndpoint", clientConf.ClientConfig.CredativValiConfig.URL.String())
 
 	if ok && existing != nil {
 		existing.StopWait()
@@ -149,7 +152,7 @@ func (ctl *controller) recreateControllerClient(clusterName string, shoot *garde
 
 	ctl.updateControllerClientState(newClient, shoot)
 
-	_ = level.Info(ctl.logger).Log("msg", fmt.Sprintf("Add client for cluster %v in %v state", clusterName, newClient.GetState()))
+	_ = level.Info(ctl.logger).Log("msg", "add client", "cluster", clusterName, "state", newClient.GetState())
 	ctl.lock.Lock()
 	defer ctl.lock.Unlock()
 
@@ -272,7 +275,7 @@ func (c *controllerClient) SetState(state clusterState) {
 		return
 	}
 
-	_ = level.Info(c.logger).Log("msg", fmt.Sprintf("Cluster %s state changes from %v to %v", c.name, c.state, state))
+	_ = level.Info(c.logger).Log("msg", "cluster state changed", "cluster", c.name, "oldState", c.state, "newState", state)
 	c.state = state
 }
 
