@@ -18,12 +18,13 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"github.com/gardener/logging/pkg/client"
 	"io/ioutil"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/gardener/logging/pkg/client"
 
 	"github.com/cortexproject/cortex/pkg/util/flagext"
 	extensioncontroller "github.com/gardener/gardener/extensions/pkg/controller"
@@ -146,10 +147,10 @@ func (ctl *controller) updateFunc(oldObj interface{}, newObj interface{}) {
 	}
 
 	if bytes.Equal(oldCluster.Spec.Shoot.Raw, newCluster.Spec.Shoot.Raw) {
+		_ = level.Debug(ctl.logger).Log("msg", "reconciliation skipped, shoot the same", "cluster", newCluster.Name)
 		return
 	}
 
-	//TODO: check for byte equality before extracting the shoot object after loki->vali transition is over.
 	shoot, err := extensioncontroller.ShootFromCluster(newCluster)
 	if err != nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorCanNotExtractShoot).Inc()
@@ -157,14 +158,7 @@ func (ctl *controller) updateFunc(oldObj interface{}, newObj interface{}) {
 		return
 	}
 
-	if shoot.Status.LastOperation != nil &&
-		shoot.Status.LastOperation.Progress == 100 &&
-		(shoot.Status.LastOperation.Type == "Reconcile" || shoot.Status.LastOperation.Type == "Create") {
-		_ = level.Debug(ctl.logger).Log("msg", fmt.Sprintf("return from the informer update callback %v", newCluster.Name))
-		return
-	}
-
-	_ = level.Info(ctl.logger).Log("msg", fmt.Sprintf("reconciling %v", newCluster.Name))
+	_ = level.Info(ctl.logger).Log("msg", "reconciling", "cluster", newCluster.Name)
 
 	client, ok := ctl.clients[newCluster.Name]
 	//The client exist in the list so we have to update it
@@ -178,6 +172,7 @@ func (ctl *controller) updateFunc(oldObj interface{}, newObj interface{}) {
 		if client == nil {
 			_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("The client for cluster %v is NIL. Will try to create new one", oldCluster.Name))
 			ctl.createControllerClient(newCluster.Name, shoot)
+			return
 		}
 
 		//TODO: replace createControllerClient with updateControllerClientState function once the loki->vali transition is over.
@@ -213,7 +208,7 @@ func (ctl *controller) getClientConfig(namespace string) *config.Config {
 	}
 
 	url := fmt.Sprintf("%s%s%s", ctl.conf.ControllerConfig.DynamicHostPrefix, namespace, suffix)
-	_ = level.Info(ctl.logger).Log("msg", fmt.Sprintf("set URL %v for %v", url, namespace))
+	_ = level.Info(ctl.logger).Log("msg", "set URL", "url", url, "cluster", namespace)
 
 	err := clientURL.Set(url)
 	if err != nil {
