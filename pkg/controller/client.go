@@ -137,7 +137,7 @@ func (ctl *controller) recreateControllerClient(clusterName string, shoot *garde
 	}
 
 	if ok && existing != nil {
-		existing.StopWait()
+		existing.Stop()
 	}
 
 	newClient, err := ctl.newControllerClient(clientConf)
