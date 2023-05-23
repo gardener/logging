@@ -140,7 +140,7 @@ func (ctl *controller) recreateControllerClient(clusterName string, shoot *garde
 	_ = level.Info(ctl.logger).Log("msg", "changing client endpoint", "cluster", clusterName, "oldEndpoint", existing.GetEndPoint(), "newEndpoint", clientConf.ClientConfig.CredativValiConfig.URL.String())
 
 	if ok && existing != nil {
-		existing.StopWait()
+		existing.Stop()
 	}
 
 	newClient, err := ctl.newControllerClient(clientConf)
