@@ -105,16 +105,16 @@ docker-images:
 docker-push:
 	@$(REPO_ROOT)/hack/docker-image-push.sh "fluent-bit-plugin" \
 	"$(DOCKER_BUILD_PLATFORM)" $(FLUENT_BIT_TO_VALI_IMAGE_REPOSITORY) $(IMAGE_TAG)
-	
+
 	@$(REPO_ROOT)/hack/docker-image-push.sh "curator" \
 	"$(DOCKER_BUILD_PLATFORM)" $(VALI_CURATOR_IMAGE_REPOSITORY) $(IMAGE_TAG)
-	
+
 	@$(REPO_ROOT)/hack/docker-image-push.sh "telegraf" \
 	"$(DOCKER_BUILD_PLATFORM)" $(TELEGRAF_IMAGE_REPOSITORY) $(IMAGE_TAG)
-	
+
 	@$(REPO_ROOT)/hack/docker-image-push.sh "event-logger" \
 	"$(DOCKER_BUILD_PLATFORM)" $(EVENT_LOGGER_IMAGE_REPOSITORY) $(IMAGE_TAG) $(EFFECTIVE_VERSION)
-	
+
 	@$(REPO_ROOT)/hack/docker-image-push.sh "tune2fs" \
     "$(DOCKER_BUILD_PLATFORM)" $(TUNE2FS_IMAGE_REPOSITORY) $(IMAGE_TAG)
 
@@ -171,10 +171,12 @@ $(GINKGO):
 
 # fetch yq dependency
 $(YQ):
+	mkdir -p $(TOOLS_DIR)
 	curl -L -o $(YQ) https://github.com/mikefarah/yq/releases/download/$(YQ_VERSION)/yq_$(BUILD_PLATFORM)_$(BUILD_ARCH)
 	chmod +x $(YQ)
 
 # fetch kind dependency
 $(KIND):
+	mkdir -p $(TOOLS_DIR)
 	curl -L -o $(KIND) https://kind.sigs.k8s.io/dl/$(KIND_VERSION)/kind-$(BUILD_PLATFORM)-$(BUILD_ARCH)
 	chmod +x $(KIND)

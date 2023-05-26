@@ -43,7 +43,7 @@ fi
 cd $repo_root
 make docker-images
 
-# # Make local images with uniq tags 
+# # Make local images with uniq tags
 version=$(git rev-parse HEAD) # Get the hash of the current commit
 # docker tag eu.gcr.io/gardener-project/gardener/fluent-bit-to-vali:latest fluent-bit-to-vali:$version
 # docker tag eu.gcr.io/gardener-project/gardener/vali-curator:latest       vali-curator:$version
@@ -60,16 +60,16 @@ kind load docker-image event-logger:$version       --name gardener-local
 
 # Change the image of the loggings in the gardener repo
 cd "$repo_root/gardener"
-yq -i e "(.images[] | select(.name == \"event-logger\") | .repository) |= \"docker.io/library/event-logger\"" "charts/images.yaml"
-yq -i e "(.images[] | select(.name == \"event-logger\") | .tag) |= \"$version\"" "charts/images.yaml"
-# yq -i e "(.images[] | select(.name == \"fluent-bit-plugin-installer\") | .repository) |= \"docker.io/library/fluent-bit-to-vali\"" "charts/images.yaml"
-# yq -i e "(.images[] | select(.name == \"fluent-bit-plugin-installer\") | .tag) |= \"$version\"" "charts/images.yaml"
-# yq -i e "(.images[] | select(.name == \"vali-curator\") | .repository) |= \"docker.io/library/vali-curator\"" "charts/images.yaml"
-# yq -i e "(.images[] | select(.name == \"vali-curator\") | .tag) |= \"$version\"" "charts/images.yaml"
-yq -i e "(.images[] | select(.name == \"telegraf\") | .repository) |= \"docker.io/library/telegraf-iptables\"" "charts/images.yaml"
-yq -i e "(.images[] | select(.name == \"telegraf\") | .tag) |= \"$version\"" "charts/images.yaml"
-yq -i e "(.images[] | select(.name == \"tune2fs\") | .repository) |= \"docker.io/library/tune2fs\"" "charts/images.yaml"
-yq -i e "(.images[] | select(.name == \"tune2fs\") | .tag) |= \"$version\"" "charts/images.yaml"
+$repo_root/tools/yq -i e "(.images[] | select(.name == \"event-logger\") | .repository) |= \"docker.io/library/event-logger\"" "charts/images.yaml"
+$repo_root/tools/yq -i e "(.images[] | select(.name == \"event-logger\") | .tag) |= \"$version\"" "charts/images.yaml"
+# $repo_root/tools/yq -i e "(.images[] | select(.name == \"fluent-bit-plugin-installer\") | .repository) |= \"docker.io/library/fluent-bit-to-vali\"" "charts/images.yaml"
+# $repo_root/tools/yq -i e "(.images[] | select(.name == \"fluent-bit-plugin-installer\") | .tag) |= \"$version\"" "charts/images.yaml"
+# $repo_root/tools/yq -i e "(.images[] | select(.name == \"vali-curator\") | .repository) |= \"docker.io/library/vali-curator\"" "charts/images.yaml"
+# $repo_root/tools/yq -i e "(.images[] | select(.name == \"vali-curator\") | .tag) |= \"$version\"" "charts/images.yaml"
+$repo_root/tools/yq -i e "(.images[] | select(.name == \"telegraf\") | .repository) |= \"docker.io/library/telegraf-iptables\"" "charts/images.yaml"
+$repo_root/tools/yq -i e "(.images[] | select(.name == \"telegraf\") | .tag) |= \"$version\"" "charts/images.yaml"
+$repo_root/tools/yq -i e "(.images[] | select(.name == \"tune2fs\") | .repository) |= \"docker.io/library/tune2fs\"" "charts/images.yaml"
+$repo_root/tools/yq -i e "(.images[] | select(.name == \"tune2fs\") | .tag) |= \"$version\"" "charts/images.yaml"
 
 export KUBECONFIG=$repo_root/gardener/example/gardener-local/kind/local/kubeconfig
 make gardener-up
