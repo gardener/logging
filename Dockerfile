@@ -51,9 +51,8 @@ ENTRYPOINT [ "/event-logger" ]
 
 #############      telegraf-builder       #############
 FROM golang:1.20.4 AS telegraf-builder
-RUN git clone https://github.com/influxdata/telegraf.git
+RUN git clone --depth 1 --branch v1.26.0 https://github.com/influxdata/telegraf.git
 WORKDIR /go/telegraf
-RUN git checkout v1.26.0
 RUN CGO_ENABLED=0 make build
 
 #############      iptables-builder       #############
