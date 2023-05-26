@@ -40,7 +40,7 @@ pushd $dir/..
 
 docker build \
   --build-arg EFFECTIVE_VERSION="${EFFECTIVE_VERSION}" \
-  --tag "${IMAGE_REPOSITORY}:${IMAGE_TAG}-latest" \
+  --tag "${IMAGE_REPOSITORY}:latest" \
 	--tag "${IMAGE_REPOSITORY}:${IMAGE_TAG}" \
 	-f Dockerfile --target ${TARGET} .
 

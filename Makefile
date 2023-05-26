@@ -25,6 +25,9 @@ EFFECTIVE_VERSION                          := $(VERSION)-$(shell git rev-parse H
 PARALLEL_E2E_TESTS                         := 1
 DOCKER_BUILD_PLATFORM                      ?= linux/amd64,linux/arm64
 
+BUILD_PLATFORM                             :=$(shell uname -s | tr '[:upper:]' '[:lower:]')
+BUILD_ARCH                                 :=$(shell uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
+
 # project folder structure
 PKG_DIR                                    := $(REPO_ROOT)/pkg
 TOOLS_DIR                                  := $(REPO_ROOT)/tools
@@ -147,6 +150,7 @@ verify: install-requirements check format test
 clean:
 	@go clean --modcache --testcache
 	@rm -rf $(TOOLS_DIR)
+	@rm -rf "$(REPO_ROOT)/gardener"
 	@( [ -d "$(REPO_ROOT)/build" ] && go clean $(REPO_ROOT)/build ) || true
 
 .PHONY: test-e2e-local
@@ -167,10 +171,10 @@ $(GINKGO):
 
 # fetch yq dependency
 $(YQ):
-	curl -L -o $(YQ) https://github.com/mikefarah/yq/releases/download/$(YQ_VERSION)/yq_$(shell uname -s | tr '[:upper:]' '[:lower:]')_$(shell uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
+	curl -L -o $(YQ) https://github.com/mikefarah/yq/releases/download/$(YQ_VERSION)/yq_$(BUILD_PLATFORM)_$(BUILD_ARCH)
 	chmod +x $(YQ)
 
 # fetch kind dependency
 $(KIND):
-	curl -L -o $(KIND) https://kind.sigs.k8s.io/dl/$(KIND_VERSION)/kind-$(shell uname -s | tr '[:upper:]' '[:lower:]')-$(shell uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
+	curl -L -o $(KIND) https://kind.sigs.k8s.io/dl/$(KIND_VERSION)/kind-$(BUILD_PLATFORM)-$(BUILD_ARCH)
 	chmod +x $(KIND)
