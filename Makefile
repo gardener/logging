@@ -22,6 +22,8 @@ TUNE2FS_IMAGE_REPOSITORY                   := $(REGISTRY)/tune2fs
 EVENT_LOGGER_IMAGE_REPOSITORY              := $(REGISTRY)/event-logger
 IMAGE_TAG                                  := $(VERSION)
 EFFECTIVE_VERSION                          := $(VERSION)-$(shell git rev-parse HEAD)
+PARALLEL_E2E_TESTS                         := 1
+DOCKER_BUILD_PLATFORM                      ?= linux/amd64,linux/arm64
 
 # project folder structure
 PKG_DIR                                    := $(REPO_ROOT)/pkg
@@ -34,7 +36,18 @@ GO_LINT_VERSION                            ?= v1.51.2
 # test dependencies
 GINKGO                                     := $(TOOLS_DIR)/ginkgo
 GINKGO_VERSION                             ?= v1.16.2
-DOCKER_BUILD_PLATFORM                      ?= linux/amd64,linux/arm64
+
+# yq dependencies
+YQ                                         := $(TOOLS_DIR)/yq
+YQ_VERSION                                 ?= v4.31.2
+
+# kind dependencies
+KIND                                       := $(TOOLS_DIR)/kind
+KIND_VERSION                               ?= v0.18.0
+
+#################################################################
+# Rules related to binary build, Docker image build and release #
+#################################################################
 
 .PHONY: plugin
 plugin:
@@ -102,6 +115,10 @@ docker-push:
 	@$(REPO_ROOT)/hack/docker-image-push.sh "tune2fs" \
     "$(DOCKER_BUILD_PLATFORM)" $(TUNE2FS_IMAGE_REPOSITORY) $(IMAGE_TAG)
 
+#####################################################################
+# Rules for verification, formatting, linting, testing and cleaning #
+#####################################################################
+
 .PHONY: revendor
 revendor:
 	@GO111MODULE=on go mod tidy
@@ -123,16 +140,6 @@ test: $(GINKGO)
 .PHONY: install-requirements
 install-requirements: $(GO_LINT) $(GINKGO)
 
-# fetch linter dependency
-.PHONY: $(GO_LINT)
-$(GO_LINT):
-	@GOBIN=$(TOOLS_DIR) go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GO_LINT_VERSION)
-
-# fetch ginkgo dependency
-.PHONY: $(GINKGO)
-$(GINKGO):
-	@GOBIN=$(TOOLS_DIR) go install github.com/onsi/ginkgo/ginkgo@$(GINKGO_VERSION)
-
 .PHONY: verify
 verify: install-requirements check format test
 
@@ -141,3 +148,29 @@ clean:
 	@go clean --modcache --testcache
 	@rm -rf $(TOOLS_DIR)
 	@( [ -d "$(REPO_ROOT)/build" ] && go clean $(REPO_ROOT)/build ) || true
+
+.PHONY: test-e2e-local
+test-e2e-local: $(KIND) $(YQ) $(GINKGO)
+	@$(REPO_ROOT)/hack/test-e2e-local.sh --procs=$(PARALLEL_E2E_TESTS) --label-filter "Shoot && simple" ./tests/e2e/...
+
+#########################################
+# Tools                                 #
+#########################################
+
+# fetch linter dependency
+$(GO_LINT):
+	@GOBIN=$(TOOLS_DIR) go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GO_LINT_VERSION)
+
+# fetch ginkgo dependency
+$(GINKGO):
+	@GOBIN=$(TOOLS_DIR) go install github.com/onsi/ginkgo/ginkgo@$(GINKGO_VERSION)
+
+# fetch yq dependency
+$(YQ):
+	curl -L -o $(YQ) https://github.com/mikefarah/yq/releases/download/$(YQ_VERSION)/yq_$(shell uname -s | tr '[:upper:]' '[:lower:]')_$(shell uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
+	chmod +x $(YQ)
+
+# fetch kind dependency
+$(KIND):
+	curl -L -o $(KIND) https://kind.sigs.k8s.io/dl/$(KIND_VERSION)/kind-$(shell uname -s | tr '[:upper:]' '[:lower:]')-$(shell uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
+	chmod +x $(KIND)
