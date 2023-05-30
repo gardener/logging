@@ -26,8 +26,9 @@ import (
 	"github.com/gardener/gardener/pkg/utils/retry"
 	. "github.com/gardener/gardener/pkg/utils/test/matchers"
 	"github.com/gardener/gardener/test/framework"
-	"github.com/gardener/gardener/test/utils/shoots/access"
+	"github.com/gardener/gardener/test/utils/access"
 
+	fluentbitv1alpha2 "github.com/fluent/fluent-operator/v2/apis/fluentbit/v1alpha2"
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -112,13 +113,21 @@ func (v *EventLoggingVerifier) before(ctx context.Context) {
 	}).Should(Succeed())
 
 	Eventually(func(g Gomega) {
-		g.Expect(v.ShootFramework.SeedClient.Client().Get(ctx, client.ObjectKey{Namespace: "garden", Name: "fluent-bit"}, &appsv1.DaemonSet{})).To(Succeed())
-		g.Expect(v.ShootFramework.SeedClient.Client().Get(ctx, client.ObjectKey{Namespace: v.shootNamespace, Name: "loki"}, &appsv1.StatefulSet{})).To(Succeed())
+		flbList := &fluentbitv1alpha2.FluentBitList{}
+		g.Expect(v.ShootFramework.SeedClient.Client().List(ctx, flbList,
+			client.InNamespace("garden"),
+			client.MatchingLabels{"app": "fluent-bit"})).To(Succeed())
+
+		for _, flb := range flbList.Items {
+			g.Expect(v.ShootFramework.SeedClient.Client().Get(ctx, client.ObjectKey{Namespace: "garden", Name: flb.Name}, &appsv1.DaemonSet{})).To(Succeed())
+		}
+		g.Expect(v.ShootFramework.SeedClient.Client().Get(ctx, client.ObjectKey{Namespace: v.shootNamespace,
+			Name: "vali"}, &appsv1.StatefulSet{})).To(Succeed())
 		g.Expect(v.ShootFramework.SeedClient.Client().Get(ctx, client.ObjectKey{Namespace: v.shootNamespace, Name: "event-logger"}, &appsv1.Deployment{})).To(Succeed())
 	}).Should(Succeed())
 
-	By("Wait for the shoot Loki and Event-Logger to become ready")
-	Expect(v.WaitUntilStatefulSetIsRunning(ctx, "loki", v.shootNamespace, v.ShootFramework.SeedClient)).To(Succeed())
+	By("Wait for the shoot Vali and Event-Logger to become ready")
+	Expect(v.WaitUntilStatefulSetIsRunning(ctx, "vali", v.shootNamespace, v.ShootFramework.SeedClient)).To(Succeed())
 	Expect(v.WaitUntilDeploymentIsReady(ctx, "event-logger", v.shootNamespace, v.ShootFramework.SeedClient)).To(Succeed())
 }
 
@@ -133,11 +142,11 @@ func (v *EventLoggingVerifier) prepare(ctx context.Context) {
 
 // expect is the the process were we expect to get the correct result from the logging test.
 func (v *EventLoggingVerifier) expect(ctx context.Context) {
-	By("Wait until Loki receive seed event")
-	Expect(v.waitUntilLokiReceivesEvent(ctx, `origin_extracted="seed",source="event-logger-test",reason="`+v.testId+`"`, []string{eventMessageForSeed}, v.seedEvent.FirstTimestamp.Time)).To(Succeed())
+	By("Wait until Vali receive seed event")
+	Expect(v.waitUntilValiReceivesEvent(ctx, `origin_extracted="seed",source="event-logger-test",reason="`+v.testId+`"`, []string{eventMessageForSeed}, v.seedEvent.FirstTimestamp.Time)).To(Succeed())
 
-	By("Wait until Loki receive shoot event")
-	Expect(v.waitUntilLokiReceivesEvent(ctx, `origin_extracted="shoot",source="event-logger-test",reason="`+v.testId+`"`, []string{eventMessageForShoot}, v.shootEvent.FirstTimestamp.Time)).To(Succeed())
+	By("Wait until Vali receive shoot event")
+	Expect(v.waitUntilValiReceivesEvent(ctx, `origin_extracted="shoot",source="event-logger-test",reason="`+v.testId+`"`, []string{eventMessageForShoot}, v.shootEvent.FirstTimestamp.Time)).To(Succeed())
 }
 
 func (v *EventLoggingVerifier) getEventFor(clusterType, namespace string) *corev1.Event {
@@ -175,12 +184,13 @@ func (v *EventLoggingVerifier) getEventFor(clusterType, namespace string) *corev
 	return event
 }
 
-// waitUntilLokiReceivesEvent waits until the loki instance in <lokiNamespace> receives <wantedEventMessages> for filtered events by <queryAfterUnpack>.
-// If wantedEventMessages is empty than the function will return nill and will not query the Loki for any events.
-func (v *EventLoggingVerifier) waitUntilLokiReceivesEvent(ctx context.Context, queryAfterUnpack string, wantedEventMessages []string, startTime time.Time) error {
+// waitUntilValiReceivesEvent waits until the vali instance in <valiNamespace> receives <wantedEventMessages> for
+// filtered events by <queryAfterUnpack>.
+// If wantedEventMessages is empty then the function will return nil and will not query the Vali for any events.
+func (v *EventLoggingVerifier) waitUntilValiReceivesEvent(ctx context.Context, queryAfterUnpack string, wantedEventMessages []string, startTime time.Time) error {
 	var (
-		lokiLabels = map[string]string{
-			"app":  "loki",
+		valiLabels = map[string]string{
+			"app":  "vali",
 			"role": "logging",
 		}
 		query    = `{job="event-logging"} | unpack`
@@ -198,7 +208,7 @@ func (v *EventLoggingVerifier) waitUntilLokiReceivesEvent(ctx context.Context, q
 	log := v.Logger.WithValues("query", query)
 
 	return retry.Until(ctx, interval, func(ctx context.Context) (done bool, err error) {
-		search, err := getLokiLogsWithCMD(ctx, log, lokiLabels, tenant, v.shootNamespace, query, startTime, v.ShootFramework.SeedClient)
+		search, err := getValiLogsWithCMD(ctx, log, valiLabels, tenant, v.shootNamespace, query, startTime, v.ShootFramework.SeedClient)
 		if err != nil {
 			return retry.SevereError(err)
 		}
@@ -252,7 +262,7 @@ func getAllStringsFromRangeSearchResponse(values [][]interface{}) []string {
 	return result
 }
 
-// rangeSearchResponse represents the response from a search query_range to loki
+// rangeSearchResponse represents the response from a search query_range to vali
 type rangeSearchResponse struct {
 	Data struct {
 		Result []struct {
@@ -262,20 +272,22 @@ type rangeSearchResponse struct {
 	} `json:"data"`
 }
 
-// getLokiLogsWithCMD gets logs from startTime until now for query to loki instance in <lokiNamespace>
-func getLokiLogsWithCMD(ctx context.Context, logger logr.Logger, lokiLabels map[string]string, tenant, lokiNamespace, query string, startTime time.Time, client kubernetes.Interface) (*rangeSearchResponse, error) {
-	lokiLabelsSelector := labels.SelectorFromSet(labels.Set(lokiLabels))
+// getValiLogsWithCMD gets logs from startTime until now for query to vali instance in <valiNamespace>
+func getValiLogsWithCMD(ctx context.Context, logger logr.Logger, valiLabels map[string]string, tenant, valiNamespace,
+	query string, startTime time.Time, client kubernetes.Interface) (*rangeSearchResponse, error) {
+	valiLabelsSelector := labels.SelectorFromSet(labels.Set(valiLabels))
 
 	if tenant == "" {
 		tenant = "fake"
 	}
 
-	command := fmt.Sprintf("wget 'http://localhost:%d/loki/api/v1/query_range?start=%d' -O- '--header=X-Scope-OrgID: %s' --post-data='query=%s'", 3100, startTime.UnixNano(), tenant, query)
+	command := fmt.Sprintf("wget 'http://localhost:%d/vali/api/v1/query_range?start=%d' -O- '--header=X-Scope-OrgID"+
+		": %s' --post-data='query=%s'", 3100, startTime.UnixNano(), tenant, query)
 
 	var reader io.Reader
 	err := retry.Until(ctx, 5*time.Second, func(ctx context.Context) (bool, error) {
 		var err error
-		reader, err = framework.PodExecByLabel(ctx, lokiLabelsSelector, "loki", command, lokiNamespace, client)
+		reader, err = framework.PodExecByLabel(ctx, valiLabelsSelector, "vali", command, valiNamespace, client)
 		if err != nil {
 			logger.Error(err, "Error exec'ing into pod")
 			return retry.MinorError(err)

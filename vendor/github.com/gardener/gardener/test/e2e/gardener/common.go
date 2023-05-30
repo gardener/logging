@@ -15,7 +15,10 @@
 package gardener
 
 import (
+	"context"
+	"net"
 	"os"
+	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -71,9 +74,10 @@ func DefaultShoot(name string) *gardencorev1beta1.Shoot {
 		Spec: gardencorev1beta1.ShootSpec{
 			ControlPlane:      getShootControlPlane(),
 			Region:            "local",
-			SecretBindingName: "local",
+			SecretBindingName: pointer.String("local"),
 			CloudProfileName:  "local",
 			Kubernetes: gardencorev1beta1.Kubernetes{
+				// TODO(ary1992): Update to 1.27.1 after the merge of https://github.com/gardener/gardener/pull/7883 has been merged and released (after 1.71 has been released).
 				Version:                     "1.26.0",
 				EnableStaticTokenKubeconfig: pointer.Bool(false),
 				Kubelet: &gardencorev1beta1.KubeletConfig{
@@ -83,9 +87,9 @@ func DefaultShoot(name string) *gardencorev1beta1.Shoot {
 				},
 				KubeAPIServer: &gardencorev1beta1.KubeAPIServerConfig{},
 			},
-			Networking: gardencorev1beta1.Networking{
-				Type: "calico",
-				// TODO(scheererj): Drop this once v1.32 has been released and https://github.com/gardener/gardener-extension-networking-calico/pull/250 is available as release
+			Networking: &gardencorev1beta1.Networking{
+				Type: pointer.String("calico"),
+				// TODO(scheererj): Drop this emtpy provider config after v1.71 has been released (otherwise, e2e upgrade tests break)
 				ProviderConfig: &runtime.RawExtension{Raw: []byte(`{"apiVersion":"calico.networking.extensions.gardener.cloud/v1alpha1","kind":"NetworkConfig"}`)},
 			},
 			Provider: gardencorev1beta1.Provider{
@@ -113,6 +117,50 @@ func DefaultShoot(name string) *gardencorev1beta1.Shoot {
 					Type: "local-ext-shoot",
 				},
 			},
+		},
+	}
+}
+
+// DefaultWorkerlessShoot returns a workerless Shoot object with default values for the e2e tests.
+func DefaultWorkerlessShoot(name string) *gardencorev1beta1.Shoot {
+	return &gardencorev1beta1.Shoot{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name + "-wl",
+		},
+		Spec: gardencorev1beta1.ShootSpec{
+			ControlPlane:     getShootControlPlane(),
+			Region:           "local",
+			CloudProfileName: "local",
+			Kubernetes: gardencorev1beta1.Kubernetes{
+				Version:                     "1.26.0",
+				EnableStaticTokenKubeconfig: pointer.Bool(false),
+			},
+			Provider: gardencorev1beta1.Provider{
+				Type: "local",
+			},
+			Extensions: []gardencorev1beta1.Extension{
+				{
+					Type: "local-ext-seed",
+				},
+				{
+					Type: "local-ext-shoot",
+				},
+			}},
+	}
+}
+
+// SetupDNSForMultiZoneTest sets the golang DefaultResolver to the CoreDNS server, which is port forwarded to the host 127.0.0.1:5353.
+// Test uses the in-cluster CoreDNS for name resolution and can therefore resolve the API endpoint.
+func SetupDNSForMultiZoneTest() {
+	net.DefaultResolver = &net.Resolver{
+		PreferGo: true,
+		Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+			dialer := net.Dialer{
+				Timeout: time.Duration(5) * time.Second,
+			}
+			// We use tcp to distinguish easily in-cluster requests (done via udp) and requests from
+			// the tests (using tcp). The result for cluster api names differ depending on the source.
+			return dialer.DialContext(ctx, "tcp", "127.0.0.1:5353")
 		},
 	}
 }
