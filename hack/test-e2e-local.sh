@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -o nounset #catch and prevent errors caused by the use of unset variables.
 set -o pipefail #exit with the exit code of the first error
@@ -45,15 +45,15 @@ make docker-images
 
 # # Make local images with uniq tags
 version=$(git rev-parse HEAD) # Get the hash of the current commit
-# docker tag eu.gcr.io/gardener-project/gardener/fluent-bit-to-vali:latest fluent-bit-to-vali:$version
-# docker tag eu.gcr.io/gardener-project/gardener/vali-curator:latest       vali-curator:$version
+docker tag eu.gcr.io/gardener-project/gardener/fluent-bit-to-vali:latest fluent-bit-to-vali:$version
+docker tag eu.gcr.io/gardener-project/gardener/vali-curator:latest       vali-curator:$version
 docker tag eu.gcr.io/gardener-project/gardener/telegraf-iptables:latest  telegraf-iptables:$version
 docker tag eu.gcr.io/gardener-project/gardener/tune2fs:latest            tune2fs:$version
 docker tag eu.gcr.io/gardener-project/gardener/event-logger:latest       event-logger:$version
 
-#Load the images into the Kind cluster.
-# kind load docker-image fluent-bit-to-vali:$version --name gardener-local
-# kind load docker-image vali-curator:$version       --name gardener-local
+# Load the images into the Kind cluster.
+kind load docker-image fluent-bit-to-vali:$version --name gardener-local
+kind load docker-image vali-curator:$version       --name gardener-local
 kind load docker-image telegraf-iptables:$version  --name gardener-local
 kind load docker-image tune2fs:$version  --name gardener-local
 kind load docker-image event-logger:$version       --name gardener-local
@@ -62,10 +62,10 @@ kind load docker-image event-logger:$version       --name gardener-local
 cd "$repo_root/gardener"
 $repo_root/tools/yq -i e "(.images[] | select(.name == \"event-logger\") | .repository) |= \"docker.io/library/event-logger\"" "charts/images.yaml"
 $repo_root/tools/yq -i e "(.images[] | select(.name == \"event-logger\") | .tag) |= \"$version\"" "charts/images.yaml"
-# $repo_root/tools/yq -i e "(.images[] | select(.name == \"fluent-bit-plugin-installer\") | .repository) |= \"docker.io/library/fluent-bit-to-vali\"" "charts/images.yaml"
-# $repo_root/tools/yq -i e "(.images[] | select(.name == \"fluent-bit-plugin-installer\") | .tag) |= \"$version\"" "charts/images.yaml"
-# $repo_root/tools/yq -i e "(.images[] | select(.name == \"vali-curator\") | .repository) |= \"docker.io/library/vali-curator\"" "charts/images.yaml"
-# $repo_root/tools/yq -i e "(.images[] | select(.name == \"vali-curator\") | .tag) |= \"$version\"" "charts/images.yaml"
+$repo_root/tools/yq -i e "(.images[] | select(.name == \"fluent-bit-plugin-installer\") | .repository) |= \"docker.io/library/fluent-bit-to-vali\"" "charts/images.yaml"
+$repo_root/tools/yq -i e "(.images[] | select(.name == \"fluent-bit-plugin-installer\") | .tag) |= \"$version\"" "charts/images.yaml"
+$repo_root/tools/yq -i e "(.images[] | select(.name == \"vali-curator\") | .repository) |= \"docker.io/library/vali-curator\"" "charts/images.yaml"
+$repo_root/tools/yq -i e "(.images[] | select(.name == \"vali-curator\") | .tag) |= \"$version\"" "charts/images.yaml"
 $repo_root/tools/yq -i e "(.images[] | select(.name == \"telegraf\") | .repository) |= \"docker.io/library/telegraf-iptables\"" "charts/images.yaml"
 $repo_root/tools/yq -i e "(.images[] | select(.name == \"telegraf\") | .tag) |= \"$version\"" "charts/images.yaml"
 $repo_root/tools/yq -i e "(.images[] | select(.name == \"tune2fs\") | .repository) |= \"docker.io/library/tune2fs\"" "charts/images.yaml"
