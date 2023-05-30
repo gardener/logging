@@ -23,8 +23,8 @@ $repo_root/tools/kind load docker-image telegraf-iptables:$version  --name garde
 $repo_root/tools/kind load docker-image tune2fs:$version  --name gardener-local
 $repo_root/tools/kind load docker-image event-logger:$version       --name gardener-local
 
-# Check to see if the gardenr repo is already fetched
-[[ ! -d "$repo_root/gardener" ]] && echo "fetch gardener repo in $repo_root"
+# Fetch the gardener repo
+[[ ! -d "$repo_root/gardener" ]] && "$dir/fetch-gardener.sh"
 
 # Change the image of the loggings in the fetched gardener repo
 target="$repo_root/gardener/charts/images.yaml"
