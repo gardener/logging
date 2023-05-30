@@ -14,8 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -e
-dir=$(dirname $0)
+dir="$(dirname "$0")"
+
+set -o nounset #catch and prevent errors caused by the use of unset variables.
+set -o pipefail #exit with the exit code of the first error
+set -o errexit #exits immediately if any command in a script exits with a non-zero status
+
+source "$dir/.includes.sh"
 
 echo "> Docker image push"
 
