@@ -25,6 +25,7 @@ EFFECTIVE_VERSION                          := $(VERSION)-$(shell git rev-parse H
 PARALLEL_E2E_TESTS                         := 1
 DOCKER_BUILD_PLATFORM                      ?= linux/amd64,linux/arm64
 
+LD_FLAGS                                   :=$(shell $(REPO_ROOT)/hack/get-build-ld-flags.sh)
 BUILD_PLATFORM                             :=$(shell uname -s | tr '[:upper:]' '[:lower:]')
 BUILD_ARCH                                 :=$(shell uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
 
@@ -54,17 +55,18 @@ KIND_VERSION                               ?= v0.18.0
 
 .PHONY: plugin
 plugin:
-	go build -mod=vendor -buildmode=c-shared -o build/out_vali.so ./cmd/fluent-bit-vali-plugin
+	@go build -mod=vendor -buildmode=c-shared -o $(REPO_ROOT)/build/out_vali.so \
+	  -ldflags="$(LD_FLAGS)" ./cmd/fluent-bit-vali-plugin
 
 .PHONY: curator
 curator:
-	CGO_ENABLED=0 GO111MODULE=on \
-	  go build -mod=vendor -o build/curator ./cmd/vali-curator
+	@CGO_ENABLED=0 GO111MODULE=on go build -mod=vendor -o $(REPO_ROOT)/build/curator \
+	  -ldflags="$(LD_FLAGS)" ./cmd/vali-curator
 
 .PHONY: event-logger
 event-logger:
-	CGO_ENABLED=0 GO111MODULE=on \
-	  go build -mod=vendor -o $(REPO_ROOT)/build/event-logger $(REPO_ROOT)/cmd/event-logger
+	@CGO_ENABLED=0 GO111MODULE=on go build -mod=vendor -o $(REPO_ROOT)/build/event-logger \
+	  -ldflags="$(LD_FLAGS)" $(REPO_ROOT)/cmd/event-logger
 
 .PHONY: build
 build: plugin

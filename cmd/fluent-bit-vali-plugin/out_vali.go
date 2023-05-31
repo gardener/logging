@@ -30,10 +30,10 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/prometheus/common/version"
 	"github.com/weaveworks/common/logging"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/component-base/version"
 )
 
 var (
@@ -110,7 +110,9 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 	id := len(plugins)
 	logger := log.With(newLogger(conf.LogLevel), "ts", log.DefaultTimestampUTC, "id", id)
 
-	level.Info(logger).Log("[flb-go]", "Starting fluent-bit-go-vali", "version", version.Info())
+	level.Info(logger).Log("[flb-go]", "Starting fluent-bit-go-vali",
+		"version", version.Get().GitVersion,
+		"revision", version.Get().GitCommit)
 	paramLogger := log.With(logger, "[flb-go]", "provided parameter")
 	level.Info(paramLogger).Log("URL", conf.ClientConfig.CredativValiConfig.URL)
 	level.Info(paramLogger).Log("TenantID", conf.ClientConfig.CredativValiConfig.TenantID)
