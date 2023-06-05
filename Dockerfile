@@ -56,9 +56,9 @@ WORKDIR /go/telegraf
 RUN CGO_ENABLED=0 make build
 
 #############      iptables-builder       #############
-FROM alpine:3.17.2 as iptables-builder
+FROM alpine:3.18.0 as iptables-builder
 
-RUN apk add --update bash sudo iptables && \
+RUN apk add --update bash sudo iptables ncurses-libs libmnl && \
     rm -rf /var/cache/apk/*
 
 WORKDIR /volume
@@ -103,9 +103,9 @@ COPY --from=telegraf-builder /go/telegraf/telegraf /usr/bin/telegraf
 CMD [ "/usr/bin/telegraf"]
 
 #############      tune2fs-builder       #############
-FROM alpine:3.17.2 as tune2fs-builder
+FROM alpine:3.18.0 as tune2fs-builder
 
-RUN apk add --update bash e2fsprogs-extra mount gawk && \
+RUN apk add --update bash e2fsprogs-extra mount gawk ncurses-libs && \
     rm -rf /var/cache/apk/*
 
 WORKDIR /volume
