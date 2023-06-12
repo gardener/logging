@@ -32,6 +32,7 @@ BUILD_ARCH                                 :=$(shell uname -m | sed 's/x86_64/am
 # project folder structure
 PKG_DIR                                    := $(REPO_ROOT)/pkg
 TOOLS_DIR                                  := $(REPO_ROOT)/tools
+GARDENER_DIR                               := $(REPO_ROOT)/gardener
 
 # linter dependencies
 GO_LINT                                    := $(TOOLS_DIR)/golangci-lint
@@ -49,6 +50,15 @@ YQ_VERSION                                 ?= v4.31.2
 KIND                                       := $(TOOLS_DIR)/kind
 KIND_VERSION                               ?= v0.18.0
 
+# skaffold dependencies
+SKAFFOLD                                   := $(TOOLS_DIR)/skaffold
+SKAFFOLD_VERSION                           ?= latest
+
+# helm dependencies
+HELM                                       := $(TOOLS_DIR)/helm
+HELM_VERSION                               ?= v3.12.0
+
+export PATH := $(abspath $(TOOLS_DIR)):$(PATH)
 #################################################################
 # Rules related to binary build, Docker image build and release #
 #################################################################
@@ -156,8 +166,29 @@ clean:
 	@( [ -d "$(REPO_ROOT)/build" ] && go clean $(REPO_ROOT)/build ) || true
 
 .PHONY: test-e2e-local
-test-e2e-local: $(KIND) $(YQ) $(GINKGO)
+test-e2e-local: $(KIND) $(YQ) $(GINKGO) $(GARDENER_DIR)
 	@$(REPO_ROOT)/hack/test-e2e-local.sh --procs=$(PARALLEL_E2E_TESTS) --label-filter "Shoot && simple" ./tests/e2e/...
+
+#########################################
+# skaffold pipeline scenarios           #
+#########################################
+skaffold-%: export KUBECONFIG = $(REPO_ROOT)/gardener/example/gardener-local/kind/local/kubeconfig
+
+# skaffold and skafold-dev targets require a running kind cluster initated from a fetched gardener repo (hack/fetch-gardener.sh)
+# make -C gardener kind-up
+
+.PHONY: skaffold-run
+skaffold-run: $(SKAFFOLD) $(HELM) $(YQ) $(GARDENER_DIR)
+	@$(SKAFFOLD) run --kubeconfig=$(KUBECONFIG)
+
+# skaffold-dev target requires that skaffold run has been run
+.PHONY: skaffold-dev
+skaffold-dev: $(SKAFFOLD) $(HELM) $(YQ) $(GARDENER_DIR)
+	@$(SKAFFOLD) dev --kubeconfig=$(KUBECONFIG) -m gardenlet
+
+# fetch gardener repo into the project dir
+$(GARDENER_DIR):
+	$(REPO_ROOT)/hack/fetch-gardener.sh
 
 #########################################
 # Tools                                 #
@@ -182,3 +213,14 @@ $(KIND):
 	mkdir -p $(TOOLS_DIR)
 	curl -L -o $(KIND) https://kind.sigs.k8s.io/dl/$(KIND_VERSION)/kind-$(BUILD_PLATFORM)-$(BUILD_ARCH)
 	chmod +x $(KIND)
+
+# fetch skaffold dependency
+$(SKAFFOLD):
+	mkdir -p $(TOOLS_DIR)
+	curl -L -o $(SKAFFOLD) https://storage.googleapis.com/skaffold/releases/$(SKAFFOLD_VERSION)/skaffold-$(BUILD_PLATFORM)-$(BUILD_ARCH)
+	chmod +x $(SKAFFOLD)
+
+# fetch helm dependency
+$(HELM):
+	mkdir -p $(TOOLS_DIR)
+	curl -sSfL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | HELM_INSTALL_DIR=$(TOOLS_DIR) USE_SUDO=false bash -s -- --version $(HELM_VERSION)

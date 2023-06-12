@@ -15,7 +15,7 @@ source "$dir/fetch-gardener.sh"
 make -C "$repo_root/gardener" kind-down # in case the test is run twice somehow skipping trap
 make -C "$repo_root/gardener" kind-up
 
-trap '{  
+trap '{
   make -C "$repo_root/gardener" kind-down
 }' EXIT
 
@@ -35,7 +35,7 @@ make -C $repo_root docker-images
 source $dir/load-container-images.sh
 
 export KUBECONFIG=$repo_root/gardener/example/gardener-local/kind/local/kubeconfig
-make -C $repo_root/gardener gardener-up
+make skaffold-run
 
 # reduce flakiness in contended pipelines
 export GOMEGA_DEFAULT_EVENTUALLY_TIMEOUT=5s
