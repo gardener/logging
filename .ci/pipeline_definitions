@@ -27,6 +27,10 @@ logging:
                 integrity_requirement: 'none'
                 availability_requirement: 'none'
                 comment: no data is stored or processed by the installer
+            - name: 'cloud.gardener.cnudie/responsibles'
+              value:
+              - type: 'githubTeam'
+                teamname: 'gardener/logging-maintainers'
           vali-curator:
             registry: 'gcr-readwrite'
             image: 'eu.gcr.io/gardener-project/gardener/vali-curator'
@@ -41,6 +45,10 @@ logging:
                 confidentiality_requirement: 'none'
                 integrity_requirement: 'high'
                 availability_requirement: 'low'
+            - name: 'cloud.gardener.cnudie/responsibles'
+              value:
+              - type: 'githubTeam'
+                teamname: 'gardener/logging-maintainers'
           telegraf-iptables:
             registry: 'gcr-readwrite'
             image: 'eu.gcr.io/gardener-project/gardener/telegraf-iptables'
@@ -56,6 +64,10 @@ logging:
                 integrity_requirement: 'none'
                 availability_requirement: 'none'
                 comment: telegraf is not accessible from outside the seed cluster and does not interact with confidential data
+            - name: 'cloud.gardener.cnudie/responsibles'
+              value:
+              - type: 'githubTeam'
+                teamname: 'gardener/logging-maintainers'
           event-logger:
             registry: 'gcr-readwrite'
             image: 'eu.gcr.io/gardener-project/gardener/event-logger'
@@ -70,6 +82,10 @@ logging:
                 confidentiality_requirement: 'high'
                 integrity_requirement: 'high'
                 availability_requirement: 'low'
+            - name: 'cloud.gardener.cnudie/responsibles'
+              value:
+              - type: 'githubTeam'
+                teamname: 'gardener/logging-maintainers'
           tune2fs:
             registry: 'gcr-readwrite'
             image: 'eu.gcr.io/gardener-project/gardener/tune2fs'
@@ -84,6 +100,10 @@ logging:
                 confidentiality_requirement: 'none'
                 integrity_requirement: 'none'
                 availability_requirement: 'low'
+            - name: 'cloud.gardener.cnudie/responsibles'
+              value:
+              - type: 'githubTeam'
+                teamname: 'gardener/logging-maintainers'
     steps:
       verify:
         image: 'golang:1.20.4'
