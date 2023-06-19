@@ -215,18 +215,34 @@ func FLBPluginFlushCtx(ctx, data unsafe.Pointer, length C.int, _ *C.char) int {
 		}
 
 		// Get timestamp
-		var timestamp time.Time
+		var flb output.FLBTime
+		var err error
+		var ok, parsed bool
+		timestamp := time.Now()
 		switch t := ts.(type) {
 		case output.FLBTime:
 			timestamp = ts.(output.FLBTime).Time
 		case uint64:
 			timestamp = time.Unix(int64(t), 0)
+		case []interface{}:
+			// fluent-bit 2.1.x introduces support for log metadata.
+			// We need to iterate over the slice fields, where one field is the record timestamp
+			// and the other field in the slice is the newly introduced metadata in the form of a map
+			// see https://github.com/fluent/fluent-bit/issues/6666#issuecomment-1380200701
+			for _, v := range ts.([]interface{}) {
+				if flb, ok = v.(output.FLBTime); ok {
+					timestamp, parsed = flb.Time, true
+					break
+				}
+			}
+			if !parsed {
+				level.Warn(logger).Log("msg", "timestamp isn't known format. Use current time.")
+			}
 		default:
 			level.Warn(logger).Log("msg", "timestamp isn't known format. Use current time.")
-			timestamp = time.Now()
 		}
 
-		err := plugin.SendRecord(record, timestamp)
+		err = plugin.SendRecord(record, timestamp)
 		if err != nil {
 			level.Warn(logger).Log("msg", err.Error())
 		}
