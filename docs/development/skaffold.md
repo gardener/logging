@@ -2,7 +2,9 @@
 
 ## Skaffold based development scenario for fluent-bit-vali-plugin
 
-It is possible to construct a local development environment for the logging stack based on [skaffold](https://skaffold.dev). It builds upon the gardener `skaffold` pipeline and provides a hook for building the deploying the `fluent-bit-plugin` into the local development kind cluster.
+It is possible to construct a local development environment for the logging stack based on [skaffold]
+(https://skaffold.dev). It builds upon the gardener `skaffold` pipeline and provides a hook for building and
+deploying the `fluent-bit-plugin` into the local development kind cluster.
 
 ![skaffold pipeline](images/skaffold.png)
 
@@ -19,17 +21,44 @@ Once the gardener repository is fetched, initiate the kind cluster with:
 make -C gardener kind-up
 ```
 
-In addition to the kind cluster itself, the `kind-up` target brings also: a docker registry, calico and a metrics-server.
+In addition to the kind cluster itself, the `kind-up` target brings also the following dependencies: 
+- `docker registry`
+- `calico`
+- `metrics-server`
+
 Once the kind cluster is up and running we can start the `skaffold` local pipeline with the following command:
 ```bash
-make skaffold-up
+make skaffold-run
 ```
+This `make` target runs the skaffold `run` workflow executing the pipeline according the specified [skaffold.yaml](/skaffold.yaml) 
+configuration.
 
-This uses the skaffold.yaml definition to bring `etcd`, `controlplane`,  `provider local` and `gardenlet` skaffold modules into the local kind cluster. The last `gardenlet` module contains the build target for generating the `fluent-bit-plugin` container image and it pushes it to the local registry already present in the local kind cluster. Once the skaffold deployment is triggered the `fluent-bit-plugin` is brought into the cluster with the gardenlet specific deployment model.
+The [skaffold.yaml](/skaffold.yaml) definition brings:
+- `etcd`
+- `controlplane`
+- `provider local`
+- `gardenlet`
 
-After the `skaffold-up` target is executed the skaffold pipeline may be started in the `dev` mode with
+skaffold modules into 
+the local kind cluster. The last `gardenlet` module contains the build target for generating the `fluent-bit-plugin` 
+container image and it pushes it to the local registry already present in the local kind cluster. When the skaffold 
+deployment workflow is triggered, the `fluent-bit-plugin` is brought into the cluster with the gardenlet specific 
+deployment 
+model.
+
+After the `skaffold-run` target is executed the skaffold pipeline may be started in the `dev` mode with
 ```bash
 make skaffold-dev
 ```
 
-That brings the ability to run the entire pipeline once the local code modifications are made and ready to be tested.
+That brings the ability of the pipeline to listen for modifications and trigger the update of the entire pipeline 
+once such modifications are present.
+
+To clean up the environment set up by the pipeline, use the `kind-down` target from the fetched gardener repository.
+```bash
+make -C gardener kind-down
+```
+or simply delete the kind cluster with `kind`
+```bash
+kind delete cluster --name gardener-local
+```
