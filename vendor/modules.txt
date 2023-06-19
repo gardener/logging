@@ -106,10 +106,10 @@ github.com/fluent/fluent-operator/v2/pkg/utils
 # github.com/fsnotify/fsnotify v1.6.0
 ## explicit; go 1.16
 github.com/fsnotify/fsnotify
-# github.com/gardener/etcd-druid v0.15.3
-## explicit; go 1.19
+# github.com/gardener/etcd-druid v0.18.1
+## explicit; go 1.20
 github.com/gardener/etcd-druid/api/v1alpha1
-# github.com/gardener/gardener v1.71.2
+# github.com/gardener/gardener v1.73.0
 ## explicit; go 1.20
 github.com/gardener/gardener/extensions/pkg/controller
 github.com/gardener/gardener/hack
@@ -120,7 +120,6 @@ github.com/gardener/gardener/pkg/apis/authentication
 github.com/gardener/gardener/pkg/apis/authentication/v1alpha1
 github.com/gardener/gardener/pkg/apis/core
 github.com/gardener/gardener/pkg/apis/core/install
-github.com/gardener/gardener/pkg/apis/core/v1alpha1
 github.com/gardener/gardener/pkg/apis/core/v1beta1
 github.com/gardener/gardener/pkg/apis/core/v1beta1/constants
 github.com/gardener/gardener/pkg/apis/core/v1beta1/helper

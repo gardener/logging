@@ -8,7 +8,7 @@ require (
 	github.com/credativ/vali v0.0.0-20230322125549-22fdbf30c62a
 	github.com/fluent/fluent-bit-go v0.0.0-20190925192703-ea13c021720c
 	github.com/fluent/fluent-operator/v2 v2.2.0
-	github.com/gardener/gardener v1.71.2
+	github.com/gardener/gardener v1.73.0
 	github.com/go-kit/kit v0.12.0
 	github.com/go-kit/log v0.2.1
 	github.com/go-logfmt/logfmt v0.5.1
@@ -56,7 +56,7 @@ require (
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
-	github.com/gardener/etcd-druid v0.15.3 // indirect
+	github.com/gardener/etcd-druid v0.18.1 // indirect
 	github.com/gardener/hvpa-controller v0.3.1 // indirect
 	github.com/gardener/machine-controller-manager v0.48.1 // indirect
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32 // indirect
