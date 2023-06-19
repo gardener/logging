@@ -6,18 +6,16 @@ gardener=$(grep "github.com/gardener/gardener" $repo_root/go.mod |cut -d " " -f2
 
 function __catch() {
   local cmd="${1:-}"
-  echo
-  echo "errexit $cmd on line $(caller)" >&2
+  echo "errexit $cmd on line $(caller)" >&2  
 }
 trap '__catch "${BASH_COMMAND}"' ERR
 
 function __check_executables {  
   # required execs
   execs=(make docker)
-  for ex in ${execs[@]}; do
+  for ex in "${execs[@]}"; do
     if ! command -v "$ex" &> /dev/null ; then echo "$ex is required"; return 1; fi  
-  done
-  return 0
+  done  
 }
 
 __check_executables
