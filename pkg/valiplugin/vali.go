@@ -56,7 +56,7 @@ func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger lo
 		return nil, err
 	}
 
-	if cfg.PluginConfig.DynamicHostPath != nil {
+	if len(cfg.PluginConfig.DynamicHostPath) > 0 {
 		vali.dynamicHostRegexp = regexp.MustCompile(cfg.PluginConfig.DynamicHostRegex)
 
 		cfgShallowCopy := *cfg

@@ -44,6 +44,7 @@ var (
 	informerStopChan chan struct{}
 	once             sync.Once
 	pprofOnce        sync.Once
+	informerOnce     sync.Once
 )
 
 func init() {
@@ -59,15 +60,19 @@ func init() {
 			level.Error(logger).Log("Fluent-bit-gardener-output-plugin", err.Error())
 		}
 	}()
+}
 
-	kubernetesClient, err := getInclusterKubernetsClient()
-	if err != nil {
-		panic(err)
-	}
-	kubeInformerFactory := gardeninternalcoreinformers.NewSharedInformerFactory(kubernetesClient, time.Second*30)
-	informer = kubeInformerFactory.Extensions().V1alpha1().Clusters().Informer()
-	informerStopChan = make(chan struct{})
-	kubeInformerFactory.Start(informerStopChan)
+func initClusterInformer() {
+	informerOnce.Do(func() {
+		kubernetesClient, err := getInclusterKubernetsClient()
+		if err != nil {
+			panic(err)
+		}
+		kubeInformerFactory := gardeninternalcoreinformers.NewSharedInformerFactory(kubernetesClient, time.Second*30)
+		informer = kubeInformerFactory.Extensions().V1alpha1().Clusters().Informer()
+		informerStopChan = make(chan struct{})
+		kubeInformerFactory.Start(informerStopChan)
+	})
 }
 
 func setPprofProfile() {
@@ -104,6 +109,10 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 
 	if conf.Pprof {
 		setPprofProfile()
+	}
+
+	if len(conf.PluginConfig.DynamicHostPath) > 0 {
+		initClusterInformer()
 	}
 
 	// numeric plugin ID, only used for user-facing purpose (logging, ...)
@@ -263,7 +272,9 @@ func FLBPluginExit() int {
 		for _, plugin := range plugins {
 			plugin.Close()
 		}
-		close(informerStopChan)
+		if informerStopChan != nil {
+			close(informerStopChan)
+		}
 	})
 	return output.FLB_OK
 }
