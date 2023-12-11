@@ -1,7 +1,5 @@
 logging:
-  template: 'default'
   base_definition:
-    repo: ~
     traits:
       version:
         preprocess:
@@ -13,7 +11,6 @@ logging:
         - linux/arm64
         dockerimages:
           fluent-bit-to-vali:
-            registry: 'gcr-readwrite'
             image: 'eu.gcr.io/gardener-project/gardener/fluent-bit-to-vali'
             dockerfile: './Dockerfile'
             target: fluent-bit-plugin
@@ -32,7 +29,6 @@ logging:
               - type: 'githubTeam'
                 teamname: 'gardener/logging-maintainers'
           vali-curator:
-            registry: 'gcr-readwrite'
             image: 'eu.gcr.io/gardener-project/gardener/vali-curator'
             dockerfile: './Dockerfile'
             target: curator
@@ -50,7 +46,6 @@ logging:
               - type: 'githubTeam'
                 teamname: 'gardener/logging-maintainers'
           telegraf-iptables:
-            registry: 'gcr-readwrite'
             image: 'eu.gcr.io/gardener-project/gardener/telegraf-iptables'
             dockerfile: './Dockerfile'
             target: telegraf
@@ -69,7 +64,6 @@ logging:
               - type: 'githubTeam'
                 teamname: 'gardener/logging-maintainers'
           event-logger:
-            registry: 'gcr-readwrite'
             image: 'eu.gcr.io/gardener-project/gardener/event-logger'
             dockerfile: './Dockerfile'
             target: event-logger
@@ -87,7 +81,6 @@ logging:
               - type: 'githubTeam'
                 teamname: 'gardener/logging-maintainers'
           tune2fs:
-            registry: 'gcr-readwrite'
             image: 'eu.gcr.io/gardener-project/gardener/tune2fs'
             dockerfile: './Dockerfile'
             target: tune2fs
