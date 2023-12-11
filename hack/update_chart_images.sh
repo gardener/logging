@@ -9,7 +9,7 @@ target="$repo_root/gardener/charts/images.yaml"
 
 fluent_regex="^.*fluent-bit-to-vali$"
 function __update_fluent_skaffold_images() {
-  local registry="${1:-$(echo "localhost:5001/eu_gcr_io_gardener-project_gardener/fluent-bit-to-vali")}"
+  local registry="${1:-$(echo "localhost:5001/europe_docker_pkg_dev_gardener-project_gardener/fluent-bit-to-vali")}"
   local version="${2:-$(git rev-parse HEAD 2>/dev/null || echo "latest")}"
 
   $repo_root/tools/yq -i e "(.images[] | select(.name == \"fluent-bit-plugin-installer\") | .repository) |=\"${registry}\"" $target
@@ -18,7 +18,7 @@ function __update_fluent_skaffold_images() {
 
 event_regex="^.*event-logger$"
 function __update_event_skaffold_images() {
-  local registry="${1:-$(echo "localhost:5001/eu_gcr_io_gardener-project_gardener/event-logger")}"
+  local registry="${1:-$(echo "localhost:5001/europe_docker_pkg_dev_gardener-project_gardener/event-logger")}"
   local version="${2:-$(git rev-parse HEAD 2>/dev/null || echo "latest")}"
 
   $repo_root/tools/yq -i e "(.images[] | select(.name == \"event-logger\") | .repository) |=\"${registry}\"" $target
@@ -27,7 +27,7 @@ function __update_event_skaffold_images() {
 
 curator_regex="^.*vali-curator$"
 function __update_curator_skaffold_images() {
-  local registry="${1:-$(echo "localhost:5001/eu_gcr_io_gardener-project_gardener/vali-curator")}"
+  local registry="${1:-$(echo "localhost:5001/europe_docker_pkg_dev_gardener-project_gardener/vali-curator")}"
   local version="${2:-$(git rev-parse HEAD 2>/dev/null || echo "latest")}"
 
   $repo_root/tools/yq -i e "(.images[] | select(.name == \"vali-curator\") | .repository) |=\"${registry}\"" $target
@@ -36,7 +36,7 @@ function __update_curator_skaffold_images() {
 
 telegraf_regex="^.*telegraf-iptables$"
 function __update_telegraf_skaffold_images() {
-  local registry="${1:-$(echo "localhost:5001/eu_gcr_io_gardener-project_gardener/telegraf-iptables")}"
+  local registry="${1:-$(echo "localhost:5001/europe_docker_pkg_dev_gardener-project_gardener/telegraf-iptables")}"
   local version="${2:-$(git rev-parse HEAD 2>/dev/null || echo "latest")}"
 
   $repo_root/tools/yq -i e "(.images[] | select(.name == \"telegraf\") | .repository) |=\"${registry}\"" $target
@@ -45,7 +45,7 @@ function __update_telegraf_skaffold_images() {
 
 tune2fs_regex="^.*tune2fs$"
 function __update_tune2fs_skaffold_images() {
-  local registry="${1:-$(echo "localhost:5001/eu_gcr_io_gardener-project_gardener/tune2fs")}"
+  local registry="${1:-$(echo "localhost:5001/europe_docker_pkg_dev_gardener-project_gardener/tune2fs")}"
   local version="${2:-$(git rev-parse HEAD 2>/dev/null || echo "latest")}"
 
   $repo_root/tools/yq -i e "(.images[] | select(.name == \"tune2fs\") | .repository) |=\"${registry}\"" $target

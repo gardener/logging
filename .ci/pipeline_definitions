@@ -4,6 +4,8 @@ logging:
       version:
         preprocess:
           'inject-commit-hash'
+      component_descriptor:
+        ocm_repository: europe-docker.pkg.dev/gardener-project/snapshots
       publish:
         oci-builder: docker-buildx
         platforms:
@@ -11,7 +13,7 @@ logging:
         - linux/arm64
         dockerimages:
           fluent-bit-to-vali:
-            image: 'eu.gcr.io/gardener-project/gardener/fluent-bit-to-vali'
+            image: europe-docker.pkg.dev/gardener-project/snapshots/gardener/fluent-bit-to-vali
             dockerfile: './Dockerfile'
             target: fluent-bit-plugin
             resource_labels:
@@ -29,7 +31,7 @@ logging:
               - type: 'githubTeam'
                 teamname: 'gardener/logging-maintainers'
           vali-curator:
-            image: 'eu.gcr.io/gardener-project/gardener/vali-curator'
+            image: europe-docker.pkg.dev/gardener-project/snapshots/gardener/vali-curator
             dockerfile: './Dockerfile'
             target: curator
             resource_labels:
@@ -46,7 +48,7 @@ logging:
               - type: 'githubTeam'
                 teamname: 'gardener/logging-maintainers'
           telegraf-iptables:
-            image: 'eu.gcr.io/gardener-project/gardener/telegraf-iptables'
+            image: europe-docker.pkg.dev/gardener-project/snapshots/gardener/telegraf-iptables
             dockerfile: './Dockerfile'
             target: telegraf
             resource_labels:
@@ -64,7 +66,7 @@ logging:
               - type: 'githubTeam'
                 teamname: 'gardener/logging-maintainers'
           event-logger:
-            image: 'eu.gcr.io/gardener-project/gardener/event-logger'
+            image: europe-docker.pkg.dev/gardener-project/snapshots/gardener/event-logger
             dockerfile: './Dockerfile'
             target: event-logger
             resource_labels:
@@ -81,7 +83,7 @@ logging:
               - type: 'githubTeam'
                 teamname: 'gardener/logging-maintainers'
           tune2fs:
-            image: 'eu.gcr.io/gardener-project/gardener/tune2fs'
+            image: europe-docker.pkg.dev/gardener-project/snapshots/gardener/tune2fs
             dockerfile: './Dockerfile'
             target: tune2fs
             resource_labels:
@@ -100,10 +102,9 @@ logging:
     steps:
       verify:
         image: 'golang:1.20.4'
+
   jobs:
-    head-update:
-      traits:
-        component_descriptor: ~
+    head-update: ~
     pull-request:
       traits:
         pull-request: ~
@@ -111,9 +112,22 @@ logging:
       traits:
         version:
           preprocess: 'finalize'
+        component_descriptor:
+          ocm_repository: europe-docker.pkg.dev/gardener-project/releases
+        publish:
+          dockerimages:
+            fluent-bit-to-vali:
+              image: europe-docker.pkg.dev/gardener-project/releases/gardener/fluent-bit-to-vali
+            vali-curator:
+              image: europe-docker.pkg.dev/gardener-project/releases/gardener/vali-curator
+            telegraf-iptables:
+              image: europe-docker.pkg.dev/gardener-project/releases/gardener/telegraf-iptables
+            event-logger:
+              image: europe-docker.pkg.dev/gardener-project/releases/gardener/event-logger
+            tune2fs:
+              image: europe-docker.pkg.dev/gardener-project/releases/gardener/tune2fs
         release:
           nextversion: 'bump_patch'
-        component_descriptor: ~
         slack:
           default_channel: "internal_scp_workspace"
           channel_cfgs:
