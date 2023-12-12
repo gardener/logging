@@ -40,11 +40,11 @@ metadata:
   name: provider-local
 build:
   artifacts:
-    - image: eu.gcr.io/gardener-project/gardener/extensions/provider-local
+    - image: europe-docker.pkg.dev/gardener-project/public/gardener/extensions/provider-local
       custom:
         buildCommand: |
-          docker pull -q eu.gcr.io/gardener-project/gardener/gardener-extension-provider-local:{{.GARDENER_VERSION}}
-          docker tag eu.gcr.io/gardener-project/gardener/gardener-extension-provider-local:{{.GARDENER_VERSION}} $IMAGE
+          docker pull -q europe-docker.pkg.dev/gardener-project/public/gardener/gardener-extension-provider-local:{{.GARDENER_VERSION}}
+          docker tag europe-docker.pkg.dev/gardener-project/public/gardener/gardener-extension-provider-local:{{.GARDENER_VERSION}} $IMAGE
           [ ! -z $PUSH_IMAGE ] && docker push $IMAGE
 resourceSelector:
   allow:
@@ -67,7 +67,7 @@ metadata:
   name: gardenlet
 build:
   artifacts:
-    - image: eu.gcr.io/gardener-project/gardener/fluent-bit-to-vali
+    - image: europe-docker.pkg.dev/gardener-project/public/gardener/fluent-bit-to-vali
       docker:
         target: fluent-bit-plugin
         cacheFrom:
@@ -92,7 +92,7 @@ deploy:
         imageVectorOverwrite: |
           images:
           - name: fluent-bit-plugin-installer
-            repository: '{{.IMAGE_REPO_eu_gcr_io_gardener_project_gardener_fluent_bit_to_vali}}'
-            tag: '{{.IMAGE_TAG_eu_gcr_io_gardener_project_gardener_fluent_bit_to_vali}}@{{.IMAGE_DIGEST_eu_gcr_io_gardener_project_gardener_fluent_bit_to_vali}}'
+            repository: '{{.IMAGE_REPO_europe_docker_pkg_dev_gardener_project_gardener_fluent_bit_to_vali}}'
+            tag: '{{.IMAGE_TAG_europe_docker_pkg_dev_gardener_project_gardener_fluent_bit_to_vali}}@{{.IMAGE_DIGEST_europe_docker_pkg_dev_gardener_project_gardener_fluent_bit_to_vali}}'
       createNamespace: true
       wait: true

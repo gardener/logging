@@ -34,7 +34,7 @@ target="$repo_root/gardener/charts/images.yaml"
 
 for img in "${images[@]}"; do
   # tag "latest "container image if exists
-  container_image="eu.gcr.io/gardener-project/gardener/${img}:latest"
+  container_image="europe-docker.pkg.dev/gardener-project/public/gardener/${img}:latest"
   if [[ "exists" == $(__check_container_image ${container_image}) ]]; then
     docker tag ${container_image} ${img}:${version}
   else
