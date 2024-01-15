@@ -1,5 +1,5 @@
 #############      builder       #############
-FROM golang:1.20.13 AS plugin-builder
+FROM golang:1.20.4 AS plugin-builder
 
 WORKDIR /go/src/github.com/gardener/logging
 COPY . .
