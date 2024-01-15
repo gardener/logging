@@ -8,7 +8,7 @@ RUN make plugin
 RUN make install-copy
 
 ############# distroless-static
-FROM gcr.io/distroless/static-debian11:nonroot as distroless-static
+FROM gcr.io/distroless/static-debian12:nonroot as distroless-static
 
 #############  fluent-bit-plugin #############
 FROM distroless-static AS fluent-bit-plugin
