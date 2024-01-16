@@ -53,8 +53,8 @@ github.com/credativ/vali/pkg/util
 github.com/credativ/vali/pkg/util/flagext
 github.com/credativ/vali/pkg/valitail/api
 github.com/credativ/vali/pkg/valitail/client
-# github.com/cyphar/filepath-securejoin v0.2.2
-## explicit
+# github.com/cyphar/filepath-securejoin v0.2.4
+## explicit; go 1.13
 github.com/cyphar/filepath-securejoin
 # github.com/davecgh/go-spew v1.1.1
 ## explicit
