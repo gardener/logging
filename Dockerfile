@@ -3,8 +3,8 @@ FROM golang:1.20.4 AS plugin-builder
 
 WORKDIR /go/src/github.com/gardener/logging
 COPY . .
-
-RUN make plugin
+ENV GOCACHE=/root/.cache/go-build
+RUN --mount=type=cache,target="/root/.cache/go-build" make plugin
 RUN make install-copy
 
 ############# distroless-static
@@ -28,7 +28,8 @@ COPY . .
 
 ARG EFFECTIVE_VERSION
 ARG TARGETARCH
-RUN make install EFFECTIVE_VERSION=$EFFECTIVE_VERSION GOARCH=$TARGETARCH
+ENV GOCACHE=/root/.cache/go-build
+RUN --mount=type=cache,target="/root/.cache/go-build" make install EFFECTIVE_VERSION=$EFFECTIVE_VERSION GOARCH=$TARGETARCH
 
 #############      curator       #############
 FROM distroless-static AS curator
@@ -53,7 +54,8 @@ ENTRYPOINT [ "/event-logger" ]
 FROM golang:1.20.13 AS telegraf-builder
 RUN git clone --depth 1 --branch v1.26.0 https://github.com/influxdata/telegraf.git
 WORKDIR /go/telegraf
-RUN CGO_ENABLED=0 make build
+ENV GOCACHE=/root/.cache/go-build
+RUN --mount=type=cache,target="/root/.cache/go-build" CGO_ENABLED=0 make build
 
 #############      iptables-builder       #############
 FROM alpine:3.19.0 as iptables-builder
