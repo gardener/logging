@@ -14,7 +14,7 @@
 
 REPO_ROOT                                  := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 VERSION                                    := $(shell cat VERSION)
-REGISTRY                                   ?= europe-docker.pkg.dev/gardener-project/public/gardener
+REGISTRY                                   ?= europe-docker.pkg.dev/gardener-project/snapshots/gardener
 FLUENT_BIT_TO_VALI_IMAGE_REPOSITORY        := $(REGISTRY)/fluent-bit-to-vali
 VALI_CURATOR_IMAGE_REPOSITORY              := $(REGISTRY)/vali-curator
 TELEGRAF_IMAGE_REPOSITORY                  := $(REGISTRY)/telegraf-iptables
