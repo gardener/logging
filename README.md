@@ -3,7 +3,7 @@
 
 # Fluent Bit output plugin
 
-This plugin extends [Grafana,s Fluent Bit output plugin](https://github.com/credativ/vali/tree/v1.6.0/cmd/fluent-bit) which aims to forward log messages from fluent-bit to Vali.
+This plugin extends [Grafana's Fluent Bit output plugin](https://github.com/credativ/vali/tree/v1.6.0/cmd/fluent-bit) which aims to forward log messages from fluent-bit to Vali.
 Тhe plugin meets the needs of the [Gardener](https://gardener.cloud/) by implementing a logic for dynamically forwarding log messages from one Fluent-bit to multiple Vali instances.
 It also adds additional configurations that aim to improve plugin's performance and user experience.
 
