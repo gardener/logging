@@ -2,6 +2,7 @@
 
 
 # Fluent Bit output plugin
+[![REUSE status](https://api.reuse.software/badge/github.com/gardener/logging)](https://api.reuse.software/info/github.com/gardener/logging)
 
 This plugin extends [Grafana's Fluent Bit output plugin](https://github.com/credativ/vali/tree/v1.6.0/cmd/fluent-bit) which aims to forward log messages from fluent-bit to Vali.
 Тhe plugin meets the needs of the [Gardener](https://gardener.cloud/) by implementing a logic for dynamically forwarding log messages from one Fluent-bit to multiple Vali instances.
