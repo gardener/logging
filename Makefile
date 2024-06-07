@@ -55,17 +55,17 @@ export PATH := $(abspath $(TOOLS_DIR)):$(PATH)
 
 .PHONY: plugin
 plugin:
-	@go build -mod=vendor -buildmode=c-shared -o $(REPO_ROOT)/build/out_vali.so \
+	@go build -buildmode=c-shared -o $(REPO_ROOT)/build/out_vali.so \
 	  -ldflags="$(LD_FLAGS)" ./cmd/fluent-bit-vali-plugin
 
 .PHONY: curator
 curator:
-	@CGO_ENABLED=0 GO111MODULE=on go build -mod=vendor -o $(REPO_ROOT)/build/curator \
+	@CGO_ENABLED=0 GO111MODULE=on go build -o $(REPO_ROOT)/build/curator \
 	  -ldflags="$(LD_FLAGS)" ./cmd/vali-curator
 
 .PHONY: event-logger
 event-logger:
-	@CGO_ENABLED=0 GO111MODULE=on go build -mod=vendor -o $(REPO_ROOT)/build/event-logger \
+	@CGO_ENABLED=0 GO111MODULE=on go build -o $(REPO_ROOT)/build/event-logger \
 	  -ldflags="$(LD_FLAGS)" $(REPO_ROOT)/cmd/event-logger
 
 .PHONY: build
@@ -124,15 +124,14 @@ docker-push:
 # Rules for verification, formatting, linting, testing and cleaning #
 #####################################################################
 
-.PHONY: revendor
-revendor:
+.PHONY: tidy
+tidy:
 	@GO111MODULE=on go mod tidy
-	@GO111MODULE=on go mod vendor
 
 .PHONY: check
 check: format $(GO_LINT)
 	 $(GO_LINT) run --config=$(REPO_ROOT)/.golangci.yaml --timeout 10m $(REPO_ROOT)/cmd/... $(REPO_ROOT)/pkg/...
-	 go vet -mod=vendor $(REPO_ROOT)/cmd/... $(REPO_ROOT)/pkg/...
+	 go vet $(REPO_ROOT)/cmd/... $(REPO_ROOT)/pkg/...
 
 .PHONY: format
 format:
@@ -140,7 +139,7 @@ format:
 
 .PHONY: test
 test: $(GINKGO)
-	GO111MODULE=on $(GINKGO) -mod=vendor ./pkg/...
+	GO111MODULE=on $(GINKGO) ./pkg/...
 
 .PHONY: install-requirements
 install-requirements: $(GO_LINT) $(GINKGO)
