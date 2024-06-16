@@ -5,8 +5,7 @@ This plugin extends [Credativ/Vali](https://github.com/credativ/vali) [fluent-bi
 ## Copyright
 
 All content is the property of the respective authors or their employers. For
-more information regarding authorship of content, please consult the listed
-source code repository logs.
+more information regarding authorship of content, please consult `.reuse/dep5 file`.
 
 ## Modifications
 

@@ -2,8 +2,9 @@
 This file was copied from the grafana/vali project
 https://github.com/credativ/vali/blob/v2.2.4/cmd/fluent-bit/buffer.go
 
-Modifications Copyright (c) 2020 SAP SE or an SAP affiliate company. All rights reserved.
+Modifications Copyright SAP SE or an SAP affiliate company and Gardener contributors
 */
+
 package client
 
 import (
