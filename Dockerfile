@@ -1,5 +1,5 @@
 #############      builder       #############
-FROM golang:1.20.4 AS plugin-builder
+FROM golang:1.22.4 AS plugin-builder
 
 WORKDIR /go/src/github.com/gardener/logging
 COPY . .
@@ -21,7 +21,7 @@ WORKDIR /
 CMD /bin/cp /source/plugins/. /plugins
 
 #############      image-builder       #############
-FROM golang:1.20.13 AS image-builder
+FROM golang:1.22.4 AS image-builder
 
 WORKDIR /go/src/github.com/gardener/logging
 COPY . .
@@ -51,14 +51,14 @@ WORKDIR /
 ENTRYPOINT [ "/event-logger" ]
 
 #############      telegraf-builder       #############
-FROM golang:1.20.13 AS telegraf-builder
+FROM golang:1.22.4 AS telegraf-builder
 RUN git clone --depth 1 --branch v1.26.0 https://github.com/influxdata/telegraf.git
 WORKDIR /go/telegraf
 ENV GOCACHE=/root/.cache/go-build
 RUN --mount=type=cache,target="/root/.cache/go-build" CGO_ENABLED=0 make build
 
 #############      iptables-builder       #############
-FROM alpine:3.19.0 as iptables-builder
+FROM alpine:3.20.0 as iptables-builder
 
 RUN apk add --update bash sudo iptables ncurses-libs libmnl && \
     rm -rf /var/cache/apk/*
@@ -102,7 +102,7 @@ COPY --from=telegraf-builder /go/telegraf/telegraf /usr/bin/telegraf
 CMD [ "/usr/bin/telegraf"]
 
 #############      tune2fs-builder       #############
-FROM alpine:3.19.0 as tune2fs-builder
+FROM alpine:3.20.0 as tune2fs-builder
 
 RUN apk add --update bash e2fsprogs-extra mount gawk ncurses-libs && \
     rm -rf /var/cache/apk/*
