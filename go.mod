@@ -1,8 +1,6 @@
 module github.com/gardener/logging
 
-go 1.22.0
-
-toolchain go1.22.4
+go 1.22.4
 
 require (
 	github.com/cortexproject/cortex v1.10.0
