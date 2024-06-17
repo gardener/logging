@@ -26,7 +26,7 @@ func main() {
 	case 2:
 		printAndExitWithValue("Missing destination path", 2)
 	case 3:
-		if err := copy(os.Args[1], os.Args[2]); err != nil {
+		if err := copyFile(os.Args[1], os.Args[2]); err != nil {
 			fmt.Println(err.Error())
 			os.Exit(3)
 		}
@@ -36,7 +36,7 @@ func main() {
 	}
 }
 
-func copy(src, dst string) error {
+func copyFile(src, dst string) error {
 	sourceFileStat, err := os.Stat(src)
 	if err != nil {
 		return err
@@ -70,7 +70,7 @@ func copyDir(src, dst string) error {
 				return err
 			}
 		}
-		if err := copy(filepath.Join(src, f.Name()), filepath.Join(dst, f.Name())); err != nil {
+		if err := copyFile(filepath.Join(src, f.Name()), filepath.Join(dst, f.Name())); err != nil {
 			return err
 		}
 	}

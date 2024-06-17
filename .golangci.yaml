@@ -1,22 +1,19 @@
 run:
   concurrency: 4
-  deadline: 10m
 
-  skip-files:
-  - ".*\\.pb\\.go$"
-  - ".*/out_vali\\.go$"
-  - ".*/.*_test\\.go$"
-  - "tests/.*"
-  
 linters-settings:
   errcheck:
-    exclude: ./exclude_functions.txt
-  
+    exclude-functions:
+      - (github.com/go-kit/kit/log.Logger).Log
+      - (*github.com/weaveworks/common/logging.Level).Set
+      - (*github.com/cortexproject/cortex/pkg/util/flagext.URLValue).Set
+
 linters:
   disable:
   - unused
   enable:
   - revive
+
 
 issues:
   exclude-use-default: false
@@ -43,3 +40,8 @@ issues:
   - path: cmd/out_vali\.go
     linters:
     - deadcode
+  exclude-files:
+    - ".*\\.pb\\.go$"
+    - ".*/out_vali\\.go$"
+    - ".*/.*_test\\.go$"
+    - "tests/.*"

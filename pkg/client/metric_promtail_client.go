@@ -44,7 +44,7 @@ func NewPromtailClient(cfg client.Config, logger log.Logger) (ValiClient, error)
 }
 
 // newTestingPromtailClient is wrapping fake grafana/vali client used for testing
-func newTestingPromtailClient(c client.Client, cfg client.Config, logger log.Logger) (ValiClient, error) {
+func newTestingPromtailClient(c client.Client, cfg client.Config) (ValiClient, error) {
 	return &valitailClientWithForwardedLogsMetricCounter{
 		valiclient: c,
 		host:       cfg.URL.Hostname(),
