@@ -1,3 +1,4 @@
+//go:build tools
 // +build tools
 
 // SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
@@ -8,13 +9,6 @@
 package tools
 
 import (
-	_ "github.com/gardener/gardener/hack"
-	_ "github.com/gardener/gardener/hack/.ci"
-	_ "github.com/gardener/gardener/hack/api-reference/template"
-
-	_ "github.com/ahmetb/gen-crd-api-reference-docs"
-	_ "github.com/gobuffalo/packr/v2/packr2"
 	_ "github.com/golang/mock/mockgen"
 	_ "github.com/onsi/ginkgo/ginkgo"
-	_ "k8s.io/code-generator"
 )
