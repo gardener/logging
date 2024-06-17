@@ -38,7 +38,7 @@ func NewEventInformerFuncForNamespace(origin, namespace string) kubeinformersint
 					printV1Event(v1Event, origin)
 				}
 			},
-			UpdateFunc: func(oldObj interface{}, newObject interface{}) {
+			UpdateFunc: func(_ interface{}, newObject interface{}) {
 				if isV1Event(newObject) {
 					v1Event := newObject.(*v1.Event)
 					printV1Event(v1Event, origin)

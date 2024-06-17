@@ -36,12 +36,12 @@ func NewClient(cfg config.Config, logger log.Logger, options Options) (ValiClien
 	)
 
 	if cfg.ClientConfig.TestingClient == nil {
-		ncf = func(c config.Config, logger log.Logger) (ValiClient, error) {
+		ncf = func(c config.Config, _ log.Logger) (ValiClient, error) {
 			return NewPromtailClient(c.ClientConfig.CredativValiConfig, logger)
 		}
 	} else {
-		ncf = func(c config.Config, logger log.Logger) (ValiClient, error) {
-			return newTestingPromtailClient(cfg.ClientConfig.TestingClient, c.ClientConfig.CredativValiConfig, logger)
+		ncf = func(c config.Config, _ log.Logger) (ValiClient, error) {
+			return newTestingPromtailClient(cfg.ClientConfig.TestingClient, c.ClientConfig.CredativValiConfig)
 		}
 	}
 

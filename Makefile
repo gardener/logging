@@ -26,7 +26,7 @@ GARDENER_DIR                               := $(REPO_ROOT)/gardener
 
 # linter dependencies
 GO_LINT                                    := $(TOOLS_DIR)/golangci-lint
-GO_LINT_VERSION                            ?= v1.51.2
+GO_LINT_VERSION                            ?= v1.59.1
 
 # test dependencies
 GINKGO                                     := $(TOOLS_DIR)/ginkgo
@@ -132,7 +132,7 @@ tidy:
 .PHONY: check
 check: format $(GO_LINT)
 	 $(GO_LINT) run --config=$(REPO_ROOT)/.golangci.yaml --timeout 10m $(REPO_ROOT)/cmd/... $(REPO_ROOT)/pkg/...
-	 go vet -mod=vendor $(REPO_ROOT)/cmd/... $(REPO_ROOT)/pkg/...
+	 go vet $(REPO_ROOT)/cmd/... $(REPO_ROOT)/pkg/...
 
 .PHONY: format
 format:

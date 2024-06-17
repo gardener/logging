@@ -32,7 +32,7 @@ func NewCommandStartGardenerEventLogger() *cobra.Command {
 		Use:   "gardener-event-logger",
 		Short: "Launch the Gardener Event Logger",
 		Long:  "Launch the Gardener Event Logger",
-		RunE: func(c *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			verflag.PrintAndExitIfRequested()
 
 			if err := opts.Validate(); err != nil {
