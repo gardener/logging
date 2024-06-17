@@ -7,11 +7,11 @@ package batch
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
+	g "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
 func TestVali(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Vali Batch Suite")
+	RegisterFailHandler(g.Fail)
+	g.RunSpecs(t, "Vali Batch Suite")
 }

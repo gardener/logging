@@ -5,14 +5,13 @@
 package batch
 
 import (
+	g "github.com/onsi/ginkgo/v2"
 	"time"
 
-	. "github.com/onsi/ginkgo"
-	ginkgoTable "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Stream", func() {
+var _ = g.Describe("Stream", func() {
 
 	type addTestArgs struct {
 		entries        []Entry
@@ -28,7 +27,7 @@ var _ = Describe("Stream", func() {
 	timeStamp2 := timeStamp1.Add(time.Second)
 	timeStamp3 := timeStamp2.Add(time.Second)
 
-	ginkgoTable.DescribeTable("#add",
+	g.DescribeTable("#add",
 		func(args addTestArgs) {
 			stream := Stream{}
 			for _, entry := range args.entries {
@@ -37,7 +36,7 @@ var _ = Describe("Stream", func() {
 
 			Expect(stream).To(Equal(args.expectedStream))
 		},
-		ginkgoTable.Entry("add one entry", addTestArgs{
+		g.Entry("add one entry", addTestArgs{
 			entries: []Entry{
 				{
 					Timestamp: timeStamp1,
@@ -55,7 +54,7 @@ var _ = Describe("Stream", func() {
 				isEntryOutOfOrder: false,
 			},
 		}),
-		ginkgoTable.Entry("add two entries", addTestArgs{
+		g.Entry("add two entries", addTestArgs{
 			entries: []Entry{
 				{
 					Timestamp: timeStamp1,
@@ -81,7 +80,7 @@ var _ = Describe("Stream", func() {
 				isEntryOutOfOrder: false,
 			},
 		}),
-		ginkgoTable.Entry("add two entries without order", addTestArgs{
+		g.Entry("add two entries without order", addTestArgs{
 			entries: []Entry{
 				{
 					Timestamp: timeStamp2,
@@ -109,12 +108,12 @@ var _ = Describe("Stream", func() {
 		}),
 	)
 
-	ginkgoTable.DescribeTable("#sort",
+	g.DescribeTable("#sort",
 		func(args sortTestArgs) {
 			args.stream.sort()
 			Expect(args.stream).To(Equal(args.expectedStream))
 		},
-		ginkgoTable.Entry("sort stream with two out of order entries", sortTestArgs{
+		g.Entry("sort stream with two out of order entries", sortTestArgs{
 			stream: Stream{
 				Entries: []Entry{
 					{
@@ -144,7 +143,7 @@ var _ = Describe("Stream", func() {
 				isEntryOutOfOrder: false,
 			},
 		}),
-		ginkgoTable.Entry("sort stream with three out of order entries", sortTestArgs{
+		g.Entry("sort stream with three out of order entries", sortTestArgs{
 			stream: Stream{
 				Entries: []Entry{
 					{
@@ -182,7 +181,7 @@ var _ = Describe("Stream", func() {
 				isEntryOutOfOrder: false,
 			},
 		}),
-		ginkgoTable.Entry("sort stream with no out of order entries", sortTestArgs{
+		g.Entry("sort stream with no out of order entries", sortTestArgs{
 			stream: Stream{
 				Entries: []Entry{
 					{

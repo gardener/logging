@@ -6,6 +6,7 @@ package client_test
 
 import (
 	"encoding/json"
+	g "github.com/onsi/ginkgo/v2"
 	"os"
 	"time"
 
@@ -15,14 +16,12 @@ import (
 	"github.com/credativ/vali/pkg/logproto"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	. "github.com/onsi/ginkgo"
-	ginkotable "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	"github.com/prometheus/common/model"
 	"github.com/weaveworks/common/logging"
 )
 
-var _ = Describe("Pack Client", func() {
+var _ = g.Describe("Pack Client", func() {
 
 	var (
 		fakeClient *client.FakeValiClient
@@ -47,7 +46,7 @@ var _ = Describe("Pack Client", func() {
 		logger log.Logger
 	)
 
-	BeforeEach(func() {
+	g.BeforeEach(func() {
 		fakeClient = &client.FakeValiClient{}
 		cfg = config.Config{}
 
@@ -63,7 +62,7 @@ var _ = Describe("Pack Client", func() {
 		wantedEntries   []client.Entry
 	}
 
-	ginkotable.DescribeTable("#Handle", func(args handleArgs) {
+	g.DescribeTable("#Handle", func(args handleArgs) {
 		cfg.PluginConfig.PreservedLabels = args.preservedLabels
 		packClient, err := client.NewPackClientDecorator(cfg, newValiClientFunc, logger)
 		Expect(err).ToNot(HaveOccurred())
@@ -80,7 +79,7 @@ var _ = Describe("Pack Client", func() {
 			Expect((entry.Line)).To(Equal(args.wantedEntries[idx].Line))
 		}
 	},
-		ginkotable.Entry("Handle record without preserved labels", handleArgs{
+		g.Entry("Handle record without preserved labels", handleArgs{
 			preservedLabels: model.LabelSet{},
 			incomingEntries: []client.Entry{
 				{
@@ -101,7 +100,7 @@ var _ = Describe("Pack Client", func() {
 				},
 			},
 		}),
-		ginkotable.Entry("Handle one record which contains only one reserved label", handleArgs{
+		g.Entry("Handle one record which contains only one reserved label", handleArgs{
 			preservedLabels: preservedLabels,
 			incomingEntries: []client.Entry{
 				{
@@ -126,7 +125,7 @@ var _ = Describe("Pack Client", func() {
 				},
 			},
 		}),
-		ginkotable.Entry("Handle two record which contains only the reserved label", handleArgs{
+		g.Entry("Handle two record which contains only the reserved label", handleArgs{
 			preservedLabels: preservedLabels,
 			incomingEntries: []client.Entry{
 				{
@@ -173,7 +172,7 @@ var _ = Describe("Pack Client", func() {
 				},
 			},
 		}),
-		ginkotable.Entry("Handle three record which contains various label", handleArgs{
+		g.Entry("Handle three record which contains various label", handleArgs{
 			preservedLabels: preservedLabels,
 			incomingEntries: []client.Entry{
 				{
@@ -240,8 +239,8 @@ var _ = Describe("Pack Client", func() {
 		}),
 	)
 
-	Describe("#Stop", func() {
-		It("should stop", func() {
+	g.Describe("#Stop", func() {
+		g.It("should stop", func() {
 			packClient, err := client.NewPackClientDecorator(cfg, newValiClientFunc, logger)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -254,8 +253,8 @@ var _ = Describe("Pack Client", func() {
 		})
 	})
 
-	Describe("#StopWait", func() {
-		It("should stop", func() {
+	g.Describe("#StopWait", func() {
+		g.It("should stop", func() {
 			packClient, err := client.NewPackClientDecorator(cfg, newValiClientFunc, logger)
 			Expect(err).ToNot(HaveOccurred())
 

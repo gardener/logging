@@ -5,15 +5,16 @@
 package valiplugin
 
 import (
-	"github.com/gardener/logging/pkg/client"
 	"os"
 	"regexp"
 	"time"
 
+	"github.com/gardener/logging/pkg/client"
+
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/ginkgo/v2"
+
 	. "github.com/onsi/gomega"
 	"github.com/prometheus/common/model"
 	"github.com/weaveworks/common/logging"

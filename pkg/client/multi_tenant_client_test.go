@@ -14,20 +14,20 @@ import (
 	valitailclient "github.com/credativ/vali/pkg/valitail/client"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	. "github.com/onsi/ginkgo"
-	ginkotable "github.com/onsi/ginkgo/extensions/table"
+
+	g "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/prometheus/common/model"
 	"github.com/weaveworks/common/logging"
 )
 
-var _ = Describe("Multi Tenant Client", func() {
+var _ = g.Describe("Multi Tenant Client", func() {
 	var (
 		fakeClient *client.FakeValiClient
 		mtc        client.ValiClient
 	)
 
-	BeforeEach(func() {
+	g.BeforeEach(func() {
 		var err error
 		fakeClient = &client.FakeValiClient{}
 		var infoLogLevel logging.Level
@@ -48,7 +48,7 @@ var _ = Describe("Multi Tenant Client", func() {
 		s             string
 		wantedTenants []model.LabelValue
 	}
-	ginkotable.DescribeTable("#Handle", func(args handleArgs) {
+	g.DescribeTable("#Handle", func(args handleArgs) {
 		err := mtc.Handle(args.ls, args.t, args.s)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(len(fakeClient.Entries) > 0).To(BeTrue())
@@ -73,43 +73,43 @@ var _ = Describe("Multi Tenant Client", func() {
 			Expect(entry.Line).To(Equal(args.s))
 		}
 	},
-		ginkotable.Entry("Handle record without reserved labels", handleArgs{
+		g.Entry("Handle record without reserved labels", handleArgs{
 			ls:            model.LabelSet{"hostname": "test"},
 			t:             time.Now(),
 			s:             "test1",
 			wantedTenants: []model.LabelValue{},
 		}),
-		ginkotable.Entry("Handle record without __gardener_multitenant_id__ reserved label", handleArgs{
+		g.Entry("Handle record without __gardener_multitenant_id__ reserved label", handleArgs{
 			ls:            model.LabelSet{"hostname": "test", "__tenant_id__": "user"},
 			t:             time.Now(),
 			s:             "test1",
 			wantedTenants: []model.LabelValue{"user"},
 		}),
-		ginkotable.Entry("Handle record with __gardener_multitenant_id__ reserved label. Separator \"; \"", handleArgs{
+		g.Entry("Handle record with __gardener_multitenant_id__ reserved label. Separator \"; \"", handleArgs{
 			ls:            model.LabelSet{"hostname": "test", "__gardener_multitenant_id__": "operator; user"},
 			t:             time.Now(),
 			s:             "test1",
 			wantedTenants: []model.LabelValue{"operator", "user"},
 		}),
-		ginkotable.Entry("Handle record with __gardener_multitenant_id__ reserved label. Separator \";\"", handleArgs{
+		g.Entry("Handle record with __gardener_multitenant_id__ reserved label. Separator \";\"", handleArgs{
 			ls:            model.LabelSet{"hostname": "test", "__gardener_multitenant_id__": "operator;user"},
 			t:             time.Now(),
 			s:             "test1",
 			wantedTenants: []model.LabelValue{"operator", "user"},
 		}),
-		ginkotable.Entry("Handle record with __gardener_multitenant_id__ reserved label. Separator \" ; \" and leading and trailing spaces", handleArgs{
+		g.Entry("Handle record with __gardener_multitenant_id__ reserved label. Separator \" ; \" and leading and trailing spaces", handleArgs{
 			ls:            model.LabelSet{"hostname": "test", "__gardener_multitenant_id__": "  operator ; user  "},
 			t:             time.Now(),
 			s:             "test1",
 			wantedTenants: []model.LabelValue{"operator", "user"},
 		}),
-		ginkotable.Entry("Handle record with __gardener_multitenant_id__ reserved label with one empty. Separator \" ; \" and leading and trailing spaces.", handleArgs{
+		g.Entry("Handle record with __gardener_multitenant_id__ reserved label with one empty. Separator \" ; \" and leading and trailing spaces.", handleArgs{
 			ls:            model.LabelSet{"hostname": "test", "__gardener_multitenant_id__": "  operator ; ; user  "},
 			t:             time.Now(),
 			s:             "test1",
 			wantedTenants: []model.LabelValue{"operator", "user"},
 		}),
-		ginkotable.Entry("Handle record with __gardener_multitenant_id__ and __tenant_id__ reserved labels.", handleArgs{
+		g.Entry("Handle record with __gardener_multitenant_id__ and __tenant_id__ reserved labels.", handleArgs{
 			ls:            model.LabelSet{"hostname": "test", "__tenant_id__": "pinokio", "__gardener_multitenant_id__": "operator; user"},
 			t:             time.Now(),
 			s:             "test1",
@@ -117,8 +117,8 @@ var _ = Describe("Multi Tenant Client", func() {
 		}),
 	)
 
-	Describe("#Stop", func() {
-		It("should stop", func() {
+	g.Describe("#Stop", func() {
+		g.It("should stop", func() {
 			Expect(fakeClient.IsGracefullyStopped).To(BeFalse())
 			Expect(fakeClient.IsStopped).To(BeFalse())
 			mtc.Stop()
@@ -127,8 +127,8 @@ var _ = Describe("Multi Tenant Client", func() {
 		})
 	})
 
-	Describe("#StopWait", func() {
-		It("should stop", func() {
+	g.Describe("#StopWait", func() {
+		g.It("should stop", func() {
 			Expect(fakeClient.IsGracefullyStopped).To(BeFalse())
 			Expect(fakeClient.IsStopped).To(BeFalse())
 			mtc.StopWait()
@@ -139,13 +139,13 @@ var _ = Describe("Multi Tenant Client", func() {
 
 })
 
-var _ = Describe("Remove Multi Tenant Client", func() {
+var _ = g.Describe("Remove Multi Tenant Client", func() {
 	var (
 		fakeClient *client.FakeValiClient
 		mtc        client.ValiClient
 	)
 
-	BeforeEach(func() {
+	g.BeforeEach(func() {
 		var err error
 		fakeClient = &client.FakeValiClient{}
 		var infoLogLevel logging.Level
@@ -166,7 +166,7 @@ var _ = Describe("Remove Multi Tenant Client", func() {
 		s              string
 		wantedLabelSet model.LabelSet
 	}
-	ginkotable.DescribeTable("#Handle", func(args handleArgs) {
+	g.DescribeTable("#Handle", func(args handleArgs) {
 		err := mtc.Handle(args.ls, args.t, args.s)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(len(fakeClient.Entries) > 0).To(BeTrue())
@@ -175,37 +175,37 @@ var _ = Describe("Remove Multi Tenant Client", func() {
 			Expect(entry.Labels).To(Equal(args.wantedLabelSet))
 		}
 	},
-		ginkotable.Entry("Handle record without __gardener_multitenant_id__ labels.", handleArgs{
+		g.Entry("Handle record without __gardener_multitenant_id__ labels.", handleArgs{
 			ls:             model.LabelSet{"hostname": "test"},
 			t:              time.Now(),
 			s:              "test1",
 			wantedLabelSet: model.LabelSet{"hostname": "test"},
 		}),
-		ginkotable.Entry("Handle record without __gardener_multitenant_id__ label and with __tenant_id__ label.", handleArgs{
+		g.Entry("Handle record without __gardener_multitenant_id__ label and with __tenant_id__ label.", handleArgs{
 			ls:             model.LabelSet{"hostname": "test", "__tenant_id__": "user"},
 			t:              time.Now(),
 			s:              "test1",
 			wantedLabelSet: model.LabelSet{"hostname": "test", "__tenant_id__": "user"},
 		}),
-		ginkotable.Entry("Handle record with __gardener_multitenant_id__ reserved label.", handleArgs{
+		g.Entry("Handle record with __gardener_multitenant_id__ reserved label.", handleArgs{
 			ls:             model.LabelSet{"hostname": "test", "__gardener_multitenant_id__": "operator; user"},
 			t:              time.Now(),
 			s:              "test1",
 			wantedLabelSet: model.LabelSet{"hostname": "test"},
 		}),
-		ginkotable.Entry("Handle record with __gardener_multitenant_id__ reserved label and __tenant_id__ label.", handleArgs{
+		g.Entry("Handle record with __gardener_multitenant_id__ reserved label and __tenant_id__ label.", handleArgs{
 			ls:             model.LabelSet{"hostname": "test", "__gardener_multitenant_id__": "operator;user", "__tenant_id__": "user"},
 			t:              time.Now(),
 			s:              "test1",
 			wantedLabelSet: model.LabelSet{"hostname": "test", "__tenant_id__": "user"},
 		}),
-		ginkotable.Entry("Handle record without labels", handleArgs{
+		g.Entry("Handle record without labels", handleArgs{
 			ls:             model.LabelSet{},
 			t:              time.Now(),
 			s:              "test1",
 			wantedLabelSet: model.LabelSet{},
 		}),
-		ginkotable.Entry("Handle record with nil label set", handleArgs{
+		g.Entry("Handle record with nil label set", handleArgs{
 			ls:             nil,
 			t:              time.Now(),
 			s:              "test1",
@@ -213,8 +213,8 @@ var _ = Describe("Remove Multi Tenant Client", func() {
 		}),
 	)
 
-	Describe("#Stop", func() {
-		It("should stop", func() {
+	g.Describe("#Stop", func() {
+		g.It("should stop", func() {
 			Expect(fakeClient.IsGracefullyStopped).To(BeFalse())
 			Expect(fakeClient.IsStopped).To(BeFalse())
 			mtc.Stop()
@@ -223,8 +223,8 @@ var _ = Describe("Remove Multi Tenant Client", func() {
 		})
 	})
 
-	Describe("#StopWait", func() {
-		It("should stop", func() {
+	g.Describe("#StopWait", func() {
+		g.It("should stop", func() {
 			Expect(fakeClient.IsGracefullyStopped).To(BeFalse())
 			Expect(fakeClient.IsStopped).To(BeFalse())
 			mtc.StopWait()

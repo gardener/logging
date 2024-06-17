@@ -7,15 +7,14 @@ package batch
 import (
 	"time"
 
-	. "github.com/onsi/ginkgo"
-	ginkgoTable "github.com/onsi/ginkgo/extensions/table"
+	g "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/prometheus/common/model"
 )
 
-var _ = Describe("Batch", func() {
-	Describe("#NewBatch", func() {
-		It("Should create new batch", func() {
+var _ = g.Describe("Batch", func() {
+	g.Describe("#NewBatch", func() {
+		g.It("Should create new batch", func() {
 			var id uint64 = 11
 			batch := NewBatch(model.LabelName("id"), id%10)
 			Expect(batch).ToNot(BeNil())
@@ -57,7 +56,7 @@ var _ = Describe("Batch", func() {
 	timeStamp1 := time.Now()
 	timeStamp2 := timeStamp1.Add(time.Second)
 
-	ginkgoTable.DescribeTable("#Add",
+	g.DescribeTable("#Add",
 		func(args addTestArgs) {
 			batch := NewBatch(model.LabelName("id"), 0)
 			for _, entry := range args.entries {
@@ -72,7 +71,7 @@ var _ = Describe("Batch", func() {
 				Expect(stream).To(Equal(s))
 			}
 		},
-		ginkgoTable.Entry("add one entry for one stream", addTestArgs{
+		g.Entry("add one entry for one stream", addTestArgs{
 			entries: []entry{
 				{
 					LabelSet:  label1,
@@ -96,7 +95,7 @@ var _ = Describe("Batch", func() {
 				bytes: 5,
 			},
 		}),
-		ginkgoTable.Entry("add two entry for one stream", addTestArgs{
+		g.Entry("add two entry for one stream", addTestArgs{
 			entries: []entry{
 				{
 					LabelSet:  label1,
@@ -129,7 +128,7 @@ var _ = Describe("Batch", func() {
 				bytes: 10,
 			},
 		}),
-		ginkgoTable.Entry("Add two entry for two stream", addTestArgs{
+		g.Entry("Add two entry for two stream", addTestArgs{
 			entries: []entry{
 				{
 					LabelSet:  label1,
@@ -168,7 +167,7 @@ var _ = Describe("Batch", func() {
 				bytes: 10,
 			},
 		}),
-		ginkgoTable.Entry("Add two entry per each for two streams", addTestArgs{
+		g.Entry("Add two entry per each for two streams", addTestArgs{
 			entries: []entry{
 				{
 					LabelSet:  label1,
@@ -226,12 +225,12 @@ var _ = Describe("Batch", func() {
 			},
 		}),
 	)
-	ginkgoTable.DescribeTable("#Sort",
+	g.DescribeTable("#Sort",
 		func(args sortTestArgs) {
 			args.batch.Sort()
 			Expect(args.batch).To(Equal(args.expectedBatch))
 		},
-		ginkgoTable.Entry("Sort batch with single stream with single entry", sortTestArgs{
+		g.Entry("Sort batch with single stream with single entry", sortTestArgs{
 			batch: Batch{
 				streams: map[string]*Stream{
 					label1.String(): &Stream{
@@ -263,7 +262,7 @@ var _ = Describe("Batch", func() {
 				bytes: 5,
 			},
 		}),
-		ginkgoTable.Entry("Sort batch with single stream with two entry", sortTestArgs{
+		g.Entry("Sort batch with single stream with two entry", sortTestArgs{
 			batch: Batch{
 				streams: map[string]*Stream{
 					label1.String(): &Stream{
@@ -304,7 +303,7 @@ var _ = Describe("Batch", func() {
 				bytes: 5,
 			},
 		}),
-		ginkgoTable.Entry("Sort batch with two stream with two entry", sortTestArgs{
+		g.Entry("Sort batch with two stream with two entry", sortTestArgs{
 			batch: Batch{
 				streams: map[string]*Stream{
 					label1.String(): &Stream{

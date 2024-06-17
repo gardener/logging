@@ -5,6 +5,7 @@
 package client
 
 import (
+	g "github.com/onsi/ginkgo/v2"
 	"net/url"
 	"os"
 	"time"
@@ -15,7 +16,6 @@ import (
 	"github.com/credativ/vali/pkg/valitail/client"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/prometheus/common/model"
 	"github.com/weaveworks/common/logging"
@@ -23,7 +23,7 @@ import (
 	"github.com/gardener/logging/pkg/config"
 )
 
-var _ = Describe("Client", func() {
+var _ = g.Describe("Client", func() {
 	defaultURL, _ := parseURL("http://localhost:3100/vali/api/v1/push")
 	var infoLogLevel logging.Level
 	_ = infoLogLevel.Set("info")
@@ -75,8 +75,8 @@ var _ = Describe("Client", func() {
 	logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
 	logger = level.NewFilter(logger, infoLogLevel.Gokit)
 
-	Describe("NewClient", func() {
-		It("should create a client", func() {
+	g.Describe("NewClient", func() {
+		g.It("should create a client", func() {
 			c, err := NewClient(conf, logger, Options{})
 			Expect(err).ToNot(HaveOccurred())
 			Expect(c).ToNot(BeNil())

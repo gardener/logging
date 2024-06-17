@@ -30,7 +30,7 @@ GO_LINT_VERSION                            ?= v1.59.1
 
 # test dependencies
 GINKGO                                     := $(TOOLS_DIR)/ginkgo
-GINKGO_VERSION                             ?= v1.16.2
+GINKGO_VERSION                             ?= v2.19.0
 
 # yq dependencies
 YQ                                         := $(TOOLS_DIR)/yq
@@ -190,7 +190,7 @@ $(GO_LINT):
 
 # fetch ginkgo dependency
 $(GINKGO):
-	@GOBIN=$(TOOLS_DIR) go install github.com/onsi/ginkgo/ginkgo@$(GINKGO_VERSION)
+	@GOBIN=$(TOOLS_DIR) go install -mod=mod github.com/onsi/ginkgo/v2/ginkgo@$(GINKGO_VERSION)
 
 # fetch yq dependency
 $(YQ):

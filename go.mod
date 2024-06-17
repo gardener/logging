@@ -17,7 +17,6 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/joncrlsn/dque v2.2.1-0.20200515025108-956d14155fa2+incompatible
 	github.com/json-iterator/go v1.1.12
-	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/ginkgo/v2 v2.19.0
 	github.com/onsi/gomega v1.33.1
 	github.com/pkg/errors v0.9.1
@@ -65,7 +64,6 @@ require (
 	github.com/go-openapi/jsonpointer v0.20.0 // indirect
 	github.com/go-openapi/jsonreference v0.20.2 // indirect
 	github.com/go-openapi/swag v0.22.4 // indirect
-	github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gofrs/flock v0.8.1 // indirect
@@ -105,7 +103,6 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
 	github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f // indirect
-	github.com/nxadm/tail v1.4.8 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/opentracing-contrib/go-grpc v0.0.0-20210225150812-73cb765af46e // indirect
 	github.com/opentracing-contrib/go-stdlib v1.0.0 // indirect
@@ -150,7 +147,6 @@ require (
 	google.golang.org/grpc v1.62.1 // indirect
 	google.golang.org/protobuf v1.34.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
-	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	helm.sh/helm/v3 v3.14.4 // indirect
 	istio.io/api v1.22.1 // indirect

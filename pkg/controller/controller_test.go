@@ -7,9 +7,10 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gardener/logging/pkg/client"
 	"os"
 	"time"
+
+	"github.com/gardener/logging/pkg/client"
 
 	"github.com/gardener/logging/pkg/config"
 
@@ -19,8 +20,7 @@ import (
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/prometheus/common/model"
 	"github.com/weaveworks/common/logging"
