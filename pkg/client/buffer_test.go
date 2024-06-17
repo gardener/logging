@@ -11,7 +11,7 @@ import (
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	. "github.com/onsi/ginkgo"
+	g "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/prometheus/common/model"
 	"github.com/weaveworks/common/logging"
@@ -19,7 +19,7 @@ import (
 	"github.com/gardener/logging/pkg/config"
 )
 
-var _ = Describe("Buffer", func() {
+var _ = g.Describe("Buffer", func() {
 	var infoLogLevel logging.Level
 	_ = infoLogLevel.Set("info")
 	var conf config.Config
@@ -27,8 +27,8 @@ var _ = Describe("Buffer", func() {
 	logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
 	logger = level.NewFilter(logger, infoLogLevel.Gokit)
 
-	Describe("NewBuffer", func() {
-		BeforeEach(func() {
+	g.Describe("NewBuffer", func() {
+		g.BeforeEach(func() {
 			conf = config.Config{
 				ClientConfig: config.ClientConfig{
 					BufferConfig: config.BufferConfig{
@@ -44,10 +44,10 @@ var _ = Describe("Buffer", func() {
 				},
 			}
 		})
-		AfterEach(func() {
+		g.AfterEach(func() {
 			os.RemoveAll("/tmp/dque")
 		})
-		It("should create a buffered client when buffer is set", func() {
+		g.It("should create a buffered client when buffer is set", func() {
 			conf := conf
 			conf.ClientConfig.BufferConfig.Buffer = true
 			c, err := NewBuffer(conf, logger, newFakeValiClient)
@@ -55,7 +55,7 @@ var _ = Describe("Buffer", func() {
 			Expect(c).ToNot(BeNil())
 		})
 
-		It("should not create a buffered client when buffer type is wrong", func() {
+		g.It("should not create a buffered client when buffer type is wrong", func() {
 			conf := conf
 			conf.ClientConfig.BufferConfig.BufferType = "wrong-buffer"
 			c, err := NewBuffer(conf, logger, newFakeValiClient)
@@ -64,10 +64,10 @@ var _ = Describe("Buffer", func() {
 		})
 	})
 
-	Describe("newDque", func() {
+	g.Describe("newDque", func() {
 		var valiclient ValiClient
 
-		BeforeEach(func() {
+		g.BeforeEach(func() {
 			var err error
 			conf = config.Config{
 				ClientConfig: config.ClientConfig{
@@ -87,11 +87,11 @@ var _ = Describe("Buffer", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(valiclient).ToNot(BeNil())
 		})
-		AfterEach(func() {
+		g.AfterEach(func() {
 			err := os.RemoveAll("/tmp/gardener")
 			Expect(err).ToNot(HaveOccurred())
 		})
-		It("should sent log successfully", func() {
+		g.It("should sent log successfully", func() {
 			ls := model.LabelSet{
 				"foo": "bar",
 			}
@@ -111,7 +111,7 @@ var _ = Describe("Buffer", func() {
 			Expect(log.timestamp).To(Equal(ts))
 			Expect(log.line).To(Equal(line))
 		})
-		It("should stop correctly", func() {
+		g.It("should stop correctly", func() {
 			valiclient.Stop()
 			dQueCleint, ok := valiclient.(*dqueClient)
 			Expect(ok).To(BeTrue())
@@ -124,7 +124,7 @@ var _ = Describe("Buffer", func() {
 			_, err := os.Stat("/tmp/gardener")
 			Expect(os.IsNotExist(err)).To(BeFalse())
 		})
-		It("should gracefully stop correctly", func() {
+		g.It("should gracefully stop correctly", func() {
 			valiclient.StopWait()
 			dQueCleint, ok := valiclient.(*dqueClient)
 			Expect(ok).To(BeTrue())
