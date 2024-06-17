@@ -131,16 +131,16 @@ tidy:
 
 .PHONY: check
 check: format $(GO_LINT)
-	 $(GO_LINT) run --config=$(REPO_ROOT)/.golangci.yaml --timeout 10m $(REPO_ROOT)/cmd/... $(REPO_ROOT)/pkg/...
-	 go vet $(REPO_ROOT)/cmd/... $(REPO_ROOT)/pkg/...
+	 @$(GO_LINT) run --config=$(REPO_ROOT)/.golangci.yaml --timeout 10m $(REPO_ROOT)/cmd/... $(REPO_ROOT)/pkg/...
+	 @go vet $(REPO_ROOT)/cmd/... $(REPO_ROOT)/pkg/...
 
 .PHONY: format
 format:
-	gofmt -l -w $(REPO_ROOT)/cmd $(REPO_ROOT)/pkg
+	@gofmt -l -w $(REPO_ROOT)/cmd $(REPO_ROOT)/pkg
 
 .PHONY: test
 test: $(GINKGO)
-	$(GINKGO) ./pkg/...
+	@go test $(REPO_ROOT)/pkg/... --v --ginkgo.v --ginkgo.no-color
 
 .PHONY: install-requirements
 install-requirements: $(GO_LINT) $(GINKGO)

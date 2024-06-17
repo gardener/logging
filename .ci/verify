@@ -10,10 +10,31 @@ git config --global user.email "gardener@sap.com"
 git config --global user.name "Gardener CI/CD"
 
 apt-get update
-apt-get install -y unzip
+apt-get install -y unzip curl
 
-mkdir -p /go/src/github.com/gardener/logging
-cp -r . /go/src/github.com/gardener/logging
-cd /go/src/github.com/gardener/logging
+ARCH=""
+# Translate the architecture to amd64 or arm64
+case "$(uname -m)" in
+    x86_64)
+        ARCH="amd64"
+        ;;
+    aarch64)
+        ARCH="arm64"
+        ;;
+    *)
+        echo "Unsupported architecture: $ARCH"
+        exit 1
+        ;;
+esac
 
+curl -LO "https://go.dev/dl/go1.22.4.linux-$ARCH.tar.gz"
+rm -rf /usr/local/go && tar -C /usr/local -xzf "go1.22.4.linux-$ARCH.tar.gz"
+
+export \
+  PATH="/usr/local/go/bin":$PATH \
+  GOARCH="$(go env GOARCH)" \
+  GOOS="$(go env GOOS)" \
+  GOROOT="/usr/local/go"
+
+go version
 make verify
