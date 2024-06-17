@@ -94,18 +94,17 @@ func (o *Options) Validate() error {
 	return utilerrors.NewAggregate(errs)
 }
 
-func (o *Options) config(seedKubeAPIServerConfig *rest.Config, seedKubeClient *kubernetes.Clientset, shootKubeAPIServerConfig *rest.Config, shootKubeClient *kubernetes.Clientset) (*events.GardenerEventWatcherConfig, error) {
+func (o *Options) config(_ *rest.Config, seedKubeClient *kubernetes.Clientset, shootKubeAPIServerConfig *rest.Config, shootKubeClient *kubernetes.Clientset) (*events.GardenerEventWatcherConfig, error) {
 	config := &events.GardenerEventWatcherConfig{}
 
 	for _, namespace := range o.SeedEventWatcher.Namespaces {
 		config.SeedKubeInformerFactories = append(config.SeedKubeInformerFactories,
-			kubeinformers.NewFilteredSharedInformerFactory(seedKubeClient, shootKubeAPIServerConfig.Timeout, namespace, nil),
-		)
+			kubeinformers.NewSharedInformerFactoryWithOptions(seedKubeClient, shootKubeAPIServerConfig.Timeout, kubeinformers.WithNamespace(namespace)))
 	}
 
 	for _, namespace := range o.ShootEventWatcher.Namespaces {
 		config.ShootKubeInformerFactories = append(config.ShootKubeInformerFactories,
-			kubeinformers.NewFilteredSharedInformerFactory(shootKubeClient, shootKubeAPIServerConfig.Timeout, namespace, nil),
+			kubeinformers.NewSharedInformerFactoryWithOptions(shootKubeClient, shootKubeAPIServerConfig.Timeout, kubeinformers.WithNamespace(namespace)),
 		)
 	}
 
@@ -173,9 +172,6 @@ func (o *Options) Run(stopCh <-chan struct{}) error {
 	}
 
 	eventLogger := config.New()
-	if err != nil {
-		return err
-	}
 
 	eventLogger.Run(stopCh)
 
