@@ -116,12 +116,14 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 
 	// numeric plugin ID, only used for user-facing purpose (logging, ...)
 	id := len(plugins)
-	logger := log.With(newLogger(conf.LogLevel), "ts", log.DefaultTimestampUTC, "id", id)
+	_logger := log.With(newLogger(conf.LogLevel), "ts", log.DefaultTimestampUTC, "id", id)
 
-	level.Info(logger).Log("[flb-go]", "Starting fluent-bit-go-vali",
+	_ = level.Info(_logger).Log(
+		"[flb-go]", "Starting fluent-bit-go-vali",
 		"version", version.Get().GitVersion,
-		"revision", version.Get().GitCommit)
-	paramLogger := log.With(logger, "[flb-go]", "provided parameter")
+		"revision", version.Get().GitCommit,
+	)
+	paramLogger := log.With(_logger, "[flb-go]", "provided parameter")
 	level.Info(paramLogger).Log("URL", conf.ClientConfig.CredativValiConfig.URL)
 	level.Info(paramLogger).Log("TenantID", conf.ClientConfig.CredativValiConfig.TenantID)
 	level.Info(paramLogger).Log("BatchWait", conf.ClientConfig.CredativValiConfig.BatchWait)
@@ -186,10 +188,10 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 	level.Info(paramLogger).Log("SendLogsToDefaultClientWhenClusterIsInRestoreState", fmt.Sprintf("%+v", conf.ControllerConfig.DefaultControllerClientConfig.SendLogsWhenIsInRestoreState))
 	level.Info(paramLogger).Log("SendLogsToDefaultClientWhenClusterIsInMigrationState", fmt.Sprintf("%+v", conf.ControllerConfig.DefaultControllerClientConfig.SendLogsWhenIsInMigrationState))
 
-	plugin, err := valiplugin.NewPlugin(informer, conf, logger)
+	plugin, err := valiplugin.NewPlugin(informer, conf, _logger)
 	if err != nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorNewPlugin).Inc()
-		level.Error(logger).Log("newPlugin", err)
+		level.Error(_logger).Log("newPlugin", err)
 		return output.FLB_ERROR
 	}
 
@@ -279,18 +281,18 @@ func FLBPluginExit() int {
 }
 
 func newLogger(logLevel logging.Level) log.Logger {
-	logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
-	logger = level.NewFilter(logger, logLevel.Gokit)
-	logger = log.With(logger, "caller", log.Caller(3))
-	return logger
+	_logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
+	_logger = level.NewFilter(_logger, logLevel.Gokit)
+	_logger = log.With(_logger, "caller", log.Caller(3))
+	return _logger
 }
 
 func getInclusterKubernetsClient() (gardenerclientsetversioned.Interface, error) {
-	config, err := rest.InClusterConfig()
+	c, err := rest.InClusterConfig()
 	if err != nil {
 		return nil, err
 	}
-	return gardenerclientsetversioned.NewForConfig(config)
+	return gardenerclientsetversioned.NewForConfig(c)
 }
 
 func main() {}

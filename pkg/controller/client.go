@@ -9,8 +9,8 @@ import (
 	"time"
 
 	gardenercorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
-	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/log/level"
+	"github.com/go-kit/log"
+	"github.com/go-kit/log/level"
 	giterrors "github.com/pkg/errors"
 	"github.com/prometheus/common/model"
 
@@ -31,8 +31,8 @@ func (ctl *controller) GetClient(name string) (client.ValiClient, bool) {
 		return nil, true
 	}
 
-	if client, ok := ctl.clients[name]; ok {
-		return client, false
+	if c, ok := ctl.clients[name]; ok {
+		return c, false
 	}
 
 	return nil, false
@@ -61,28 +61,28 @@ func (ctl *controller) newControllerClient(clientConf *config.Config) (Controlle
 }
 
 func (ctl *controller) createControllerClient(clusterName string, shoot *gardenercorev1beta1.Shoot) {
-	clientConf := ctl.getClientConfig(clusterName)
+	clientConf := ctl.updateClientConfig(clusterName)
 	if clientConf == nil {
 		return
 	}
 
-	client, err := ctl.newControllerClient(clientConf)
+	c, err := ctl.newControllerClient(clientConf)
 	if err != nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorFailedToMakeValiClient).Inc()
 		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("failed to make new vali client for cluster %v", clusterName), "error", err.Error())
 		return
 	}
 
-	ctl.updateControllerClientState(client, shoot)
+	ctl.updateControllerClientState(c, shoot)
 
-	_ = level.Info(ctl.logger).Log("msg", "add client", "cluster", clusterName, "state", client.GetState())
+	_ = level.Info(ctl.logger).Log("msg", "add client", "cluster", clusterName, "state", c.GetState())
 	ctl.lock.Lock()
 	defer ctl.lock.Unlock()
 
 	if ctl.isStopped() {
 		return
 	}
-	ctl.clients[clusterName] = client
+	ctl.clients[clusterName] = c
 }
 
 func (ctl *controller) deleteControllerClient(clusterName string) {
@@ -93,15 +93,15 @@ func (ctl *controller) deleteControllerClient(clusterName string) {
 		return
 	}
 
-	client, ok := ctl.clients[clusterName]
-	if ok && client != nil {
+	c, ok := ctl.clients[clusterName]
+	if ok && c != nil {
 		delete(ctl.clients, clusterName)
 	}
 
 	ctl.lock.Unlock()
-	if ok && client != nil {
+	if ok && c != nil {
 		_ = level.Info(ctl.logger).Log("msg", "delete client", "cluster", clusterName)
-		client.StopWait()
+		c.StopWait()
 	}
 }
 
@@ -157,9 +157,9 @@ func (c *controllerClient) Handle(ls model.LabelSet, t time.Time, s string) erro
 
 	if sendToMain {
 		// because this client does not alter the labels set we don't need to clone
-		// the it if we don't spread the logs between the two clients. But if we
+		// it if we don't spread the logs between the two clients. But if we
 		// are sending the log record to both client we have to pass a copy because
-		// we are not sure what kind of label set processing will be done in the coresponding
+		// we are not sure what kind of label set processing will be done in the corresponding
 		// client which can lead to "concurrent map iteration and map write error".
 		if err := c.mainClient.Handle(copyLabelSet(ls, sendToDefault), t, s); err != nil {
 			combineErr = giterrors.Wrap(combineErr, err.Error())

@@ -45,31 +45,32 @@ type controller struct {
 }
 
 // NewController return Controller interface
-func NewController(informer cache.SharedIndexInformer, conf *config.Config, defaultClient client.ValiClient,
-	logger log.Logger) (Controller, error) {
-	controller := &controller{
+func NewController(informer cache.SharedIndexInformer, conf *config.Config, defaultClient client.ValiClient, l log.Logger) (Controller, error) {
+	ctl := &controller{
 		clients:       make(map[string]ControllerClient, expectedActiveClusters),
 		conf:          conf,
 		defaultClient: defaultClient,
-		logger:        logger,
+		logger:        l,
 	}
 
-	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    controller.addFunc,
-		DeleteFunc: controller.delFunc,
-		UpdateFunc: controller.updateFunc,
-	})
+	if _, err := informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    ctl.addFunc,
+		DeleteFunc: ctl.delFunc,
+		UpdateFunc: ctl.updateFunc,
+	}); err != nil {
+		return nil, fmt.Errorf("failed to add event handler: %v", err)
+	}
 
 	stopChan := make(chan struct{})
 	time.AfterFunc(conf.ControllerConfig.CtlSyncTimeout, func() {
 		close(stopChan)
 	})
 
-	if !cache.WaitForCacheSync(stopChan, informer.HasSynced) {
+	if !cache.WaitForNamedCacheSync("controller", stopChan, informer.HasSynced) {
 		return nil, fmt.Errorf("failed to wait for caches to sync")
 	}
 
-	return controller, nil
+	return ctl, nil
 }
 
 func (ctl *controller) Stop() {
@@ -90,6 +91,7 @@ func (ctl *controller) Stop() {
 	})
 }
 
+// cluster informer callback
 func (ctl *controller) addFunc(obj interface{}) {
 	cluster, ok := obj.(*extensionsv1alpha1.Cluster)
 	if !ok {
@@ -105,7 +107,7 @@ func (ctl *controller) addFunc(obj interface{}) {
 		return
 	}
 
-	if ctl.matches(shoot) && !ctl.isDeletedShoot(shoot) {
+	if ctl.isAllowedShoot(shoot) && !ctl.isDeletedShoot(shoot) {
 		ctl.createControllerClient(cluster.Name, shoot)
 	}
 }
@@ -139,26 +141,27 @@ func (ctl *controller) updateFunc(oldObj interface{}, newObj interface{}) {
 
 	_ = level.Info(ctl.logger).Log("msg", "reconciling", "cluster", newCluster.Name)
 
-	client, ok := ctl.clients[newCluster.Name]
-	//The client exist in the list so we have to update it
+	_client, ok := ctl.clients[newCluster.Name]
+	// The client exists in the list, so we need to update it.
 	if ok {
 		// The shoot is no longer applicable for logging
-		if !ctl.matches(shoot) {
+		if !ctl.isAllowedShoot(shoot) {
 			ctl.deleteControllerClient(oldCluster.Name)
 			return
 		}
 		// Sanity check
-		if client == nil {
-			_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("The client for cluster %v is NIL. Will try to create new one", oldCluster.Name))
+		if _client == nil {
+			_ = level.Error(ctl.logger).Log(
+				"msg", fmt.Sprintf("The client for cluster %v is NIL. Will try to create new one", oldCluster.Name),
+			)
 			ctl.createControllerClient(newCluster.Name, shoot)
 			return
 		}
 
-		//TODO: replace createControllerClient with updateControllerClientState function once the loki->vali transition is over.
-		ctl.recreateControllerClient(newCluster.Name, shoot)
+		ctl.updateControllerClientState(_client, shoot)
 	} else {
-		//The client does not exist and we will try to create a new one if the shoot is applicable for logging
-		if ctl.matches(shoot) {
+		// The client does not exist. Try to create a new one, if the shoot is applicable for logging.
+		if ctl.isAllowedShoot(shoot) {
 			ctl.createControllerClient(newCluster.Name, shoot)
 		}
 	}
@@ -175,88 +178,36 @@ func (ctl *controller) delFunc(obj interface{}) {
 	ctl.deleteControllerClient(cluster.Name)
 }
 
-func (ctl *controller) getClientConfig(namespace string) *config.Config {
+// updateClientConfig constructs the target URL and sets it in the client configuration
+// together with the queue name
+func (ctl *controller) updateClientConfig(clusterName string) *config.Config {
 	var clientURL flagext.URLValue
 
 	suffix := ctl.conf.ControllerConfig.DynamicHostSuffix
-	// Here we try to check the target logging backend. If we succeed,
-	// it takes precedence over the DynamicHostSuffix.
-	//TODO (nickytd) to remove the target logging backend check after the migration from loki to vali
-	if t := ctl.checkTargetLoggingBackend(ctl.conf.ControllerConfig.DynamicHostPrefix, namespace); len(t) > 0 {
-		suffix = t
-	}
 
-	url := fmt.Sprintf("%s%s%s", ctl.conf.ControllerConfig.DynamicHostPrefix, namespace, suffix)
-	_ = level.Info(ctl.logger).Log("msg", "set URL", "url", url, "cluster", namespace)
+	// Construct the target URL: DynamicHostPrefix + clusterName + DynamicHostSuffix
+	url := fmt.Sprintf("%s%s%s", ctl.conf.ControllerConfig.DynamicHostPrefix, clusterName, suffix)
+	_ = level.Info(ctl.logger).Log("msg", "set url", "url", url, "cluster", clusterName)
 
 	err := clientURL.Set(url)
 	if err != nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorFailedToParseURL).Inc()
-		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("failed to parse client URL  for %v", namespace), "error", err.Error())
+		_ = level.Error(ctl.logger).Log(
+			"msg",
+			fmt.Sprintf("failed to parse client URL  for %v: %v", clusterName, err.Error()),
+		)
 		return nil
 	}
 
 	conf := *ctl.conf
 	conf.ClientConfig.CredativValiConfig.URL = clientURL
-	conf.ClientConfig.BufferConfig.DqueConfig.QueueName = namespace
+	conf.ClientConfig.BufferConfig.DqueConfig.QueueName = clusterName
 
 	return &conf
 }
 
-func (ctl *controller) checkTargetLoggingBackend(prefix string, namespace string) string {
-	httpClient := http.Client{
-		Timeout: 5 * time.Second,
-	}
-	// let's create a Retriable Get
-	g := func(client http.Client, url string) (*http.Response, error) {
-		return client.Get(url)
-	}
-
-	// turning a logging backend config endpoint getter to a retryable with 5 retries and 2 seconds delay in between
-	retriableGet := retry(g, 5, 2*time.Second)
-	//we perform a retriable get
-	url := prefix + namespace + loggingBackendConfigEndPoint
-	resp, err := retriableGet(httpClient, url)
-	if err != nil {
-		_ = level.Error(ctl.logger).Log("msg",
-			fmt.Errorf("give up, can not connect to the target config endpoint %s after 5 retries", url))
-		return ""
-	}
-
-	if resp.StatusCode != 200 {
-		_ = level.Error(ctl.logger).Log("msg", fmt.Errorf("response status code is not expected, got %d, expected 200", resp.StatusCode))
-		return ""
-	}
-
-	cfg, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("error reading config from the response for %v", namespace), "error", err.Error())
-		return ""
-	}
-	scanner := bufio.NewScanner(strings.NewReader(string(cfg)))
-	scanner.Split(bufio.ScanLines)
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if strings.HasPrefix(line, "instance_id") {
-			instanceId := strings.Split(line, ":")
-			if len(instanceId) != 2 {
-				_ = level.Error(ctl.logger).Log("msg",
-					fmt.Sprintf("instance id is not in the expected format %s for %v", instanceId[0], namespace),
-					"error", err.Error())
-				return ""
-			}
-			switch {
-			case strings.Contains(instanceId[1], "loki"):
-				return lokiAPIPushEndPoint
-			case strings.Contains(instanceId[1], "vali"):
-				return valiAPIPushEndPoint
-			}
-		}
-	}
-	return ""
-}
-
-func (ctl *controller) matches(shoot *gardenercorev1beta1.Shoot) bool {
+// Shoots which are testing shoots should not be targeted for logging
+func (ctl *controller) isAllowedShoot(shoot *gardenercorev1beta1.Shoot) bool {
 	return !isTestingShoot(shoot)
 }
 
