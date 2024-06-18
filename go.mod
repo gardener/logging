@@ -10,7 +10,7 @@ require (
 	github.com/gardener/gardener v1.97.0
 	github.com/go-kit/kit v0.13.0
 	github.com/go-kit/log v0.2.1
-	github.com/go-logfmt/logfmt v0.5.1
+	github.com/go-logfmt/logfmt v0.6.0
 	github.com/go-logr/logr v1.4.2
 	github.com/golang/mock v1.6.0
 	github.com/joncrlsn/dque v2.2.1-0.20200515025108-956d14155fa2+incompatible
