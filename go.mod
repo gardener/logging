@@ -164,13 +164,14 @@ require (
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 
-// Vali requere this
+// vali require this
 replace (
-	// Required by dependency github.com/credativ/vali
+	// Required by github.com/credativ/vali
 	github.com/prometheus/common => github.com/prometheus/common v0.20.0
 	google.golang.org/grpc => google.golang.org/grpc v1.40.0
-	// Required by dependency github.com/gardener/gardener
+	// Required by github.com/gardener/gardener
 	k8s.io/apiserver => k8s.io/apiserver v0.29.5
 	k8s.io/client-go => k8s.io/client-go v0.29.5
+	// Required by github.com/prometheus/common
 	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.17.5
 )
