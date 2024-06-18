@@ -13,6 +13,15 @@ updates:
       - dependency-name: github.com/gardener/*
         versions:
           - "*"
+      - dependency-name: github.com/prometheus/*
+        versions:
+          - "*"
+      - dependency-name: github.com/cortexproject/cortex*
+        versions:
+          - "*"
+      - dependency-name: google.golang.org/grpc/*
+        versions:
+          - "*"
   # Create PRs for golang version updates
   - package-ecosystem: docker
     directory: /
