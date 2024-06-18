@@ -60,9 +60,6 @@ func (ctl *controller) newControllerClient(clientConf *config.Config) (Controlle
 	return c, nil
 }
 
-// TODO (nickytd) The checkTargetLoggingBackend parameter is only used to reckognize initial start of the cluster
-// informer and propagate further down to getClientConfig if this is an add callback or update callback.
-// Once vali to vali migration is done then we shall revert the original state and remove this parameter.
 func (ctl *controller) createControllerClient(clusterName string, shoot *gardenercorev1beta1.Shoot) {
 	clientConf := ctl.getClientConfig(clusterName)
 	if clientConf == nil {
@@ -110,46 +107,6 @@ func (ctl *controller) deleteControllerClient(clusterName string) {
 
 func (ctl *controller) updateControllerClientState(client ControllerClient, shoot *gardenercorev1beta1.Shoot) {
 	client.SetState(getShootState(shoot))
-}
-
-func (ctl *controller) recreateControllerClient(clusterName string, shoot *gardenercorev1beta1.Shoot) {
-	clientConf := ctl.getClientConfig(clusterName)
-	if clientConf == nil {
-		return
-	}
-
-	ctl.lock.Lock()
-	existing, ok := ctl.clients[clusterName]
-	ctl.lock.Unlock()
-
-	if ok && existing != nil && existing.GetEndPoint() == clientConf.ClientConfig.CredativValiConfig.URL.String() {
-		_ = level.Debug(ctl.logger).Log("msg", "try to change the endpoint, but they are the same", "cluster", clusterName, "endpoint", existing.GetEndPoint())
-		return
-	}
-
-	_ = level.Info(ctl.logger).Log("msg", "changing client endpoint", "cluster", clusterName, "oldEndpoint", existing.GetEndPoint(), "newEndpoint", clientConf.ClientConfig.CredativValiConfig.URL.String())
-
-	if ok && existing != nil {
-		existing.Stop()
-	}
-
-	newClient, err := ctl.newControllerClient(clientConf)
-	if err != nil {
-		metrics.Errors.WithLabelValues(metrics.ErrorFailedToMakeValiClient).Inc()
-		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("failed to make new vali client for cluster %v", clusterName), "error", err.Error())
-		return
-	}
-
-	ctl.updateControllerClientState(newClient, shoot)
-
-	_ = level.Info(ctl.logger).Log("msg", "add client", "cluster", clusterName, "state", newClient.GetState())
-	ctl.lock.Lock()
-	defer ctl.lock.Unlock()
-
-	if ctl.isStopped() {
-		return
-	}
-	ctl.clients[clusterName] = newClient
 }
 
 // ClusterState is a type alias for string.

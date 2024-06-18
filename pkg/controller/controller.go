@@ -5,12 +5,8 @@
 package controller
 
 import (
-	"bufio"
 	"bytes"
 	"fmt"
-	"io/ioutil"
-	"net/http"
-	"strings"
 	"sync"
 	"time"
 
@@ -28,10 +24,7 @@ import (
 )
 
 const (
-	expectedActiveClusters       = 128
-	loggingBackendConfigEndPoint = ".svc:3100/config"
-	lokiAPIPushEndPoint          = ".svc:3100/loki/api/v1/push"
-	valiAPIPushEndPoint          = ".svc:3100/vali/api/v1/push"
+	expectedActiveClusters = 128
 )
 
 // Controller represent a k8s controller watching for resources and
@@ -50,9 +43,6 @@ type controller struct {
 	wg            sync.WaitGroup
 	logger        log.Logger
 }
-
-// getter is a function definition which is turned into a repeatbale call
-type getter func(client http.Client, url string) (*http.Response, error)
 
 // NewController return Controller interface
 func NewController(informer cache.SharedIndexInformer, conf *config.Config, defaultClient client.ValiClient,
@@ -276,17 +266,4 @@ func (ctl *controller) isDeletedShoot(shoot *gardenercorev1beta1.Shoot) bool {
 
 func (ctl *controller) isStopped() bool {
 	return ctl.clients == nil
-}
-
-// Returns a getter function turned into a repeatable call with a retry limit and a delay
-func retry(g getter, retries int, delay time.Duration) getter {
-	return func(client http.Client, url string) (*http.Response, error) {
-		for r := 0; ; r++ {
-			response, err := g(client, url)
-			if err == nil || r >= retries {
-				return response, err
-			}
-			time.Sleep(delay)
-		}
-	}
 }
