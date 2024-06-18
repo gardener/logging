@@ -127,7 +127,7 @@ logging:
             tune2fs:
               image: europe-docker.pkg.dev/gardener-project/releases/gardener/tune2fs
         release:
-          nextversion: 'bump_patch'
+          nextversion: 'bump_minor'
         slack:
           default_channel: "internal_scp_workspace"
           channel_cfgs:
