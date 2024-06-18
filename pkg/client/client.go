@@ -7,11 +7,11 @@ package client
 import (
 	"time"
 
-	"github.com/gardener/logging/pkg/config"
-
 	"github.com/credativ/vali/pkg/valitail/client"
 	"github.com/go-kit/kit/log"
 	"github.com/prometheus/common/model"
+
+	"github.com/gardener/logging/pkg/config"
 )
 
 const (

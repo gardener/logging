@@ -14,12 +14,13 @@ import (
 	"time"
 
 	"github.com/credativ/vali/pkg/logproto"
-	"github.com/gardener/logging/pkg/config"
-	"github.com/gardener/logging/pkg/metrics"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/joncrlsn/dque"
 	"github.com/prometheus/common/model"
+
+	"github.com/gardener/logging/pkg/config"
+	"github.com/gardener/logging/pkg/metrics"
 )
 
 type dqueEntry struct {

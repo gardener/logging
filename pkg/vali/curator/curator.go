@@ -8,12 +8,12 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
+
 	config "github.com/gardener/logging/pkg/vali/curator/config"
 	"github.com/gardener/logging/pkg/vali/curator/metrics"
 	"github.com/gardener/logging/pkg/vali/curator/utils"
-
-	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/log/level"
 )
 
 // Curator holds needed propperties for a curator

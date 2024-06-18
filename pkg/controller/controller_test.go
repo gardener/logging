@@ -10,10 +10,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/gardener/logging/pkg/client"
-
-	"github.com/gardener/logging/pkg/config"
-
 	"github.com/cortexproject/cortex/pkg/util/flagext"
 	valiclient "github.com/credativ/vali/pkg/valitail/client"
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
@@ -27,6 +23,9 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/pointer"
+
+	"github.com/gardener/logging/pkg/client"
+	"github.com/gardener/logging/pkg/config"
 )
 
 var _ client.ValiClient = &fakeValiClient{}

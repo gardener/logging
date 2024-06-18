@@ -6,19 +6,19 @@ package client_test
 
 import (
 	"encoding/json"
-	g "github.com/onsi/ginkgo/v2"
 	"os"
 	"time"
-
-	"github.com/gardener/logging/pkg/client"
-	"github.com/gardener/logging/pkg/config"
 
 	"github.com/credativ/vali/pkg/logproto"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
+	g "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/prometheus/common/model"
 	"github.com/weaveworks/common/logging"
+
+	"github.com/gardener/logging/pkg/client"
+	"github.com/gardener/logging/pkg/config"
 )
 
 var _ = g.Describe("Pack Client", func() {

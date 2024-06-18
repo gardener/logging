@@ -8,7 +8,6 @@ Modifications Copyright SAP SE or an SAP affiliate company and Gardener contribu
 package main
 
 import (
-	"C"
 	"fmt"
 	"net/http"
 	_ "net/http/pprof"
@@ -18,14 +17,7 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/gardener/logging/pkg/config"
-	"github.com/gardener/logging/pkg/healthz"
-	"github.com/gardener/logging/pkg/metrics"
-	"github.com/gardener/logging/pkg/valiplugin"
-
-	gardenerclientsetversioned "github.com/gardener/logging/pkg/cluster/clientset/versioned"
-	gardeninternalcoreinformers "github.com/gardener/logging/pkg/cluster/informers/externalversions"
-
+	"C"
 	"github.com/fluent/fluent-bit-go/output"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
@@ -34,6 +26,13 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/component-base/version"
+
+	gardenerclientsetversioned "github.com/gardener/logging/pkg/cluster/clientset/versioned"
+	gardeninternalcoreinformers "github.com/gardener/logging/pkg/cluster/informers/externalversions"
+	"github.com/gardener/logging/pkg/config"
+	"github.com/gardener/logging/pkg/healthz"
+	"github.com/gardener/logging/pkg/metrics"
+	"github.com/gardener/logging/pkg/valiplugin"
 )
 
 var (

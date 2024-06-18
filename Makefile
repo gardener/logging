@@ -12,12 +12,15 @@ TUNE2FS_IMAGE_REPOSITORY                   := $(REGISTRY)/tune2fs
 EVENT_LOGGER_IMAGE_REPOSITORY              := $(REGISTRY)/event-logger
 IMAGE_TAG                                  := $(VERSION)
 EFFECTIVE_VERSION                          := $(VERSION)-$(shell git rev-parse HEAD)
+SRC_DIRS                                   := $(shell go list -f '{{.Dir}}' $(REPO_ROOT)/...)
 PARALLEL_E2E_TESTS                         := 1
 DOCKER_BUILD_PLATFORM                      ?= linux/amd64,linux/arm64
 
 LD_FLAGS                                   :=$(shell $(REPO_ROOT)/hack/get-build-ld-flags.sh)
 BUILD_PLATFORM                             :=$(shell uname -s | tr '[:upper:]' '[:lower:]')
 BUILD_ARCH                                 :=$(shell uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
+
+
 
 # project folder structure
 PKG_DIR                                    := $(REPO_ROOT)/pkg
@@ -48,7 +51,18 @@ SKAFFOLD_VERSION                           ?= latest
 HELM                                       := $(TOOLS_DIR)/helm
 HELM_VERSION                               ?= v3.12.0
 
+# goimports dependencies
+GOIMPORTS                                  := $(TOOLS_DIR)/goimports
+GOIMPORTS_VERSION                          ?= v0.22.0
+
+GOIMPORTS_REVISER                          := $(TOOLS_DIR)/goimports-reviser
+GOIMPORTS_REVISER_VERSION                  ?= v3.6.5
+
+$(TOOLS_DIR):
+	mkdir -p $(TOOLS_DIR)
+
 export PATH := $(abspath $(TOOLS_DIR)):$(PATH)
+
 #################################################################
 # Rules related to binary build, Docker image build and release #
 #################################################################
@@ -138,6 +152,19 @@ check: format $(GO_LINT)
 format:
 	@gofmt -l -w $(REPO_ROOT)/cmd $(REPO_ROOT)/pkg
 
+.PHONY: goimports
+goimports: $(GOIMPORTS)
+	@for dir in $(SRC_DIRS); do \
+		$(GOIMPORTS) -w $$dir/; \
+	done
+
+.PHONY: goimports-reviser
+goimports-reviser: $(GOIMPORTS_REVISER)
+	@for dir in $(SRC_DIRS); do \
+		GOIMPORTS_REVISER_OPTIONS="-imports-order std,project,general,company" \
+		$(GOIMPORTS_REVISER) -recursive $$dir/; \
+	done
+
 .PHONY: test
 test: $(GINKGO)
 	@go test $(REPO_ROOT)/pkg/... --v --ginkgo.v --ginkgo.no-color
@@ -184,33 +211,36 @@ $(GARDENER_DIR):
 # Tools                                 #
 #########################################
 
+
 # fetch linter dependency
 $(GO_LINT):
-	@GOBIN=$(TOOLS_DIR) go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GO_LINT_VERSION)
+	@GOBIN=$(abspath $(TOOLS_DIR)) go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GO_LINT_VERSION)
 
 # fetch ginkgo dependency
 $(GINKGO):
-	@GOBIN=$(TOOLS_DIR) go install -mod=mod github.com/onsi/ginkgo/v2/ginkgo@$(GINKGO_VERSION)
+	@GOBIN=$(abspath $(TOOLS_DIR)) go install -mod=mod github.com/onsi/ginkgo/v2/ginkgo@$(GINKGO_VERSION)
 
 # fetch yq dependency
 $(YQ):
-	mkdir -p $(TOOLS_DIR)
-	curl -L -o $(YQ) https://github.com/mikefarah/yq/releases/download/$(YQ_VERSION)/yq_$(BUILD_PLATFORM)_$(BUILD_ARCH)
-	chmod +x $(YQ)
+	@curl -L -o $(YQ) https://github.com/mikefarah/yq/releases/download/$(YQ_VERSION)/yq_$(BUILD_PLATFORM)_$(BUILD_ARCH)
+	@chmod +x $(YQ)
 
 # fetch kind dependency
 $(KIND):
-	mkdir -p $(TOOLS_DIR)
-	curl -L -o $(KIND) https://kind.sigs.k8s.io/dl/$(KIND_VERSION)/kind-$(BUILD_PLATFORM)-$(BUILD_ARCH)
-	chmod +x $(KIND)
+	@curl -L -o $(KIND) https://kind.sigs.k8s.io/dl/$(KIND_VERSION)/kind-$(BUILD_PLATFORM)-$(BUILD_ARCH)
+	@chmod +x $(KIND)
 
 # fetch skaffold dependency
 $(SKAFFOLD):
-	mkdir -p $(TOOLS_DIR)
-	curl -L -o $(SKAFFOLD) https://storage.googleapis.com/skaffold/releases/$(SKAFFOLD_VERSION)/skaffold-$(BUILD_PLATFORM)-$(BUILD_ARCH)
-	chmod +x $(SKAFFOLD)
+	@curl -L -o $(SKAFFOLD) https://storage.googleapis.com/skaffold/releases/$(SKAFFOLD_VERSION)/skaffold-$(BUILD_PLATFORM)-$(BUILD_ARCH)
+	@chmod +x $(SKAFFOLD)
 
 # fetch helm dependency
 $(HELM):
-	mkdir -p $(TOOLS_DIR)
-	curl -sSfL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | HELM_INSTALL_DIR=$(TOOLS_DIR) USE_SUDO=false bash -s -- --version $(HELM_VERSION)
+	@curl -sSfL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | HELM_INSTALL_DIR=$(TOOLS_DIR) USE_SUDO=false bash -s -- --version $(HELM_VERSION)
+
+$(GOIMPORTS):
+	@GOBIN=$(abspath $(TOOLS_DIR)) go install golang.org/x/tools/cmd/goimports@$(GOIMPORTS_VERSION)
+
+$(GOIMPORTS_REVISER):
+	@GOBIN=$(abspath $(TOOLS_DIR)) go install github.com/incu6us/goimports-reviser/v3@$(GOIMPORTS_REVISER_VERSION)

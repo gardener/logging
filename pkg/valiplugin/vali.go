@@ -13,16 +13,16 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/gardener/logging/pkg/client"
-	"github.com/gardener/logging/pkg/config"
-	controller "github.com/gardener/logging/pkg/controller"
-	"github.com/gardener/logging/pkg/metrics"
-
 	grafanavaliclient "github.com/credativ/vali/pkg/valitail/client"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/prometheus/common/model"
 	"k8s.io/client-go/tools/cache"
+
+	"github.com/gardener/logging/pkg/client"
+	"github.com/gardener/logging/pkg/config"
+	controller "github.com/gardener/logging/pkg/controller"
+	"github.com/gardener/logging/pkg/metrics"
 )
 
 // Vali plugin interface

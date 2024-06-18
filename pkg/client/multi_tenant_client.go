@@ -8,13 +8,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gardener/logging/pkg/batch"
-	"github.com/gardener/logging/pkg/config"
-
 	"github.com/credativ/vali/pkg/valitail/client"
 	"github.com/go-kit/kit/log"
 	giterrors "github.com/pkg/errors"
 	"github.com/prometheus/common/model"
+
+	"github.com/gardener/logging/pkg/batch"
+	"github.com/gardener/logging/pkg/config"
 )
 
 type multiTenantClient struct {

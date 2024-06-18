@@ -8,9 +8,10 @@ import (
 	"time"
 
 	"github.com/credativ/vali/pkg/logproto"
-	"github.com/gardener/logging/pkg/config"
 	"github.com/go-kit/kit/log"
 	"github.com/prometheus/common/model"
+
+	"github.com/gardener/logging/pkg/config"
 )
 
 // ValiClient represents an instance which sends logs to Vali ingester
