@@ -143,6 +143,7 @@ func (l *vali) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 
 	removeKeys(records, append(l.cfg.PluginConfig.LabelKeys, l.cfg.PluginConfig.RemoveKeys...))
 	if len(records) == 0 {
+		_ = level.Info(l.logger).Log("host", dynamicHostName, "issue", "no records left after removing keys")
 		metrics.DroppedLogs.WithLabelValues(host).Inc()
 		return nil
 	}
@@ -150,7 +151,7 @@ func (l *vali) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 	client := l.getClient(dynamicHostName)
 
 	if client == nil {
-		_ = level.Debug(l.logger).Log("host", dynamicHostName, "issue", "could not find a client")
+		_ = level.Info(l.logger).Log("host", dynamicHostName, "issue", "could not find a client")
 		metrics.DroppedLogs.WithLabelValues(host).Inc()
 		return nil
 	}

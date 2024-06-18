@@ -29,7 +29,7 @@ type Options struct {
 	PreservedLabels model.LabelSet
 }
 
-// NewClient creates a new client based on the fluentbit configuration.
+// NewClient creates a new client based on the fluent-bit configuration.
 func NewClient(cfg config.Config, logger log.Logger, options Options) (ValiClient, error) {
 	var (
 		ncf NewValiClientFunc
