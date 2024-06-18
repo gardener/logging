@@ -6,7 +6,7 @@ require (
 	github.com/cortexproject/cortex v1.10.0
 	github.com/credativ/vali v0.0.0-20240613093210-23c4edd121ab
 	github.com/fluent/fluent-bit-go v0.0.0-20230731091245-a7a013e2473c
-	github.com/fluent/fluent-operator/v2 v2.8.0
+	github.com/fluent/fluent-operator/v2 v2.9.0
 	github.com/gardener/gardener v1.97.0
 	github.com/go-kit/kit v0.13.0
 	github.com/go-kit/log v0.2.1
