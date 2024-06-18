@@ -7,9 +7,10 @@ package matcher
 import (
 	"fmt"
 
+	"github.com/prometheus/common/model"
+
 	"github.com/gardener/logging/tests/vali_plugin/plugintest/client"
 	"github.com/gardener/logging/tests/vali_plugin/plugintest/input"
-	"github.com/prometheus/common/model"
 )
 
 type Matcher interface {

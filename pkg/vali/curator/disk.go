@@ -8,10 +8,10 @@ import (
 	"fmt"
 	"syscall"
 
+	"github.com/go-kit/kit/log/level"
+
 	"github.com/gardener/logging/pkg/vali/curator/metrics"
 	"github.com/gardener/logging/pkg/vali/curator/utils"
-
-	"github.com/go-kit/kit/log/level"
 )
 
 // freeUpDiskCapacityIfNeeded checks the current disk usage and runs cleanup if needed

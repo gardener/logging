@@ -5,9 +5,9 @@
 package batch
 
 import (
-	g "github.com/onsi/ginkgo/v2"
 	"time"
 
+	g "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 

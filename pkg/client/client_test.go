@@ -5,7 +5,6 @@
 package client
 
 import (
-	g "github.com/onsi/ginkgo/v2"
 	"net/url"
 	"os"
 	"time"
@@ -16,6 +15,7 @@ import (
 	"github.com/credativ/vali/pkg/valitail/client"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
+	g "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/prometheus/common/model"
 	"github.com/weaveworks/common/logging"

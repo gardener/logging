@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"time"
 
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllertest"
+
 	"github.com/gardener/logging/pkg/config"
 	"github.com/gardener/logging/pkg/valiplugin"
 	plugintestclient "github.com/gardener/logging/tests/vali_plugin/plugintest/client"
@@ -15,8 +17,6 @@ import (
 	plugintestconfig "github.com/gardener/logging/tests/vali_plugin/plugintest/config"
 	"github.com/gardener/logging/tests/vali_plugin/plugintest/input"
 	"github.com/gardener/logging/tests/vali_plugin/plugintest/matcher"
-
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllertest"
 )
 
 const (

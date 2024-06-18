@@ -14,8 +14,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gardener/logging/pkg/client"
-
 	"github.com/cortexproject/cortex/pkg/util/flagext"
 	extensioncontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	gardenercorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
@@ -24,6 +22,7 @@ import (
 	"github.com/go-kit/kit/log/level"
 	"k8s.io/client-go/tools/cache"
 
+	"github.com/gardener/logging/pkg/client"
 	"github.com/gardener/logging/pkg/config"
 	"github.com/gardener/logging/pkg/metrics"
 )

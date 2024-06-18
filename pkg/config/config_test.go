@@ -14,7 +14,6 @@ import (
 	valiflag "github.com/credativ/vali/pkg/util/flagext"
 	"github.com/credativ/vali/pkg/valitail/client"
 	. "github.com/onsi/ginkgo/v2"
-
 	. "github.com/onsi/gomega"
 	"github.com/prometheus/common/model"
 	"github.com/weaveworks/common/logging"
