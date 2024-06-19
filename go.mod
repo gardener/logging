@@ -8,7 +8,6 @@ require (
 	github.com/fluent/fluent-bit-go v0.0.0-20230731091245-a7a013e2473c
 	github.com/fluent/fluent-operator/v2 v2.9.0
 	github.com/gardener/gardener v1.97.0
-	github.com/go-kit/kit v0.13.0
 	github.com/go-kit/log v0.2.1
 	github.com/go-logfmt/logfmt v0.6.0
 	github.com/go-logr/logr v1.4.2
@@ -57,6 +56,7 @@ require (
 	github.com/gardener/etcd-druid v0.22.0 // indirect
 	github.com/gardener/hvpa-controller/api v0.15.0 // indirect
 	github.com/gardener/machine-controller-manager v0.53.0 // indirect
+	github.com/go-kit/kit v0.13.0 // indirect
 	github.com/go-logr/zapr v1.3.0 // indirect
 	github.com/go-openapi/errors v0.20.4 // indirect
 	github.com/go-openapi/jsonpointer v0.20.0 // indirect

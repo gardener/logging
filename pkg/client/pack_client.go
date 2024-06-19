@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-kit/kit/log"
+	"github.com/go-kit/log"
 	"github.com/prometheus/common/model"
 
 	"github.com/gardener/logging/pkg/config"
