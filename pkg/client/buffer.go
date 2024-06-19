@@ -10,7 +10,7 @@ package client
 import (
 	"fmt"
 
-	"github.com/go-kit/kit/log"
+	"github.com/go-kit/log"
 
 	"github.com/gardener/logging/pkg/config"
 )

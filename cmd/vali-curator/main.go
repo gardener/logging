@@ -11,7 +11,7 @@ import (
 	"os/signal"
 	"runtime"
 
-	"github.com/go-kit/kit/log/level"
+	"github.com/go-kit/log/level"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/gardener/logging/cmd/vali-curator/app"
