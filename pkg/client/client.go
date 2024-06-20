@@ -9,6 +9,7 @@ import (
 
 	"github.com/credativ/vali/pkg/valitail/client"
 	"github.com/go-kit/log"
+	"github.com/go-kit/log/level"
 	"github.com/prometheus/common/model"
 
 	"github.com/gardener/logging/pkg/config"
@@ -89,6 +90,10 @@ func NewClient(cfg config.Config, logger log.Logger, options Options) (ValiClien
 		}
 	}
 
+	_ = level.Info(logger).Log(
+		"msg", "building a new client",
+		"name", cfg.ClientConfig.BufferConfig.DqueConfig.QueueName,
+	)
 	return ncf(cfg, logger)
 }
 
@@ -104,12 +109,12 @@ func (c *removeTenantIdClient) GetEndPoint() string {
 
 // NewRemoveTenantIdClientDecorator return vali client which removes the __tenant_id__ value fro the label set
 func NewRemoveTenantIdClientDecorator(cfg config.Config, newClient NewValiClientFunc, logger log.Logger) (ValiClient, error) {
-	client, err := newValiClient(cfg, newClient, logger)
+	c, err := newValiClient(cfg, newClient, logger)
 	if err != nil {
 		return nil, err
 	}
 
-	return &removeTenantIdClient{client}, nil
+	return &removeTenantIdClient{c}, nil
 }
 
 func (c *removeTenantIdClient) Handle(ls model.LabelSet, t time.Time, s string) error {

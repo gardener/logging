@@ -11,16 +11,20 @@ import (
 	"github.com/credativ/vali/pkg/valitail/api"
 	"github.com/credativ/vali/pkg/valitail/client"
 	"github.com/go-kit/log"
+	"github.com/go-kit/log/level"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/model"
 
 	"github.com/gardener/logging/pkg/metrics"
 )
 
+const componentNamePromTail = "promtail"
+
 type valitailClientWithForwardedLogsMetricCounter struct {
 	valiclient client.Client
 	host       string
 	endpoint   string
+	logger     log.Logger
 }
 
 var _ ValiClient = &valitailClientWithForwardedLogsMetricCounter{}
@@ -37,11 +41,19 @@ func NewPromtailClient(cfg client.Config, logger log.Logger) (ValiClient, error)
 	if err != nil {
 		return nil, err
 	}
-	return &valitailClientWithForwardedLogsMetricCounter{
+
+	if logger == nil {
+		logger = log.NewNopLogger()
+	}
+
+	metric := &valitailClientWithForwardedLogsMetricCounter{
 		valiclient: c,
 		host:       cfg.URL.Hostname(),
 		endpoint:   cfg.URL.String(),
-	}, nil
+		logger:     log.With(logger, "component", componentNamePromTail, "host", cfg.URL),
+	}
+	_ = level.Debug(metric.logger).Log("msg", "client created")
+	return metric, nil
 }
 
 // newTestingPromtailClient is wrapping fake grafana/vali client used for testing
@@ -61,9 +73,11 @@ func (c *valitailClientWithForwardedLogsMetricCounter) Handle(ls model.LabelSet,
 // Stop the client.
 func (c *valitailClientWithForwardedLogsMetricCounter) Stop() {
 	c.valiclient.Stop()
+	_ = level.Debug(c.logger).Log("msg", "client stopped without waiting")
 }
 
 // StopWait stops the client waiting all saved logs to be sent.
 func (c *valitailClientWithForwardedLogsMetricCounter) StopWait() {
 	c.valiclient.Stop()
+	_ = level.Debug(c.logger).Log("msg", "client stopped")
 }
