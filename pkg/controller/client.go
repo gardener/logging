@@ -108,7 +108,11 @@ func (ctl *controller) deleteControllerClient(clusterName string) {
 	if ok && c != nil {
 		c.StopWait()
 	}
-	_ = level.Info(ctl.logger).Log("msg", "deleted controller client", "cluster", clusterName, "state", c.GetState())
+	_ = level.Info(ctl.logger).Log(
+		"msg", "deleted controller client",
+		"cluster", clusterName,
+		"state", c.GetState(),
+	)
 }
 
 func (ctl *controller) updateControllerClientState(client ControllerClient, shoot *gardenercorev1beta1.Shoot) {

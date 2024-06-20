@@ -10,14 +10,18 @@ import (
 	"time"
 
 	"github.com/go-kit/log"
+	"github.com/go-kit/log/level"
 	"github.com/prometheus/common/model"
 
 	"github.com/gardener/logging/pkg/config"
 )
 
+const componentNamePack = "pack"
+
 type packClient struct {
 	valiClient     ValiClient
 	excludedLabels model.LabelSet
+	logger         log.Logger
 }
 
 func (c *packClient) GetEndPoint() string {
@@ -33,28 +37,36 @@ func NewPackClientDecorator(cfg config.Config, newClient NewValiClientFunc, logg
 		return nil, err
 	}
 
-	return &packClient{
+	if logger == nil {
+		logger = log.NewNopLogger()
+	}
+
+	pack := &packClient{
 		valiClient:     client,
 		excludedLabels: cfg.PluginConfig.PreservedLabels.Clone(),
-	}, nil
+		logger:         log.With(logger, "component", componentNamePack),
+	}
+
+	_ = level.Debug(pack.logger).Log("msg", "client created")
+	return pack, nil
 }
 
 // Handle processes and sends logs to Vali.
 // This function can modify the label set so avoid concurrent use of it.
 func (c *packClient) Handle(ls model.LabelSet, t time.Time, s string) error {
 	if c.checkIfLabelSetContainsExcludedLabels(ls) {
-		log := make(map[string]string, len(ls))
+		record := make(map[string]string, len(ls))
 
 		for key, value := range ls {
 			if _, ok := c.excludedLabels[key]; !ok && !strings.HasPrefix(string(key), "__") {
-				log[string(key)] = string(value)
+				record[string(key)] = string(value)
 				delete(ls, key)
 			}
 		}
-		log["_entry"] = s
-		log["time"] = t.String()
+		record["_entry"] = s
+		record["time"] = t.String()
 
-		jsonStr, err := json.Marshal(log)
+		jsonStr, err := json.Marshal(record)
 		if err != nil {
 			return err
 		}
@@ -73,11 +85,13 @@ func (c *packClient) Handle(ls model.LabelSet, t time.Time, s string) error {
 // Stop the client.
 func (c *packClient) Stop() {
 	c.valiClient.Stop()
+	_ = level.Debug(c.logger).Log("msg", "client stopped without waiting")
 }
 
 // StopWait stops the client waiting all saved logs to be sent.
 func (c *packClient) StopWait() {
 	c.valiClient.StopWait()
+	_ = level.Debug(c.logger).Log("msg", "client stopped")
 }
 
 func (c *packClient) checkIfLabelSetContainsExcludedLabels(ls model.LabelSet) bool {

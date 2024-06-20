@@ -23,6 +23,8 @@ import (
 	"github.com/gardener/logging/pkg/metrics"
 )
 
+const componentNameDque = "dque"
+
 type dqueEntry struct {
 	LabelSet model.LabelSet
 	logproto.Entry
@@ -54,24 +56,33 @@ func NewDque(cfg config.Config, logger log.Logger, newClientFunc func(cfg config
 	logger log.Logger) (ValiClient, error)) (ValiClient, error) {
 	var err error
 
-	q := &dqueClient{
-		logger: log.With(logger, "component", "queue", "name", cfg.ClientConfig.BufferConfig.DqueConfig.QueueName),
+	if logger == nil {
+		logger = log.NewNopLogger()
 	}
 
-	err = os.MkdirAll(cfg.ClientConfig.BufferConfig.DqueConfig.QueueDir, 0644)
-	if err != nil {
-		return nil, fmt.Errorf("cannot create queue directory, error: %v", err)
+	q := &dqueClient{
+		logger: log.With(logger, "component", componentNameDque, "name", cfg.ClientConfig.BufferConfig.DqueConfig.QueueName),
+	}
+
+	if err = os.MkdirAll(cfg.ClientConfig.BufferConfig.DqueConfig.QueueDir, 0644); err != nil {
+		return nil, fmt.Errorf("cannot create directory %s: %v", cfg.ClientConfig.BufferConfig.DqueConfig.QueueDir, err)
 	}
 
 	q.queue, err = dque.NewOrOpen(cfg.ClientConfig.BufferConfig.DqueConfig.QueueName, cfg.ClientConfig.BufferConfig.DqueConfig.QueueDir, cfg.ClientConfig.BufferConfig.DqueConfig.QueueSegmentSize, dqueEntryBuilder)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("cannot create queue %s: %v", cfg.ClientConfig.BufferConfig.DqueConfig.QueueName, err)
 	}
 
 	q.url = cfg.ClientConfig.CredativValiConfig.URL.String()
 
 	if !cfg.ClientConfig.BufferConfig.DqueConfig.QueueSync {
-		_ = q.queue.TurboOn()
+		if err = q.queue.TurboOn(); err != nil {
+			_ = level.Error(q.logger).Log(
+				"msg", "cannot enable turbo mode for queue",
+				"err", err,
+				"queue", cfg.ClientConfig.BufferConfig.DqueConfig.QueueName,
+			)
+		}
 	}
 
 	q.vali, err = newClientFunc(cfg, logger)
@@ -81,6 +92,8 @@ func NewDque(cfg config.Config, logger log.Logger, newClientFunc func(cfg config
 
 	q.wg.Add(1)
 	go q.dequeuer()
+
+	_ = level.Debug(q.logger).Log("msg", "client created", "url", q.url)
 	return q, nil
 }
 
@@ -96,7 +109,7 @@ func (c *dqueClient) dequeuer() {
 				return
 			default:
 				metrics.Errors.WithLabelValues(metrics.ErrorDequeuer).Inc()
-				_ = level.Error(c.logger).Log("msg", "error dequeuing record", "error", err, "queue", c.queue.Name)
+				_ = level.Error(c.logger).Log("msg", "error dequeue record", "err", err, "queue", c.queue.Name)
 				continue
 			}
 		}
@@ -105,16 +118,16 @@ func (c *dqueClient) dequeuer() {
 		record, ok := entry.(*dqueEntry)
 		if !ok {
 			metrics.Errors.WithLabelValues(metrics.ErrorDequeuerNotValidType).Inc()
-			_ = level.Error(c.logger).Log("msg", "error dequeued record is not an valid type", "queue", c.queue.Name)
+			_ = level.Error(c.logger).Log("msg", "error record is not a valid type", "queue", c.queue.Name)
 			continue
 		}
 
-		_ = level.Debug(c.logger).Log("msg", "sending record to Vali", "url", c.url, "record", record)
+		_ = level.Debug(c.logger).Log("msg", "sending record to vali", "url", c.url)
 		if err := c.vali.Handle(record.LabelSet, record.Timestamp, record.Line); err != nil {
 			metrics.Errors.WithLabelValues(metrics.ErrorDequeuerSendRecord).Inc()
-			_ = level.Error(c.logger).Log("msg", "error sending record to Vali", "host", c.url, "error", err)
+			_ = level.Error(c.logger).Log("msg", "error sending record to Vali", "err", err, "host", c.url)
 		}
-		_ = level.Debug(c.logger).Log("msg", "successful sent record to Vali", "host", c.url, "record", record)
+		_ = level.Debug(c.logger).Log("msg", "successful sent record to Vali", "host", c.url)
 
 		c.lock.Lock()
 		if c.isStooped && c.queue.Size() <= 0 {
@@ -132,10 +145,11 @@ func (c *dqueClient) Stop() {
 			_ = level.Error(c.logger).Log("msg", "error closing buffered client", "queue", c.queue.Name, "err", err.Error())
 		}
 		c.vali.Stop()
+		_ = level.Debug(c.logger).Log("msg", "client stopped, without waiting")
 	})
 }
 
-// Stop the client
+// StopWait the client waiting all saved logs to be sent.
 func (c *dqueClient) StopWait() {
 	c.once.Do(func() {
 		if err := c.stopQue(true); err != nil {
@@ -146,6 +160,7 @@ func (c *dqueClient) StopWait() {
 		}
 		c.vali.StopWait()
 	})
+	_ = level.Debug(c.logger).Log("msg", "client stopped")
 }
 
 // Handle implement EntryHandler; adds a new line to the next batch; send is async.

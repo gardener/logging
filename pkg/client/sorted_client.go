@@ -17,6 +17,8 @@ import (
 	"github.com/gardener/logging/pkg/config"
 )
 
+const componentNameSort = "sort"
+
 type sortedClient struct {
 	logger           log.Logger
 	valiclient       multiTenantClient
@@ -45,13 +47,17 @@ func NewSortedClientDecorator(cfg config.Config, newClient NewValiClientFunc, lo
 	batchWait := cfg.ClientConfig.CredativValiConfig.BatchWait
 	cfg.ClientConfig.CredativValiConfig.BatchWait = batchWait + (5 * time.Second)
 
+	if logger == nil {
+		logger = log.NewNopLogger()
+	}
+
 	client, err := newValiClient(cfg, newClient, logger)
 	if err != nil {
 		return nil, err
 	}
 
 	c := &sortedClient{
-		logger:           log.With(logger, "component", "client", "host", cfg.ClientConfig.CredativValiConfig.URL.Host),
+		logger:           log.With(logger, "component", componentNameSort, "host", cfg.ClientConfig.CredativValiConfig.URL.Host),
 		valiclient:       multiTenantClient{valiclient: client},
 		batchWait:        batchWait,
 		batchSize:        cfg.ClientConfig.CredativValiConfig.BatchSize,
@@ -65,6 +71,7 @@ func NewSortedClientDecorator(cfg config.Config, newClient NewValiClientFunc, lo
 
 	c.wg.Add(1)
 	go c.run()
+	_ = level.Debug(c.logger).Log("msg", "client started")
 	return c, nil
 }
 
@@ -162,10 +169,12 @@ func (c *sortedClient) Stop() {
 		close(c.quit)
 		c.wg.Wait()
 		c.valiclient.Stop()
+		_ = level.Debug(c.logger).Log("msg", "client stopped without waiting")
 	})
 
 }
 
+// StopWait stops the client waiting all saved logs to be sent.
 func (c *sortedClient) StopWait() {
 	c.once.Do(func() {
 		close(c.quit)
@@ -174,6 +183,7 @@ func (c *sortedClient) StopWait() {
 			c.sendBatch()
 		}
 		c.valiclient.StopWait()
+		_ = level.Debug(c.logger).Log("msg", "client stopped")
 	})
 
 }
