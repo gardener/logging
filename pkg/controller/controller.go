@@ -39,8 +39,6 @@ type controller struct {
 	lock          sync.RWMutex
 	clients       map[string]ControllerClient
 	once          sync.Once
-	done          chan bool
-	wg            sync.WaitGroup
 	logger        log.Logger
 }
 
@@ -84,10 +82,6 @@ func (ctl *controller) Stop() {
 		if ctl.defaultClient != nil {
 			ctl.defaultClient.StopWait()
 		}
-		if ctl.done != nil {
-			ctl.done <- true
-			ctl.wg.Wait()
-		}
 	})
 }
 
@@ -128,7 +122,7 @@ func (ctl *controller) updateFunc(oldObj interface{}, newObj interface{}) {
 	}
 
 	if bytes.Equal(oldCluster.Spec.Shoot.Raw, newCluster.Spec.Shoot.Raw) {
-		_ = level.Debug(ctl.logger).Log("msg", "reconciliation skipped, shoot the same", "cluster", newCluster.Name)
+		_ = level.Debug(ctl.logger).Log("msg", "reconciliation skipped, shoot is the same", "cluster", newCluster.Name)
 		return
 	}
 
@@ -152,7 +146,7 @@ func (ctl *controller) updateFunc(oldObj interface{}, newObj interface{}) {
 		// Sanity check
 		if _client == nil {
 			_ = level.Error(ctl.logger).Log(
-				"msg", fmt.Sprintf("The client for cluster %v is NIL. Will try to create new one", oldCluster.Name),
+				"msg", fmt.Sprintf("Nil client for cluster: %v, creating...", oldCluster.Name),
 			)
 			ctl.createControllerClient(newCluster.Name, shoot)
 			return
@@ -162,6 +156,10 @@ func (ctl *controller) updateFunc(oldObj interface{}, newObj interface{}) {
 	} else {
 		// The client does not exist. Try to create a new one, if the shoot is applicable for logging.
 		if ctl.isAllowedShoot(shoot) {
+			_ = level.Info(ctl.logger).Log(
+				"msg", "client is not found in controller, creating...",
+				"cluster", newCluster.Name,
+			)
 			ctl.createControllerClient(newCluster.Name, shoot)
 		}
 	}
@@ -211,6 +209,7 @@ func (ctl *controller) isAllowedShoot(shoot *gardenercorev1beta1.Shoot) bool {
 	return !isTestingShoot(shoot)
 }
 
+// Shoots in deleting state should not be targeted for logging
 func (ctl *controller) isDeletedShoot(shoot *gardenercorev1beta1.Shoot) bool {
 	return shoot != nil && shoot.DeletionTimestamp != nil
 }
