@@ -10,7 +10,6 @@ package valiplugin
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"regexp"
 	"sort"
@@ -76,7 +75,7 @@ func toStringMap(record map[interface{}]interface{}) map[string]interface{} {
 func autoLabels(records map[string]interface{}, kuberneteslbs model.LabelSet) error {
 	kube, ok := records["kubernetes"]
 	if !ok {
-		return errors.New("kubernetes labels not found, no labels will be added")
+		return fmt.Errorf("kubernetes labels not found, no labels will be added")
 	}
 
 	replacer := strings.NewReplacer("/", "_", ".", "_", "-", "_")

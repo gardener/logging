@@ -46,18 +46,25 @@ type vali struct {
 // NewPlugin returns Vali output plugin
 func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger log.Logger) (Vali, error) {
 	var err error
-	vali := &vali{cfg: cfg, logger: logger}
+	v := &vali{cfg: cfg, logger: logger}
 
-	vali.defaultClient, err = client.NewClient(*cfg, logger, client.Options{
+	if v.defaultClient, err = client.NewClient(*cfg, logger, client.Options{
 		RemoveTenantID:    cfg.PluginConfig.DynamicTenant.RemoveTenantIdWhenSendingToDefaultURL,
 		MultiTenantClient: false,
-	})
-	if err != nil {
+	}); err != nil {
 		return nil, err
 	}
 
+	_ = level.Debug(logger).Log(
+		"msg", "default client created at vali plugin",
+		"url", v.defaultClient.GetEndPoint(),
+		"queue", cfg.ClientConfig.BufferConfig.DqueConfig.QueueName,
+	)
+
+	//TODO(nickytd): Remove this magic check and introduce an Id field in the plugin output configuration
+	// If the plugin ID is "shoot" then we shall have a dynamic host and a default "controller" client
 	if len(cfg.PluginConfig.DynamicHostPath) > 0 {
-		vali.dynamicHostRegexp = regexp.MustCompile(cfg.PluginConfig.DynamicHostRegex)
+		v.dynamicHostRegexp = regexp.MustCompile(cfg.PluginConfig.DynamicHostRegex)
 
 		cfgShallowCopy := *cfg
 		cfgShallowCopy.ClientConfig.BufferConfig.DqueConfig.QueueName = cfg.ClientConfig.BufferConfig.DqueConfig.QueueName + "-controller"
@@ -66,55 +73,74 @@ func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger lo
 			MultiTenantClient: false,
 			PreservedLabels:   cfg.PluginConfig.PreservedLabels,
 		})
+
+		_ = level.Debug(logger).Log(
+			"msg", "default controller client created at vali plugin",
+			"url", controllerDefaultClient.GetEndPoint(),
+			"queue", cfgShallowCopy.ClientConfig.BufferConfig.DqueConfig.QueueName,
+		)
+
 		if err != nil {
 			return nil, err
 		}
 
-		vali.controller, err = controller.NewController(informer, cfg, controllerDefaultClient, logger)
-		if err != nil {
+		//  Controller with default client set, is used when to send logs when shoots are not present.
+		if v.controller, err = controller.NewController(informer, cfg, controllerDefaultClient, logger); err != nil {
 			return nil, err
 		}
 	}
 
 	if cfg.PluginConfig.KubernetesMetadata.FallbackToTagWhenMetadataIsMissing {
-		vali.extractKubernetesMetadataRegexp = regexp.MustCompile(cfg.PluginConfig.KubernetesMetadata.TagPrefix + cfg.PluginConfig.KubernetesMetadata.TagExpression)
+		v.extractKubernetesMetadataRegexp = regexp.MustCompile(cfg.PluginConfig.KubernetesMetadata.TagPrefix + cfg.PluginConfig.KubernetesMetadata.TagExpression)
 	}
 
 	if cfg.PluginConfig.DynamicTenant.Tenant != "" && cfg.PluginConfig.DynamicTenant.Field != "" && cfg.PluginConfig.DynamicTenant.Regex != "" {
-		vali.dynamicTenantRegexp = regexp.MustCompile(cfg.PluginConfig.DynamicTenant.Regex)
-		vali.dynamicTenant = cfg.PluginConfig.DynamicTenant.Tenant
-		vali.dynamicTenantField = cfg.PluginConfig.DynamicTenant.Field
+		v.dynamicTenantRegexp = regexp.MustCompile(cfg.PluginConfig.DynamicTenant.Regex)
+		v.dynamicTenant = cfg.PluginConfig.DynamicTenant.Tenant
+		v.dynamicTenantField = cfg.PluginConfig.DynamicTenant.Field
 	}
 
-	return vali, nil
+	_ = level.Info(logger).Log(
+		"msg", "vali plugin created",
+		"default_client_url", v.defaultClient.GetEndPoint(),
+		"default_queue_name", cfg.ClientConfig.BufferConfig.DqueConfig.QueueName,
+	)
+	return v, nil
 }
 
-// sendRecord send fluentbit records to vali as an entry.
+// SendRecord sends fluent-bit records to vali as an entry.
 func (v *vali) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 	records := toStringMap(r)
-	_ = level.Debug(v.logger).Log("msg", "processing records", "records", fluentBitRecords(records))
+	//_ = level.Debug(v.logger).Log("msg", "processing records", "records", fluentBitRecords(records))
 	lbs := make(model.LabelSet, v.cfg.PluginConfig.LabelSetInitCapacity)
 
 	// Check if metadata is missing
-	if v.cfg.PluginConfig.KubernetesMetadata.FallbackToTagWhenMetadataIsMissing {
-		if _, ok := records["kubernetes"]; !ok {
-			_ = level.Debug(v.logger).Log("msg", "kubernetes metadata is missing. Will try to extract it from the tag key", "tagKey", v.cfg.PluginConfig.KubernetesMetadata.TagKey, "records", fluentBitRecords(records))
-			err := extractKubernetesMetadataFromTag(records, v.cfg.PluginConfig.KubernetesMetadata.TagKey, v.extractKubernetesMetadataRegexp)
-			if err != nil {
-				metrics.Errors.WithLabelValues(metrics.ErrorCanNotExtractMetadataFromTag).Inc()
-				_ = level.Error(v.logger).Log("msg", err, "records", fluentBitRecords(records))
-				if v.cfg.PluginConfig.KubernetesMetadata.DropLogEntryWithoutK8sMetadata {
-					_ = level.Warn(v.logger).Log("msg", "kubernetes metadata is missing and the log entry will be dropped", "records", fluentBitRecords(records))
-					metrics.LogsWithoutMetadata.WithLabelValues(metrics.MissingMetadataType).Inc()
-					return nil
-				}
+	_, ok := records["kubernetes"]
+	if !ok && v.cfg.PluginConfig.KubernetesMetadata.FallbackToTagWhenMetadataIsMissing {
+
+		/*_ = level.Debug(v.logger).Log(
+			"msg", "kubernetes metadata is missing, extracting it from the tag key",
+			"tag", v.cfg.PluginConfig.KubernetesMetadata.TagKey,
+		)*/
+
+		if err := extractKubernetesMetadataFromTag(records, v.cfg.PluginConfig.KubernetesMetadata.TagKey, v.extractKubernetesMetadataRegexp); err != nil {
+			metrics.Errors.WithLabelValues(metrics.ErrorCanNotExtractMetadataFromTag).Inc()
+
+			_ = level.Error(v.logger).Log("msg", "cannot extract kubernetes metadata", "err", err)
+
+			if v.cfg.PluginConfig.KubernetesMetadata.DropLogEntryWithoutK8sMetadata {
+				_ = level.Warn(v.logger).Log(
+					"msg", "kubernetes metadata is missing and the log entry will be dropped",
+					"records", fluentBitRecords(records),
+				)
+				metrics.LogsWithoutMetadata.WithLabelValues(metrics.MissingMetadataType).Inc()
+				return nil
 			}
 		}
 	}
 
 	if v.cfg.PluginConfig.AutoKubernetesLabels {
-		err := autoLabels(records, lbs)
-		if err != nil {
+		if err := autoLabels(records, lbs); err != nil {
 			metrics.Errors.WithLabelValues(metrics.ErrorK8sLabelsNotFound).Inc()
 			_ = level.Error(v.logger).Log("msg", err.Error(), "records", fluentBitRecords(records))
 		}
@@ -143,30 +169,32 @@ func (v *vali) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 
 	removeKeys(records, append(v.cfg.PluginConfig.LabelKeys, v.cfg.PluginConfig.RemoveKeys...))
 	if len(records) == 0 {
-		_ = level.Debug(v.logger).Log("host", dynamicHostName, "issue", "no records left after removing keys")
-		metrics.DroppedLogs.WithLabelValues(host).Inc()
+		_ = level.Debug(v.logger).Log("msg", "no records left after removing keys", "host", dynamicHostName)
 		return nil
 	}
 
 	c := v.getClient(dynamicHostName)
 
 	if c == nil {
-		_ = level.Info(v.logger).Log("host", dynamicHostName, "issue", "could not find a client")
 		metrics.DroppedLogs.WithLabelValues(host).Inc()
-		return nil
+		return fmt.Errorf("no client found in controller for host: %v", dynamicHostName)
 	}
 
 	metrics.IncomingLogsWithEndpoint.WithLabelValues(host).Inc()
 
 	if err := v.addHostnameAsLabel(lbs); err != nil {
-		_ = level.Warn(v.logger).Log("msg", err)
+		_ = level.Warn(v.logger).Log("err", err)
 	}
 
 	if v.cfg.PluginConfig.DropSingleKey && len(records) == 1 {
 		for _, record := range records {
 			err := v.send(c, lbs, ts, fmt.Sprintf("%v", record))
 			if err != nil {
-				_ = level.Error(v.logger).Log("msg", "error sending record to Vali", "host", dynamicHostName, "error", err)
+				_ = level.Error(v.logger).Log(
+					"msg", "error sending record to vali",
+					"err", err,
+					"host", dynamicHostName,
+				)
 				metrics.Errors.WithLabelValues(metrics.ErrorSendRecordToVali).Inc()
 			}
 			return err
@@ -181,7 +209,11 @@ func (v *vali) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 
 	err = v.send(c, lbs, ts, line)
 	if err != nil {
-		_ = level.Error(v.logger).Log("msg", "error sending record to Vali", "host", dynamicHostName, "error", err)
+		_ = level.Error(v.logger).Log(
+			"msg", "error sending record to vali",
+			"err", err,
+			"host", dynamicHostName,
+		)
 		metrics.Errors.WithLabelValues(metrics.ErrorSendRecordToVali).Inc()
 
 		return err
@@ -195,6 +227,11 @@ func (v *vali) Close() {
 	if v.controller != nil {
 		v.controller.Stop()
 	}
+	_ = level.Info(v.logger).Log(
+		"msg", "vali plugin stopped",
+		"default_client_url", v.defaultClient.GetEndPoint(),
+		"default_queue_name", v.cfg.ClientConfig.BufferConfig.DqueConfig.QueueName,
+	)
 }
 
 func (v *vali) getClient(dynamicHosName string) client.ValiClient {
