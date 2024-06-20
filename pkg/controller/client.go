@@ -14,7 +14,7 @@ import (
 	giterrors "github.com/pkg/errors"
 	"github.com/prometheus/common/model"
 
-	client "github.com/gardener/logging/pkg/client"
+	"github.com/gardener/logging/pkg/client"
 	"github.com/gardener/logging/pkg/config"
 	"github.com/gardener/logging/pkg/metrics"
 )
@@ -38,7 +38,7 @@ func (ctl *controller) GetClient(name string) (client.ValiClient, bool) {
 	return nil, false
 }
 
-func (ctl *controller) newControllerClient(clientConf *config.Config) (ControllerClient, error) {
+func (ctl *controller) newControllerClient(clientConf *config.Config) (*controllerClient, error) {
 	mainClient, err := client.NewClient(*clientConf, ctl.logger, client.Options{MultiTenantClient: clientConf.PluginConfig.EnableMultiTenancy})
 	if err != nil {
 		return nil, err
@@ -75,7 +75,6 @@ func (ctl *controller) createControllerClient(clusterName string, shoot *gardene
 
 	ctl.updateControllerClientState(c, shoot)
 
-	_ = level.Info(ctl.logger).Log("msg", "add client", "cluster", clusterName, "state", c.GetState())
 	ctl.lock.Lock()
 	defer ctl.lock.Unlock()
 
@@ -83,6 +82,13 @@ func (ctl *controller) createControllerClient(clusterName string, shoot *gardene
 		return
 	}
 	ctl.clients[clusterName] = c
+	_ = level.Info(ctl.logger).Log(
+		"msg", "added controller client",
+		"cluster", clusterName,
+		"state", c.GetState(),
+		"mute_main_client", c.muteMainClient,
+		"mute_default_client", c.muteDefaultClient,
+	)
 }
 
 func (ctl *controller) deleteControllerClient(clusterName string) {
@@ -100,9 +106,9 @@ func (ctl *controller) deleteControllerClient(clusterName string) {
 
 	ctl.lock.Unlock()
 	if ok && c != nil {
-		_ = level.Info(ctl.logger).Log("msg", "delete client", "cluster", clusterName)
 		c.StopWait()
 	}
+	_ = level.Info(ctl.logger).Log("msg", "deleted controller client", "cluster", clusterName, "state", c.GetState())
 }
 
 func (ctl *controller) updateControllerClientState(client ControllerClient, shoot *gardenercorev1beta1.Shoot) {
@@ -148,15 +154,15 @@ type ControllerClient interface {
 	SetState(state clusterState)
 }
 
-// Handle processes and sends log to Vali
+// Handle processes and sends log to Vali.
 func (c *controllerClient) Handle(ls model.LabelSet, t time.Time, s string) error {
 	var combineErr error
 	// Because we do not use thread save methods here we just copy the variables
-	// in case they have changed during the two consequal calls to Handle.
+	// in case they have changed during the two consequential calls to Handle.
 	sendToMain, sendToDefault := !c.muteMainClient, !c.muteDefaultClient
 
 	if sendToMain {
-		// because this client does not alter the labels set we don't need to clone
+		// Because this client does not alter the labels set we don't need to clone
 		// it if we don't spread the logs between the two clients. But if we
 		// are sending the log record to both client we have to pass a copy because
 		// we are not sure what kind of label set processing will be done in the corresponding
@@ -184,6 +190,10 @@ func (c *controllerClient) StopWait() {
 	c.mainClient.StopWait()
 }
 
+// SetState manages the MuteMainClient and MuteDefaultClient flags.
+// These flags govern the target to which the logs are send.
+// When MuteMainClient is true the logs are sent to the Default which is the gardener vali instance.
+// When MuteDefaultClient is true the logs are sent to the Main which is the shoot vali instance.
 func (c *controllerClient) SetState(state clusterState) {
 	if state == c.state {
 		return
@@ -218,15 +228,24 @@ func (c *controllerClient) SetState(state clusterState) {
 		c.muteMainClient = !c.mainClientConf.SendLogsWhenIsInCreationState
 		c.muteDefaultClient = !c.defaultClientConf.SendLogsWhenIsInCreationState
 	default:
-		_ = level.Error(c.logger).Log("msg", fmt.Sprintf("Unknown state %v for cluster %v. The client state will not be changed", state, c.name))
+		_ = level.Error(c.logger).Log(
+			"msg", fmt.Sprintf("Unknown state %v for cluster %v. The client state will not be changed", state, c.name),
+		)
 		return
 	}
 
-	_ = level.Info(c.logger).Log("msg", "cluster state changed", "cluster", c.name, "oldState", c.state, "newState", state)
+	_ = level.Info(c.logger).Log(
+		"msg", "cluster state changed",
+		"cluster", c.name,
+		"oldState", c.state,
+		"newState", state,
+		"mute_main_client", c.muteMainClient,
+		"mute_default_client", c.muteDefaultClient,
+	)
 	c.state = state
 }
 
-// GetState returns the cluster state
+// GetState returns the cluster state.
 func (c *controllerClient) GetState() clusterState {
 	return c.state
 }
