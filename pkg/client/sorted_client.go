@@ -30,7 +30,6 @@ type sortedClient struct {
 	numberOfBatchIDs uint64
 	idLabelName      model.LabelName
 	quit             chan struct{}
-	once             sync.Once
 	entries          chan Entry
 	wg               sync.WaitGroup
 }
@@ -165,26 +164,24 @@ func (c *sortedClient) addToBatch(e Entry) {
 
 // Stop the client.
 func (c *sortedClient) Stop() {
-	c.once.Do(func() {
-		close(c.quit)
-		c.wg.Wait()
-		c.valiclient.Stop()
-		_ = level.Debug(c.logger).Log("msg", "client stopped without waiting")
-	})
+
+	close(c.quit)
+	c.wg.Wait()
+	c.valiclient.Stop()
+	_ = level.Debug(c.logger).Log("msg", "client stopped without waiting")
 
 }
 
 // StopWait stops the client waiting all saved logs to be sent.
 func (c *sortedClient) StopWait() {
-	c.once.Do(func() {
-		close(c.quit)
-		c.wg.Wait()
-		if c.batch != nil {
-			c.sendBatch()
-		}
-		c.valiclient.StopWait()
-		_ = level.Debug(c.logger).Log("msg", "client stopped")
-	})
+
+	close(c.quit)
+	c.wg.Wait()
+	if c.batch != nil {
+		c.sendBatch()
+	}
+	c.valiclient.StopWait()
+	_ = level.Debug(c.logger).Log("msg", "client stopped")
 
 }
 

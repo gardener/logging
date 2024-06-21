@@ -38,7 +38,6 @@ type dqueClient struct {
 	logger    log.Logger
 	queue     *dque.DQue
 	vali      ValiClient
-	once      sync.Once
 	wg        sync.WaitGroup
 	url       string
 	isStooped bool
@@ -77,11 +76,7 @@ func NewDque(cfg config.Config, logger log.Logger, newClientFunc func(cfg config
 
 	if !cfg.ClientConfig.BufferConfig.DqueConfig.QueueSync {
 		if err = q.queue.TurboOn(); err != nil {
-			_ = level.Error(q.logger).Log(
-				"msg", "cannot enable turbo mode for queue",
-				"err", err,
-				"queue", cfg.ClientConfig.BufferConfig.DqueConfig.QueueName,
-			)
+			_ = level.Error(q.logger).Log("msg", "cannot enable turbo mode for queue", "err", err)
 		}
 	}
 
@@ -109,7 +104,7 @@ func (c *dqueClient) dequeuer() {
 				return
 			default:
 				metrics.Errors.WithLabelValues(metrics.ErrorDequeuer).Inc()
-				_ = level.Error(c.logger).Log("msg", "error dequeue record", "err", err, "queue", c.queue.Name)
+				_ = level.Error(c.logger).Log("msg", "error dequeue record", "err", err)
 				continue
 			}
 		}
@@ -118,16 +113,14 @@ func (c *dqueClient) dequeuer() {
 		record, ok := entry.(*dqueEntry)
 		if !ok {
 			metrics.Errors.WithLabelValues(metrics.ErrorDequeuerNotValidType).Inc()
-			_ = level.Error(c.logger).Log("msg", "error record is not a valid type", "queue", c.queue.Name)
+			_ = level.Error(c.logger).Log("msg", "error record is not a valid type")
 			continue
 		}
 
-		_ = level.Debug(c.logger).Log("msg", "sending record to vali", "url", c.url)
 		if err := c.vali.Handle(record.LabelSet, record.Timestamp, record.Line); err != nil {
 			metrics.Errors.WithLabelValues(metrics.ErrorDequeuerSendRecord).Inc()
-			_ = level.Error(c.logger).Log("msg", "error sending record to Vali", "err", err, "host", c.url)
+			_ = level.Error(c.logger).Log("msg", "error sending record to Vali", "err", err, "url", c.url)
 		}
-		_ = level.Debug(c.logger).Log("msg", "successful sent record to Vali", "host", c.url)
 
 		c.lock.Lock()
 		if c.isStooped && c.queue.Size() <= 0 {
@@ -140,26 +133,26 @@ func (c *dqueClient) dequeuer() {
 
 // Stop the client
 func (c *dqueClient) Stop() {
-	c.once.Do(func() {
-		if err := c.closeQue(false); err != nil {
-			_ = level.Error(c.logger).Log("msg", "error closing buffered client", "queue", c.queue.Name, "err", err.Error())
-		}
-		c.vali.Stop()
-		_ = level.Debug(c.logger).Log("msg", "client stopped, without waiting")
-	})
+
+	if err := c.closeQue(false); err != nil {
+		_ = level.Error(c.logger).Log("msg", "error closing buffered client", "err", err.Error())
+	}
+	c.vali.Stop()
+	_ = level.Debug(c.logger).Log("msg", "client stopped, without waiting")
+
 }
 
 // StopWait the client waiting all saved logs to be sent.
 func (c *dqueClient) StopWait() {
-	c.once.Do(func() {
-		if err := c.stopQue(true); err != nil {
-			_ = level.Error(c.logger).Log("msg", "error stopping buffered client", "queue", c.queue.Name, "err", err.Error())
-		}
-		if err := c.closeQue(true); err != nil {
-			_ = level.Error(c.logger).Log("msg", "error closing buffered client", "queue", c.queue.Name, "err", err.Error())
-		}
-		c.vali.StopWait()
-	})
+
+	if err := c.stopQue(true); err != nil {
+		_ = level.Error(c.logger).Log("msg", "error stopping buffered client", "err", err.Error())
+	}
+	if err := c.closeQue(true); err != nil {
+		_ = level.Error(c.logger).Log("msg", "error closing buffered client", "err", err.Error())
+	}
+	c.vali.StopWait()
+
 	_ = level.Debug(c.logger).Log("msg", "client stopped")
 }
 
