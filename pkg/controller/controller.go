@@ -107,6 +107,10 @@ func (ctl *controller) addFunc(obj interface{}) {
 	}
 
 	if ctl.isAllowedShoot(shoot) && !ctl.isDeletedShoot(shoot) {
+		_ = level.Debug(ctl.logger).Log(
+			"msg", "adding cluster",
+			"cluster", cluster.Name,
+		)
 		ctl.createControllerClient(cluster.Name, shoot)
 	}
 }
@@ -190,7 +194,7 @@ func (ctl *controller) updateClientConfig(clusterName string) *config.Config {
 
 	// Construct the target URL: DynamicHostPrefix + clusterName + DynamicHostSuffix
 	url := fmt.Sprintf("%s%s%s", ctl.conf.ControllerConfig.DynamicHostPrefix, clusterName, suffix)
-	_ = level.Info(ctl.logger).Log("msg", "set url", "url", url, "cluster", clusterName)
+	_ = level.Debug(ctl.logger).Log("msg", "set url", "url", url, "cluster", clusterName)
 
 	err := clientURL.Set(url)
 	if err != nil {
