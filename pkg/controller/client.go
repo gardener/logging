@@ -73,7 +73,12 @@ func (ctl *controller) GetClient(name string) (client.ValiClient, bool) {
 	return nil, false
 }
 
-func (ctl *controller) newControllerClient(clientConf *config.Config) (*controllerClient, error) {
+func (ctl *controller) newControllerClient(clusterName string, clientConf *config.Config) (*controllerClient, error) {
+	_ = level.Info(ctl.logger).Log(
+		"msg", "creating new controller client",
+		"name", clusterName,
+	)
+
 	mainClient, err := client.NewClient(*clientConf, ctl.logger, client.Options{MultiTenantClient: clientConf.PluginConfig.EnableMultiTenancy})
 	if err != nil {
 		return nil, err
@@ -82,7 +87,7 @@ func (ctl *controller) newControllerClient(clientConf *config.Config) (*controll
 	c := &controllerClient{
 		mainClient:        mainClient,
 		defaultClient:     ctl.defaultClient,
-		state:             clusterStateCreation,
+		state:             clusterStateCreation, // check here the actual cluster state
 		defaultClientConf: &ctl.conf.ControllerConfig.DefaultControllerClientConfig,
 		mainClientConf:    &ctl.conf.ControllerConfig.MainControllerClientConfig,
 		logger:            ctl.logger,
@@ -101,10 +106,19 @@ func (ctl *controller) createControllerClient(clusterName string, shoot *gardene
 		return
 	}
 
-	c, err := ctl.newControllerClient(clientConf)
+	if c, ok := ctl.clients[clusterName]; ok {
+		ctl.updateControllerClientState(c, shoot)
+		_ = level.Info(ctl.logger).Log("msg", fmt.Sprintf("controller client for cluster %v already exists", clusterName))
+		return
+	}
+
+	c, err := ctl.newControllerClient(clusterName, clientConf)
 	if err != nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorFailedToMakeValiClient).Inc()
-		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("failed to make new vali client for cluster %v", clusterName), "error", err.Error())
+		_ = level.Error(ctl.logger).Log(
+			"msg", fmt.Sprintf("failed to make new vali client for cluster %v", clusterName),
+			"error", err.Error(),
+		)
 		return
 	}
 
@@ -120,7 +134,6 @@ func (ctl *controller) createControllerClient(clusterName string, shoot *gardene
 	_ = level.Info(ctl.logger).Log(
 		"msg", "added controller client",
 		"cluster", clusterName,
-		"state", c.GetState(),
 		"mute_main_client", c.muteMainClient,
 		"mute_default_client", c.muteDefaultClient,
 	)
@@ -128,9 +141,9 @@ func (ctl *controller) createControllerClient(clusterName string, shoot *gardene
 
 func (ctl *controller) deleteControllerClient(clusterName string) {
 	ctl.lock.Lock()
+	defer ctl.lock.Unlock()
 
 	if ctl.isStopped() {
-		ctl.lock.Unlock()
 		return
 	}
 
@@ -139,14 +152,12 @@ func (ctl *controller) deleteControllerClient(clusterName string) {
 		delete(ctl.clients, clusterName)
 	}
 
-	ctl.lock.Unlock()
 	if ok && c != nil {
-		c.StopWait()
+		go c.Stop()
 	}
 	_ = level.Info(ctl.logger).Log(
 		"msg", "deleted controller client",
 		"cluster", clusterName,
-		"state", c.GetState(),
 	)
 }
 
@@ -238,7 +249,7 @@ func (c *controllerClient) SetState(state clusterState) {
 		return
 	}
 
-	_ = level.Info(c.logger).Log(
+	_ = level.Debug(c.logger).Log(
 		"msg", "cluster state changed",
 		"cluster", c.name,
 		"oldState", c.state,
