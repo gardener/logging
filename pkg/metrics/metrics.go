@@ -47,7 +47,7 @@ var (
 		Help:      "Total number of the forwarded logs to Promtail client",
 	}, []string{"host"})
 
-	// DroppedLogs is a prometheus metric which keeps the number of dropt logs by the output plugin
+	// DroppedLogs is a prometheus metric which keeps the number of dropped logs by the output plugin
 	DroppedLogs = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: namespace,
 		Name:      "dropped_logs_total",
