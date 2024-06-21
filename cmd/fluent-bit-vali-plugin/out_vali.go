@@ -9,47 +9,48 @@ package main
 
 import (
 	"fmt"
+	"k8s.io/component-base/version"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
 	"runtime"
+	"strings"
 	"sync"
 	"time"
 	"unsafe"
 
 	"C"
 	"github.com/fluent/fluent-bit-go/output"
-	"github.com/go-kit/log"
-	"github.com/go-kit/log/level"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/weaveworks/common/logging"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/cache"
-	"k8s.io/component-base/version"
-
 	gardenerclientsetversioned "github.com/gardener/logging/pkg/cluster/clientset/versioned"
 	gardeninternalcoreinformers "github.com/gardener/logging/pkg/cluster/informers/externalversions"
 	"github.com/gardener/logging/pkg/config"
 	"github.com/gardener/logging/pkg/healthz"
 	"github.com/gardener/logging/pkg/metrics"
 	"github.com/gardener/logging/pkg/valiplugin"
+	"github.com/go-kit/log"
+	"github.com/go-kit/log/level"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/weaveworks/common/logging"
+	"k8s.io/apimachinery/pkg/util/uuid"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/cache"
 )
 
 var (
 	// registered vali plugin instances, required for disposal during shutdown
 	plugins          []valiplugin.Vali
+	pluginsMutex     sync.RWMutex
 	logger           log.Logger
 	informer         cache.SharedIndexInformer
 	informerStopChan chan struct{}
-	once             sync.Once
 	pprofOnce        sync.Once
-	informerOnce     sync.Once
 )
 
 func init() {
 	var logLevel logging.Level
 	_ = logLevel.Set("info")
 	logger = log.With(newLogger(logLevel), "ts", log.DefaultTimestampUTC, "caller", "main")
+	pluginsMutex = sync.RWMutex{}
 
 	// metrics and healthz
 	go func() {
@@ -63,7 +64,7 @@ func init() {
 
 // Initializes and starts the shared informer instance
 func initClusterInformer() {
-	informerOnce.Do(func() {
+	if informer == nil || informer.IsStopped() {
 		kubernetesClient, err := getInclusterKubernetsClient()
 		if err != nil {
 			panic(err)
@@ -72,7 +73,7 @@ func initClusterInformer() {
 		informer = kubeInformerFactory.Extensions().V1alpha1().Clusters().Informer()
 		informerStopChan = make(chan struct{})
 		kubeInformerFactory.Start(informerStopChan)
-	})
+	}
 }
 
 func setPprofProfile() {
@@ -96,9 +97,19 @@ func FLBPluginRegister(ctx unsafe.Pointer) int {
 }
 
 // FLBPluginInit is called for each vali plugin instance
+// Since fluent-bit 3, the context is recreated upon hot-reload.
+// Any plugin instances created before are not present in the new context, which may lead to memory leaks.
+// The fluent-bit shall invoke
 //
 //export FLBPluginInit
 func FLBPluginInit(ctx unsafe.Pointer) int {
+
+	// shall create only if not found in the context and in plugins slice
+	if present := output.FLBPluginGetContext(ctx); present != nil && pluginsContains(present.(valiplugin.Vali)) {
+		_ = level.Info(logger).Log("msg", "plugin already present")
+		return output.FLB_OK
+	}
+
 	conf, err := config.ParseConfig(&pluginConfig{ctx: ctx})
 	if err != nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorFLBPluginInit).Inc()
@@ -114,8 +125,7 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 		initClusterInformer()
 	}
 
-	// numeric plugin ID, only used for user-facing purpose (logging, ...)
-	id := len(plugins)
+	id, _, _ := strings.Cut(string(uuid.NewUUID()), "-")
 	_logger := log.With(newLogger(conf.LogLevel), "ts", log.DefaultTimestampUTC, "id", id)
 
 	dumpConfiguration(_logger, conf)
@@ -123,20 +133,25 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 	plugin, err := valiplugin.NewPlugin(informer, conf, _logger)
 	if err != nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorNewPlugin).Inc()
-		level.Error(_logger).Log("newPlugin", err)
+		level.Error(_logger).Log("msg", "error creating plugin", "err", err)
 		return output.FLB_ERROR
 	}
 
 	// register plugin instance, to be retrievable when sending logs
 	output.FLBPluginSetContext(ctx, plugin)
 	// remember plugin instance, required to cleanly dispose when fluent-bit is shutting down
+	pluginsMutex.Lock()
 	plugins = append(plugins, plugin)
+	pluginsMutex.Unlock()
 
+	_ = level.Info(_logger).Log(
+		"msg", "plugin initialized",
+		"length", len(plugins))
 	return output.FLB_OK
 }
 
 //export FLBPluginFlushCtx
-func FLBPluginFlushCtx(ctx, data unsafe.Pointer, length C.int, _ *C.char) int {
+func FLBPluginFlushCtx(ctx, data unsafe.Pointer, length C.int, tag *C.char) int {
 	plugin := output.FLBPluginGetContext(ctx).(valiplugin.Vali)
 	if plugin == nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorFLBPluginFlushCtx).Inc()
@@ -169,7 +184,12 @@ func FLBPluginFlushCtx(ctx, data unsafe.Pointer, length C.int, _ *C.char) int {
 
 		err := plugin.SendRecord(record, timestamp)
 		if err != nil {
-			level.Warn(logger).Log("msg", err.Error())
+			_ = level.Error(logger).Log(
+				"msg", "error sending record, retrying...",
+				"err", err.Error(),
+				"tag", C.GoString(tag),
+			)
+			return output.FLB_RETRY // max retry of the plugin is set to 3, then it shall be discarded by fluent-bit
 		}
 
 	}
@@ -182,16 +202,32 @@ func FLBPluginFlushCtx(ctx, data unsafe.Pointer, length C.int, _ *C.char) int {
 	return output.FLB_OK
 }
 
+//export FLBPluginExitCtx
+func FLBPluginExitCtx(ctx unsafe.Pointer) int {
+	plugin := output.FLBPluginGetContext(ctx).(valiplugin.Vali)
+	if plugin == nil {
+		level.Error(logger).Log("[flb-go]", "plugin not known")
+		return output.FLB_ERROR
+	}
+	plugin.Close()
+	pluginsRemove(plugin)
+	_ = level.Info(logger).Log(
+		"msg", "plugin removed",
+		"length", len(plugins),
+	)
+	return output.FLB_OK
+}
+
 //export FLBPluginExit
 func FLBPluginExit() int {
-	once.Do(func() {
-		for _, plugin := range plugins {
-			plugin.Close()
-		}
-		if informerStopChan != nil {
-			close(informerStopChan)
-		}
-	})
+
+	for _, plugin := range plugins {
+		plugin.Close()
+	}
+	if informerStopChan != nil {
+		close(informerStopChan)
+	}
+
 	return output.FLB_OK
 }
 
@@ -219,67 +255,89 @@ func dumpConfiguration(_logger log.Logger, conf *config.Config) {
 		"revision", version.Get().GitCommit,
 	)
 	paramLogger := log.With(_logger, "[flb-go]", "provided parameter")
-	level.Info(paramLogger).Log("URL", conf.ClientConfig.CredativValiConfig.URL)
-	level.Info(paramLogger).Log("TenantID", conf.ClientConfig.CredativValiConfig.TenantID)
-	level.Info(paramLogger).Log("BatchWait", conf.ClientConfig.CredativValiConfig.BatchWait)
-	level.Info(paramLogger).Log("BatchSize", conf.ClientConfig.CredativValiConfig.BatchSize)
-	level.Info(paramLogger).Log("Labels", conf.ClientConfig.CredativValiConfig.ExternalLabels)
-	level.Info(paramLogger).Log("LogLevel", conf.LogLevel.String())
-	level.Info(paramLogger).Log("AutoKubernetesLabels", conf.PluginConfig.AutoKubernetesLabels)
-	level.Info(paramLogger).Log("RemoveKeys", fmt.Sprintf("%+v", conf.PluginConfig.RemoveKeys))
-	level.Info(paramLogger).Log("LabelKeys", fmt.Sprintf("%+v", conf.PluginConfig.LabelKeys))
-	level.Info(paramLogger).Log("LineFormat", conf.PluginConfig.LineFormat)
-	level.Info(paramLogger).Log("DropSingleKey", conf.PluginConfig.DropSingleKey)
-	level.Info(paramLogger).Log("LabelMapPath", fmt.Sprintf("%+v", conf.PluginConfig.LabelMap))
-	level.Info(paramLogger).Log("SortByTimestamp", fmt.Sprintf("%+v", conf.ClientConfig.SortByTimestamp))
-	level.Info(paramLogger).Log("DynamicHostPath", fmt.Sprintf("%+v", conf.PluginConfig.DynamicHostPath))
-	level.Info(paramLogger).Log("DynamicHostPrefix", fmt.Sprintf("%+v", conf.ControllerConfig.DynamicHostPrefix))
-	level.Info(paramLogger).Log("DynamicHostSuffix", fmt.Sprintf("%+v", conf.ControllerConfig.DynamicHostSuffix))
-	level.Info(paramLogger).Log("DynamicHostRegex", fmt.Sprintf("%+v", conf.PluginConfig.DynamicHostRegex))
-	level.Info(paramLogger).Log("Timeout", fmt.Sprintf("%+v", conf.ClientConfig.CredativValiConfig.Timeout))
-	level.Info(paramLogger).Log("MinBackoff", fmt.Sprintf("%+v", conf.ClientConfig.CredativValiConfig.BackoffConfig.MinBackoff))
-	level.Info(paramLogger).Log("MaxBackoff", fmt.Sprintf("%+v", conf.ClientConfig.CredativValiConfig.BackoffConfig.MaxBackoff))
-	level.Info(paramLogger).Log("MaxRetries", fmt.Sprintf("%+v", conf.ClientConfig.CredativValiConfig.BackoffConfig.MaxRetries))
-	level.Info(paramLogger).Log("Buffer", fmt.Sprintf("%+v", conf.ClientConfig.BufferConfig.Buffer))
-	level.Info(paramLogger).Log("BufferType", fmt.Sprintf("%+v", conf.ClientConfig.BufferConfig.BufferType))
-	level.Info(paramLogger).Log("QueueDir", fmt.Sprintf("%+v", conf.ClientConfig.BufferConfig.DqueConfig.QueueDir))
-	level.Info(paramLogger).Log("QueueSegmentSize", fmt.Sprintf("%+v", conf.ClientConfig.BufferConfig.DqueConfig.QueueSegmentSize))
-	level.Info(paramLogger).Log("QueueSync", fmt.Sprintf("%+v", conf.ClientConfig.BufferConfig.DqueConfig.QueueSync))
-	level.Info(paramLogger).Log("QueueName", fmt.Sprintf("%+v", conf.ClientConfig.BufferConfig.DqueConfig.QueueName))
-	level.Info(paramLogger).Log("FallbackToTagWhenMetadataIsMissing", fmt.Sprintf("%+v", conf.PluginConfig.KubernetesMetadata.FallbackToTagWhenMetadataIsMissing))
-	level.Info(paramLogger).Log("TagKey", fmt.Sprintf("%+v", conf.PluginConfig.KubernetesMetadata.TagKey))
-	level.Info(paramLogger).Log("TagPrefix", fmt.Sprintf("%+v", conf.PluginConfig.KubernetesMetadata.TagPrefix))
-	level.Info(paramLogger).Log("TagExpression", fmt.Sprintf("%+v", conf.PluginConfig.KubernetesMetadata.TagExpression))
-	level.Info(paramLogger).Log("DropLogEntryWithoutK8sMetadata", fmt.Sprintf("%+v", conf.PluginConfig.KubernetesMetadata.DropLogEntryWithoutK8sMetadata))
-	level.Info(paramLogger).Log("NumberOfBatchIDs", fmt.Sprintf("%+v", conf.ClientConfig.NumberOfBatchIDs))
-	level.Info(paramLogger).Log("IdLabelName", fmt.Sprintf("%+v", conf.ClientConfig.IdLabelName))
-	level.Info(paramLogger).Log("DeletedClientTimeExpiration", fmt.Sprintf("%+v", conf.ControllerConfig.DeletedClientTimeExpiration))
-	level.Info(paramLogger).Log("DynamicTenant", fmt.Sprintf("%+v", conf.PluginConfig.DynamicTenant.Tenant))
-	level.Info(paramLogger).Log("DynamicField", fmt.Sprintf("%+v", conf.PluginConfig.DynamicTenant.Field))
-	level.Info(paramLogger).Log("DynamicRegex", fmt.Sprintf("%+v", conf.PluginConfig.DynamicTenant.Regex))
-	level.Info(paramLogger).Log("Pprof", fmt.Sprintf("%+v", conf.Pprof))
+	_ = level.Debug(paramLogger).Log("URL", conf.ClientConfig.CredativValiConfig.URL)
+	_ = level.Debug(paramLogger).Log("TenantID", conf.ClientConfig.CredativValiConfig.TenantID)
+	_ = level.Debug(paramLogger).Log("BatchWait", conf.ClientConfig.CredativValiConfig.BatchWait)
+	_ = level.Debug(paramLogger).Log("BatchSize", conf.ClientConfig.CredativValiConfig.BatchSize)
+	_ = level.Debug(paramLogger).Log("Labels", conf.ClientConfig.CredativValiConfig.ExternalLabels)
+	_ = level.Debug(paramLogger).Log("LogLevel", conf.LogLevel.String())
+	_ = level.Debug(paramLogger).Log("AutoKubernetesLabels", conf.PluginConfig.AutoKubernetesLabels)
+	_ = level.Debug(paramLogger).Log("RemoveKeys", fmt.Sprintf("%+v", conf.PluginConfig.RemoveKeys))
+	_ = level.Debug(paramLogger).Log("LabelKeys", fmt.Sprintf("%+v", conf.PluginConfig.LabelKeys))
+	_ = level.Debug(paramLogger).Log("LineFormat", conf.PluginConfig.LineFormat)
+	_ = level.Debug(paramLogger).Log("DropSingleKey", conf.PluginConfig.DropSingleKey)
+	_ = level.Debug(paramLogger).Log("LabelMapPath", fmt.Sprintf("%+v", conf.PluginConfig.LabelMap))
+	_ = level.Debug(paramLogger).Log("SortByTimestamp", fmt.Sprintf("%+v", conf.ClientConfig.SortByTimestamp))
+	_ = level.Debug(paramLogger).Log("DynamicHostPath", fmt.Sprintf("%+v", conf.PluginConfig.DynamicHostPath))
+	_ = level.Debug(paramLogger).Log("DynamicHostPrefix", fmt.Sprintf("%+v", conf.ControllerConfig.DynamicHostPrefix))
+	_ = level.Debug(paramLogger).Log("DynamicHostSuffix", fmt.Sprintf("%+v", conf.ControllerConfig.DynamicHostSuffix))
+	_ = level.Debug(paramLogger).Log("DynamicHostRegex", fmt.Sprintf("%+v", conf.PluginConfig.DynamicHostRegex))
+	_ = level.Debug(paramLogger).Log("Timeout", fmt.Sprintf("%+v", conf.ClientConfig.CredativValiConfig.Timeout))
+	_ = level.Debug(paramLogger).Log("MinBackoff", fmt.Sprintf("%+v", conf.ClientConfig.CredativValiConfig.BackoffConfig.MinBackoff))
+	_ = level.Debug(paramLogger).Log("MaxBackoff", fmt.Sprintf("%+v", conf.ClientConfig.CredativValiConfig.BackoffConfig.MaxBackoff))
+	_ = level.Debug(paramLogger).Log("MaxRetries", fmt.Sprintf("%+v", conf.ClientConfig.CredativValiConfig.BackoffConfig.MaxRetries))
+	_ = level.Debug(paramLogger).Log("Buffer", fmt.Sprintf("%+v", conf.ClientConfig.BufferConfig.Buffer))
+	_ = level.Debug(paramLogger).Log("BufferType", fmt.Sprintf("%+v", conf.ClientConfig.BufferConfig.BufferType))
+	_ = level.Debug(paramLogger).Log("QueueDir", fmt.Sprintf("%+v", conf.ClientConfig.BufferConfig.DqueConfig.QueueDir))
+	_ = level.Debug(paramLogger).Log("QueueSegmentSize", fmt.Sprintf("%+v", conf.ClientConfig.BufferConfig.DqueConfig.QueueSegmentSize))
+	_ = level.Debug(paramLogger).Log("QueueSync", fmt.Sprintf("%+v", conf.ClientConfig.BufferConfig.DqueConfig.QueueSync))
+	_ = level.Debug(paramLogger).Log("QueueName", fmt.Sprintf("%+v", conf.ClientConfig.BufferConfig.DqueConfig.QueueName))
+	_ = level.Debug(paramLogger).Log("FallbackToTagWhenMetadataIsMissing", fmt.Sprintf("%+v", conf.PluginConfig.KubernetesMetadata.FallbackToTagWhenMetadataIsMissing))
+	_ = level.Debug(paramLogger).Log("TagKey", fmt.Sprintf("%+v", conf.PluginConfig.KubernetesMetadata.TagKey))
+	_ = level.Debug(paramLogger).Log("TagPrefix", fmt.Sprintf("%+v", conf.PluginConfig.KubernetesMetadata.TagPrefix))
+	_ = level.Debug(paramLogger).Log("TagExpression", fmt.Sprintf("%+v", conf.PluginConfig.KubernetesMetadata.TagExpression))
+	_ = level.Debug(paramLogger).Log("DropLogEntryWithoutK8sMetadata", fmt.Sprintf("%+v", conf.PluginConfig.KubernetesMetadata.DropLogEntryWithoutK8sMetadata))
+	_ = level.Debug(paramLogger).Log("NumberOfBatchIDs", fmt.Sprintf("%+v", conf.ClientConfig.NumberOfBatchIDs))
+	_ = level.Debug(paramLogger).Log("IdLabelName", fmt.Sprintf("%+v", conf.ClientConfig.IdLabelName))
+	_ = level.Debug(paramLogger).Log("DeletedClientTimeExpiration", fmt.Sprintf("%+v", conf.ControllerConfig.DeletedClientTimeExpiration))
+	_ = level.Debug(paramLogger).Log("DynamicTenant", fmt.Sprintf("%+v", conf.PluginConfig.DynamicTenant.Tenant))
+	_ = level.Debug(paramLogger).Log("DynamicField", fmt.Sprintf("%+v", conf.PluginConfig.DynamicTenant.Field))
+	_ = level.Debug(paramLogger).Log("DynamicRegex", fmt.Sprintf("%+v", conf.PluginConfig.DynamicTenant.Regex))
+	_ = level.Debug(paramLogger).Log("Pprof", fmt.Sprintf("%+v", conf.Pprof))
 	if conf.PluginConfig.HostnameKey != nil {
-		level.Info(paramLogger).Log("HostnameKey", fmt.Sprintf("%+v", *conf.PluginConfig.HostnameKey))
+		_ = level.Debug(paramLogger).Log("HostnameKey", fmt.Sprintf("%+v", *conf.PluginConfig.HostnameKey))
 	}
 	if conf.PluginConfig.HostnameValue != nil {
-		level.Info(paramLogger).Log("HostnameValue", fmt.Sprintf("%+v", *conf.PluginConfig.HostnameValue))
+		_ = level.Debug(paramLogger).Log("HostnameValue", fmt.Sprintf("%+v", *conf.PluginConfig.HostnameValue))
 	}
 	if conf.PluginConfig.PreservedLabels != nil {
-		level.Info(paramLogger).Log("PreservedLabels", fmt.Sprintf("%+v", conf.PluginConfig.PreservedLabels))
+		_ = level.Debug(paramLogger).Log("PreservedLabels", fmt.Sprintf("%+v", conf.PluginConfig.PreservedLabels))
 	}
-	level.Info(paramLogger).Log("LabelSetInitCapacity", fmt.Sprintf("%+v", conf.PluginConfig.LabelSetInitCapacity))
-	level.Info(paramLogger).Log("SendLogsToMainClusterWhenIsInCreationState", fmt.Sprintf("%+v", conf.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInCreationState))
-	level.Info(paramLogger).Log("SendLogsToMainClusterWhenIsInReadyState", fmt.Sprintf("%+v", conf.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInReadyState))
-	level.Info(paramLogger).Log("SendLogsToMainClusterWhenIsInHibernatingState", fmt.Sprintf("%+v", conf.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInHibernatingState))
-	level.Info(paramLogger).Log("SendLogsToMainClusterWhenIsInHibernatedState", fmt.Sprintf("%+v", conf.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInHibernatedState))
-	level.Info(paramLogger).Log("SendLogsToMainClusterWhenIsInDeletionState", fmt.Sprintf("%+v", conf.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInDeletionState))
-	level.Info(paramLogger).Log("SendLogsToMainClusterWhenIsInRestoreState", fmt.Sprintf("%+v", conf.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInRestoreState))
-	level.Info(paramLogger).Log("SendLogsToMainClusterWhenIsInMigrationState", fmt.Sprintf("%+v", conf.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInMigrationState))
-	level.Info(paramLogger).Log("SendLogsToDefaultClientWhenClusterIsInCreationState", fmt.Sprintf("%+v", conf.ControllerConfig.DefaultControllerClientConfig.SendLogsWhenIsInCreationState))
-	level.Info(paramLogger).Log("SendLogsToDefaultClientWhenClusterIsInReadyState", fmt.Sprintf("%+v", conf.ControllerConfig.DefaultControllerClientConfig.SendLogsWhenIsInReadyState))
-	level.Info(paramLogger).Log("SendLogsToDefaultClientWhenClusterIsInHibernatingState", fmt.Sprintf("%+v", conf.ControllerConfig.DefaultControllerClientConfig.SendLogsWhenIsInHibernatingState))
-	level.Info(paramLogger).Log("SendLogsToDefaultClientWhenClusterIsInHibernatedState", fmt.Sprintf("%+v", conf.ControllerConfig.DefaultControllerClientConfig.SendLogsWhenIsInHibernatedState))
-	level.Info(paramLogger).Log("SendLogsToDefaultClientWhenClusterIsInDeletionState", fmt.Sprintf("%+v", conf.ControllerConfig.DefaultControllerClientConfig.SendLogsWhenIsInDeletionState))
-	level.Info(paramLogger).Log("SendLogsToDefaultClientWhenClusterIsInRestoreState", fmt.Sprintf("%+v", conf.ControllerConfig.DefaultControllerClientConfig.SendLogsWhenIsInRestoreState))
-	level.Info(paramLogger).Log("SendLogsToDefaultClientWhenClusterIsInMigrationState", fmt.Sprintf("%+v", conf.ControllerConfig.DefaultControllerClientConfig.SendLogsWhenIsInMigrationState))
+	_ = level.Debug(paramLogger).Log("LabelSetInitCapacity", fmt.Sprintf("%+v", conf.PluginConfig.LabelSetInitCapacity))
+	_ = level.Debug(paramLogger).Log("SendLogsToMainClusterWhenIsInCreationState", fmt.Sprintf("%+v", conf.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInCreationState))
+	_ = level.Debug(paramLogger).Log("SendLogsToMainClusterWhenIsInReadyState", fmt.Sprintf("%+v", conf.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInReadyState))
+	_ = level.Debug(paramLogger).Log("SendLogsToMainClusterWhenIsInHibernatingState", fmt.Sprintf("%+v", conf.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInHibernatingState))
+	_ = level.Debug(paramLogger).Log("SendLogsToMainClusterWhenIsInHibernatedState", fmt.Sprintf("%+v", conf.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInHibernatedState))
+	_ = level.Debug(paramLogger).Log("SendLogsToMainClusterWhenIsInDeletionState", fmt.Sprintf("%+v", conf.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInDeletionState))
+	_ = level.Debug(paramLogger).Log("SendLogsToMainClusterWhenIsInRestoreState", fmt.Sprintf("%+v", conf.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInRestoreState))
+	_ = level.Debug(paramLogger).Log("SendLogsToMainClusterWhenIsInMigrationState", fmt.Sprintf("%+v", conf.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInMigrationState))
+	_ = level.Debug(paramLogger).Log("SendLogsToDefaultClientWhenClusterIsInCreationState", fmt.Sprintf("%+v", conf.ControllerConfig.DefaultControllerClientConfig.SendLogsWhenIsInCreationState))
+	_ = level.Debug(paramLogger).Log("SendLogsToDefaultClientWhenClusterIsInReadyState", fmt.Sprintf("%+v", conf.ControllerConfig.DefaultControllerClientConfig.SendLogsWhenIsInReadyState))
+	_ = level.Debug(paramLogger).Log("SendLogsToDefaultClientWhenClusterIsInHibernatingState", fmt.Sprintf("%+v", conf.ControllerConfig.DefaultControllerClientConfig.SendLogsWhenIsInHibernatingState))
+	_ = level.Debug(paramLogger).Log("SendLogsToDefaultClientWhenClusterIsInHibernatedState", fmt.Sprintf("%+v", conf.ControllerConfig.DefaultControllerClientConfig.SendLogsWhenIsInHibernatedState))
+	_ = level.Debug(paramLogger).Log("SendLogsToDefaultClientWhenClusterIsInDeletionState", fmt.Sprintf("%+v", conf.ControllerConfig.DefaultControllerClientConfig.SendLogsWhenIsInDeletionState))
+	_ = level.Debug(paramLogger).Log("SendLogsToDefaultClientWhenClusterIsInRestoreState", fmt.Sprintf("%+v", conf.ControllerConfig.DefaultControllerClientConfig.SendLogsWhenIsInRestoreState))
+	_ = level.Debug(paramLogger).Log("SendLogsToDefaultClientWhenClusterIsInMigrationState", fmt.Sprintf("%+v", conf.ControllerConfig.DefaultControllerClientConfig.SendLogsWhenIsInMigrationState))
+}
+
+func pluginsContains(present valiplugin.Vali) bool {
+	pluginsMutex.RLock()
+	defer pluginsMutex.Unlock()
+	for _, plugin := range plugins {
+		if present == plugin {
+			return true
+		}
+	}
+	return false
+}
+
+func pluginsRemove(plugin valiplugin.Vali) {
+	pluginsMutex.Lock()
+	defer pluginsMutex.Unlock()
+	for i, p := range plugins {
+		if plugin == p {
+			plugins = append(plugins[:i], plugins[i+1:]...)
+			return
+		}
+	}
 }
