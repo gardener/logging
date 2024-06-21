@@ -38,20 +38,24 @@ type controller struct {
 	conf          *config.Config
 	lock          sync.RWMutex
 	clients       map[string]ControllerClient
-	once          sync.Once
 	logger        log.Logger
+	informer      cache.SharedIndexInformer
+	r             cache.ResourceEventHandlerRegistration
 }
 
 // NewController return Controller interface
 func NewController(informer cache.SharedIndexInformer, conf *config.Config, defaultClient client.ValiClient, l log.Logger) (Controller, error) {
+	var err error
+
 	ctl := &controller{
 		clients:       make(map[string]ControllerClient, expectedActiveClusters),
 		conf:          conf,
 		defaultClient: defaultClient,
+		informer:      informer,
 		logger:        l,
 	}
 
-	if _, err := informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	if ctl.r, err = informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    ctl.addFunc,
 		DeleteFunc: ctl.delFunc,
 		UpdateFunc: ctl.updateFunc,
@@ -72,17 +76,18 @@ func NewController(informer cache.SharedIndexInformer, conf *config.Config, defa
 }
 
 func (ctl *controller) Stop() {
-	ctl.once.Do(func() {
-		ctl.lock.Lock()
-		defer ctl.lock.Unlock()
-		for _, cl := range ctl.clients {
-			cl.StopWait()
-		}
-		ctl.clients = nil
-		if ctl.defaultClient != nil {
-			ctl.defaultClient.StopWait()
-		}
-	})
+	ctl.lock.Lock()
+	defer ctl.lock.Unlock()
+	for _, cl := range ctl.clients {
+		cl.StopWait()
+	}
+	ctl.clients = nil
+	if ctl.defaultClient != nil {
+		ctl.defaultClient.StopWait()
+	}
+	if err := ctl.informer.RemoveEventHandler(ctl.r); err != nil {
+		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("failed to remove event handler: %v", err))
+	}
 }
 
 // cluster informer callback

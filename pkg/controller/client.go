@@ -19,7 +19,42 @@ import (
 	"github.com/gardener/logging/pkg/metrics"
 )
 
+// ClusterState is a type alias for string.
+type clusterState string
+
+const (
+	clusterStateCreation    clusterState = "creation"
+	clusterStateReady       clusterState = "ready"
+	clusterStateHibernating clusterState = "hibernating"
+	clusterStateHibernated  clusterState = "hibernated"
+	clusterStateWakingUp    clusterState = "waking"
+	clusterStateDeletion    clusterState = "deletion"
+	clusterStateDeleted     clusterState = "deleted"
+	clusterStateMigration   clusterState = "migration"
+	clusterStateRestore     clusterState = "restore"
+)
+
+// Because loosing some logs when switching on and off client is not important we are omiting the synchronization.
+type controllerClient struct {
+	mainClient        client.ValiClient
+	defaultClient     client.ValiClient
+	muteMainClient    bool
+	muteDefaultClient bool
+	state             clusterState
+	defaultClientConf *config.ControllerClientConfiguration
+	mainClientConf    *config.ControllerClientConfiguration
+	logger            log.Logger
+	name              string
+}
+
 var _ client.ValiClient = &controllerClient{}
+
+// ControllerClient is a Vali client for the valiplugin controller
+type ControllerClient interface {
+	client.ValiClient
+	GetState() clusterState
+	SetState(state clusterState)
+}
 
 // GetClient search a client with <name> and returned if found.
 // In case the controller is closed it returns true as second return value.
@@ -119,43 +154,8 @@ func (ctl *controller) updateControllerClientState(client ControllerClient, shoo
 	client.SetState(getShootState(shoot))
 }
 
-// ClusterState is a type alias for string.
-type clusterState string
-
-const (
-	clusterStateCreation    clusterState = "creation"
-	clusterStateReady       clusterState = "ready"
-	clusterStateHibernating clusterState = "hibernating"
-	clusterStateHibernated  clusterState = "hibernated"
-	clusterStateWakingUp    clusterState = "waking"
-	clusterStateDeletion    clusterState = "deletion"
-	clusterStateDeleted     clusterState = "deleted"
-	clusterStateMigration   clusterState = "migration"
-	clusterStateRestore     clusterState = "restore"
-)
-
-// Because loosing some logs when switching on and off client is not important we are omiting the synchronization.
-type controllerClient struct {
-	mainClient        client.ValiClient
-	defaultClient     client.ValiClient
-	muteMainClient    bool
-	muteDefaultClient bool
-	state             clusterState
-	defaultClientConf *config.ControllerClientConfiguration
-	mainClientConf    *config.ControllerClientConfiguration
-	logger            log.Logger
-	name              string
-}
-
 func (c *controllerClient) GetEndPoint() string {
 	return c.mainClient.GetEndPoint()
-}
-
-// ControllerClient is a Vali client for the valiplugin controller
-type ControllerClient interface {
-	client.ValiClient
-	GetState() clusterState
-	SetState(state clusterState)
 }
 
 // Handle processes and sends log to Vali.
