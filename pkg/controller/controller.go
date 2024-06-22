@@ -85,6 +85,11 @@ func (ctl *controller) Stop() {
 	if ctl.defaultClient != nil {
 		ctl.defaultClient.StopWait()
 	}
+
+	if ctl.informer == nil || ctl.r == nil {
+		return
+	}
+
 	if err := ctl.informer.RemoveEventHandler(ctl.r); err != nil {
 		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("failed to remove event handler: %v", err))
 	}
