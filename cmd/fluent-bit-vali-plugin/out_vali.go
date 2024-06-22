@@ -9,7 +9,6 @@ package main
 
 import (
 	"fmt"
-	"k8s.io/component-base/version"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -21,12 +20,6 @@ import (
 
 	"C"
 	"github.com/fluent/fluent-bit-go/output"
-	gardenerclientsetversioned "github.com/gardener/logging/pkg/cluster/clientset/versioned"
-	gardeninternalcoreinformers "github.com/gardener/logging/pkg/cluster/informers/externalversions"
-	"github.com/gardener/logging/pkg/config"
-	"github.com/gardener/logging/pkg/healthz"
-	"github.com/gardener/logging/pkg/metrics"
-	"github.com/gardener/logging/pkg/valiplugin"
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -34,6 +27,14 @@ import (
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/component-base/version"
+
+	gardenerclientsetversioned "github.com/gardener/logging/pkg/cluster/clientset/versioned"
+	gardeninternalcoreinformers "github.com/gardener/logging/pkg/cluster/informers/externalversions"
+	"github.com/gardener/logging/pkg/config"
+	"github.com/gardener/logging/pkg/healthz"
+	"github.com/gardener/logging/pkg/metrics"
+	"github.com/gardener/logging/pkg/valiplugin"
 )
 
 var (
