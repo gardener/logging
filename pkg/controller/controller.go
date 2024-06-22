@@ -142,7 +142,7 @@ func (ctl *controller) updateFunc(oldObj interface{}, newObj interface{}) {
 		return
 	}
 
-	_ = level.Info(ctl.logger).Log("msg", "reconciling", "cluster", newCluster.Name)
+	_ = level.Debug(ctl.logger).Log("msg", "reconciling", "cluster", newCluster.Name)
 
 	_client, ok := ctl.clients[newCluster.Name]
 	// The client exists in the list, so we need to update it.

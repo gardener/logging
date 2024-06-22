@@ -74,7 +74,7 @@ func (ctl *controller) GetClient(name string) (client.ValiClient, bool) {
 }
 
 func (ctl *controller) newControllerClient(clusterName string, clientConf *config.Config) (*controllerClient, error) {
-	_ = level.Info(ctl.logger).Log(
+	_ = level.Debug(ctl.logger).Log(
 		"msg", "creating new controller client",
 		"name", clusterName,
 	)
