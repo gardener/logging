@@ -90,9 +90,9 @@ func NewClient(cfg config.Config, logger log.Logger, options Options) (ValiClien
 		}
 	}
 
-	_ = level.Info(logger).Log(
+	_ = level.Debug(logger).Log(
 		"msg", "building a new client",
-		"name", cfg.ClientConfig.BufferConfig.DqueConfig.QueueName,
+		"queue_name", cfg.ClientConfig.BufferConfig.DqueConfig.QueueName,
 	)
 	return ncf(cfg, logger)
 }
