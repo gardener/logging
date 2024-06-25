@@ -19,6 +19,7 @@ import (
 	"unsafe"
 
 	"C"
+
 	"github.com/fluent/fluent-bit-go/output"
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
@@ -178,6 +179,22 @@ func FLBPluginFlushCtx(ctx, data unsafe.Pointer, length C.int, tag *C.char) int 
 			timestamp = ts.(output.FLBTime).Time
 		case uint64:
 			timestamp = time.Unix(int64(t), 0)
+		case []interface{}:
+			// fluent-bit 2.1.x introduces support for log metadata.
+			// We need to iterate over the slice fields, where one field is the record timestamp
+			// and the other field in the slice is the newly introduced metadata in the form of a map
+			// see https://github.com/fluent/fluent-bit/issues/6666#issuecomment-1380200701
+			parsed := false
+			for _, v := range ts.([]interface{}) {
+				if flb, ok := v.(output.FLBTime); ok {
+					timestamp, parsed = flb.Time, true
+					break
+				}
+			}
+			if !parsed {
+				level.Warn(logger).Log("msg", "timestamp isn't known format, using current time")
+				timestamp = time.Now()
+			}
 		default:
 			_ = level.Info(logger).Log("msg", fmt.Sprintf("unknown timestamp type: %T", ts))
 			timestamp = time.Now()
