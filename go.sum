@@ -3348,8 +3348,8 @@ k8s.io/apimachinery v0.20.2/go.mod h1:WlLqWAHZGg07AeltaI0MV5uk1Omp8xaN0JGLY6gkRp
 k8s.io/apimachinery v0.20.5/go.mod h1:WlLqWAHZGg07AeltaI0MV5uk1Omp8xaN0JGLY6gkRpU=
 k8s.io/apimachinery v0.21.0/go.mod h1:jbreFvJo3ov9rj7eWT7+sYiRx+qZuCYXwWT1bcDswPY=
 k8s.io/apimachinery v0.29.5/go.mod h1:i3FJVwhvSp/6n8Fl4K97PJEP8C+MM+aoDq4+ZJBf70Y=
-k8s.io/apimachinery v0.30.2 h1:fEMcnBj6qkzzPGSVsAZtQThU62SmQ4ZymlXRC5yFSCg=
-k8s.io/apimachinery v0.30.2/go.mod h1:iexa2somDaxdnj7bha06bhb43Zpa6eWH8N8dbqVjTUc=
+k8s.io/apimachinery v0.30.3 h1:q1laaWCmrszyQuSQCfNB8cFgCuDAoPszKY4ucAjDwHc=
+k8s.io/apimachinery v0.30.3/go.mod h1:iexa2somDaxdnj7bha06bhb43Zpa6eWH8N8dbqVjTUc=
 k8s.io/apiserver v0.29.5 h1:223C+JkRnGmudEU00GfpX6quDSrzwwP0DuXOYTyUYb0=
 k8s.io/apiserver v0.29.5/go.mod h1:zN9xdatz5g7XwL1Xoz9hD4QQON1GN0c+1kV5e/NHejM=
 k8s.io/autoscaler/vertical-pod-autoscaler v1.1.2 h1:ENxmnVXLt8+iXhDA0PNFhXb1sgvbvnAc66sC34UGrTw=
