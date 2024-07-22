@@ -23,8 +23,8 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/weaveworks/common v0.0.0-20210419092856-009d1eebd624
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.30.2
-	k8s.io/apimachinery v0.30.2
+	k8s.io/api v0.30.3
+	k8s.io/apimachinery v0.30.3
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/component-base v0.30.2
 	k8s.io/utils v0.0.0-20240502163921-fe8a2dddb1d0
