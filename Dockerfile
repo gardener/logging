@@ -8,7 +8,7 @@ RUN --mount=type=cache,target="/root/.cache/go-build" make plugin
 RUN make install-copy
 
 ############# distroless-static
-FROM gcr.io/distroless/static-debian12:nonroot as distroless-static
+FROM gcr.io/distroless/static-debian12:nonroot AS distroless-static
 
 #############  fluent-bit-plugin #############
 FROM distroless-static AS fluent-bit-plugin
@@ -58,7 +58,7 @@ ENV GOCACHE=/root/.cache/go-build
 RUN --mount=type=cache,target="/root/.cache/go-build" CGO_ENABLED=0 make build
 
 #############      iptables-builder       #############
-FROM alpine:3.20.2 as iptables-builder
+FROM alpine:3.20.2 AS iptables-builder
 
 RUN apk add --update bash sudo iptables ncurses-libs libmnl && \
     rm -rf /var/cache/apk/*
@@ -102,7 +102,7 @@ COPY --from=telegraf-builder /go/telegraf/telegraf /usr/bin/telegraf
 CMD [ "/usr/bin/telegraf"]
 
 #############      tune2fs-builder       #############
-FROM alpine:3.20.2 as tune2fs-builder
+FROM alpine:3.20.2 AS tune2fs-builder
 
 RUN apk add --update bash e2fsprogs-extra mount gawk ncurses-libs && \
     rm -rf /var/cache/apk/*
