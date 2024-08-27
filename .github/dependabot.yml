@@ -22,6 +22,9 @@ updates:
       - dependency-name: google.golang.org/grpc/*
         versions:
           - "*"
+      - dependency-name: k8s.io/*
+        versions:
+          - "*"
   # Create PRs for golang version updates
   - package-ecosystem: docker
     directory: /
