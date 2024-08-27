@@ -13,6 +13,7 @@ apt-get update
 apt-get install -y unzip curl
 
 ARCH=""
+GO_VERSION=1.23.0
 # Translate the architecture to amd64 or arm64
 case "$(uname -m)" in
     x86_64)
@@ -27,8 +28,8 @@ case "$(uname -m)" in
         ;;
 esac
 
-curl -LO "https://go.dev/dl/go1.22.5.linux-$ARCH.tar.gz"
-rm -rf /usr/local/go && tar -C /usr/local -xzf "go1.22.5.linux-$ARCH.tar.gz"
+curl -LO "https://go.dev/dl/go${GO_VERSION}.linux-${ARCH}.tar.gz"
+rm -rf /usr/local/go && tar -C /usr/local -xzf "go${GO_VERSION}.linux-${ARCH}.tar.gz"
 
 export \
   PATH="/usr/local/go/bin":$PATH \
