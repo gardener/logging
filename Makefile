@@ -29,7 +29,7 @@ GARDENER_DIR                               := $(REPO_ROOT)/gardener
 
 # linter dependencies
 GO_LINT                                    := $(TOOLS_DIR)/golangci-lint
-GO_LINT_VERSION                            ?= v1.59.1
+GO_LINT_VERSION                            ?= v1.60.3
 
 # test dependencies
 GINKGO                                     := $(TOOLS_DIR)/ginkgo
