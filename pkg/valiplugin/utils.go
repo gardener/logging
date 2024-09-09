@@ -96,6 +96,10 @@ func autoLabels(records map[string]interface{}, kuberneteslbs model.LabelSet) er
 	return nil
 }
 
+// extractKubernetesMetadataFromTag extracts kubernetes metadata from a tag and adds it to the records map.
+// The tag should be in the format: pod_name.namespace_name.container_name.container_id
+// This is required since the fluent-bit does not use the kubernetes filter plugin, reason for it is to avoid querying
+// the kubernetes API server for the metadata.
 func extractKubernetesMetadataFromTag(records map[string]interface{}, tagKey string, re *regexp.Regexp) error {
 	tag, ok := records[tagKey].(string)
 	if !ok {
