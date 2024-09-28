@@ -27,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/component-base/version"
 
 	gardenerclientsetversioned "github.com/gardener/logging/pkg/cluster/clientset/versioned"
@@ -65,16 +66,28 @@ func init() {
 
 // Initializes and starts the shared informer instance
 func initClusterInformer() {
-	if informer == nil || informer.IsStopped() {
-		kubernetesClient, err := getInclusterKubernetsClient()
-		if err != nil {
-			panic(err)
-		}
-		kubeInformerFactory := gardeninternalcoreinformers.NewSharedInformerFactory(kubernetesClient, time.Second*30)
-		informer = kubeInformerFactory.Extensions().V1alpha1().Clusters().Informer()
-		informerStopChan = make(chan struct{})
-		kubeInformerFactory.Start(informerStopChan)
+	if informer != nil && !informer.IsStopped() {
+		return
 	}
+
+	var (
+		err              error
+		kubernetesClient gardenerclientsetversioned.Interface
+	)
+	if kubernetesClient, _ = inClusterKubernetesClient(); kubernetesClient == nil {
+		_ = level.Debug(logger).Log(
+			"msg", "failed to get in-cluster kubernetes client, trying KUBECONFIG env variable",
+		)
+		kubernetesClient, err = envKubernetesClient()
+		if err != nil {
+			panic(fmt.Errorf("failed to get kubernetes client, give up: %v", err))
+		}
+	}
+
+	kubeInformerFactory := gardeninternalcoreinformers.NewSharedInformerFactory(kubernetesClient, time.Second*30)
+	informer = kubeInformerFactory.Extensions().V1alpha1().Clusters().Informer()
+	informerStopChan = make(chan struct{})
+	kubeInformerFactory.Start(informerStopChan)
 }
 
 func setPprofProfile() {
@@ -178,21 +191,6 @@ func FLBPluginFlushCtx(ctx, data unsafe.Pointer, length C.int, tag *C.char) int 
 			timestamp = ts.(output.FLBTime).Time
 		case uint64:
 			timestamp = time.Unix(int64(t), 0)
-		case []interface{}:
-			// We need to iterate over the slice fields, where one field is the record timestamp
-			// and the other field in the slice is the newly introduced metadata in the form of a map
-			// see https://github.com/fluent/fluent-bit/issues/6666#issuecomment-1380200701
-			parsed := false
-			for _, v := range ts.([]interface{}) {
-				if flb, ok := v.(output.FLBTime); ok {
-					timestamp, parsed = flb.Time, true
-					break
-				}
-			}
-			if !parsed {
-				level.Warn(logger).Log("msg", "timestamp isn't known format, using current time")
-				timestamp = time.Now()
-			}
 		default:
 			_ = level.Info(logger).Log("msg", fmt.Sprintf("unknown timestamp type: %T", ts))
 			timestamp = time.Now()
@@ -202,12 +200,11 @@ func FLBPluginFlushCtx(ctx, data unsafe.Pointer, length C.int, tag *C.char) int 
 		if err != nil {
 			_ = level.Error(logger).Log(
 				"msg", "error sending record, retrying...",
-				"err", err.Error(),
 				"tag", C.GoString(tag),
+				"err", err.Error(),
 			)
 			return output.FLB_RETRY // max retry of the plugin is set to 3, then it shall be discarded by fluent-bit
 		}
-
 	}
 
 	// Return options:
@@ -254,12 +251,20 @@ func newLogger(logLevel logging.Level) log.Logger {
 	return _logger
 }
 
-func getInclusterKubernetsClient() (gardenerclientsetversioned.Interface, error) {
+func inClusterKubernetesClient() (gardenerclientsetversioned.Interface, error) {
 	c, err := rest.InClusterConfig()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get incluster config: %v", err)
 	}
 	return gardenerclientsetversioned.NewForConfig(c)
+}
+
+func envKubernetesClient() (gardenerclientsetversioned.Interface, error) {
+	fromFlags, err := clientcmd.BuildConfigFromFlags("", os.Getenv("KUBECONFIG"))
+	if err != nil {
+		return nil, fmt.Errorf("failed to get kubeconfig from env: %v", err)
+	}
+	return gardenerclientsetversioned.NewForConfig(fromFlags)
 }
 
 func main() {}
