@@ -113,26 +113,19 @@ func (v *vali) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 	records := toStringMap(r)
 	//_ = level.Debug(v.logger).Log("msg", "processing records", "records", fluentBitRecords(records))
 	lbs := make(model.LabelSet, v.cfg.PluginConfig.LabelSetInitCapacity)
-
+	
 	// Check if metadata is missing
 	_, ok := records["kubernetes"]
 	if !ok && v.cfg.PluginConfig.KubernetesMetadata.FallbackToTagWhenMetadataIsMissing {
-
-		/*_ = level.Debug(v.logger).Log(
-			"msg", "kubernetes metadata is missing, extracting it from the tag key",
-			"tag", v.cfg.PluginConfig.KubernetesMetadata.TagKey,
-		)*/
-
-		if err := extractKubernetesMetadataFromTag(records, v.cfg.PluginConfig.KubernetesMetadata.TagKey, v.extractKubernetesMetadataRegexp); err != nil {
+		// Attempt to extract Kubernetes metadata from the tag
+		if err := extractKubernetesMetadataFromTag(records,
+			v.cfg.PluginConfig.KubernetesMetadata.TagKey,
+			v.extractKubernetesMetadataRegexp,
+		); err != nil {
+			// Increment error metric if metadata extraction fails
 			metrics.Errors.WithLabelValues(metrics.ErrorCanNotExtractMetadataFromTag).Inc()
-
-			_ = level.Error(v.logger).Log("msg", "cannot extract kubernetes metadata", "err", err)
-
+			// Drop log entry if configured to do so when metadata is missing
 			if v.cfg.PluginConfig.KubernetesMetadata.DropLogEntryWithoutK8sMetadata {
-				_ = level.Warn(v.logger).Log(
-					"msg", "kubernetes metadata is missing and the log entry will be dropped",
-					"records", fluentBitRecords(records),
-				)
 				metrics.LogsWithoutMetadata.WithLabelValues(metrics.MissingMetadataType).Inc()
 				return nil
 			}
