@@ -24,7 +24,7 @@ const (
 type Options struct {
 	// RemoveTenantID flag removes the "__tenant_id_" label
 	RemoveTenantID bool
-	// MultiTenantClient glaf removes the "__gardener_multitenant_id__" label
+	// MultiTenantClient flag removes the "__gardener_multitenant_id__" label
 	MultiTenantClient bool
 	// PreservedLabels is the labels to preserve
 	PreservedLabels model.LabelSet
@@ -107,7 +107,7 @@ func (c *removeTenantIdClient) GetEndPoint() string {
 	return c.valiclient.GetEndPoint()
 }
 
-// NewRemoveTenantIdClientDecorator return vali client which removes the __tenant_id__ value fro the label set
+// NewRemoveTenantIdClientDecorator return vali client which removes the __tenant_id__ value from the label set
 func NewRemoveTenantIdClientDecorator(cfg config.Config, newClient NewValiClientFunc, logger log.Logger) (ValiClient, error) {
 	c, err := newValiClient(cfg, newClient, logger)
 	if err != nil {
