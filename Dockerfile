@@ -3,9 +3,10 @@ FROM golang:1.23.1 AS plugin-builder
 
 WORKDIR /go/src/github.com/gardener/logging
 COPY . .
-ENV GOCACHE=/root/.cache/go-build
-RUN --mount=type=cache,target="/root/.cache/go-build" make plugin
-RUN make install-copy
+
+ARG TARGETARCH
+RUN --mount=type=cache,target="/root/.cache/go-build" BUILD_ARCH=${TARGETARCH} make plugin
+RUN --mount=type=cache,target="/root/.cache/go-build" BUILD_ARCH=${TARGETARCH} make install-copy
 
 ############# distroless-static
 FROM gcr.io/distroless/static-debian12:nonroot AS distroless-static
@@ -18,7 +19,7 @@ COPY --from=plugin-builder /go/bin/copy /bin/cp
 
 WORKDIR /
 
-CMD /bin/cp /source/plugins/. /plugins
+CMD ["/bin/cp", "/source/plugins/.", "/plugins"]
 
 #############      image-builder       #############
 FROM golang:1.23.1 AS image-builder
@@ -28,8 +29,7 @@ COPY . .
 
 ARG EFFECTIVE_VERSION
 ARG TARGETARCH
-ENV GOCACHE=/root/.cache/go-build
-RUN --mount=type=cache,target="/root/.cache/go-build" make install EFFECTIVE_VERSION=$EFFECTIVE_VERSION GOARCH=$TARGETARCH
+RUN --mount=type=cache,target="/root/.cache/go-build" BUILD_ARCH=${TARGETARCH} EFFECTIVE_VERSION=$EFFECTIVE_VERSION make install
 
 #############      curator       #############
 FROM distroless-static AS curator
@@ -54,8 +54,9 @@ ENTRYPOINT [ "/event-logger" ]
 FROM golang:1.23.1 AS telegraf-builder
 RUN git clone --depth 1 --branch v1.26.0 https://github.com/influxdata/telegraf.git
 WORKDIR /go/telegraf
-ENV GOCACHE=/root/.cache/go-build
-RUN --mount=type=cache,target="/root/.cache/go-build" CGO_ENABLED=0 make build
+ARG TARGETOS
+ARG TARGETARCH
+RUN --mount=type=cache,target="/root/.cache/go-build" CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} make build
 
 #############      iptables-builder       #############
 FROM alpine:3.20.3 AS iptables-builder

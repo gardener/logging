@@ -11,34 +11,26 @@ TELEGRAF_IMAGE_REPOSITORY                  := $(REGISTRY)/telegraf-iptables
 TUNE2FS_IMAGE_REPOSITORY                   := $(REGISTRY)/tune2fs
 EVENT_LOGGER_IMAGE_REPOSITORY              := $(REGISTRY)/event-logger
 IMAGE_TAG                                  := $(VERSION)
-EFFECTIVE_VERSION                          := $(VERSION)-$(shell git rev-parse HEAD)
+EFFECTIVE_VERSION                          := $(VERSION)-$(shell git rev-parse --short HEAD)
 SRC_DIRS                                   := $(shell go list -f '{{.Dir}}' $(REPO_ROOT)/...)
+LD_FLAGS                                   := $(shell $(REPO_ROOT)/hack/get-build-ld-flags.sh)
+BUILD_PLATFORM                             ?= $(shell uname -s | tr '[:upper:]' '[:lower:]')
+BUILD_ARCH                                 ?= $(shell uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
 PARALLEL_E2E_TESTS                         := 1
-DOCKER_BUILD_PLATFORM                      ?= linux/amd64,linux/arm64
-
-LD_FLAGS                                   :=$(shell $(REPO_ROOT)/hack/get-build-ld-flags.sh)
-BUILD_PLATFORM                             :=$(shell uname -s | tr '[:upper:]' '[:lower:]')
-BUILD_ARCH                                 :=$(shell uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
-
-
 
 # project folder structure
 PKG_DIR                                    := $(REPO_ROOT)/pkg
 TOOLS_DIR                                  := $(REPO_ROOT)/tools
 GARDENER_DIR                               := $(REPO_ROOT)/gardener
-
 # linter dependencies
 GO_LINT                                    := $(TOOLS_DIR)/golangci-lint
 GO_LINT_VERSION                            ?= v1.60.3
-
 # test dependencies
 GINKGO                                     := $(TOOLS_DIR)/ginkgo
 GINKGO_VERSION                             ?= v2.19.0
-
 # yq dependencies
 YQ                                         := $(TOOLS_DIR)/yq
 YQ_VERSION                                 ?= v4.31.2
-
 # kind dependencies
 KIND                                       := $(TOOLS_DIR)/kind
 KIND_VERSION                               ?= v0.18.0
@@ -46,7 +38,6 @@ KIND_VERSION                               ?= v0.18.0
 # skaffold dependencies
 SKAFFOLD                                   := $(TOOLS_DIR)/skaffold
 SKAFFOLD_VERSION                           ?= latest
-
 # helm dependencies
 HELM                                       := $(TOOLS_DIR)/helm
 HELM_VERSION                               ?= v3.12.0
@@ -54,7 +45,7 @@ HELM_VERSION                               ?= v3.12.0
 # goimports dependencies
 GOIMPORTS                                  := $(TOOLS_DIR)/goimports
 GOIMPORTS_VERSION                          ?= v0.22.0
-
+# goimports_reviser dependencies
 GOIMPORTS_REVISER                          := $(TOOLS_DIR)/goimports-reviser
 GOIMPORTS_REVISER_VERSION                  ?= v3.6.5
 
@@ -63,76 +54,114 @@ $(TOOLS_DIR):
 
 export PATH := $(abspath $(TOOLS_DIR)):$(PATH)
 
+.DEFAULT_GOAL := all
+all: verify goimports goimports-reviser
+
 #################################################################
 # Rules related to binary build, Docker image build and release #
 #################################################################
 
 .PHONY: plugin
 plugin: tidy
-	@go build -buildmode=c-shared -o $(REPO_ROOT)/build/out_vali.so \
-	  -ldflags="$(LD_FLAGS)" ./cmd/fluent-bit-vali-plugin
+	@echo "building $@ for $(BUILD_PLATFORM)/$(BUILD_ARCH)"
+	@GOOS=$(BUILD_PLATFORM) \
+		GOARCH=$(BUILD_ARCH) \
+		go build -buildmode=c-shared \
+		-o $(REPO_ROOT)/build/out_vali.so \
+	  	-ldflags="$(LD_FLAGS)" \
+		./cmd/fluent-bit-vali-plugin
 
 .PHONY: curator
 curator: tidy
-	@CGO_ENABLED=0 GO111MODULE=on go build -o $(REPO_ROOT)/build/curator \
-	  -ldflags="$(LD_FLAGS)" ./cmd/vali-curator
+	@echo "building $@ for $(BUILD_PLATFORM)/$(BUILD_ARCH)"
+	@GOOS=$(BUILD_PLATFORM) \
+		GOARCH=$(BUILD_ARCH) \
+		CGO_ENABLED=0 \
+		GO111MODULE=on \
+		go build \
+		-o $(REPO_ROOT)/build/curator \
+		-ldflags="$(LD_FLAGS)" \
+		./cmd/vali-curator
 
 .PHONY: event-logger
 event-logger: tidy
-	@CGO_ENABLED=0 GO111MODULE=on go build -o $(REPO_ROOT)/build/event-logger \
-	  -ldflags="$(LD_FLAGS)" $(REPO_ROOT)/cmd/event-logger
-
-.PHONY: build
-build: plugin
+	@echo "building $@ for $(BUILD_PLATFORM)/$(BUILD_ARCH)"
+	@GOOS=$(BUILD_PLATFORM) \
+		GOARCH=$(BUILD_ARCH) \
+		CGO_ENABLED=0 GO111MODULE=on \
+		go build \
+		-o $(REPO_ROOT)/build/event-logger \
+		-ldflags="$(LD_FLAGS)" \
+		$(REPO_ROOT)/cmd/event-logger
 
 .PHONY: install
 install: install-vali-curator install-event-logger
 
 .PHONY: install-vali-curator
 install-vali-curator:
-	@EFFECTIVE_VERSION=$(EFFECTIVE_VERSION) ./hack/install.sh ./cmd/vali-curator
+	@echo "building $@ for $(BUILD_PLATFORM)/$(BUILD_ARCH)"
+	@GOOS=$(BUILD_PLATFORM) \
+		GOARCH=$(BUILD_ARCH) \
+		EFFECTIVE_VERSION=$(EFFECTIVE_VERSION) \
+		./hack/install.sh \
+		./cmd/vali-curator
 
 .PHONY: install-event-logger
 install-event-logger:
-	@EFFECTIVE_VERSION=$(EFFECTIVE_VERSION) ./hack/install.sh ./cmd/event-logger
+	@echo "building $@ for $(BUILD_PLATFORM)/$(BUILD_ARCH)"
+	@GOOS=$(BUILD_PLATFORM) \
+		GOARCH=$(BUILD_ARCH) \
+		EFFECTIVE_VERSION=$(EFFECTIVE_VERSION) \
+		./hack/install.sh \
+		./cmd/event-logger
 
 .PHONY: install-copy
 install-copy:
-	@EFFECTIVE_VERSION=$(EFFECTIVE_VERSION) ./hack/install.sh ./cmd/copy
+	@echo "building $@ for $(BUILD_PLATFORM)/$(BUILD_ARCH)"
+	@GOOS=$(BUILD_PLATFORM) \
+		GOARCH=$(BUILD_ARCH) \
+		EFFECTIVE_VERSION=$(EFFECTIVE_VERSION) \
+		./hack/install.sh \
+		./cmd/copy
 
 .PHONY: docker-images
 docker-images:
-	@$(REPO_ROOT)/hack/docker-image-build.sh "fluent-bit-plugin" \
-	$(FLUENT_BIT_TO_VALI_IMAGE_REPOSITORY) $(IMAGE_TAG)
+	@BUILD_ARCH=$(BUILD_ARCH) \
+		$(REPO_ROOT)/hack/docker-image-build.sh "fluent-bit-plugin" \
+		$(FLUENT_BIT_TO_VALI_IMAGE_REPOSITORY) $(IMAGE_TAG)
 
-	@$(REPO_ROOT)/hack/docker-image-build.sh "curator" \
-	$(VALI_CURATOR_IMAGE_REPOSITORY) $(IMAGE_TAG)
+	@BUILD_ARCH=$(BUILD_ARCH) \
+		$(REPO_ROOT)/hack/docker-image-build.sh "curator" \
+		$(VALI_CURATOR_IMAGE_REPOSITORY) $(IMAGE_TAG)
 
-	@$(REPO_ROOT)/hack/docker-image-build.sh "telegraf" \
-	$(TELEGRAF_IMAGE_REPOSITORY) $(IMAGE_TAG)
+	@BUILD_ARCH=$(BUILD_ARCH) \
+		$(REPO_ROOT)/hack/docker-image-build.sh "telegraf" \
+		$(TELEGRAF_IMAGE_REPOSITORY) $(IMAGE_TAG)
 
-	@$(REPO_ROOT)/hack/docker-image-build.sh "event-logger" \
-	$(EVENT_LOGGER_IMAGE_REPOSITORY) $(IMAGE_TAG) $(EFFECTIVE_VERSION)
+	@BUILD_ARCH=$(BUILD_ARCH) \
+		$(REPO_ROOT)/hack/docker-image-build.sh "event-logger" \
+		$(EVENT_LOGGER_IMAGE_REPOSITORY) $(IMAGE_TAG) $(EFFECTIVE_VERSION)
 
-	@$(REPO_ROOT)/hack/docker-image-build.sh "tune2fs" \
-	$(TUNE2FS_IMAGE_REPOSITORY) $(IMAGE_TAG)
+	@BUILD_ARCH=$(BUILD_ARCH) \
+		$(REPO_ROOT)/hack/docker-image-build.sh "tune2fs" \
+		$(TUNE2FS_IMAGE_REPOSITORY) $(IMAGE_TAG)
 
 .PHONY: docker-push
 docker-push:
 	@$(REPO_ROOT)/hack/docker-image-push.sh "fluent-bit-plugin" \
-	"$(DOCKER_BUILD_PLATFORM)" $(FLUENT_BIT_TO_VALI_IMAGE_REPOSITORY) $(IMAGE_TAG)
+	$(FLUENT_BIT_TO_VALI_IMAGE_REPOSITORY) $(IMAGE_TAG)
 
 	@$(REPO_ROOT)/hack/docker-image-push.sh "curator" \
-	"$(DOCKER_BUILD_PLATFORM)" $(VALI_CURATOR_IMAGE_REPOSITORY) $(IMAGE_TAG)
+	$(VALI_CURATOR_IMAGE_REPOSITORY) $(IMAGE_TAG)
 
 	@$(REPO_ROOT)/hack/docker-image-push.sh "telegraf" \
-	"$(DOCKER_BUILD_PLATFORM)" $(TELEGRAF_IMAGE_REPOSITORY) $(IMAGE_TAG)
+	$(TELEGRAF_IMAGE_REPOSITORY) $(IMAGE_TAG)
 
 	@$(REPO_ROOT)/hack/docker-image-push.sh "event-logger" \
-	"$(DOCKER_BUILD_PLATFORM)" $(EVENT_LOGGER_IMAGE_REPOSITORY) $(IMAGE_TAG) $(EFFECTIVE_VERSION)
+	$(EVENT_LOGGER_IMAGE_REPOSITORY) $(IMAGE_TAG) $(EFFECTIVE_VERSION)
 
 	@$(REPO_ROOT)/hack/docker-image-push.sh "tune2fs" \
-    "$(DOCKER_BUILD_PLATFORM)" $(TUNE2FS_IMAGE_REPOSITORY) $(IMAGE_TAG)
+    $(TUNE2FS_IMAGE_REPOSITORY) $(IMAGE_TAG)
 
 #####################################################################
 # Rules for verification, formatting, linting, testing and cleaning #
@@ -140,8 +169,8 @@ docker-push:
 
 .PHONY: tidy
 tidy:
-	go mod tidy
-	go mod download
+	@go mod tidy
+	@go mod download
 
 .PHONY: check
 check: format $(GO_LINT)
@@ -173,7 +202,7 @@ test: $(GINKGO)
 install-requirements: $(GO_LINT) $(GINKGO)
 
 .PHONY: verify
-verify: install-requirements check format test
+verify: install-requirements format check test
 
 .PHONY: clean
 clean:

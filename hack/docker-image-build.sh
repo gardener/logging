@@ -6,13 +6,9 @@
 
 dir="$(dirname "$0")"
 
-set -o nounset #catch and prevent errors caused by the use of unset variables.
-set -o pipefail #exit with the exit code of the first error
-set -o errexit #exits immediately if any command in a script exits with a non-zero status
-
-source "$dir/.includes.sh"
-
-echo "> Docker build"
+set -o nounset
+set -o pipefail
+set -o errexit
 
 TARGET="${1:-}"
 if [ -z $TARGET ]; then
@@ -31,12 +27,11 @@ fi
 
 EFFECTIVE_VERSION="${4:-}"
 
-pushd $dir/..
+echo "docker build: ${TARGET} for linux/${BUILD_ARCH}"
 
 docker build \
   --build-arg EFFECTIVE_VERSION="${EFFECTIVE_VERSION}" \
   --tag "${IMAGE_REPOSITORY}:latest" \
 	--tag "${IMAGE_REPOSITORY}:${IMAGE_TAG}" \
-	-f Dockerfile --target ${TARGET} .
-
-popd      
+  --platform "linux/${BUILD_ARCH}" \
+	-f Dockerfile --target ${TARGET} $dir/..

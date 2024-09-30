@@ -19,37 +19,34 @@ if [ -z $TARGET ]; then
   echo "TARGET is a required parameter"  && exit 1
 fi
 
-DOCKER_BUILD_PLATFORM="${2:-}"
-if [ -z $DOCKER_BUILD_PLATFORM ]; then
-  echo "DOCKER_BUILD_PLATFORM is a required parameter" && exit 1
-fi
-
-IMAGE_REPOSITORY="${3:-}"
+IMAGE_REPOSITORY="${2:-}"
 if [ -z $IMAGE_REPOSITORY ]; then
   echo "IMAGE_REPOSITORY is a required parameter" && exit 1
 fi
 
-IMAGE_TAG="${4:-}"
+IMAGE_TAG="${3:-}"
 if [ -z $IMAGE_TAG ]; then
   echo "IMAGE_TAG is a required parameter" && exit 1
 fi
 
-EFFECTIVE_VERSION="${5:-}"
+EFFECTIVE_VERSION="${4:-}"
 
-BUILDER="logging"
-
-if docker buildx inspect $BUILDER > /dev/null 2>&1; then
-	echo "using $BUILDER builder"
+# Check if the image with 'latest' tag exists
+if __image_exists "${IMAGE_REPOSITORY}:latest"; then
+    echo "Docker image '${IMAGE_REPOSITORY}:latest' found."
 else
-	echo "creating $BUILDER builder"
-	docker buildx create --name $BUILDER --use
+    echo "Error: Docker image '${IMAGE_REPOSITORY}:latest' not found."
+    exit 1
 fi
 
-pushd $dir/..
-docker buildx build --push --platform=$DOCKER_BUILD_PLATFORM \
-  --build-arg EFFECTIVE_VERSION="${EFFECTIVE_VERSION}" \
-  --tag "${IMAGE_REPOSITORY}:latest" \
-	--tag "${IMAGE_REPOSITORY}:${IMAGE_TAG}" \
-	-f Dockerfile --target ${TARGET} .
+# Check if the image with specific tag exists
+if __image_exists "${IMAGE_REPOSITORY}:${IMAGE_TAG}"; then
+    echo "Docker image '${IMAGE_REPOSITORY}:${IMAGE_TAG}' found."
+else
+    echo "Error: Docker image '${IMAGE_REPOSITORY}:${IMAGE_TAG}' not found."
+    exit 1
+fi
 
-popd
+echo "Pushing Docker image ..."
+docker push "${IMAGE_REPOSITORY}:latest"
+docker push "${IMAGE_REPOSITORY}:${IMAGE_TAG}"
