@@ -33,7 +33,7 @@ type Vali interface {
 
 type vali struct {
 	cfg                             *config.Config
-	defaultClient                   client.ValiClient
+	seedClient                      client.ValiClient
 	dynamicHostRegexp               *regexp.Regexp
 	dynamicTenantRegexp             *regexp.Regexp
 	dynamicTenant                   string
@@ -48,7 +48,7 @@ func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger lo
 	var err error
 	v := &vali{cfg: cfg, logger: logger}
 
-	if v.defaultClient, err = client.NewClient(*cfg, logger, client.Options{
+	if v.seedClient, err = client.NewClient(*cfg, logger, client.Options{
 		RemoveTenantID:    cfg.PluginConfig.DynamicTenant.RemoveTenantIdWhenSendingToDefaultURL,
 		MultiTenantClient: false,
 	}); err != nil {
@@ -56,8 +56,8 @@ func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger lo
 	}
 
 	_ = level.Debug(logger).Log(
-		"msg", "default client created at vali plugin",
-		"url", v.defaultClient.GetEndPoint(),
+		"msg", "seed client created at vali plugin",
+		"url", v.seedClient.GetEndPoint(),
 		"queue", cfg.ClientConfig.BufferConfig.DqueConfig.QueueName,
 	)
 
@@ -68,15 +68,15 @@ func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger lo
 
 		cfgShallowCopy := *cfg
 		cfgShallowCopy.ClientConfig.BufferConfig.DqueConfig.QueueName = cfg.ClientConfig.BufferConfig.DqueConfig.QueueName + "-controller"
-		controllerDefaultClient, err := client.NewClient(cfgShallowCopy, logger, client.Options{
+		controllerSeedClient, err := client.NewClient(cfgShallowCopy, logger, client.Options{
 			RemoveTenantID:    cfg.PluginConfig.DynamicTenant.RemoveTenantIdWhenSendingToDefaultURL,
 			MultiTenantClient: false,
 			PreservedLabels:   cfg.PluginConfig.PreservedLabels,
 		})
 
 		_ = level.Debug(logger).Log(
-			"msg", "default controller client created at vali plugin",
-			"url", controllerDefaultClient.GetEndPoint(),
+			"msg", "seed controller client created at vali plugin",
+			"url", controllerSeedClient.GetEndPoint(),
 			"queue", cfgShallowCopy.ClientConfig.BufferConfig.DqueConfig.QueueName,
 		)
 
@@ -85,7 +85,7 @@ func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger lo
 		}
 
 		//  Controller with default client set, is used when to send logs when shoots are not present.
-		if v.controller, err = controller.NewController(informer, cfg, controllerDefaultClient, logger); err != nil {
+		if v.controller, err = controller.NewController(informer, cfg, controllerSeedClient, logger); err != nil {
 			return nil, err
 		}
 	}
@@ -102,8 +102,8 @@ func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger lo
 
 	_ = level.Info(logger).Log(
 		"msg", "vali plugin created",
-		"default_client_url", v.defaultClient.GetEndPoint(),
-		"default_queue_name", cfg.ClientConfig.BufferConfig.DqueConfig.QueueName,
+		"seed_client_url", v.seedClient.GetEndPoint(),
+		"seed_queue_name", cfg.ClientConfig.BufferConfig.DqueConfig.QueueName,
 	)
 	return v, nil
 }
@@ -113,7 +113,7 @@ func (v *vali) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 	records := toStringMap(r)
 	//_ = level.Debug(v.logger).Log("msg", "processing records", "records", fluentBitRecords(records))
 	lbs := make(model.LabelSet, v.cfg.PluginConfig.LabelSetInitCapacity)
-	
+
 	// Check if metadata is missing
 	_, ok := records["kubernetes"]
 	if !ok && v.cfg.PluginConfig.KubernetesMetadata.FallbackToTagWhenMetadataIsMissing {
@@ -216,14 +216,14 @@ func (v *vali) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 }
 
 func (v *vali) Close() {
-	v.defaultClient.Stop()
+	v.seedClient.Stop()
 	if v.controller != nil {
 		v.controller.Stop()
 	}
 	_ = level.Info(v.logger).Log(
 		"msg", "vali plugin stopped",
-		"default_client_url", v.defaultClient.GetEndPoint(),
-		"default_queue_name", v.cfg.ClientConfig.BufferConfig.DqueConfig.QueueName,
+		"seed_client_url", v.seedClient.GetEndPoint(),
+		"seed_queue_name", v.cfg.ClientConfig.BufferConfig.DqueConfig.QueueName,
 	)
 }
 
@@ -235,7 +235,7 @@ func (v *vali) getClient(dynamicHosName string) client.ValiClient {
 		return nil
 	}
 
-	return v.defaultClient
+	return v.seedClient
 }
 
 func (v *vali) isDynamicHost(dynamicHostName string) bool {

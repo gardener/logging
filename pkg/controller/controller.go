@@ -34,25 +34,25 @@ type Controller interface {
 	Stop()
 }
 type controller struct {
-	defaultClient client.ValiClient
-	conf          *config.Config
-	lock          sync.RWMutex
-	clients       map[string]ControllerClient
-	logger        log.Logger
-	informer      cache.SharedIndexInformer
-	r             cache.ResourceEventHandlerRegistration
+	seedClient client.ValiClient
+	conf       *config.Config
+	lock       sync.RWMutex
+	clients    map[string]ControllerClient
+	logger     log.Logger
+	informer   cache.SharedIndexInformer
+	r          cache.ResourceEventHandlerRegistration
 }
 
 // NewController return Controller interface
-func NewController(informer cache.SharedIndexInformer, conf *config.Config, defaultClient client.ValiClient, l log.Logger) (Controller, error) {
+func NewController(informer cache.SharedIndexInformer, conf *config.Config, seedClient client.ValiClient, l log.Logger) (Controller, error) {
 	var err error
 
 	ctl := &controller{
-		clients:       make(map[string]ControllerClient, expectedActiveClusters),
-		conf:          conf,
-		defaultClient: defaultClient,
-		informer:      informer,
-		logger:        l,
+		clients:    make(map[string]ControllerClient, expectedActiveClusters),
+		conf:       conf,
+		seedClient: seedClient,
+		informer:   informer,
+		logger:     l,
 	}
 
 	if ctl.r, err = informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -82,8 +82,8 @@ func (ctl *controller) Stop() {
 		cl.StopWait()
 	}
 	ctl.clients = nil
-	if ctl.defaultClient != nil {
-		ctl.defaultClient.StopWait()
+	if ctl.seedClient != nil {
+		ctl.seedClient.StopWait()
 	}
 
 	if ctl.informer == nil || ctl.r == nil {
@@ -197,7 +197,7 @@ func (ctl *controller) updateClientConfig(clusterName string) *config.Config {
 
 	suffix := ctl.conf.ControllerConfig.DynamicHostSuffix
 
-	// Construct the target URL: DynamicHostPrefix + clusterName + DynamicHostSuffix
+	// Construct the valiClient URL: DynamicHostPrefix + clusterName + DynamicHostSuffix
 	url := fmt.Sprintf("%s%s%s", ctl.conf.ControllerConfig.DynamicHostPrefix, clusterName, suffix)
 	_ = level.Debug(ctl.logger).Log("msg", "set url", "url", url, "cluster", clusterName)
 

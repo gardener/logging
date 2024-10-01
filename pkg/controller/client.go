@@ -34,17 +34,19 @@ const (
 	clusterStateRestore     clusterState = "restore"
 )
 
-// Because loosing some logs when switching on and off client is not important we are omiting the synchronization.
+type target struct {
+	valiClient client.ValiClient
+	mute       bool
+	conf       *config.ControllerClientConfiguration
+}
+
+// Because loosing some logs when switching on and off client is not important we are omitting the synchronization.
 type controllerClient struct {
-	mainClient        client.ValiClient
-	defaultClient     client.ValiClient
-	muteMainClient    bool
-	muteDefaultClient bool
-	state             clusterState
-	defaultClientConf *config.ControllerClientConfiguration
-	mainClientConf    *config.ControllerClientConfiguration
-	logger            log.Logger
-	name              string
+	shootTarget target
+	seedTarget  target
+	state       clusterState
+	logger      log.Logger
+	name        string
 }
 
 var _ client.ValiClient = &controllerClient{}
@@ -79,23 +81,26 @@ func (ctl *controller) newControllerClient(clusterName string, clientConf *confi
 		"name", clusterName,
 	)
 
-	mainClient, err := client.NewClient(*clientConf, ctl.logger, client.Options{MultiTenantClient: clientConf.PluginConfig.EnableMultiTenancy})
+	shootClient, err := client.NewClient(*clientConf, ctl.logger, client.Options{MultiTenantClient: clientConf.PluginConfig.EnableMultiTenancy})
 	if err != nil {
 		return nil, err
 	}
 
 	c := &controllerClient{
-		mainClient:        mainClient,
-		defaultClient:     ctl.defaultClient,
-		state:             clusterStateCreation, // check here the actual cluster state
-		defaultClientConf: &ctl.conf.ControllerConfig.DefaultControllerClientConfig,
-		mainClientConf:    &ctl.conf.ControllerConfig.MainControllerClientConfig,
-		logger:            ctl.logger,
-		name:              clientConf.ClientConfig.CredativValiConfig.URL.Host,
+		shootTarget: target{
+			valiClient: shootClient,
+			mute:       !ctl.conf.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInCreationState,
+			conf:       &ctl.conf.ControllerConfig.ShootControllerClientConfig,
+		},
+		seedTarget: target{
+			valiClient: ctl.seedClient,
+			mute:       !ctl.conf.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInCreationState,
+			conf:       &ctl.conf.ControllerConfig.SeedControllerClientConfig,
+		},
+		state:  clusterStateCreation, // check here the actual cluster state
+		logger: ctl.logger,
+		name:   clientConf.ClientConfig.CredativValiConfig.URL.Host,
 	}
-
-	c.muteDefaultClient = !c.defaultClientConf.SendLogsWhenIsInCreationState
-	c.muteMainClient = !c.mainClientConf.SendLogsWhenIsInCreationState
 
 	return c, nil
 }
@@ -134,8 +139,8 @@ func (ctl *controller) createControllerClient(clusterName string, shoot *gardene
 	_ = level.Info(ctl.logger).Log(
 		"msg", "added controller client",
 		"cluster", clusterName,
-		"mute_main_client", c.muteMainClient,
-		"mute_default_client", c.muteDefaultClient,
+		"mute_shoot_client", c.shootTarget.mute,
+		"mute_seed_client", c.seedTarget.mute,
 	)
 }
 
@@ -166,7 +171,7 @@ func (ctl *controller) updateControllerClientState(client ControllerClient, shoo
 }
 
 func (c *controllerClient) GetEndPoint() string {
-	return c.mainClient.GetEndPoint()
+	return c.shootTarget.valiClient.GetEndPoint()
 }
 
 // Handle processes and sends log to Vali.
@@ -174,20 +179,20 @@ func (c *controllerClient) Handle(ls model.LabelSet, t time.Time, s string) erro
 	var combineErr error
 	// Because we do not use thread save methods here we just copy the variables
 	// in case they have changed during the two consequential calls to Handle.
-	sendToMain, sendToDefault := !c.muteMainClient, !c.muteDefaultClient
+	sendToShoot, sendToSeed := !c.shootTarget.mute, !c.seedTarget.mute
 
-	if sendToMain {
+	if sendToShoot {
 		// Because this client does not alter the labels set we don't need to clone
 		// it if we don't spread the logs between the two clients. But if we
 		// are sending the log record to both client we have to pass a copy because
 		// we are not sure what kind of label set processing will be done in the corresponding
 		// client which can lead to "concurrent map iteration and map write error".
-		if err := c.mainClient.Handle(copyLabelSet(ls, sendToDefault), t, s); err != nil {
+		if err := c.shootTarget.valiClient.Handle(copyLabelSet(ls, sendToShoot), t, s); err != nil {
 			combineErr = giterrors.Wrap(combineErr, err.Error())
 		}
 	}
-	if sendToDefault {
-		if err := c.defaultClient.Handle(copyLabelSet(ls, sendToMain), t, s); err != nil {
+	if sendToSeed {
+		if err := c.seedTarget.valiClient.Handle(copyLabelSet(ls, sendToSeed), t, s); err != nil {
 			combineErr = giterrors.Wrap(combineErr, err.Error())
 		}
 
@@ -197,16 +202,16 @@ func (c *controllerClient) Handle(ls model.LabelSet, t time.Time, s string) erro
 
 // Stop the client.
 func (c *controllerClient) Stop() {
-	c.mainClient.Stop()
+	c.shootTarget.valiClient.Stop()
 }
 
 // StopWait stops the client waiting all saved logs to be sent.
 func (c *controllerClient) StopWait() {
-	c.mainClient.StopWait()
+	c.shootTarget.valiClient.StopWait()
 }
 
 // SetState manages the MuteMainClient and MuteDefaultClient flags.
-// These flags govern the target to which the logs are send.
+// These flags govern the valiClient to which the logs are send.
 // When MuteMainClient is true the logs are sent to the Default which is the gardener vali instance.
 // When MuteDefaultClient is true the logs are sent to the Main which is the shoot vali instance.
 func (c *controllerClient) SetState(state clusterState) {
@@ -216,32 +221,32 @@ func (c *controllerClient) SetState(state clusterState) {
 
 	switch state {
 	case clusterStateReady:
-		c.muteMainClient = !c.mainClientConf.SendLogsWhenIsInReadyState
-		c.muteDefaultClient = !c.defaultClientConf.SendLogsWhenIsInReadyState
+		c.shootTarget.mute = !c.shootTarget.conf.SendLogsWhenIsInReadyState
+		c.seedTarget.mute = !c.seedTarget.conf.SendLogsWhenIsInReadyState
 	case clusterStateHibernating:
-		c.muteMainClient = !c.mainClientConf.SendLogsWhenIsInHibernatingState
-		c.muteDefaultClient = !c.defaultClientConf.SendLogsWhenIsInHibernatingState
+		c.shootTarget.mute = !c.shootTarget.conf.SendLogsWhenIsInHibernatingState
+		c.seedTarget.mute = !c.seedTarget.conf.SendLogsWhenIsInHibernatingState
 	case clusterStateWakingUp:
-		c.muteMainClient = !c.mainClientConf.SendLogsWhenIsInWakingState
-		c.muteDefaultClient = !c.defaultClientConf.SendLogsWhenIsInWakingState
+		c.shootTarget.mute = !c.shootTarget.conf.SendLogsWhenIsInWakingState
+		c.seedTarget.mute = !c.seedTarget.conf.SendLogsWhenIsInWakingState
 	case clusterStateDeletion:
-		c.muteMainClient = !c.mainClientConf.SendLogsWhenIsInDeletionState
-		c.muteDefaultClient = !c.defaultClientConf.SendLogsWhenIsInDeletionState
+		c.shootTarget.mute = !c.shootTarget.conf.SendLogsWhenIsInDeletionState
+		c.seedTarget.mute = !c.seedTarget.conf.SendLogsWhenIsInDeletionState
 	case clusterStateDeleted:
-		c.muteMainClient = !c.mainClientConf.SendLogsWhenIsInDeletedState
-		c.muteDefaultClient = !c.defaultClientConf.SendLogsWhenIsInDeletedState
+		c.shootTarget.mute = !c.shootTarget.conf.SendLogsWhenIsInDeletedState
+		c.seedTarget.mute = !c.seedTarget.conf.SendLogsWhenIsInDeletedState
 	case clusterStateHibernated:
-		c.muteMainClient = !c.mainClientConf.SendLogsWhenIsInHibernatedState
-		c.muteDefaultClient = !c.defaultClientConf.SendLogsWhenIsInHibernatedState
+		c.shootTarget.mute = !c.shootTarget.conf.SendLogsWhenIsInHibernatedState
+		c.seedTarget.mute = !c.seedTarget.conf.SendLogsWhenIsInHibernatedState
 	case clusterStateRestore:
-		c.muteMainClient = !c.mainClientConf.SendLogsWhenIsInRestoreState
-		c.muteDefaultClient = !c.defaultClientConf.SendLogsWhenIsInRestoreState
+		c.shootTarget.mute = !c.shootTarget.conf.SendLogsWhenIsInRestoreState
+		c.seedTarget.mute = !c.seedTarget.conf.SendLogsWhenIsInRestoreState
 	case clusterStateMigration:
-		c.muteMainClient = !c.mainClientConf.SendLogsWhenIsInMigrationState
-		c.muteDefaultClient = !c.defaultClientConf.SendLogsWhenIsInMigrationState
+		c.shootTarget.mute = !c.shootTarget.conf.SendLogsWhenIsInMigrationState
+		c.seedTarget.mute = !c.seedTarget.conf.SendLogsWhenIsInMigrationState
 	case clusterStateCreation:
-		c.muteMainClient = !c.mainClientConf.SendLogsWhenIsInCreationState
-		c.muteDefaultClient = !c.defaultClientConf.SendLogsWhenIsInCreationState
+		c.shootTarget.mute = !c.shootTarget.conf.SendLogsWhenIsInCreationState
+		c.seedTarget.mute = !c.seedTarget.conf.SendLogsWhenIsInCreationState
 	default:
 		_ = level.Error(c.logger).Log(
 			"msg", fmt.Sprintf("Unknown state %v for cluster %v. The client state will not be changed", state, c.name),
@@ -254,8 +259,8 @@ func (c *controllerClient) SetState(state clusterState) {
 		"cluster", c.name,
 		"oldState", c.state,
 		"newState", state,
-		"mute_main_client", c.muteMainClient,
-		"mute_default_client", c.muteDefaultClient,
+		"mute_shoot_client", c.shootTarget.mute,
+		"mute_seed_client", c.seedTarget.mute,
 	)
 	c.state = state
 }

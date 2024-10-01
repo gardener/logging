@@ -49,12 +49,12 @@ func NewConfiguration() (config.Config, error) {
 			IdLabelName:      model.LabelName("id"),
 		},
 		ControllerConfig: config.ControllerConfig{
-			CtlSyncTimeout:                60 * time.Minute,
-			DynamicHostPrefix:             "http://vali.",
-			DynamicHostSuffix:             ".svc:3100/vali/api/v1/push",
-			DeletedClientTimeExpiration:   time.Hour,
-			MainControllerClientConfig:    config.MainControllerClientConfig,
-			DefaultControllerClientConfig: config.DefaultControllerClientConfig,
+			CtlSyncTimeout:              60 * time.Minute,
+			DynamicHostPrefix:           "http://vali.",
+			DynamicHostSuffix:           ".svc:3100/vali/api/v1/push",
+			DeletedClientTimeExpiration: time.Hour,
+			ShootControllerClientConfig: config.ShootControllerClientConfig,
+			SeedControllerClientConfig:  config.SeedControllerClientConfig,
 		},
 		PluginConfig: config.PluginConfig{
 			AutoKubernetesLabels: false,

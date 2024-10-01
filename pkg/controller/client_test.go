@@ -38,77 +38,85 @@ var _ = Describe("Controller Client", func() {
 
 	BeforeEach(func() {
 		ctlClient = controllerClient{
-			mainClient:    &client.FakeValiClient{},
-			defaultClient: &client.FakeValiClient{},
-			logger:        logger,
-			name:          "test",
+			shootTarget: target{
+				valiClient: &client.FakeValiClient{},
+				mute:       false,
+				conf:       nil,
+			},
+			seedTarget: target{
+				valiClient: &client.FakeValiClient{},
+				mute:       false,
+				conf:       nil,
+			},
+			logger: logger,
+			name:   "test",
 		}
 	})
 
 	type handleArgs struct {
 		config struct {
-			muteDefaultClient bool
-			muteMainClient    bool
+			muteSeedClient  bool
+			muteShootClient bool
 		}
 		input []client.Entry
 		want  struct {
-			defaultEntries []client.Entry
-			mainEntries    []client.Entry
+			seedEntries  []client.Entry
+			shootEntries []client.Entry
 		}
 	}
 
 	DescribeTable("#Handle", func(args handleArgs) {
-		ctlClient.muteDefaultClient = args.config.muteDefaultClient
-		ctlClient.muteMainClient = args.config.muteMainClient
+		ctlClient.seedTarget.mute = args.config.muteSeedClient
+		ctlClient.shootTarget.mute = args.config.muteShootClient
 		for _, entry := range args.input {
 			err := ctlClient.Handle(entry.Labels, entry.Timestamp, entry.Line)
 			Expect(err).ToNot(HaveOccurred())
 		}
-		Expect(ctlClient.mainClient.(*client.FakeValiClient).Entries).To(Equal(args.want.mainEntries))
-		Expect(ctlClient.defaultClient.(*client.FakeValiClient).Entries).To(Equal(args.want.defaultEntries))
+		Expect(ctlClient.shootTarget.valiClient.(*client.FakeValiClient).Entries).To(Equal(args.want.shootEntries))
+		Expect(ctlClient.seedTarget.valiClient.(*client.FakeValiClient).Entries).To(Equal(args.want.seedEntries))
 	},
 		Entry("Should send only to the main client", handleArgs{
 			config: struct {
-				muteDefaultClient bool
-				muteMainClient    bool
+				muteSeedClient  bool
+				muteShootClient bool
 			}{true, false},
 			input: []client.Entry{entry1, entry2},
 			want: struct {
-				defaultEntries []client.Entry
-				mainEntries    []client.Entry
+				seedEntries  []client.Entry
+				shootEntries []client.Entry
 			}{nil, []client.Entry{entry1, entry2}},
 		}),
 		Entry("Should send only to the default client", handleArgs{
 			config: struct {
-				muteDefaultClient bool
-				muteMainClient    bool
+				muteSeedClient  bool
+				muteShootClient bool
 			}{false, true},
 			input: []client.Entry{entry1, entry2},
 			want: struct {
-				defaultEntries []client.Entry
-				mainEntries    []client.Entry
+				seedEntries  []client.Entry
+				shootEntries []client.Entry
 			}{[]client.Entry{entry1, entry2}, nil},
 		}),
 		Entry("Should send to both clients", handleArgs{
 			config: struct {
-				muteDefaultClient bool
-				muteMainClient    bool
+				muteSeedClient  bool
+				muteShootClient bool
 			}{false, false},
 			input: []client.Entry{entry1, entry2},
 			want: struct {
-				defaultEntries []client.Entry
-				mainEntries    []client.Entry
+				seedEntries  []client.Entry
+				shootEntries []client.Entry
 			}{[]client.Entry{entry1, entry2}, []client.Entry{entry1, entry2}},
 		}),
 		Entry("Shouldn't send to both clients", handleArgs{
 			config: struct {
-				muteDefaultClient bool
-				muteMainClient    bool
+				muteSeedClient  bool
+				muteShootClient bool
 			}{true, true},
 			input: []client.Entry{entry1, entry2},
 			want: struct {
-				defaultEntries []client.Entry
-				mainEntries    []client.Entry
+				seedEntries  []client.Entry
+				shootEntries []client.Entry
 			}{nil, nil},
 		}),
 	)
@@ -124,20 +132,20 @@ var _ = Describe("Controller Client", func() {
 		}
 	}
 	DescribeTable("#SetState", func(args setStateArgs) {
-		ctlClient.defaultClientConf = args.defaultClientConf
-		ctlClient.mainClientConf = args.mainClientConf
+		ctlClient.seedTarget.conf = args.defaultClientConf
+		ctlClient.shootTarget.conf = args.mainClientConf
 		ctlClient.state = args.currentState
 		ctlClient.SetState(args.inputState)
 
 		Expect(ctlClient.state).To(Equal(args.want.state))
-		Expect(ctlClient.muteDefaultClient).To(Equal(args.want.muteDefaultClient))
-		Expect(ctlClient.muteMainClient).To(Equal(args.want.muteMainClient))
+		Expect(ctlClient.seedTarget.mute).To(Equal(args.want.muteDefaultClient))
+		Expect(ctlClient.shootTarget.mute).To(Equal(args.want.muteMainClient))
 	},
 		Entry("Change state from create to creation", setStateArgs{
 			inputState:        clusterStateCreation,
 			currentState:      clusterStateCreation,
-			defaultClientConf: &config.DefaultControllerClientConfig,
-			mainClientConf:    &config.MainControllerClientConfig,
+			defaultClientConf: &config.SeedControllerClientConfig,
+			mainClientConf:    &config.ShootControllerClientConfig,
 			want: struct {
 				muteMainClient    bool
 				muteDefaultClient bool
@@ -147,8 +155,8 @@ var _ = Describe("Controller Client", func() {
 		Entry("Change state from create to ready", setStateArgs{
 			inputState:        clusterStateReady,
 			currentState:      clusterStateCreation,
-			defaultClientConf: &config.DefaultControllerClientConfig,
-			mainClientConf:    &config.MainControllerClientConfig,
+			defaultClientConf: &config.SeedControllerClientConfig,
+			mainClientConf:    &config.ShootControllerClientConfig,
 			want: struct {
 				muteMainClient    bool
 				muteDefaultClient bool
@@ -158,8 +166,8 @@ var _ = Describe("Controller Client", func() {
 		Entry("Change state from create to hibernating", setStateArgs{
 			inputState:        clusterStateHibernating,
 			currentState:      clusterStateCreation,
-			defaultClientConf: &config.DefaultControllerClientConfig,
-			mainClientConf:    &config.MainControllerClientConfig,
+			defaultClientConf: &config.SeedControllerClientConfig,
+			mainClientConf:    &config.ShootControllerClientConfig,
 			want: struct {
 				muteMainClient    bool
 				muteDefaultClient bool
@@ -169,8 +177,8 @@ var _ = Describe("Controller Client", func() {
 		Entry("Change state from create to hibernated", setStateArgs{
 			inputState:        clusterStateHibernated,
 			currentState:      clusterStateCreation,
-			defaultClientConf: &config.DefaultControllerClientConfig,
-			mainClientConf:    &config.MainControllerClientConfig,
+			defaultClientConf: &config.SeedControllerClientConfig,
+			mainClientConf:    &config.ShootControllerClientConfig,
 			want: struct {
 				muteMainClient    bool
 				muteDefaultClient bool
@@ -180,8 +188,8 @@ var _ = Describe("Controller Client", func() {
 		Entry("Change state from create to waking", setStateArgs{
 			inputState:        clusterStateWakingUp,
 			currentState:      clusterStateCreation,
-			defaultClientConf: &config.DefaultControllerClientConfig,
-			mainClientConf:    &config.MainControllerClientConfig,
+			defaultClientConf: &config.SeedControllerClientConfig,
+			mainClientConf:    &config.ShootControllerClientConfig,
 			want: struct {
 				muteMainClient    bool
 				muteDefaultClient bool
@@ -191,8 +199,8 @@ var _ = Describe("Controller Client", func() {
 		Entry("Change state from create to deletion", setStateArgs{
 			inputState:        clusterStateDeletion,
 			currentState:      clusterStateCreation,
-			defaultClientConf: &config.DefaultControllerClientConfig,
-			mainClientConf:    &config.MainControllerClientConfig,
+			defaultClientConf: &config.SeedControllerClientConfig,
+			mainClientConf:    &config.ShootControllerClientConfig,
 			want: struct {
 				muteMainClient    bool
 				muteDefaultClient bool
@@ -204,21 +212,21 @@ var _ = Describe("Controller Client", func() {
 	Describe("#Stop", func() {
 		It("Should stop immediately", func() {
 			ctlClient.Stop()
-			Expect(ctlClient.mainClient.(*client.FakeValiClient).IsStopped).To(BeTrue())
-			Expect(ctlClient.defaultClient.(*client.FakeValiClient).IsStopped).To(BeFalse())
+			Expect(ctlClient.shootTarget.valiClient.(*client.FakeValiClient).IsStopped).To(BeTrue())
+			Expect(ctlClient.seedTarget.valiClient.(*client.FakeValiClient).IsStopped).To(BeFalse())
 		})
 
 		It("Should stop gracefully", func() {
 			ctlClient.StopWait()
-			Expect(ctlClient.mainClient.(*client.FakeValiClient).IsGracefullyStopped).To(BeTrue())
-			Expect(ctlClient.defaultClient.(*client.FakeValiClient).IsGracefullyStopped).To(BeFalse())
+			Expect(ctlClient.shootTarget.valiClient.(*client.FakeValiClient).IsGracefullyStopped).To(BeTrue())
+			Expect(ctlClient.seedTarget.valiClient.(*client.FakeValiClient).IsGracefullyStopped).To(BeFalse())
 		})
 	})
 
 	Describe("#GetState", func() {
 		It("Should get the state", func() {
-			ctlClient.defaultClientConf = &config.DefaultControllerClientConfig
-			ctlClient.mainClientConf = &config.MainControllerClientConfig
+			ctlClient.seedTarget.conf = &config.SeedControllerClientConfig
+			ctlClient.shootTarget.conf = &config.ShootControllerClientConfig
 			ctlClient.SetState(clusterStateReady)
 			currentState := ctlClient.GetState()
 			Expect(currentState).To(Equal(clusterStateReady))

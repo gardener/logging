@@ -141,9 +141,9 @@ var _ = Describe("Vali plugin", func() {
 		func(args sendRecordArgs) {
 			rec := &recorder{}
 			l := &vali{
-				cfg:           args.cfg,
-				defaultClient: rec,
-				logger:        logger,
+				cfg:        args.cfg,
+				seedClient: rec,
+				logger:     logger,
 			}
 			err := l.SendRecord(args.record, now)
 			if args.wantErr {
@@ -266,7 +266,7 @@ var _ = Describe("Vali plugin", func() {
 		}
 		valiplug := vali{
 			dynamicHostRegexp: regexp.MustCompile("shoot--.*"),
-			defaultClient:     &fakeValiClient{},
+			seedClient:        &fakeValiClient{},
 			controller:        &fc,
 		}
 
@@ -330,7 +330,7 @@ var _ = Describe("Vali plugin", func() {
 						dynamicTenantRegexp: regexp.MustCompile("user-exposed.kubernetes"),
 						dynamicTenant:       "test-user",
 						dynamicTenantField:  "tag",
-						defaultClient:       &fakeValiClient{},
+						seedClient:          &fakeValiClient{},
 					},
 					labelSet: model.LabelSet{
 						"foo": "bar",
@@ -359,7 +359,7 @@ var _ = Describe("Vali plugin", func() {
 						dynamicTenantRegexp: regexp.MustCompile("user-exposed.kubernetes"),
 						dynamicTenant:       "test-user",
 						dynamicTenantField:  "tag",
-						defaultClient:       &fakeValiClient{},
+						seedClient:          &fakeValiClient{},
 					},
 					labelSet: model.LabelSet{
 						"foo": "bar",
@@ -387,7 +387,7 @@ var _ = Describe("Vali plugin", func() {
 						dynamicTenantRegexp: regexp.MustCompile("user-exposed.kubernetes"),
 						dynamicTenant:       "test-user",
 						dynamicTenantField:  "tag",
-						defaultClient:       &fakeValiClient{},
+						seedClient:          &fakeValiClient{},
 					},
 					labelSet: model.LabelSet{
 						"foo": "bar",

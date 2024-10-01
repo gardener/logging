@@ -24,12 +24,12 @@ type ControllerConfig struct {
 	// DeletedClientTimeExpiration is the time after a client for
 	// deleted shoot should be cosidered for removal
 	DeletedClientTimeExpiration time.Duration
-	// MainControllerClientConfig configure to whether to send or not the log to the shoot
+	// ShootControllerClientConfig configure to whether to send or not the log to the shoot
 	// Vali for a particular shoot state.
-	MainControllerClientConfig ControllerClientConfiguration
-	// DefaultControllerClientConfig configure to whether to send or not the log to the shoot
+	ShootControllerClientConfig ControllerClientConfiguration
+	// SeedControllerClientConfig configure to whether to send or not the log to the shoot
 	// Vali for a particular shoot state.
-	DefaultControllerClientConfig ControllerClientConfiguration
+	SeedControllerClientConfig ControllerClientConfiguration
 }
 
 // ControllerClientConfiguration contains flags which
@@ -46,8 +46,8 @@ type ControllerClientConfiguration struct {
 	SendLogsWhenIsInMigrationState   bool
 }
 
-// DefaultControllerClientConfig is the default controller client configuration
-var DefaultControllerClientConfig = ControllerClientConfiguration{
+// SeedControllerClientConfig is the default controller client configuration
+var SeedControllerClientConfig = ControllerClientConfiguration{
 	SendLogsWhenIsInCreationState:    true,
 	SendLogsWhenIsInReadyState:       false,
 	SendLogsWhenIsInHibernatingState: false,
@@ -59,8 +59,8 @@ var DefaultControllerClientConfig = ControllerClientConfiguration{
 	SendLogsWhenIsInMigrationState:   true,
 }
 
-// MainControllerClientConfig is the main controller client configuration
-var MainControllerClientConfig = ControllerClientConfiguration{
+// ShootControllerClientConfig is the main controller client configuration
+var ShootControllerClientConfig = ControllerClientConfiguration{
 	SendLogsWhenIsInCreationState:    true,
 	SendLogsWhenIsInReadyState:       true,
 	SendLogsWhenIsInHibernatingState: false,
@@ -103,132 +103,132 @@ func initControllerConfig(cfg Getter, res *Config) error {
 func initControllerClientConfig(cfg Getter, res *Config) error {
 	var err error
 
-	res.ControllerConfig.MainControllerClientConfig = MainControllerClientConfig
-	res.ControllerConfig.DefaultControllerClientConfig = DefaultControllerClientConfig
+	res.ControllerConfig.ShootControllerClientConfig = ShootControllerClientConfig
+	res.ControllerConfig.SeedControllerClientConfig = SeedControllerClientConfig
 
-	sendLogsToMainClusterWhenIsInCreationState := cfg.Get("SendLogsToMainClusterWhenIsInCreationState")
-	if sendLogsToMainClusterWhenIsInCreationState != "" {
-		res.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInCreationState, err = strconv.ParseBool(sendLogsToMainClusterWhenIsInCreationState)
+	sendLogsToShootClusterWhenIsInCreationState := cfg.Get("SendLogsToMainClusterWhenIsInCreationState")
+	if sendLogsToShootClusterWhenIsInCreationState != "" {
+		res.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInCreationState, err = strconv.ParseBool(sendLogsToShootClusterWhenIsInCreationState)
 		if err != nil {
 			return fmt.Errorf("invalid value for SendLogsToMainClusterWhenIsInCreationState, error: %v", err)
 		}
 	}
 
-	sendLogsToMainClusterWhenIsInReadyState := cfg.Get("SendLogsToMainClusterWhenIsInReadyState")
-	if sendLogsToMainClusterWhenIsInReadyState != "" {
-		res.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInReadyState, err = strconv.ParseBool(sendLogsToMainClusterWhenIsInReadyState)
+	sendLogsToShootClusterWhenIsInReadyState := cfg.Get("SendLogsToMainClusterWhenIsInReadyState")
+	if sendLogsToShootClusterWhenIsInReadyState != "" {
+		res.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInReadyState, err = strconv.ParseBool(sendLogsToShootClusterWhenIsInReadyState)
 		if err != nil {
 			return fmt.Errorf("invalid value for SendLogsToMainClusterWhenIsInReadyState, error: %v", err)
 		}
 	}
 
-	sendLogsToMainClusterWhenIsInHibernatingState := cfg.Get("SendLogsToMainClusterWhenIsInHibernatingState")
-	if sendLogsToMainClusterWhenIsInHibernatingState != "" {
-		res.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInHibernatingState, err = strconv.ParseBool(sendLogsToMainClusterWhenIsInHibernatingState)
+	sendLogsToShootClusterWhenIsInHibernatingState := cfg.Get("SendLogsToMainClusterWhenIsInHibernatingState")
+	if sendLogsToShootClusterWhenIsInHibernatingState != "" {
+		res.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInHibernatingState, err = strconv.ParseBool(sendLogsToShootClusterWhenIsInHibernatingState)
 		if err != nil {
 			return fmt.Errorf("invalid value for SendLogsToMainClusterWhenIsInHibernatingState, error: %v", err)
 		}
 	}
 
-	sendLogsToMainClusterWhenIsInHibernatedState := cfg.Get("SendLogsToMainClusterWhenIsInHibernatedState")
-	if sendLogsToMainClusterWhenIsInHibernatedState != "" {
-		res.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInHibernatedState, err = strconv.ParseBool(sendLogsToMainClusterWhenIsInHibernatedState)
+	sendLogsToShootClusterWhenIsInHibernatedState := cfg.Get("SendLogsToMainClusterWhenIsInHibernatedState")
+	if sendLogsToShootClusterWhenIsInHibernatedState != "" {
+		res.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInHibernatedState, err = strconv.ParseBool(sendLogsToShootClusterWhenIsInHibernatedState)
 		if err != nil {
 			return fmt.Errorf("invalid value for SendLogsToMainClusterWhenIsInHibernatedState, error: %v", err)
 		}
 	}
 
-	sendLogsToMainClusterWhenIsInDeletionState := cfg.Get("SendLogsToMainClusterWhenIsInDeletionState")
-	if sendLogsToMainClusterWhenIsInDeletionState != "" {
-		res.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInDeletionState, err = strconv.ParseBool(sendLogsToMainClusterWhenIsInDeletionState)
+	sendLogsToShootClusterWhenIsInDeletionState := cfg.Get("SendLogsToMainClusterWhenIsInDeletionState")
+	if sendLogsToShootClusterWhenIsInDeletionState != "" {
+		res.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInDeletionState, err = strconv.ParseBool(sendLogsToShootClusterWhenIsInDeletionState)
 		if err != nil {
 			return fmt.Errorf("invalid value for SendLogsToMainClusterWhenIsInDeletionState, error: %v", err)
 		}
 	}
 
-	sendLogsToMainClusterWhenIsInDeletedState := cfg.Get("SendLogsToMainClusterWhenIsInDeletedState")
-	if sendLogsToMainClusterWhenIsInDeletedState != "" {
-		res.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInDeletedState, err = strconv.ParseBool(sendLogsToMainClusterWhenIsInDeletedState)
+	sendLogsToShootClusterWhenIsInDeletedState := cfg.Get("SendLogsToMainClusterWhenIsInDeletedState")
+	if sendLogsToShootClusterWhenIsInDeletedState != "" {
+		res.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInDeletedState, err = strconv.ParseBool(sendLogsToShootClusterWhenIsInDeletedState)
 		if err != nil {
 			return fmt.Errorf("invalid value for SendLogsToMainClusterWhenIsInDeletedState, error: %v", err)
 		}
 	}
 
-	sendLogsToMainClusterWhenIsInRestoreState := cfg.Get("SendLogsToMainClusterWhenIsInRestoreState")
-	if sendLogsToMainClusterWhenIsInRestoreState != "" {
-		res.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInRestoreState, err = strconv.ParseBool(sendLogsToMainClusterWhenIsInRestoreState)
+	sendLogsToShootClusterWhenIsInRestoreState := cfg.Get("SendLogsToMainClusterWhenIsInRestoreState")
+	if sendLogsToShootClusterWhenIsInRestoreState != "" {
+		res.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInRestoreState, err = strconv.ParseBool(sendLogsToShootClusterWhenIsInRestoreState)
 		if err != nil {
 			return fmt.Errorf("invalid value for SendLogsToMainClusterWhenIsInRestoreState, error: %v", err)
 		}
 	}
 
-	sendLogsToMainClusterWhenIsInMigrationState := cfg.Get("SendLogsToMainClusterWhenIsInMigrationState")
-	if sendLogsToMainClusterWhenIsInMigrationState != "" {
-		res.ControllerConfig.MainControllerClientConfig.SendLogsWhenIsInMigrationState, err = strconv.ParseBool(sendLogsToMainClusterWhenIsInMigrationState)
+	sendLogsToShootClusterWhenIsInMigrationState := cfg.Get("SendLogsToMainClusterWhenIsInMigrationState")
+	if sendLogsToShootClusterWhenIsInMigrationState != "" {
+		res.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInMigrationState, err = strconv.ParseBool(sendLogsToShootClusterWhenIsInMigrationState)
 		if err != nil {
 			return fmt.Errorf("invalid value for SendLogsToMainClusterWhenIsInMigrationState, error: %v", err)
 		}
 	}
 
-	sendLogsToDefaultClientWhenClusterIsInCreationState := cfg.Get("SendLogsToDefaultClientWhenClusterIsInCreationState")
-	if sendLogsToDefaultClientWhenClusterIsInCreationState != "" {
-		res.ControllerConfig.DefaultControllerClientConfig.SendLogsWhenIsInCreationState, err = strconv.ParseBool(sendLogsToDefaultClientWhenClusterIsInCreationState)
+	sendLogsToSeedClientWhenClusterIsInCreationState := cfg.Get("SendLogsToDefaultClientWhenClusterIsInCreationState")
+	if sendLogsToSeedClientWhenClusterIsInCreationState != "" {
+		res.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInCreationState, err = strconv.ParseBool(sendLogsToSeedClientWhenClusterIsInCreationState)
 		if err != nil {
 			return fmt.Errorf("invalid value for SendLogsToDefaultClientWhenClusterIsInCreationState, error: %v", err)
 		}
 	}
 
-	sendLogsToDefaultClientWhenClusterIsInReadyState := cfg.Get("SendLogsToDefaultClientWhenClusterIsInReadyState")
-	if sendLogsToDefaultClientWhenClusterIsInReadyState != "" {
-		res.ControllerConfig.DefaultControllerClientConfig.SendLogsWhenIsInReadyState, err = strconv.ParseBool(sendLogsToDefaultClientWhenClusterIsInReadyState)
+	sendLogsToSeedClientWhenClusterIsInReadyState := cfg.Get("SendLogsToDefaultClientWhenClusterIsInReadyState")
+	if sendLogsToSeedClientWhenClusterIsInReadyState != "" {
+		res.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInReadyState, err = strconv.ParseBool(sendLogsToSeedClientWhenClusterIsInReadyState)
 		if err != nil {
 			return fmt.Errorf("invalid value for SendLogsToDefaultClientWhenClusterIsInReadyState, error: %v", err)
 		}
 	}
 
-	sendLogsToDefaultClientWhenClusterIsInHibernatingState := cfg.Get("SendLogsToDefaultClientWhenClusterIsInHibernatingState")
-	if sendLogsToDefaultClientWhenClusterIsInHibernatingState != "" {
-		res.ControllerConfig.DefaultControllerClientConfig.SendLogsWhenIsInHibernatingState, err = strconv.ParseBool(sendLogsToDefaultClientWhenClusterIsInHibernatingState)
+	sendLogsToSeedClientWhenClusterIsInHibernatingState := cfg.Get("SendLogsToDefaultClientWhenClusterIsInHibernatingState")
+	if sendLogsToSeedClientWhenClusterIsInHibernatingState != "" {
+		res.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInHibernatingState, err = strconv.ParseBool(sendLogsToSeedClientWhenClusterIsInHibernatingState)
 		if err != nil {
 			return fmt.Errorf("invalid value for SendLogsToDefaultClientWhenClusterIsInHibernatingState, error: %v", err)
 		}
 	}
 
-	sendLogsToDefaultClientWhenClusterIsInHibernatedState := cfg.Get("SendLogsToDefaultClientWhenClusterIsInHibernatedState")
-	if sendLogsToDefaultClientWhenClusterIsInHibernatedState != "" {
-		res.ControllerConfig.DefaultControllerClientConfig.SendLogsWhenIsInHibernatedState, err = strconv.ParseBool(sendLogsToDefaultClientWhenClusterIsInHibernatedState)
+	sendLogsToSeedClientWhenClusterIsInHibernatedState := cfg.Get("SendLogsToDefaultClientWhenClusterIsInHibernatedState")
+	if sendLogsToSeedClientWhenClusterIsInHibernatedState != "" {
+		res.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInHibernatedState, err = strconv.ParseBool(sendLogsToSeedClientWhenClusterIsInHibernatedState)
 		if err != nil {
 			return fmt.Errorf("invalid value for SendLogsToDefaultClientWhenClusterIsInHibernatedState, error: %v", err)
 		}
 	}
 
-	sendLogsToDefaultClientWhenClusterIsInDeletionState := cfg.Get("SendLogsToDefaultClientWhenClusterIsInDeletionState")
-	if sendLogsToDefaultClientWhenClusterIsInDeletionState != "" {
-		res.ControllerConfig.DefaultControllerClientConfig.SendLogsWhenIsInDeletionState, err = strconv.ParseBool(sendLogsToDefaultClientWhenClusterIsInDeletionState)
+	sendLogsToSeedClientWhenClusterIsInDeletionState := cfg.Get("SendLogsToDefaultClientWhenClusterIsInDeletionState")
+	if sendLogsToSeedClientWhenClusterIsInDeletionState != "" {
+		res.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInDeletionState, err = strconv.ParseBool(sendLogsToSeedClientWhenClusterIsInDeletionState)
 		if err != nil {
 			return fmt.Errorf("invalid value for SendLogsToDefaultClientWhenClusterIsInDeletionState, error: %v", err)
 		}
 	}
 
-	sendLogsToDefaultClientWhenClusterIsInDeletedState := cfg.Get("SendLogsToDefaultClientWhenClusterIsInDeletedState")
-	if sendLogsToDefaultClientWhenClusterIsInDeletedState != "" {
-		res.ControllerConfig.DefaultControllerClientConfig.SendLogsWhenIsInDeletedState, err = strconv.ParseBool(sendLogsToDefaultClientWhenClusterIsInDeletedState)
+	sendLogsToSeedClientWhenClusterIsInDeletedState := cfg.Get("SendLogsToDefaultClientWhenClusterIsInDeletedState")
+	if sendLogsToSeedClientWhenClusterIsInDeletedState != "" {
+		res.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInDeletedState, err = strconv.ParseBool(sendLogsToSeedClientWhenClusterIsInDeletedState)
 		if err != nil {
 			return fmt.Errorf("invalid value for SendLogsToDefaultClientWhenClusterIsInDeletedState, error: %v", err)
 		}
 	}
 
-	sendLogsToDefaultClientWhenClusterIsInRestoreState := cfg.Get("SendLogsToDefaultClientWhenClusterIsInRestoreState")
-	if sendLogsToDefaultClientWhenClusterIsInRestoreState != "" {
-		res.ControllerConfig.DefaultControllerClientConfig.SendLogsWhenIsInRestoreState, err = strconv.ParseBool(sendLogsToDefaultClientWhenClusterIsInRestoreState)
+	sendLogsToSeedClientWhenClusterIsInRestoreState := cfg.Get("SendLogsToDefaultClientWhenClusterIsInRestoreState")
+	if sendLogsToSeedClientWhenClusterIsInRestoreState != "" {
+		res.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInRestoreState, err = strconv.ParseBool(sendLogsToSeedClientWhenClusterIsInRestoreState)
 		if err != nil {
 			return fmt.Errorf("invalid value for SendLogsToDefaultClientWhenClusterIsInRestoreState, error: %v", err)
 		}
 	}
 
-	sendLogsToDefaultClientWhenClusterIsInMigrationState := cfg.Get("SendLogsToDefaultClientWhenClusterIsInMigrationState")
-	if sendLogsToDefaultClientWhenClusterIsInMigrationState != "" {
-		res.ControllerConfig.DefaultControllerClientConfig.SendLogsWhenIsInMigrationState, err = strconv.ParseBool(sendLogsToDefaultClientWhenClusterIsInMigrationState)
+	sendLogsToSeedClientWhenClusterIsInMigrationState := cfg.Get("SendLogsToDefaultClientWhenClusterIsInMigrationState")
+	if sendLogsToSeedClientWhenClusterIsInMigrationState != "" {
+		res.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInMigrationState, err = strconv.ParseBool(sendLogsToSeedClientWhenClusterIsInMigrationState)
 		if err != nil {
 			return fmt.Errorf("invalid value for SendLogsToDefaultClientWhenClusterIsInMigrationState, error: %v", err)
 		}

@@ -107,7 +107,7 @@ var (
 		IdLabelName:        model.LabelName("id"),
 	}
 
-	defaultMainControllerClientConfig = ControllerClientConfiguration{
+	defaultShootControllerClientConfig = ControllerClientConfiguration{
 		SendLogsWhenIsInCreationState:    defaultAllow,
 		SendLogsWhenIsInReadyState:       defaultAllow,
 		SendLogsWhenIsInHibernatingState: defaultDeny,
@@ -132,10 +132,10 @@ var (
 	}
 
 	defaultControllerConfig = ControllerConfig{
-		CtlSyncTimeout:                defaultCtlSyncTimeout,
-		DeletedClientTimeExpiration:   defaultDeletedClientTimeExpiration,
-		MainControllerClientConfig:    defaultMainControllerClientConfig,
-		DefaultControllerClientConfig: defaultControllerClientConfig,
+		CtlSyncTimeout:              defaultCtlSyncTimeout,
+		DeletedClientTimeExpiration: defaultDeletedClientTimeExpiration,
+		ShootControllerClientConfig: defaultShootControllerClientConfig,
+		SeedControllerClientConfig:  defaultControllerClientConfig,
 	}
 
 	defaultURL = parseURL("http://localhost:3100/vali/api/v1/push")
@@ -335,12 +335,12 @@ var _ = Describe("Config", func() {
 					NumberOfBatchIDs: defaultNumberOfBatchIDs,
 				},
 				ControllerConfig: ControllerConfig{
-					DynamicHostPrefix:             "http://vali.",
-					DynamicHostSuffix:             ".svc:3100/vali/api/v1/push",
-					CtlSyncTimeout:                defaultCtlSyncTimeout,
-					DeletedClientTimeExpiration:   defaultDeletedClientTimeExpiration,
-					MainControllerClientConfig:    defaultMainControllerClientConfig,
-					DefaultControllerClientConfig: defaultControllerClientConfig,
+					DynamicHostPrefix:           "http://vali.",
+					DynamicHostSuffix:           ".svc:3100/vali/api/v1/push",
+					CtlSyncTimeout:              defaultCtlSyncTimeout,
+					DeletedClientTimeExpiration: defaultDeletedClientTimeExpiration,
+					ShootControllerClientConfig: defaultShootControllerClientConfig,
+					SeedControllerClientConfig:  defaultControllerClientConfig,
 				},
 				LogLevel: warnLogLevel,
 			},
