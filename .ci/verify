@@ -13,7 +13,7 @@ apt-get update
 apt-get install -y unzip curl
 
 ARCH=""
-GO_VERSION=1.23.0
+GO_VERSION=1.23.2
 # Translate the architecture to amd64 or arm64
 case "$(uname -m)" in
     x86_64)
