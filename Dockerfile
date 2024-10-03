@@ -1,5 +1,5 @@
 #############      builder       #############
-FROM golang:1.23.1 AS plugin-builder
+FROM golang:1.23.2 AS plugin-builder
 
 WORKDIR /go/src/github.com/gardener/logging
 COPY . .
@@ -22,7 +22,7 @@ WORKDIR /
 CMD ["/bin/cp", "/source/plugins/.", "/plugins"]
 
 #############      image-builder       #############
-FROM golang:1.23.1 AS image-builder
+FROM golang:1.23.2 AS image-builder
 
 WORKDIR /go/src/github.com/gardener/logging
 COPY . .
@@ -51,7 +51,7 @@ WORKDIR /
 ENTRYPOINT [ "/event-logger" ]
 
 #############      telegraf-builder       #############
-FROM golang:1.23.1 AS telegraf-builder
+FROM golang:1.23.2 AS telegraf-builder
 RUN git clone --depth 1 --branch v1.26.0 https://github.com/influxdata/telegraf.git
 WORKDIR /go/telegraf
 ARG TARGETOS
