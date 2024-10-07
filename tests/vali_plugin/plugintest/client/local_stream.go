@@ -13,6 +13,7 @@ import (
 	"github.com/prometheus/common/model"
 )
 
+// localStream simulates stream in vali backend
 type localStream struct {
 	lastTimestamp time.Time
 	logCount      int
@@ -24,11 +25,10 @@ func (s *localStream) add(timestamp time.Time) error {
 	}
 	s.lastTimestamp = timestamp
 	s.logCount++
-
 	return nil
 }
 
-func labelSetToString(ls model.LabelSet) string {
+func LabelSetToString(ls model.LabelSet) string {
 	var labelSetStr []string
 
 	for key, value := range ls {

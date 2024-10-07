@@ -5,8 +5,6 @@
 package matcher
 
 import (
-	"fmt"
-
 	"github.com/prometheus/common/model"
 
 	"github.com/gardener/logging/tests/vali_plugin/plugintest/client"
@@ -26,21 +24,11 @@ func NewMatcher() Matcher {
 
 func (m *logMatcher) Match(pod input.Pod, endClient client.EndClient) bool {
 
-	for _, ls := range getLabelSets(pod) {
-		if pod.GetOutput().GetGeneratedLogsCount() != endClient.GetLogsCount(ls) {
-			fmt.Println("Wanted Logs ", pod.GetOutput().GetGeneratedLogsCount(), " found", endClient.GetLogsCount(ls), "for Stream ", ls)
-			return false
-		}
-	}
-	return true
+	generated := pod.GetOutput().GetGeneratedLogsCount()
+	received := endClient.GetLogsCount(getLabelSets(pod))
+	return generated == received
 }
 
-func getLabelSets(pod input.Pod) []model.LabelSet {
-	var lbSets []model.LabelSet
-	for _, tenant := range pod.GetOutput().GetTenants() {
-		lbs := pod.GetOutput().GetLabelSet().Clone()
-		lbs["__tenant_id__"] = model.LabelValue(tenant)
-		lbSets = append(lbSets, lbs)
-	}
-	return lbSets
+func getLabelSets(pod input.Pod) model.LabelSet {
+	return pod.GetOutput().GetLabelSet()
 }

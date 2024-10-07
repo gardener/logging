@@ -58,14 +58,15 @@ func NewConfiguration() (config.Config, error) {
 		},
 		PluginConfig: config.PluginConfig{
 			AutoKubernetesLabels: false,
-			RemoveKeys:           []string{"kubernetes", "stream", "time", "tag", "gardenuser", "job"},
+			EnableMultiTenancy:   false,
+			RemoveKeys:           []string{"kubernetes", "stream", "time", "tag", "job"},
 			LabelKeys:            nil,
 			LabelMap: map[string]interface{}{
 				"kubernetes": map[string]interface{}{
+					"container_id":   "container_id",
 					"container_name": "container_name",
 					"namespace_name": "namespace_name",
 					"pod_name":       "pod_name",
-					"docker_id":      "docker_id",
 				},
 				"severity": "severity",
 				"job":      "job",
@@ -84,12 +85,6 @@ func NewConfiguration() (config.Config, error) {
 				TagKey:                             "tag",
 				TagPrefix:                          "kubernetes\\.var\\.log\\.containers",
 				TagExpression:                      "\\.([^_]+)_([^_]+)_(.+)-([a-z0-9]{64})\\.log$",
-			},
-			DynamicTenant: config.DynamicTenant{
-				Tenant:                                "user",
-				Field:                                 "gardenuser",
-				Regex:                                 "user",
-				RemoveTenantIdWhenSendingToDefaultURL: false,
 			},
 			LabelSetInitCapacity: 12,
 			HostnameKey:          pointer.StringPtr("nodename"),

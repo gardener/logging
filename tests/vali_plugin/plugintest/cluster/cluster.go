@@ -13,10 +13,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/pointer"
-)
 
-const (
-	simulatesShootNamespacePrefix = "shoot--logging--test-"
+	"github.com/gardener/logging/tests/vali_plugin/plugintest/input"
 )
 
 type cluster struct {
@@ -24,7 +22,7 @@ type cluster struct {
 	number  int
 }
 
-func NewCluster(number int) Cluster {
+func newCluster(number int) Cluster {
 	return &cluster{
 		cluster: getCluster(number, "create"),
 		number:  number,
@@ -34,7 +32,7 @@ func NewCluster(number int) Cluster {
 func CreateNClusters(numberOfClusters int) []Cluster {
 	result := make([]Cluster, numberOfClusters)
 	for i := 0; i < numberOfClusters; i++ {
-		result[i] = NewCluster(i)
+		result[i] = newCluster(i)
 	}
 	return result
 }
@@ -97,7 +95,7 @@ func getCluster(number int, state string) *extensionsv1alpha1.Cluster {
 			APIVersion: "extensions.gardener.cloud/v1alpha1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: fmt.Sprintf("%s%v", simulatesShootNamespacePrefix, number),
+			Name: fmt.Sprintf("%s-%v", input.NamespacePrefix, number),
 		},
 		Spec: extensionsv1alpha1.ClusterSpec{
 			Shoot: runtime.RawExtension{

@@ -18,6 +18,6 @@ type EndClient interface {
 type BlackBoxTestingValiClient struct {
 	entries         chan api.Entry
 	receivedEntries []api.Entry
-	localStreams    map[string]localStream
+	localStreams    map[string]*localStream
 	stopped         int
 }

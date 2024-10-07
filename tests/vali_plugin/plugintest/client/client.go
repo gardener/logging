@@ -5,33 +5,32 @@
 package client
 
 import (
-	"fmt"
-
 	"github.com/credativ/vali/pkg/valitail/api"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"github.com/prometheus/common/model"
 )
 
 func NewBlackBoxTestingValiClient() *BlackBoxTestingValiClient {
 	return &BlackBoxTestingValiClient{
-		entries: make(chan api.Entry),
+		entries:      make(chan api.Entry),
+		localStreams: make(map[string]*localStream),
 	}
 }
 
 func (c *BlackBoxTestingValiClient) Run() {
-	c.localStreams = make(map[string]localStream)
 
 	for e := range c.entries {
-		labelSetStr := labelSetToString(e.Labels)
-		if ls, ok := c.localStreams[labelSetStr]; !ok {
-			c.localStreams[labelSetStr] = localStream{
-				lastTimestamp: e.Timestamp,
-				logCount:      1,
-			}
-		} else {
-			if err := ls.add(e.Timestamp); err != nil {
-				fmt.Println(e.Labels.String(), err.Error())
-			}
+		delete(e.Labels, model.LabelName("id"))
+		labelSetStr := LabelSetToString(e.Labels)
+		ls, ok := c.localStreams[labelSetStr]
+		if ok {
+			Expect(ls.add(e.Timestamp)).To(Succeed())
 			continue
+		}
+		c.localStreams[labelSetStr] = &localStream{
+			lastTimestamp: e.Timestamp,
+			logCount:      1,
 		}
 		c.receivedEntries = append(c.receivedEntries, e)
 	}
@@ -58,37 +57,37 @@ func (c *BlackBoxTestingValiClient) GetEntries() []api.Entry {
 }
 
 func (c *BlackBoxTestingValiClient) GetLogsCount(ls model.LabelSet) int {
-	var logsCount int
+	labelSetStr := LabelSetToString(ls)
 	for _, entry := range c.receivedEntries {
 		// take into account the id labels which cannot be predicted
 		if labelSetsAreEqual(entry.Labels, ls) {
-			logsCount++
+			GinkgoWriter.Printf(
+				"found logs: %v, labelset: %v \n",
+				c.localStreams[labelSetStr].logCount,
+				ls,
+			)
+			return c.localStreams[labelSetStr].logCount
 		}
 	}
-	return logsCount
+	return 0
 }
 
 func labelSetsAreEqual(ls1, ls2 model.LabelSet) bool {
 	delete(ls1, model.LabelName("id"))
 	delete(ls2, model.LabelName("id"))
 
-	//fmt.Println("Comparing ", ls2, " and ", ls1)
 	if len(ls1) != len(ls2) {
-		//fmt.Println("different length")
 		return false
 	}
 
 	for k, v := range ls2 {
 		vv, ok := ls1[k]
 		if !ok {
-			//fmt.Println("Key: ", k, " not found in ", ls1)
 			return false
 		}
 		if v != vv {
-			//fmt.Println("Value: ", v, " different from ", vv, " in ", ls1)
 			return false
 		}
 	}
-	//fmt.Println("Streams are qual!!!!")
 	return true
 }

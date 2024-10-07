@@ -4,24 +4,14 @@
 
 package input
 
-import (
-	"github.com/prometheus/common/model"
-)
+import "github.com/prometheus/common/model"
+
+type PodOutput interface {
+	GetLabelSet() model.LabelSet
+	GetGeneratedLogsCount() int
+}
 
 type Pod interface {
 	GenerateLogRecord() map[interface{}]interface{}
 	GetOutput() PodOutput
-}
-
-type PodOutput interface {
-	GetLabelSet() model.LabelSet
-	GetTenants() []string
-	GetGeneratedLogsCount() int
-}
-
-type LoggerControllerConfig struct {
-	NumberOfClusters        int
-	NumberOfOperatorLoggers int
-	NumberOfUserLoggers     int
-	NumberOfLogs            int
 }

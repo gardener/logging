@@ -7,11 +7,21 @@ package input
 import (
 	"fmt"
 	"runtime"
+	"sort"
 	"sync"
 	"time"
 
+	. "github.com/onsi/gomega"
+
 	"github.com/gardener/logging/pkg/valiplugin"
 )
+
+const NamespacePrefix = "shoot--logging--test-"
+
+type LoggerControllerConfig struct {
+	NumberOfClusters int
+	NumberOfLogs     int
+}
 
 type LoggerController struct {
 	config LoggerControllerConfig
@@ -29,42 +39,32 @@ func NewLoggerController(plugin valiplugin.Vali, cfg LoggerControllerConfig) Log
 
 func (c *LoggerController) Run() {
 	for clusterNum := 0; clusterNum < c.config.NumberOfClusters; clusterNum++ {
-		for oprNum := 0; oprNum < c.config.NumberOfOperatorLoggers; oprNum++ {
-			pod := NewOperatorPod(fmt.Sprintf("shoot--logging--test-%d", clusterNum), "logger", "logger")
-			c.pods = append(c.pods, pod)
+		namespace := fmt.Sprintf("%s-%d", NamespacePrefix, clusterNum)
+		pod := NewPod(namespace, "logger", "logger")
+		c.pods = append(c.pods, pod)
 
-			c.wg.Add(1)
-			go func(pod Pod) {
-				c.worker(pod)
-				c.wg.Done()
-			}(pod)
-		}
-
-		for usrNum := 0; usrNum < c.config.NumberOfUserLoggers; usrNum++ {
-			pod := NewUserPod(fmt.Sprintf("shoot--logging--test-%d", clusterNum), "kube-apiserver", "logger")
-			c.pods = append(c.pods, pod)
-
-			c.wg.Add(1)
-			go func(pod Pod) {
-				c.worker(pod)
-				c.wg.Done()
-			}(pod)
-		}
+		c.wg.Add(1)
+		go func(pod Pod) {
+			c.worker(pod)
+			c.wg.Done()
+		}(pod)
 	}
 }
 
 func (c *LoggerController) worker(pod Pod) {
-	//fmt.Println("Pod start to logs ", c.config.NumberOfLogs, " of logs")
 	for i := 0; i < c.config.NumberOfLogs; i++ {
 		record := pod.GenerateLogRecord()
-		err := c.plugin.SendRecord(record, time.Now())
-		if err != nil {
-			panic(err)
+
+		recordStr := []string{}
+		for key, value := range record {
+			recordStr = append(recordStr, fmt.Sprintf("%v=%v", key, value))
 		}
+		sort.Strings(recordStr)
+		//GinkgoWriter.Println("--> ", strings.Join(recordStr, ","))
+		err := c.plugin.SendRecord(record, time.Now())
+		Expect(err).NotTo(HaveOccurred())
 		runtime.Gosched()
-		//time.Sleep(10 * time.Millisecond)
 	}
-	//fmt.Println("Pod done")
 }
 
 func (c *LoggerController) GetPods() []Pod {
