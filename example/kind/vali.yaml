@@ -1,0 +1,56 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vali
+  labels:
+    app: vali
+spec:
+  ports:
+  - port: 3100
+    name: vali
+  clusterIP: None
+  selector:
+    app: vali
+---
+# create vali statefulset
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: vali
+spec:
+  serviceName: vali
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vali
+  template:
+    metadata:
+      labels:
+        app: vali
+    spec:
+      containers:
+      - name: vali
+        image: ghcr.io/credativ/vali:v2.2.18
+        ports:
+        - containerPort: 3100
+          name: vali
+        volumeMounts:
+        - name: vali
+          mountPath: /data/vali
+      volumes:
+      - name: vali
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vali-0
+  labels:
+    app: vali-0
+spec:
+  ports:
+    - port: 3100
+      name: vali
+  selector:
+    statefulset.kubernetes.io/pod-name: "vali-0"

@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: fluent-bit-vali
+  namespace: fluent-bit
+spec:
+  selector:
+    matchLabels:
+      app: fluent-bit-vali
+  template:
+    metadata:
+      labels:
+        app: fluent-bit-vali
+    spec:
+      tolerations:
+      - operator: Exists
+      containers:
+      - name: fluent-bit-vali
+        image: fluent-bit-vali
+        volumeMounts:
+        - name: fluent-bit-vali-conf
+          mountPath: /fluent-bit/config/fluent-bit.conf
+          subPath: fluent-bit.conf
+      volumes:
+      - name: fluent-bit-vali-conf
+        configMap:
+          name: fluent-bit-vali-conf

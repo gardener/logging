@@ -33,7 +33,11 @@ YQ                                         := $(TOOLS_DIR)/yq
 YQ_VERSION                                 ?= v4.31.2
 # kind dependencies
 KIND                                       := $(TOOLS_DIR)/kind
-KIND_VERSION                               ?= v0.18.0
+KIND_VERSION                               ?= v0.24.0
+
+# kubectl dependencies
+KUBECTL                                    := $(TOOLS_DIR)/kubectl
+KUBECTL_VERSION                            ?= v1.31.1
 
 # skaffold dependencies
 SKAFFOLD                                   := $(TOOLS_DIR)/skaffold
@@ -199,7 +203,7 @@ test: $(GINKGO)
 	@go test $(REPO_ROOT)/pkg/... --v --ginkgo.v --ginkgo.no-color
 
 .PHONY: install-requirements
-install-requirements: $(GO_LINT) $(GINKGO)
+install-requirements: $(GO_LINT) $(GINKGO) $(KIND) $(KUBECTL) $(SKAFFOLD) $(GOIMPORTS) $(GOIMPORTS_REVISER)
 
 .PHONY: verify
 verify: install-requirements format check test
@@ -240,6 +244,9 @@ $(GARDENER_DIR):
 # Tools                                 #
 #########################################
 
+.PHONY: kind-up
+kind-up: $(KIND) $(KUBECTL)
+	@$(REPO_ROOT)/hack/kind-up.sh
 
 # fetch linter dependency
 $(GO_LINT):
@@ -258,6 +265,10 @@ $(YQ):
 $(KIND):
 	@curl -L -o $(KIND) https://kind.sigs.k8s.io/dl/$(KIND_VERSION)/kind-$(BUILD_PLATFORM)-$(BUILD_ARCH)
 	@chmod +x $(KIND)
+
+$(KUBECTL):
+	@curl -L -o $(KUBECTL) "https://dl.k8s.io/release/$(KUBECTL_VERSION)/bin/$(BUILD_PLATFORM)/$(BUILD_ARCH)/kubectl"
+	@chmod +x $(KUBECTL)
 
 # fetch skaffold dependency
 $(SKAFFOLD):
