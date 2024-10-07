@@ -51,7 +51,13 @@ var (
 func init() {
 	var logLevel logging.Level
 	_ = logLevel.Set("info")
+
 	logger = log.With(newLogger(logLevel), "ts", log.DefaultTimestampUTC, "caller", "main")
+	_ = level.Info(logger).Log(
+		"version", version.Get().GitVersion,
+		"revision", version.Get().GitCommit,
+		"gitTreeState", version.Get().GitTreeState,
+	)
 	pluginsMutex = sync.RWMutex{}
 
 	// metrics and healthz
@@ -270,11 +276,6 @@ func envKubernetesClient() (gardenerclientsetversioned.Interface, error) {
 func main() {}
 
 func dumpConfiguration(_logger log.Logger, conf *config.Config) {
-	_ = level.Info(_logger).Log(
-		"[flb-go]", "Starting fluent-bit-go-vali",
-		"version", version.Get().GitVersion,
-		"revision", version.Get().GitCommit,
-	)
 	paramLogger := log.With(_logger, "[flb-go]", "provided parameter")
 	_ = level.Debug(paramLogger).Log("URL", conf.ClientConfig.CredativValiConfig.URL)
 	_ = level.Debug(paramLogger).Log("TenantID", conf.ClientConfig.CredativValiConfig.TenantID)
