@@ -179,11 +179,11 @@ tidy:
 .PHONY: check
 check: format $(GO_LINT)
 	 @$(GO_LINT) run --config=$(REPO_ROOT)/.golangci.yaml --timeout 10m $(REPO_ROOT)/cmd/... $(REPO_ROOT)/pkg/...
-	 @go vet $(REPO_ROOT)/cmd/... $(REPO_ROOT)/pkg/...
+	 @go vet $(REPO_ROOT)/cmd/... $(REPO_ROOT)/pkg/... $(REPO_ROOT)/tests/...
 
 .PHONY: format
 format:
-	@gofmt -l -w $(REPO_ROOT)/cmd $(REPO_ROOT)/pkg
+	@gofmt -l -w $(REPO_ROOT)/cmd $(REPO_ROOT)/pkg $(REPO_ROOT)/tests
 
 .PHONY: goimports
 goimports: $(GOIMPORTS)
@@ -222,23 +222,20 @@ test-e2e-local: $(KIND) $(YQ) $(GINKGO) $(GARDENER_DIR)
 #########################################
 # skaffold pipeline scenarios           #
 #########################################
-skaffold-%: export KUBECONFIG = $(REPO_ROOT)/gardener/example/gardener-local/kind/local/kubeconfig
+skaffold-%: export KUBECONFIG = $(REPO_ROOT)/example/kind/kubeconfig
 
-# skaffold and skafold-dev targets require a running kind cluster initated from a fetched gardener repo (hack/fetch-gardener.sh)
-# make -C gardener kind-up
+# skaffold and skafold-dev targets require a running kind cluster
+# make kind-up
 
 .PHONY: skaffold-run
-skaffold-run: $(SKAFFOLD) $(HELM) $(YQ) $(GARDENER_DIR)
+skaffold-run: $(SKAFFOLD)
 	@$(SKAFFOLD) run --kubeconfig=$(KUBECONFIG)
 
 # skaffold-dev target requires that skaffold run has been run
 .PHONY: skaffold-dev
-skaffold-dev: $(SKAFFOLD) $(HELM) $(YQ) $(GARDENER_DIR)
-	@$(SKAFFOLD) dev --kubeconfig=$(KUBECONFIG) -m gardenlet
+skaffold-dev: $(SKAFFOLD)
+	@$(SKAFFOLD) dev --kubeconfig=$(KUBECONFIG)
 
-# fetch gardener repo into the project dir
-$(GARDENER_DIR):
-	$(REPO_ROOT)/hack/fetch-gardener.sh
 
 #########################################
 # Tools                                 #
@@ -274,10 +271,6 @@ $(KUBECTL):
 $(SKAFFOLD):
 	@curl -L -o $(SKAFFOLD) https://storage.googleapis.com/skaffold/releases/$(SKAFFOLD_VERSION)/skaffold-$(BUILD_PLATFORM)-$(BUILD_ARCH)
 	@chmod +x $(SKAFFOLD)
-
-# fetch helm dependency
-$(HELM):
-	@curl -sSfL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | HELM_INSTALL_DIR=$(TOOLS_DIR) USE_SUDO=false bash -s -- --version $(HELM_VERSION)
 
 $(GOIMPORTS):
 	@GOBIN=$(abspath $(TOOLS_DIR)) go install golang.org/x/tools/cmd/goimports@$(GOIMPORTS_VERSION)

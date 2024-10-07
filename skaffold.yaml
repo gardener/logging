@@ -1,98 +1,30 @@
-apiVersion: skaffold/v4beta5
-kind: Config
-metadata:
-  name: etcd
-manifests:
-  rawYaml:
-  - gardener/example/00-namespace-garden.yaml
-  kustomize:
-    paths:
-    - gardener/example/gardener-local/etcd
-deploy:
-  kubectl: {}
 ---
-apiVersion: skaffold/v4beta5
+apiVersion: skaffold/v4beta11
 kind: Config
 metadata:
-  name: controlplane
-build: {}
-deploy:
-  helm:
-    hooks:
-      before:
-      - host:
-          command:
-          - kubectl
-          - apply
-          - --filename=./gardener/example/gardener-local/controlplane/networkpolicy.yaml
-    releases:
-    - name: gardener-controlplane
-      chartPath: gardener/charts/gardener/controlplane
-      valuesFiles:
-        - gardener/example/gardener-local/controlplane/values.yaml
-      namespace: garden
-      createNamespace: true
-      wait: true
----
-apiVersion: skaffold/v4beta5
-kind: Config
-metadata:
-  name: provider-local
+  name: fluent-bit-to-vali
 build:
+  local:
+    useDockerCLI: false
+    useBuildkit: true
   artifacts:
-    - image: europe-docker.pkg.dev/gardener-project/public/gardener/extensions/provider-local
-      custom:
-        buildCommand: |
-          docker pull -q europe-docker.pkg.dev/gardener-project/public/gardener/gardener-extension-provider-local:{{.GARDENER_VERSION}}
-          docker tag europe-docker.pkg.dev/gardener-project/public/gardener/gardener-extension-provider-local:{{.GARDENER_VERSION}} $IMAGE
-          [ ! -z $PUSH_IMAGE ] && docker push $IMAGE
-resourceSelector:
-  allow:
-  # instruct skaffold to inject the built image reference into the image field in our ControllerDeployment
-  - groupKind: ControllerDeployment.core.gardener.cloud
-    image: [".*"]
-manifests:
-  rawYaml:
-  - gardener/example/gardener-local/gardenlet/secret-bootstrap-token.yaml
-  kustomize:
-    paths:
-    - gardener/example/provider-local/garden/skaffold
-    - gardener/example/provider-local/seed-kind/skaffold
-deploy:
-  kubectl: {}
----
-apiVersion: skaffold/v4beta5
-kind: Config
-metadata:
-  name: gardenlet
-build:
-  artifacts:
-    - image: europe-docker.pkg.dev/gardener-project/public/gardener/fluent-bit-to-vali
+    - image: fluent-bit-vali
       docker:
-        target: fluent-bit-plugin
+        target: fluent-bit-vali
         cacheFrom:
-        - "golang:1.20.4"
-        - "gcr.io/distroless/static-debian11:nonroot"
+          - fluent-bit-vali
+      sync:
+        manual:
+          - src: "example/kind/fluent-bit-vali.conf"
+            dest: "/fluent-bit/config/fluent-bit.conf"
+manifests:
+  rawYaml:
+  - example/kind/fluent-bit-vali*
 deploy:
-  helm:
-    hooks:
-      after:
-      - host:
-          command:
-          - sh
-          - -c
-          - gardener/hack/usage/wait-for.sh seed local GardenletReady Bootstrapped SeedSystemComponentsHealthy ExtensionsReady BackupBucketsReady
-    releases:
-    - name: gardener-gardenlet
-      chartPath: gardener/charts/gardener/gardenlet
-      valuesFiles:
-        - gardener/example/gardener-local/gardenlet/values.yaml
-      namespace: garden
-      setValueTemplates:
-        imageVectorOverwrite: |
-          images:
-          - name: fluent-bit-plugin-installer
-            repository: '{{.IMAGE_REPO_europe_docker_pkg_dev_gardener_project_gardener_fluent_bit_to_vali}}'
-            tag: '{{.IMAGE_TAG_europe_docker_pkg_dev_gardener_project_gardener_fluent_bit_to_vali}}@{{.IMAGE_DIGEST_europe_docker_pkg_dev_gardener_project_gardener_fluent_bit_to_vali}}'
-      createNamespace: true
-      wait: true
+  kubectl: {}
+portForward:
+  - resourceType: service
+    resourceName: vali
+    namespace: vali
+    port: 3100
+    localPort: 3100
