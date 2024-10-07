@@ -4,7 +4,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-set -e
+set -o errexit
+set -o nounset
+set -o pipefail
 
 PACKAGE_PATH="${1:-k8s.io/component-base}"
 VERSION_PATH="${2:-$(dirname $0)/../VERSION}"

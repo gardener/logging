@@ -28,9 +28,9 @@ fi
 EFFECTIVE_VERSION="${4:-}"
 
 echo "docker build: ${TARGET} for linux/${BUILD_ARCH}"
-
 docker build \
   --build-arg EFFECTIVE_VERSION="${EFFECTIVE_VERSION}" \
+  --build-arg LD_FLAGS="$($dir/get-build-ld-flags.sh)" \
   --tag "${IMAGE_REPOSITORY}:latest" \
 	--tag "${IMAGE_REPOSITORY}:${IMAGE_TAG}" \
   --platform "linux/${BUILD_ARCH}" \

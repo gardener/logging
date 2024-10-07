@@ -1,35 +1,19 @@
 #!/usr/bin/env bash
 
+set -o errexit
+
 repo_root="$(readlink -f $(dirname ${0})/..)"
-gardener=$(grep "github.com/gardener/gardener" $repo_root/go.mod |cut -d " " -f2)
+tmp_dir="$( mktemp -d -t tmp-XXXXXX )"
+
+function __cleanup {
+  local res=$1
+  rm -rf ${res}
+}
 
 function __catch() {
   local cmd="${1:-}"
   echo "errexit $cmd on line $(caller)" >&2
 }
+
 trap '__catch "${BASH_COMMAND}"' ERR
-
-function __image_exists {
-    local image="${1:-}"
-    docker image inspect "$image" > /dev/null 2>&1
-}
-
-function __check_executables {
-  # required execs
-  execs=(make docker)
-  for ex in "${execs[@]}"; do
-    if ! command -v "$ex" &> /dev/null ; then echo "$ex is required"; return 1; fi
-  done
-}
-
-__check_executables
-
-# fetch yq in tools if not present
-if [[ ! -f "$repo_root/tools/yq" ]]; then
-  make -C $repo_root "$repo_root/tools/yq"
-fi
-
-# fetch kind in tools if not present
-if [[ ! -f "$repo_root/tools/kind" ]]; then
-  make -C $repo_root "$repo_root/tools/kind"
-fi
+trap '__cleanup "${tmp_dir}"' EXIT

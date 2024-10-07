@@ -1,12 +1,47 @@
 #############      builder       #############
-FROM golang:1.23.2 AS plugin-builder
+FROM golang:1.23.2 AS builder
 
 WORKDIR /go/src/github.com/gardener/logging
-COPY . .
 
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY cmd ./cmd
+COPY pkg ./pkg
+ARG TARGETOS
 ARG TARGETARCH
-RUN --mount=type=cache,target="/root/.cache/go-build" BUILD_ARCH=${TARGETARCH} make plugin
-RUN --mount=type=cache,target="/root/.cache/go-build" BUILD_ARCH=${TARGETARCH} make install-copy
+ARG LD_FLAGS
+RUN --mount=type=cache,target="/root/.cache/go-build" \
+    GOOS=$TARGETOS \
+    GOARCH=$TARGETARCH \
+    go build -buildmode=c-shared \
+    -o build/out_vali.so \
+    -ldflags="$LD_FLAGS" \
+    ./cmd/fluent-bit-vali-plugin
+
+RUN --mount=type=cache,target="/root/.cache/go-build" \
+    GOOS=$TARGETOS \
+    GOARCH=$TARGETARCH  \
+    CGO_ENABLED=0 \
+    go install  \
+    -ldflags "$LD_FLAGS" \
+    ./cmd/copy
+
+RUN --mount=type=cache,target="/root/.cache/go-build" \
+    GOOS=$TARGETOS \
+    GOARCH=$TARGETARCH  \
+    CGO_ENABLED=0 \
+    go install  \
+    -ldflags "$LD_FLAGS" \
+    ./cmd/vali-curator
+
+RUN --mount=type=cache,target="/root/.cache/go-build" \
+    GOOS=$TARGETOS \
+    GOARCH=$TARGETARCH  \
+    CGO_ENABLED=0 \
+    go install  \
+    -ldflags "$LD_FLAGS" \
+    ./cmd/event-logger
 
 ############# distroless-static
 FROM gcr.io/distroless/static-debian12:nonroot AS distroless-static
@@ -14,27 +49,26 @@ FROM gcr.io/distroless/static-debian12:nonroot AS distroless-static
 #############  fluent-bit-plugin #############
 FROM distroless-static AS fluent-bit-plugin
 
-COPY --from=plugin-builder /go/src/github.com/gardener/logging/build /source/plugins
-COPY --from=plugin-builder /go/bin/copy /bin/cp
+COPY --from=builder /go/src/github.com/gardener/logging/build /source/plugins
+COPY --from=builder /go/bin/copy /bin/cp
 
 WORKDIR /
 
 CMD ["/bin/cp", "/source/plugins/.", "/plugins"]
 
-#############      image-builder       #############
-FROM golang:1.23.2 AS image-builder
+#############  fluent-bit-vali #############
+FROM ghcr.io/fluent/fluent-operator/fluent-bit:3.1.8 AS fluent-bit-vali
 
-WORKDIR /go/src/github.com/gardener/logging
-COPY . .
+COPY --from=builder /go/src/github.com/gardener/logging/build /fluent-bit/plugins
 
-ARG EFFECTIVE_VERSION
-ARG TARGETARCH
-RUN --mount=type=cache,target="/root/.cache/go-build" BUILD_ARCH=${TARGETARCH} EFFECTIVE_VERSION=$EFFECTIVE_VERSION make install
+WORKDIR /
+
+CMD ["-e", "/fluent-bit/plugins/out_vali.so", "-c", "/fluent-bit/config/fluent-bit.conf"]
 
 #############      curator       #############
 FROM distroless-static AS curator
 
-COPY --from=image-builder /go/bin/vali-curator /curator
+COPY --from=builder /go/bin/vali-curator /curator
 
 WORKDIR /
 EXPOSE 2718
@@ -44,7 +78,7 @@ ENTRYPOINT [ "/curator" ]
 #############      eventlogger       #############
 FROM distroless-static AS event-logger
 
-COPY --from=image-builder /go/bin/event-logger /event-logger
+COPY --from=builder /go/bin/event-logger /event-logger
 
 WORKDIR /
 
