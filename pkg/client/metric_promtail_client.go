@@ -5,6 +5,7 @@
 package client
 
 import (
+	"os"
 	"time"
 
 	"github.com/credativ/vali/pkg/logproto"
@@ -61,6 +62,7 @@ func newTestingPromtailClient(c client.Client, cfg client.Config) (ValiClient, e
 	return &valitailClientWithForwardedLogsMetricCounter{
 		valiclient: c,
 		host:       cfg.URL.Hostname(),
+		logger:     log.NewLogfmtLogger(os.Stdout),
 	}, nil
 }
 
