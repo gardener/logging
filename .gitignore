@@ -2,6 +2,7 @@
 /test
 /tools
 /gardener
+logs
 bin
 *.test
 *.coverprofile

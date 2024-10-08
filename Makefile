@@ -6,6 +6,7 @@ REPO_ROOT                                  := $(shell dirname $(realpath $(lastw
 VERSION                                    := $(shell cat VERSION)
 REGISTRY                                   ?= europe-docker.pkg.dev/gardener-project/snapshots/gardener
 FLUENT_BIT_TO_VALI_IMAGE_REPOSITORY        := $(REGISTRY)/fluent-bit-to-vali
+FLUENT_BIT_VALI_IMAGE_REPOSITORY           := $(REGISTRY)/fluent-bit-vali
 VALI_CURATOR_IMAGE_REPOSITORY              := $(REGISTRY)/vali-curator
 TELEGRAF_IMAGE_REPOSITORY                  := $(REGISTRY)/telegraf-iptables
 TUNE2FS_IMAGE_REPOSITORY                   := $(REGISTRY)/tune2fs
@@ -135,6 +136,10 @@ docker-images:
 		$(FLUENT_BIT_TO_VALI_IMAGE_REPOSITORY) $(IMAGE_TAG)
 
 	@BUILD_ARCH=$(BUILD_ARCH) \
+    	$(REPO_ROOT)/hack/docker-image-build.sh "fluent-bit-vali" \
+    	$(FLUENT_BIT_VALI_IMAGE_REPOSITORY) $(IMAGE_TAG)
+
+	@BUILD_ARCH=$(BUILD_ARCH) \
 		$(REPO_ROOT)/hack/docker-image-build.sh "curator" \
 		$(VALI_CURATOR_IMAGE_REPOSITORY) $(IMAGE_TAG)
 
@@ -216,8 +221,8 @@ clean:
 	@( [ -d "$(REPO_ROOT)/build" ] && go clean $(REPO_ROOT)/build ) || true
 
 .PHONY: test-e2e-local
-test-e2e-local: $(KIND) $(YQ) $(GINKGO) $(GARDENER_DIR)
-	@$(REPO_ROOT)/hack/test-e2e-local.sh --procs=$(PARALLEL_E2E_TESTS) --label-filter "Shoot && simple" ./tests/e2e/...
+test-e2e-local: $(KIND) $(GINKGO)
+	@go test ./tests/e2e/...
 
 #########################################
 # skaffold pipeline scenarios           #
