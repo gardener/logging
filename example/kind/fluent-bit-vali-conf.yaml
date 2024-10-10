@@ -21,7 +21,7 @@ data:
 
     [Output]
         Name          gardenervali
-        Match         dummy
+        Match         *
         Labels        {origin="dummy"}
         Url http://vali-0.vali.svc:3100/vali/api/v1/push
         LogLevel debug
