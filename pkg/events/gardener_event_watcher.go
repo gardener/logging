@@ -40,13 +40,15 @@ func (e *GardenerEventWatcherConfig) New() *GardenerEventWatcher {
 		)
 	}
 
-	for indx, namespace := range e.ShootEventWatcherConfig.Namespaces {
-		_ = e.ShootKubeInformerFactories[indx].InformerFor(&v1.Event{},
-			NewEventInformerFuncForNamespace(
-				"shoot",
-				namespace,
-			),
-		)
+	if e.ShootEventWatcherConfig.Kubeconfig != "" {
+		for indx, namespace := range e.ShootEventWatcherConfig.Namespaces {
+			_ = e.ShootKubeInformerFactories[indx].InformerFor(&v1.Event{},
+				NewEventInformerFuncForNamespace(
+					"shoot",
+					namespace,
+				),
+			)
+		}
 	}
 
 	return &GardenerEventWatcher{
