@@ -8,7 +8,7 @@ nodes:
     topology.kubernetes.io/zone: "0"
   extraPortMappings:
   - containerPort: 30443
-    hostPort: 443
+    hostPort: 6443
   kubeadmConfigPatches:
   - |
     kind: ClusterConfiguration
