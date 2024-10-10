@@ -216,9 +216,9 @@ clean:
 	@rm -rf $(TOOLS_DIR)
 	@( [ -d "$(REPO_ROOT)/build" ] && go clean $(REPO_ROOT)/build ) || true
 
-.PHONY: test-e2e-local
-test-e2e-local: $(KIND) $(GINKGO)
-	@go test ./tests/e2e/...
+.PHONY: e2e-tests
+e2e-tests: $(KIND)
+	go test -v $(REPO_ROOT)/tests/...
 
 #########################################
 # skaffold pipeline scenarios           #
