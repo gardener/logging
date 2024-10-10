@@ -29,9 +29,6 @@ GO_LINT_VERSION                            ?= v1.60.3
 # test dependencies
 GINKGO                                     := $(TOOLS_DIR)/ginkgo
 GINKGO_VERSION                             ?= v2.19.0
-# yq dependencies
-YQ                                         := $(TOOLS_DIR)/yq
-YQ_VERSION                                 ?= v4.31.2
 # kind dependencies
 KIND                                       := $(TOOLS_DIR)/kind
 KIND_VERSION                               ?= v0.24.0
@@ -217,7 +214,6 @@ verify: install-requirements format check test
 clean:
 	@go clean --modcache --testcache
 	@rm -rf $(TOOLS_DIR)
-	@rm -rf "$(REPO_ROOT)/gardener"
 	@( [ -d "$(REPO_ROOT)/build" ] && go clean $(REPO_ROOT)/build ) || true
 
 .PHONY: test-e2e-local
@@ -257,11 +253,6 @@ $(GO_LINT):
 # fetch ginkgo dependency
 $(GINKGO):
 	@GOBIN=$(abspath $(TOOLS_DIR)) go install -mod=mod github.com/onsi/ginkgo/v2/ginkgo@$(GINKGO_VERSION)
-
-# fetch yq dependency
-$(YQ):
-	@curl -L -o $(YQ) https://github.com/mikefarah/yq/releases/download/$(YQ_VERSION)/yq_$(BUILD_PLATFORM)_$(BUILD_ARCH)
-	@chmod +x $(YQ)
 
 # fetch kind dependency
 $(KIND):
