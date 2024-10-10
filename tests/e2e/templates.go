@@ -178,6 +178,7 @@ func newLoggerPod(namespace string, name string) *corev1.Pod {
 				},
 			},
 			RestartPolicy: corev1.RestartPolicyNever,
+			Tolerations:   []corev1.Toleration{{Operator: corev1.TolerationOpExists}},
 		},
 	}
 }
@@ -233,6 +234,64 @@ func newExtensionCluster(name string, state string) *extensionsv1alpha1.Cluster 
 			},
 			Seed: runtime.RawExtension{
 				Raw: encode(&gardencorev1beta1.Seed{}),
+			},
+		},
+	}
+}
+
+func newEventLoggerRBAC(namespace string, name string) (*v1.Role, *v1.RoleBinding) {
+	role := &v1.Role{
+		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
+		Rules: []v1.PolicyRule{
+			{
+				APIGroups: []string{""},
+				Resources: []string{"events"},
+				Verbs:     []string{"get", "list", "watch"},
+			},
+		},
+	}
+
+	roleBinding := &v1.RoleBinding{
+		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
+		RoleRef: v1.RoleRef{
+			APIGroup: "rbac.authorization.k8s.io",
+			Kind:     "Role",
+			Name:     name,
+		},
+		Subjects: []v1.Subject{
+			{
+				Kind:      "ServiceAccount",
+				Name:      name,
+				Namespace: namespace,
+			},
+		},
+	}
+	return role, roleBinding
+}
+
+func newEventLoggerDeployment(namespace string, name string, image string) *appsv1.Deployment {
+	return &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace, Labels: map[string]string{"apps.kubernetes.io/name": "event-logger"}},
+		Spec: appsv1.DeploymentSpec{
+			Replicas: ptr.To(int32(1)),
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{"app": "event-logger"},
+			},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{"app": "event-logger"},
+				},
+				Spec: corev1.PodSpec{
+					ServiceAccountName: name,
+					Containers: []corev1.Container{
+						{
+							Name:    "event-logger",
+							Image:   image,
+							Command: []string{"./event-logger", "--seed-event-namespaces=" + namespace},
+						},
+					},
+					Tolerations: []corev1.Toleration{{Operator: corev1.TolerationOpExists}},
+				},
 			},
 		},
 	}

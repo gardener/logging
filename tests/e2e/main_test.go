@@ -28,6 +28,7 @@ func TestMain(m *testing.M) {
 	testenv, _ = env.NewFromFlags()
 	kindClusterName := envconf.RandomName("kind-local", 16)
 	pluginUnderTest := envconf.RandomName("e2e/fluent-bit-vali:test", 30)
+	eventLoggerUnderTest := envconf.RandomName("e2e/event-logger:test", 30)
 	slog.Info("Running e2e tests", "pluginUnderTest", pluginUnderTest)
 
 	testenv.Setup(
@@ -40,14 +41,17 @@ func TestMain(m *testing.M) {
 		envfuncs.CreateNamespace(ShootNamespace),
 		envfuncs.CreateNamespace(SeedNamespace),
 		envfuncs.SetupCRDs("./config", "*-crd.yaml"),
-		createFluentBitImage(pluginUnderTest),
+		createContainerImage(pluginUnderTest, "fluent-bit-vali"),
+		createContainerImage(eventLoggerUnderTest, "event-logger"),
 		envfuncs.LoadImageToCluster(kindClusterName, pluginUnderTest),
+		envfuncs.LoadImageToCluster(kindClusterName, eventLoggerUnderTest),
 		pullAndLoadContainerImage(kindClusterName, BackendContainerImage),
 		pullAndLoadContainerImage(kindClusterName, LogGeneratorContainerImage),
 		envfuncs.LoadImageToCluster(kindClusterName, BackendContainerImage),
 		createBackend(SeedNamespace, SeedBackendName, BackendContainerImage),
 		createBackend(ShootNamespace, ShootBackendName, BackendContainerImage),
 		createFluentBitDaemonSet(SeedNamespace, DaemonSetName, pluginUnderTest, config, lua),
+		createEventLoggerDeployment(ShootNamespace, EventLoggerName, eventLoggerUnderTest),
 		createExtensionCluster(ShootNamespace),
 	)
 

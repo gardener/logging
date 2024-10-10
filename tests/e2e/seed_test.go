@@ -22,7 +22,7 @@ import (
 
 func TestSeedLogs(t *testing.T) {
 	g := gomega.NewWithT(t)
-	seedFeature := features.New("seed").WithLabel("type", "seed").
+	seedFeature := features.New("seed/logs").WithLabel("type", "seed").
 		Setup(func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 			var backend appsv1.StatefulSet
 			var client = cfg.Client()

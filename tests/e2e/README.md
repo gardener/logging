@@ -28,8 +28,16 @@ The `e2e-framework` requires the following dependencies to be installed on the m
 - docker
 
 ## Running the tests
-To run the tests, execute the following command:
+To run all tests, execute the following command:
 
 ```bash
-go test ./tests/e2e/... --test.v
+go test -v ./tests/e2e/...
+```
+
+Or to execute a given feature, run one of the following commands:
+
+```bash
+go test -v ./tests/e2e/... -args --feature "seed/logs"
+go test -v ./tests/e2e/... -args --feature "shoot/logs"
+go test -v ./tests/e2e/... -args --feature "shoot/events"
 ```
