@@ -8,15 +8,16 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"strconv"
+	"testing"
+	"time"
+
 	"github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/e2e-framework/klient/k8s/resources"
 	"sigs.k8s.io/e2e-framework/pkg/envconf"
 	"sigs.k8s.io/e2e-framework/pkg/features"
-	"strconv"
-	"testing"
-	"time"
 )
 
 func TestSeedLogs(t *testing.T) {

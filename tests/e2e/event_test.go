@@ -6,9 +6,10 @@ package e2e
 
 import (
 	"context"
+	"testing"
+
 	"sigs.k8s.io/e2e-framework/pkg/envconf"
 	"sigs.k8s.io/e2e-framework/pkg/features"
-	"testing"
 )
 
 func TestShootEventsLogs(t *testing.T) {

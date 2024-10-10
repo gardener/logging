@@ -3,10 +3,11 @@ package e2e
 import (
 	"context"
 	"fmt"
-	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
-	"github.com/vladimirvivien/gexe/exec"
 	"log"
 	"log/slog"
+
+	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
+	"github.com/vladimirvivien/gexe/exec"
 	"sigs.k8s.io/e2e-framework/pkg/envconf"
 	"sigs.k8s.io/e2e-framework/pkg/envfuncs"
 	"sigs.k8s.io/e2e-framework/pkg/types"

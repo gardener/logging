@@ -8,11 +8,12 @@ import (
 	_ "embed"
 	"log/slog"
 	"os"
+	"testing"
+
 	"sigs.k8s.io/e2e-framework/pkg/env"
 	"sigs.k8s.io/e2e-framework/pkg/envconf"
 	"sigs.k8s.io/e2e-framework/pkg/envfuncs"
 	"sigs.k8s.io/e2e-framework/support/kind"
-	"testing"
 )
 
 var testenv env.Environment
