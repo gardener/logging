@@ -65,7 +65,7 @@ $(GOIMPORTS): $(call tool_version_file,$(GOIMPORTS),$(GOIMPORTS_VERSION))
 
 $(GOIMPORTS_REVISER): $(call tool_version_file,$(GOIMPORTS_REVISER),$(GOIMPORTS_REVISER_VERSION))
 	@echo "install target: $@"
-	@go build -o $(GOIMPORTS) github.com/incu6us/goimports-reviser/v3
+	@go build -o $(GOIMPORTS_REVISER) github.com/incu6us/goimports-reviser/v3
 
 $(GO_LINT): $(call tool_version_file,$(GO_LINT),$(GO_LINT_VERSION))
 	@echo "install target: $@"
