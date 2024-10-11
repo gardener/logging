@@ -31,6 +31,9 @@ GOIMPORTS_REVISER_VERSION                  ?= v3.6.5
 MOCKGEN                                    := $(TOOLS_DIR)/mockgen
 MOCKGEN_VERSION                            ?= $(call version_gomod,go.uber.org/mock)
 
+GO_ADD_LICENSE                             := $(TOOLS_DIR)/addlicense
+GO_ADD_LICENSE_VERSION                     ?= $(call version_gomod,github.com/google/addlicense)
+
 # Use this "function" to add the version file as a prerequisite for the tool target: e.g.
 tool_version_file = $(TOOLS_DIR)/.version_$(subst $(TOOLS_DIR)/,,$(1))_$(2)
 # Use this function to get the version of a go module from go.mod
@@ -82,3 +85,6 @@ $(SKAFFOLD): $(call tool_version_file,$(SKAFFOLD),$(SKAFFOLD_VERSION))
 	@echo "install target: $@"
 	@curl -sSL -o $(SKAFFOLD) "https://storage.googleapis.com/skaffold/releases/$(SKAFFOLD_VERSION)/skaffold-$(BUILD_PLATFORM)-$(BUILD_ARCH)"
 	@chmod +x $(SKAFFOLD)
+
+$(GO_ADD_LICENSE):  $(call tool_version_file,$(GO_ADD_LICENSE),$(GO_ADD_LICENSE_VERSION))
+	@go build -o $(GO_ADD_LICENSE) github.com/google/addlicense

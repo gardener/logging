@@ -26,7 +26,7 @@ include hack/tools.mk
 export PATH := $(abspath $(TOOLS_DIR)):$(PATH)
 
 .DEFAULT_GOAL := all
-all: verify goimports goimports-reviser
+all: verify
 
 #################################################################
 # Rules related to binary build, Docker image build and release #
@@ -172,6 +172,10 @@ goimports-reviser_tool: $(GOIMPORTS_REVISER)
 		$(GOIMPORTS_REVISER) -recursive $$dir/; \
 	done
 
+.PHONY: add-license-headers
+add-license-headers: $(GO_ADD_LICENSE)
+	@$(REPO_ROOT)/hack/add-license-header.sh
+
 .PHONY: test
 test: $(GINKGO)
 	@go test $(REPO_ROOT)/pkg/... --v --ginkgo.v --ginkgo.no-color
@@ -180,9 +184,8 @@ test: $(GINKGO)
 verify: format check test
 
 .PHONY: clean
-clean: clean-tools
-	@go clean --testcache
-	@( [ -d "$(REPO_ROOT)/build" ] && go clean $(REPO_ROOT)/build ) || true
+clean:
+	@rm -rf $(REPO_ROOT)/build
 
 .PHONY: e2e-tests
 e2e-tests: $(KIND)

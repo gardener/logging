@@ -9,6 +9,7 @@
 package tools
 
 import (
+	_ "github.com/google/addlicense"
 	_ "github.com/incu6us/goimports-reviser/v3"
 	_ "github.com/onsi/ginkgo/v2"
 	_ "go.uber.org/mock/mockgen"
