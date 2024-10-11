@@ -15,7 +15,7 @@ fi
 
 kubeconfig_path=$repo_root/example/kind/kubeconfig
 
-kind get kubeconfig --name $name | \
+$repo_root/tools/kind get kubeconfig --name $name | \
     tee $kubeconfig_path > /dev/null
 
 $repo_root/tools/kubectl --kubeconfig $kubeconfig_path \

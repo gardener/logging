@@ -17,43 +17,12 @@ SRC_DIRS                                   := $(shell go list -f '{{.Dir}}' $(RE
 LD_FLAGS                                   := $(shell $(REPO_ROOT)/hack/get-build-ld-flags.sh)
 BUILD_PLATFORM                             ?= $(shell uname -s | tr '[:upper:]' '[:lower:]')
 BUILD_ARCH                                 ?= $(shell uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
-PARALLEL_E2E_TESTS                         := 1
 
 # project folder structure
 PKG_DIR                                    := $(REPO_ROOT)/pkg
 TOOLS_DIR                                  := $(REPO_ROOT)/tools
-GARDENER_DIR                               := $(REPO_ROOT)/gardener
-# linter dependencies
-GO_LINT                                    := $(TOOLS_DIR)/golangci-lint
-GO_LINT_VERSION                            ?= v1.60.3
-# test dependencies
-GINKGO                                     := $(TOOLS_DIR)/ginkgo
-GINKGO_VERSION                             ?= v2.19.0
-# kind dependencies
-KIND                                       := $(TOOLS_DIR)/kind
-KIND_VERSION                               ?= v0.24.0
 
-# kubectl dependencies
-KUBECTL                                    := $(TOOLS_DIR)/kubectl
-KUBECTL_VERSION                            ?= v1.31.1
-
-# skaffold dependencies
-SKAFFOLD                                   := $(TOOLS_DIR)/skaffold
-SKAFFOLD_VERSION                           ?= latest
-# helm dependencies
-HELM                                       := $(TOOLS_DIR)/helm
-HELM_VERSION                               ?= v3.12.0
-
-# goimports dependencies
-GOIMPORTS                                  := $(TOOLS_DIR)/goimports
-GOIMPORTS_VERSION                          ?= v0.22.0
-# goimports_reviser dependencies
-GOIMPORTS_REVISER                          := $(TOOLS_DIR)/goimports-reviser
-GOIMPORTS_REVISER_VERSION                  ?= v3.6.5
-
-$(TOOLS_DIR):
-	mkdir -p $(TOOLS_DIR)
-
+include hack/tools.mk
 export PATH := $(abspath $(TOOLS_DIR)):$(PATH)
 
 .DEFAULT_GOAL := all
@@ -188,13 +157,16 @@ format:
 	@gofmt -l -w $(REPO_ROOT)/cmd $(REPO_ROOT)/pkg $(REPO_ROOT)/tests
 
 .PHONY: goimports
-goimports: $(GOIMPORTS)
+goimports: goimports_tool goimports-reviser_tool
+
+.PHONY: goimports_tool
+goimports_tool: $(GOIMPORTS)
 	@for dir in $(SRC_DIRS); do \
 		$(GOIMPORTS) -w $$dir/; \
 	done
 
-.PHONY: goimports-reviser
-goimports-reviser: $(GOIMPORTS_REVISER)
+.PHONY: goimports-reviser_tool
+goimports-reviser_tool: $(GOIMPORTS_REVISER)
 	@for dir in $(SRC_DIRS); do \
 		GOIMPORTS_REVISER_OPTIONS="-imports-order std,project,general,company" \
 		$(GOIMPORTS_REVISER) -recursive $$dir/; \
@@ -204,16 +176,12 @@ goimports-reviser: $(GOIMPORTS_REVISER)
 test: $(GINKGO)
 	@go test $(REPO_ROOT)/pkg/... --v --ginkgo.v --ginkgo.no-color
 
-.PHONY: install-requirements
-install-requirements: $(GO_LINT) $(GINKGO) $(KIND) $(KUBECTL) $(SKAFFOLD) $(GOIMPORTS) $(GOIMPORTS_REVISER)
-
 .PHONY: verify
-verify: install-requirements format check test
+verify: format check test
 
 .PHONY: clean
-clean:
-	@go clean --modcache --testcache
-	@rm -rf $(TOOLS_DIR)
+clean: clean-tools
+	@go clean --testcache
 	@( [ -d "$(REPO_ROOT)/build" ] && go clean $(REPO_ROOT)/build ) || true
 
 .PHONY: e2e-tests
@@ -221,12 +189,16 @@ e2e-tests: $(KIND)
 	go test -v $(REPO_ROOT)/tests/...
 
 #########################################
+# Tools                                 #
+#########################################
+.PHONY: kind-up
+kind-up: $(KIND) $(KUBECTL)
+	@$(REPO_ROOT)/hack/kind-up.sh
+
+#########################################
 # skaffold pipeline scenarios           #
 #########################################
 skaffold-%: export KUBECONFIG = $(REPO_ROOT)/example/kind/kubeconfig
-
-# skaffold and skafold-dev targets require a running kind cluster
-# make kind-up
 
 .PHONY: skaffold-run
 skaffold-run: $(SKAFFOLD)
@@ -236,40 +208,3 @@ skaffold-run: $(SKAFFOLD)
 .PHONY: skaffold-dev
 skaffold-dev: $(SKAFFOLD)
 	@$(SKAFFOLD) dev --kubeconfig=$(KUBECONFIG)
-
-
-#########################################
-# Tools                                 #
-#########################################
-
-.PHONY: kind-up
-kind-up: $(KIND) $(KUBECTL)
-	@$(REPO_ROOT)/hack/kind-up.sh
-
-# fetch linter dependency
-$(GO_LINT):
-	@GOBIN=$(abspath $(TOOLS_DIR)) go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GO_LINT_VERSION)
-
-# fetch ginkgo dependency
-$(GINKGO):
-	@GOBIN=$(abspath $(TOOLS_DIR)) go install -mod=mod github.com/onsi/ginkgo/v2/ginkgo@$(GINKGO_VERSION)
-
-# fetch kind dependency
-$(KIND):
-	@curl -L -o $(KIND) https://kind.sigs.k8s.io/dl/$(KIND_VERSION)/kind-$(BUILD_PLATFORM)-$(BUILD_ARCH)
-	@chmod +x $(KIND)
-
-$(KUBECTL):
-	@curl -L -o $(KUBECTL) "https://dl.k8s.io/release/$(KUBECTL_VERSION)/bin/$(BUILD_PLATFORM)/$(BUILD_ARCH)/kubectl"
-	@chmod +x $(KUBECTL)
-
-# fetch skaffold dependency
-$(SKAFFOLD):
-	@curl -L -o $(SKAFFOLD) https://storage.googleapis.com/skaffold/releases/$(SKAFFOLD_VERSION)/skaffold-$(BUILD_PLATFORM)-$(BUILD_ARCH)
-	@chmod +x $(SKAFFOLD)
-
-$(GOIMPORTS):
-	@GOBIN=$(abspath $(TOOLS_DIR)) go install golang.org/x/tools/cmd/goimports@$(GOIMPORTS_VERSION)
-
-$(GOIMPORTS_REVISER):
-	@GOBIN=$(abspath $(TOOLS_DIR)) go install github.com/incu6us/goimports-reviser/v3@$(GOIMPORTS_REVISER_VERSION)
