@@ -9,6 +9,7 @@ require (
 	github.com/gardener/gardener v1.97.0
 	github.com/go-kit/log v0.2.1
 	github.com/go-logfmt/logfmt v0.6.0
+	github.com/google/addlicense v1.1.1
 	github.com/incu6us/goimports-reviser/v3 v3.6.5
 	github.com/joncrlsn/dque v2.2.1-0.20200515025108-956d14155fa2+incompatible
 	github.com/json-iterator/go v1.1.12
@@ -19,7 +20,7 @@ require (
 	github.com/prometheus/common v0.55.0
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/pflag v1.0.5
-	github.com/vladimirvivien/gexe v0.2.0
+	github.com/vladimirvivien/gexe v0.3.0
 	github.com/weaveworks/common v0.0.0-20210419092856-009d1eebd624
 	go.uber.org/mock v0.4.0
 	golang.org/x/tools v0.26.0
@@ -75,7 +76,6 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/google/addlicense v1.1.1 // indirect
 	github.com/google/gnostic-models v0.6.8 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
