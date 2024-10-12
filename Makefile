@@ -179,9 +179,10 @@ add-license-headers: $(GO_ADD_LICENSE)
 .PHONY: test
 test: $(GINKGO)
 	@go test $(REPO_ROOT)/pkg/... --v --ginkgo.v --ginkgo.no-color
+	@go test $(REPO_ROOT)/tests/vali_plugin
 
 .PHONY: verify
-verify: format check test
+verify: check test
 
 .PHONY: clean
 clean:
