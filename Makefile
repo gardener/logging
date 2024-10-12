@@ -190,7 +190,7 @@ clean:
 
 .PHONY: e2e-tests
 e2e-tests: $(KIND)
-	go test -v $(REPO_ROOT)/tests/...
+	@go test -v $(REPO_ROOT)/tests/...
 
 #########################################
 # Tools                                 #
