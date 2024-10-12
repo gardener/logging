@@ -1,6 +1,9 @@
+# Logging Plugin
+
 This guide is about Gardener Logging, how it is organized and how to use the dashboard to view the log data of Kubernetes clusters.
 
-# Cluster level logging
+## Cluster level logging
+
 Log data is fundamental for the successful operation activities of Kubernetes landscapes. It is used for investigating problems and monitoring cluster activity.
 
 Cluster level logging is the recommended way to collect and store log data for Kubernetes cluster components. With cluster level logging the log data is externalized
@@ -14,9 +17,8 @@ This is why the default log storage solution is considered short-lived and not s
 Gardener, as an advanced Kubernetes management solution, follows the general recommendations and offers a cluster level logging solution to ensure proper log storage for all managed Kubernetes resources.
 The log management is setup when a new cluster is created.
 Log collection is organized using [fluent-bit](https://fluentbit.io).
-Log storage and search is organized using [Vali](https://grafana.com/oss/vali).
-Log visualization is available using [Grafana](https://grafana.com/grafana) that is deployed with predefined dashboard and visualization for every shoot cluster.
-
+Log storage and search is organized using [Vali](https://github.com/credativ/vali).
+Log visualization is available using [Plutono](https://github.com/credativ/plutono) that is deployed with predefined dashboard and visualization for every shoot cluster.
 
 Using Kubernetes operators can benefit from different capabilities like accessing the logs for
 already terminated containers and performing fast and sophisticated search queries for investigating long-lasting or recurring problems based on logs from a long period of time.
@@ -27,60 +29,26 @@ In this guide, you will find out how to explore the log data for your clusters.
 
 The sections below describe how access Grafana and use it to view the log data of your Kubernetes cluster.
 
-### Accessing Grafana
-1. On the Gardener dashboard, choose **CLUSTERS** > [YOUR-CLUSTER] > **OVERVIEW** > **Logging and Monitoring**.
-![Navigate to Logging and Monitoring Tile](images/gardener-dashboard-logging.png)
+### Accessing Plutono
 
-2. Use the link in the **Logging and Monitoring** tile to open the Grafana dashboard.
-3. Enter the login credentials shown in the **Logging and Monitoring** tile to log in the Grafana dashboard.
-The default values of the credentials for Grafana are:
-- Username : `admin`
-- Password : `admin`
-![Login Screen](images/login-credentials.png)
+Plutono UI is visible on the Shoot panel in the Gardner Dashboard App. Usually it follows a naming convention of the seeds clusters and can be bookmarked for convinience.
 
-Upon successful login you will be asked to changing the default password.
-**Note:** These credentials are shared among all operators. Changing the default password will affect their access. You can safely skip this step.
-![Button to Skip Password Change](images/skip-password-change.png)
+### Using Plutono
 
-### Using Grafana
-
-There are two ways to explore log messages in Grafana.
+There are two options to explore log messages in Plutono.
 
 #### Predefined Dashboards
-The first one is to use the predefined dashboards.
-1. Go to the **Home** tab.
-2. Choose which dashboard to open.
-The dashboards that contain log visualizations for the different Grafana deployments are:
 
-  * Garden Grafana
-    * Pod Logs
-    * Extensions
-    * Systemd Logs
-  * User Grafana
-    * Kubernetes Control Plane Status
-  * Operator Grafana
-    * Kubernetes Pods
-    * Kubernetes Control Plane Status
-
-    ![Dashboard Navigator](images/dashboards.png)
+The `Plutono` dashboards containing logs table are tagged with label `logging` for convinient dashboard filtering.
 
 #### Explore tab
-The second one is to use the **Explore** tab.
 
-To enable this option you need to authenticate in front of the Grafana UI.
-1. Choose the login button (bottom left corner).
-![Login Button on Grafana Home Screen](images/login-button.png)
+The second option is to use the **Explore** tab.
 
-2. Log in following the steps described in the [Acccessing Grafana](#accessing-grafana) section.
-3. Choose the ***Explore*** tab (upper left side of the screen).
-![Grafana Explore Tab](images/explore-logs.png)
-You can create a custom log filters based on the predefined labels used in `Vali`.
-The following properties can be managed in the `Explore` tab:
-- `Datasource` (top left corner) should be set on Vali
-- `Timerange` (top right corner) is used to filter logs over a different period of time
-- `Label Selector` (top left corner) is used to filter logs based on the `Vali`'s labels and their values.
-For example:
-`pod_name="kube-apiserver-1234-1234"` or you can use a regular expression (regex): `pod_name=~"kube-apiserver.+"`
-- `Severity` (left side of the screen). This option is used to filter log messages with specific severity.
+The explore tab allows filtering logs from the connected backend using the `Vali` LogQL. The latter is completly compatible with loki logql. The filters can be build either by selecting fields in the `Log Browser` or by entering the desired filters manuall. The UI supports auto completion of the filter names for convinience.
 
-4. Click on **Run Query** (top right corner) and the log messages, which fulfil the list of selected properties above, will be displayed.
+An Example filter are:
+
+- `{pod_name="kube-apiserver-1234-1234"}` to select logs from the given pod
+- `{pod_name=~"kube-apiserver.+"}` to use a regex in as pod name
+- `sum(count_over_time({container_name="updater"}[5m]))` to aggregate logs count from a given container over time
