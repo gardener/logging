@@ -3,6 +3,9 @@
 ![Logging Logo](images/logo/logging.png)
 
 [![REUSE status](https://api.reuse.software/badge/github.com/gardener/logging)](https://api.reuse.software/info/github.com/gardener/logging)
+[![CI Build status](https://concourse.ci.gardener.cloud/api/v1/teams/gardener/pipelines/logging-master/jobs/master-head-update-job/badge)](https://concourse.ci.gardener.cloud/teams/gardener/pipelines/logging-master/jobs/master-head-update-job)
+[![Go Report Card](https://goreportcard.com/badge/github.com/gardener/logging)](https://goreportcard.com/report/github.com/gardener/logging)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE) [![Release](https://img.shields.io/github/v/release/gardener/logging.svg?style=flat)](https://github.com/gardener/logging) [![Go Reference](https://pkg.go.dev/badge/github.com/gardener/logging.svg)](https://pkg.go.dev/github.com/gardener/logging)
 
 This plugin extends [Fluent Bit output plugin](https://github.com/credativ/vali/tree/main/cmd/fluent-bit) which aims to forward log messages from fluent-bit to Vali backend.
 Тhe plugin meets the needs of the [Gardener](https://gardener.cloud/) by implementing a logic for dynamically forwarding log messages from one Fluent-bit to multiple Vali instances.
