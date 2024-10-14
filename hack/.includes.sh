@@ -21,3 +21,8 @@ function __catch() {
 
 trap '__catch "${BASH_COMMAND}"' ERR
 trap '__cleanup "${tmp_dir}"' EXIT
+
+function __image_exists {
+    local image="${1:-}"
+    docker image inspect "$image" > /dev/null 2>&1
+}
