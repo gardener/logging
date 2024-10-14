@@ -10,7 +10,7 @@ git config --global user.email "gardener@sap.com"
 git config --global user.name "Gardener CI/CD"
 
 apt-get update
-apt-get install -y unzip curl
+apt-get install -y unzip curl sed
 
 ARCH=""
 # Translate the architecture to amd64 or arm64
@@ -28,6 +28,7 @@ case "$(uname -m)" in
 esac
 
 GOLANG_VERSION="$(sed -rn 's/FROM (golang):([^ ]+).*/\2/p' < "./Dockerfile")"
+echo "go version: $GOLANG_VERSION"
 curl -LO "https://go.dev/dl/go${GOLANG_VERSION}.linux-${ARCH}.tar.gz"
 rm -rf /usr/local/go && tar -C /usr/local -xzf "go${GOLANG_VERSION}.linux-${ARCH}.tar.gz"
 
