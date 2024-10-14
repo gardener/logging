@@ -1,5 +1,5 @@
 /*
-This file was copied from the grafana/vali project
+This file was copied from the credativ/vali project
 https://github.com/credativ/vali/blob/v2.2.4/cmd/fluent-bit/config.go
 
 Modifications Copyright SAP SE or an SAP affiliate company and Gardener contributors
@@ -22,7 +22,7 @@ import (
 
 // ClientConfig holds configuration for the clients
 type ClientConfig struct {
-	// CredativValiConfig holds the configuration for the grafana/vali client
+	// CredativValiConfig holds the configuration for the credativ/vali client
 	CredativValiConfig client.Config
 	// BufferConfig holds the configuration for the buffered client
 	BufferConfig BufferConfig
@@ -33,7 +33,7 @@ type ClientConfig struct {
 	NumberOfBatchIDs uint64
 	// IdLabelName is the name of the batch id label key.
 	IdLabelName model.LabelName
-	// TestingClient is mocked grafana/vali client used for testing purposes
+	// TestingClient is mocked credativ/vali client used for testing purposes
 	TestingClient client.Client
 }
 

@@ -57,7 +57,7 @@ func NewPromtailClient(cfg client.Config, logger log.Logger) (ValiClient, error)
 	return metric, nil
 }
 
-// newTestingPromtailClient is wrapping fake grafana/vali client used for testing
+// newTestingPromtailClient is wrapping fake credativ/vali client used for testing
 func newTestingPromtailClient(c client.Client, cfg client.Config) (ValiClient, error) {
 	return &valitailClientWithForwardedLogsMetricCounter{
 		valiclient: c,

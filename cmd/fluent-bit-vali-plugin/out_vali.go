@@ -1,5 +1,5 @@
 /*
-This file was copied from the grafana/vali project
+This file was copied from the credativ/vali project
 https://github.com/credativ/vali/blob/v2.2.4/cmd/fluent-bit/out_vali.go
 
 Modifications Copyright SAP SE or an SAP affiliate company and Gardener contributors
@@ -19,6 +19,7 @@ import (
 	"unsafe"
 
 	"C"
+
 	"github.com/fluent/fluent-bit-go/output"
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
