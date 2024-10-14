@@ -27,7 +27,7 @@ case "$(uname -m)" in
         ;;
 esac
 
-GOLANG_VERSION=$(sed -rn 's/FROM (golang):([^ ]+).*/\2/p' < "./Dockerfile")
+GOLANG_VERSION=$(sed -rn 's/FROM (golang):([^ ]+).*/\2/p' < "./Dockerfile" | tr -d '\n')
 echo "fetching: https://go.dev/dl/go${GOLANG_VERSION}.linux-${ARCH}.tar.gz"
 curl -LO "https://go.dev/dl/go${GOLANG_VERSION}.linux-${ARCH}.tar.gz"
 rm -rf /usr/local/go && tar -C /usr/local -xzf "go${GOLANG_VERSION}.linux-${ARCH}.tar.gz"
