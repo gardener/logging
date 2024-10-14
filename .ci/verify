@@ -27,12 +27,10 @@ case "$(uname -m)" in
         ;;
 esac
 
-GOLANG_VERSION=$(grep -m1 'golang:' < "./Dockerfile")
-version="${GOLANG_VERSION#*golang:}"
-version="${version%% *}"
-echo "fetching: https://go.dev/dl/go${version}.linux-${ARCH}.tar.gz"
-curl -LO "https://go.dev/dl/go${version}.linux-${ARCH}.tar.gz"
-rm -rf /usr/local/go && tar -C /usr/local -xzf "go${version}.linux-${ARCH}.tar.gz"
+GOLANG_VERSION=$(grep -oP -m1 '^FROM golang:\K[0-9]+\.[0-9]+\.[0-9]+' "./Dockerfile")
+echo "fetching: https://go.dev/dl/go${GOLANG_VERSION}.linux-${ARCH}.tar.gz"
+curl -LO "https://go.dev/dl/go${GOLANG_VERSION}.linux-${ARCH}.tar.gz"
+rm -rf /usr/local/go && tar -C /usr/local -xzf "go${GOLANG_VERSION}.linux-${ARCH}.tar.gz"
 
 export \
   PATH="/usr/local/go/bin":$PATH \
