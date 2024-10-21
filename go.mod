@@ -22,7 +22,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/vladimirvivien/gexe v0.3.0
 	github.com/weaveworks/common v0.0.0-20210419092856-009d1eebd624
-	go.uber.org/mock v0.4.0
+	go.uber.org/mock v0.5.0
 	golang.org/x/tools v0.26.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.31.0
