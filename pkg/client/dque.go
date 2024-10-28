@@ -8,6 +8,7 @@ package client
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
 	"path"
 	"sync"
@@ -63,7 +64,7 @@ func NewDque(cfg config.Config, logger log.Logger, newClientFunc func(cfg config
 		logger: log.With(logger, "component", componentNameDque, "name", cfg.ClientConfig.BufferConfig.DqueConfig.QueueName),
 	}
 
-	if err = os.MkdirAll(cfg.ClientConfig.BufferConfig.DqueConfig.QueueDir, 0644); err != nil {
+	if err = os.MkdirAll(cfg.ClientConfig.BufferConfig.DqueConfig.QueueDir, fs.FileMode(0644)); err != nil {
 		return nil, fmt.Errorf("cannot create directory %s: %v", cfg.ClientConfig.BufferConfig.DqueConfig.QueueDir, err)
 	}
 
