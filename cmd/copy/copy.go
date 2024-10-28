@@ -38,6 +38,8 @@ func main() {
 
 func copyFile(src, dst string) error {
 	sourceFileStat, err := os.Stat(src)
+	src = filepath.Clean(src)
+	dst = filepath.Clean(dst)
 	if err != nil {
 		return err
 	}
