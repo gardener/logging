@@ -30,8 +30,14 @@ func main() {
 	go func() {
 		runtime.SetMutexProfileFraction(5)
 		runtime.SetBlockProfileRate(1)
-		http.Handle("/curator/metrics", promhttp.Handler())
-		if err := http.ListenAndServe(":2718", nil); err != nil {
+		mux := http.NewServeMux()
+		mux.Handle("/curator/metrics", promhttp.Handler())
+		server := &http.Server{
+			Addr:              ":2718",
+			ReadHeaderTimeout: time.Second * 30,
+			Handler:           mux,
+		}
+		if err := server.ListenAndServe(); err != nil {
 			_ = level.Error(logger).Log("Curator metric server error", err.Error())
 		}
 	}()
