@@ -182,7 +182,10 @@ func (o *Options) Run(stopCh <-chan struct{}) error {
 		return err
 	}
 
-	eventLogger := config.New()
+	eventLogger, err := config.New()
+	if err != nil {
+		return err
+	}
 
 	eventLogger.Run(stopCh)
 
