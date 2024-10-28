@@ -30,31 +30,35 @@ type GardenerEventWatcher struct {
 }
 
 // New returns new GardenerEventWatcherConfig
-func (e *GardenerEventWatcherConfig) New() *GardenerEventWatcher {
+func (e *GardenerEventWatcherConfig) New() (*GardenerEventWatcher, error) {
 	for indx, namespace := range e.SeedEventWatcherConfig.Namespaces {
-		_ = e.SeedKubeInformerFactories[indx].InformerFor(&v1.Event{},
-			NewEventInformerFuncForNamespace(
-				"seed",
-				namespace,
-			),
+		informer := e.SeedKubeInformerFactories[indx].InformerFor(
+			&v1.Event{},
+			NewEventInformerFuncForNamespace(namespace),
 		)
+		if err := addEventHandler(informer, "seed"); err != nil {
+			return nil, err
+		}
 	}
 
 	if e.ShootEventWatcherConfig.Kubeconfig != "" {
 		for indx, namespace := range e.ShootEventWatcherConfig.Namespaces {
-			_ = e.ShootKubeInformerFactories[indx].InformerFor(&v1.Event{},
-				NewEventInformerFuncForNamespace(
-					"shoot",
-					namespace,
-				),
+			informer := e.ShootKubeInformerFactories[indx].InformerFor(
+				&v1.Event{},
+				NewEventInformerFuncForNamespace(namespace),
 			)
+			if err := addEventHandler(informer, "shoot"); err != nil {
+				return nil, err
+			}
 		}
 	}
 
-	return &GardenerEventWatcher{
+	watcher := &GardenerEventWatcher{
 		SeedKubeInformerFactories:  e.SeedKubeInformerFactories,
 		ShootKubeInformerFactories: e.ShootKubeInformerFactories,
 	}
+
+	return watcher, nil
 }
 
 // Run start the GardenerEventWatcher lifecycle

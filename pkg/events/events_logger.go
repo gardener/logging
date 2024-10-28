@@ -17,7 +17,7 @@ import (
 )
 
 // NewEventInformerFuncForNamespace returns function which creates new event informer for a given namespace.
-func NewEventInformerFuncForNamespace(origin, namespace string) kubeinformersinterfaces.NewInformerFunc {
+func NewEventInformerFuncForNamespace(namespace string) kubeinformersinterfaces.NewInformerFunc {
 	return func(clientset kubernetes.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
 		watchlist := cache.NewListWatchFromClient(
 			clientset.CoreV1().RESTClient(),
@@ -31,22 +31,28 @@ func NewEventInformerFuncForNamespace(origin, namespace string) kubeinformersint
 			resyncPeriod,
 			cache.Indexers{},
 		)
-		informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-				if isV1Event(obj) {
-					v1Event := obj.(*v1.Event)
-					printV1Event(v1Event, origin)
-				}
-			},
-			UpdateFunc: func(_ interface{}, newObject interface{}) {
-				if isV1Event(newObject) {
-					v1Event := newObject.(*v1.Event)
-					printV1Event(v1Event, origin)
-				}
-			},
-		})
+
 		return informer
 	}
+}
+
+func addEventHandler(informer cache.SharedIndexInformer, origin string) error {
+	_, err := informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			if isV1Event(obj) {
+				v1Event := obj.(*v1.Event)
+				printV1Event(v1Event, origin)
+			}
+		},
+		UpdateFunc: func(_ interface{}, newObject interface{}) {
+			if isV1Event(newObject) {
+				v1Event := newObject.(*v1.Event)
+				printV1Event(v1Event, origin)
+			}
+		},
+	})
+
+	return err
 }
 
 func isV1Event(obj interface{}) bool {
