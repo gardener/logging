@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"runtime"
 	"sort"
 	"strings"
@@ -66,7 +67,7 @@ func deleteNOldestFiles(dirPath string, filePageSize int) (int, error) {
 // GetNOldestFiles returns the N oldest files on success or empty file slice and an error.
 func GetNOldestFiles(dirPath string, filePageSize int) ([]file, error) {
 	var filePage []file
-	openedDir, err := os.Open(dirPath)
+	openedDir, err := os.Open(filepath.Clean(dirPath))
 	if err != nil {
 		return []file{}, err
 	}
