@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 )
@@ -49,16 +48,16 @@ func copyFile(src, dst string) error {
 		return copyDir(src, dst)
 	}
 
-	input, err := ioutil.ReadFile(src)
+	input, err := os.ReadFile(src)
 	if err != nil {
 		return err
 	}
 
-	return ioutil.WriteFile(dst, input, sourceFileStat.Mode())
+	return os.WriteFile(dst, input, sourceFileStat.Mode())
 }
 
 func copyDir(src, dst string) error {
-	files, err := ioutil.ReadDir(src)
+	files, err := os.ReadDir(src)
 	if err != nil {
 		return err
 	}
