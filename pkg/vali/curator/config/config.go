@@ -5,7 +5,7 @@
 package config
 
 import (
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -53,7 +53,7 @@ func ParseConfigurations(curatorConfigPath string) (*CuratorConfig, error) {
 		return nil, err
 	}
 
-	curatorConfigFile, err := ioutil.ReadFile(filepath.Clean(curatorConfigAbsPath))
+	curatorConfigFile, err := os.ReadFile(filepath.Clean(curatorConfigAbsPath))
 	if err != nil {
 		return nil, err
 	}

@@ -11,7 +11,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -116,7 +115,7 @@ func initPluginConfig(cfg Getter, res *Config) error {
 	if labelMapPath != "" {
 		var content []byte
 		if _, err := os.Stat(labelMapPath); err == nil {
-			content, err = ioutil.ReadFile(labelMapPath)
+			content, err = os.ReadFile(labelMapPath)
 			if err != nil {
 				return fmt.Errorf("failed to open LabelMap file: %s", err)
 			}
