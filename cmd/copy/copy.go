@@ -7,6 +7,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -93,7 +94,7 @@ func createDirectory(path string) error {
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			// The dir does not exist so create it.
-			return os.MkdirAll(path, os.ModePerm)
+			return os.MkdirAll(path, fs.FileMode(0750))
 		}
 		return err
 	}
