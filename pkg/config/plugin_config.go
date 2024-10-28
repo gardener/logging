@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -115,7 +116,7 @@ func initPluginConfig(cfg Getter, res *Config) error {
 	if labelMapPath != "" {
 		var content []byte
 		if _, err := os.Stat(labelMapPath); err == nil {
-			content, err = os.ReadFile(labelMapPath)
+			content, err = os.ReadFile(filepath.Clean(labelMapPath))
 			if err != nil {
 				return fmt.Errorf("failed to open LabelMap file: %s", err)
 			}
