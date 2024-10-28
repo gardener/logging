@@ -53,7 +53,7 @@ func ParseConfigurations(curatorConfigPath string) (*CuratorConfig, error) {
 		return nil, err
 	}
 
-	curatorConfigFile, err := ioutil.ReadFile(curatorConfigAbsPath)
+	curatorConfigFile, err := ioutil.ReadFile(filepath.Clean(curatorConfigAbsPath))
 	if err != nil {
 		return nil, err
 	}
