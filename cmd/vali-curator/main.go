@@ -6,10 +6,11 @@ package main
 
 import (
 	"net/http"
-	_ "net/http/pprof"
+	_ "net/http/pprof" // #nosec: G108
 	"os"
 	"os/signal"
 	"runtime"
+	"time"
 
 	"github.com/go-kit/log/level"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
