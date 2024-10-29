@@ -16,6 +16,7 @@ It also adds additional configurations that aim to improve plugin's performance 
 | Key           | Description                                   | Default                             |
 | --------------|-----------------------------------------------|-------------------------------------|
 | Url           | Url of vali server API endpoint.               | `http://localhost:3100/vali/api/v1/push` |
+| ProxyURL      | Optional Url for http proxy.                   | ""                                 |
 | BatchWait     | Time to wait before send a log batch to Vali, full or not. (unit: sec) | 1 second   |
 | BatchSize     | Log batch size to send a log batch to Vali (unit: Bytes).    | 10 KiB (10 * 1024 Bytes) |
 | MaxRetries     | Number of times the vali client will try to send unsuccessful sent record to vali.    | 10 |
