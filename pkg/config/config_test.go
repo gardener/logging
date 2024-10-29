@@ -15,6 +15,7 @@ import (
 	"github.com/credativ/vali/pkg/valitail/client"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/prometheus/common/config"
 	"github.com/prometheus/common/model"
 	"github.com/weaveworks/common/logging"
 	"k8s.io/utils/pointer"
@@ -181,6 +182,7 @@ var _ = Describe("Config", func() {
 		Entry("setting values", testArgs{
 			map[string]string{
 				"URL":             "http://somewhere.com:3100/vali/api/v1/push",
+				"ProxyURL":        "http://somewhere-proxy.com:1234",
 				"TenantID":        "my-tenant-id",
 				"LineFormat":      "key_value",
 				"LogLevel":        "warn",
@@ -217,6 +219,9 @@ var _ = Describe("Config", func() {
 						ExternalLabels: valiflag.LabelSet{LabelSet: model.LabelSet{"app": "foo"}},
 						BackoffConfig:  defaultBackoffConfig,
 						Timeout:        defaultTimeout,
+						Client: config.HTTPClientConfig{
+							ProxyURL: config.URL{URL: parseURL("http://somewhere-proxy.com:1234").URL},
+						},
 					},
 					BufferConfig: BufferConfig{
 						Buffer:     defaultBuffer,
@@ -668,6 +673,7 @@ var _ = Describe("Config", func() {
 			expectNoError},
 		),
 		Entry("bad url", testArgs{map[string]string{"URL": "::doh.com"}, nil, true}),
+		Entry("bad proxy url", testArgs{map[string]string{"ProxyURL": "::doh.com"}, nil, true}),
 		Entry("bad BatchWait", testArgs{map[string]string{"BatchWait": "a"}, nil, true}),
 		Entry("bad BatchSize", testArgs{map[string]string{"BatchSize": "a"}, nil, true}),
 		Entry("bad labels", testArgs{map[string]string{"Labels": "a"}, nil, true}),

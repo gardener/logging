@@ -10,6 +10,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	stdurl "net/url"
 	"strconv"
 	"time"
 
@@ -81,6 +82,16 @@ func initClientConfig(cfg Getter, res *Config) error {
 		return errors.New("failed to parse client URL")
 	}
 	res.ClientConfig.CredativValiConfig.URL = clientURL
+
+	proxyURL := cfg.Get("ProxyURL")
+	if proxyURL != "" {
+		u, err := stdurl.Parse(proxyURL)
+		if err != nil {
+			return fmt.Errorf("failed to parse proxy URL: %v", err)
+		}
+
+		res.ClientConfig.CredativValiConfig.Client.ProxyURL.URL = u
+	}
 
 	// cfg.Get will return empty string if not set, which is handled by the client library as no tenant
 	res.ClientConfig.CredativValiConfig.TenantID = cfg.Get("TenantID")
