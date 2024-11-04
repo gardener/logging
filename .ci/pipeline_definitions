@@ -1,5 +1,12 @@
 logging:
   base_definition:
+    repo:
+      source_labels:
+      - name: cloud.gardener.cnudie/dso/scanning-hints/source_analysis/v1
+        value:
+          policy: skip
+          comment: |
+            We use gosec for sast scanning, see attached log.
     steps:
       verify:
         image: 'golang:1.22.6'
@@ -128,6 +135,16 @@ logging:
               image: europe-docker.pkg.dev/gardener-project/releases/gardener/tune2fs
         release:
           nextversion: 'bump_minor'
+          assets:
+          - type: build-step-log
+            step_name: verify
+            purposes:
+            - lint
+            - sast
+            - gosec
+            comment: |
+              We use gosec (linter) for SAST scans, see: https://github.com/securego/gosec.
+              Enabled by https://github.com/gardener/logging/pull/261
         slack:
           default_channel: "internal_scp_workspace"
           channel_cfgs:
