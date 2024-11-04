@@ -18,7 +18,7 @@ var letterRunes = []rune("1234567890abcdefghijklmnopqrstuvwxyz")
 func randStringRunes(n int) string {
 	b := make([]rune, n)
 	for i := range b {
-		b[i] = letterRunes[rand.Intn(len(letterRunes))]
+		b[i] = letterRunes[rand.Intn(len(letterRunes))] // #nosec G404 -- used in tests only
 	}
 	return string(b)
 }
