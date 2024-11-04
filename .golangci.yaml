@@ -16,8 +16,6 @@ linters:
   - unused
   enable:
   - revive
-  - gosec
-
 
 issues:
   exclude-use-default: false

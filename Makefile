@@ -102,8 +102,8 @@ docker-images:
 		$(FLUENT_BIT_TO_VALI_IMAGE_REPOSITORY) $(IMAGE_TAG)
 
 	@BUILD_ARCH=$(BUILD_ARCH) \
-    	$(REPO_ROOT)/hack/docker-image-build.sh "fluent-bit-vali" \
-    	$(FLUENT_BIT_VALI_IMAGE_REPOSITORY) $(IMAGE_TAG)
+		$(REPO_ROOT)/hack/docker-image-build.sh "fluent-bit-vali" \
+		$(FLUENT_BIT_VALI_IMAGE_REPOSITORY) $(IMAGE_TAG)
 
 	@BUILD_ARCH=$(BUILD_ARCH) \
 		$(REPO_ROOT)/hack/docker-image-build.sh "curator" \
@@ -147,8 +147,16 @@ tidy:
 	@go mod tidy
 	@go mod download
 
+.PHONY: sast
+sast: $(GOSEC)
+	@$(REPO_ROOT)/hack/sast.sh
+
+.PHONY: sast-report
+sast-report: $(GOSEC)
+	@$(REPO_ROOT)/hack/sast.sh --gosec-report true
+
 .PHONY: check
-check: format $(GO_LINT)
+check: format sast-report $(GO_LINT)
 	 @$(GO_LINT) run --config=$(REPO_ROOT)/.golangci.yaml --timeout 10m $(REPO_ROOT)/cmd/... $(REPO_ROOT)/pkg/... $(REPO_ROOT)/tests/...
 	 @go vet $(REPO_ROOT)/cmd/... $(REPO_ROOT)/pkg/... $(REPO_ROOT)/tests/...
 

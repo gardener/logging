@@ -34,6 +34,10 @@ MOCKGEN_VERSION                            ?= $(call version_gomod,go.uber.org/m
 GO_ADD_LICENSE                             := $(TOOLS_DIR)/addlicense
 GO_ADD_LICENSE_VERSION                     ?= $(call version_gomod,github.com/google/addlicense)
 
+# gosec
+GOSEC     	                           := $(TOOLS_DIR)/gosec
+GOSEC_VERSION		                   ?= v2.21.4
+
 # Use this "function" to add the version file as a prerequisite for the tool target: e.g.
 tool_version_file = $(TOOLS_DIR)/.version_$(subst $(TOOLS_DIR)/,,$(1))_$(2)
 # Use this function to get the version of a go module from go.mod
@@ -70,6 +74,10 @@ $(GOIMPORTS_REVISER): $(call tool_version_file,$(GOIMPORTS_REVISER),$(GOIMPORTS_
 $(GO_LINT): $(call tool_version_file,$(GO_LINT),$(GO_LINT_VERSION))
 	@echo "install target: $@"
 	@GOBIN=$(abspath $(TOOLS_DIR)) CGO_ENABLED=1 go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GO_LINT_VERSION)
+
+$(GOSEC): $(call tool_version_file,$(GOSEC),$(GOSEC_VERSION))
+	@echo "install target: $@"
+	@GOBIN=$(abspath $(TOOLS_DIR)) go install github.com/securego/gosec/v2/cmd/gosec@$(GOSEC_VERSION)
 
 $(KIND): $(call tool_version_file,$(KIND),$(KIND_VERSION))
 	@echo "install target: $@"
