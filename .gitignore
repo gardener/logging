@@ -12,3 +12,4 @@ bin
 .DS_Store
 kubeconfig
 *~
+gosec-report.sarif
