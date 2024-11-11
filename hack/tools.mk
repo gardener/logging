@@ -4,7 +4,7 @@
 
 # linter dependency
 GO_LINT                                    := $(TOOLS_DIR)/golangci-lint
-GO_LINT_VERSION                            ?= v1.60.3
+GO_LINT_VERSION                            ?= v1.62.0
 # test dependencies
 GINKGO                                     := $(TOOLS_DIR)/ginkgo
 GINKGO_VERSION                             ?= $(call version_gomod,github.com/onsi/ginkgo/v2)
