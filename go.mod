@@ -10,7 +10,7 @@ require (
 	github.com/go-kit/log v0.2.1
 	github.com/go-logfmt/logfmt v0.6.0
 	github.com/google/addlicense v1.1.1
-	github.com/incu6us/goimports-reviser/v3 v3.6.5
+	github.com/incu6us/goimports-reviser/v3 v3.8.2
 	github.com/joncrlsn/dque v2.2.1-0.20200515025108-956d14155fa2+incompatible
 	github.com/json-iterator/go v1.1.12
 	github.com/onsi/ginkgo/v2 v2.22.0
