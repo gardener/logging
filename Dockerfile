@@ -93,7 +93,7 @@ ARG TARGETARCH
 RUN --mount=type=cache,target="/root/.cache/go-build" CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} make build
 
 #############      iptables-builder       #############
-FROM alpine:3.20.3 AS iptables-builder
+FROM alpine:3.21.0 AS iptables-builder
 
 RUN apk add --update bash sudo iptables ncurses-libs libmnl && \
     rm -rf /var/cache/apk/*
@@ -113,12 +113,12 @@ RUN mkdir -p ./bin ./sbin ./lib ./usr/bin ./usr/sbin ./usr/lib ./usr/lib/xtables
     && cp -d /bin/bash ./bin                                                && echo "package bash" \
     && cp -d /etc/bash/bashrc ./etc/bash                                    && echo "package bash" \
     && cp -d /usr/lib/bash/* ./usr/lib/bash                                 && echo "package bash" \
-    && cp -d /lib/libz.* ./lib                                              && echo "package zlib" \
+    && cp -d /usr/lib/libz.* ./lib                                          && echo "package zlib" \
     && cp -d /usr/lib/libmnl.* ./usr/lib                                    && echo "package libmnl" \
     && cp -d /usr/lib/libnftnl* ./usr/lib                                   && echo "package libnftnl" \
     && cp -d /etc/ethertypes ./etc                                          && echo "package iptables" \
-    && cp -d /sbin/iptables* ./sbin                                         && echo "package iptables" \
-    && cp -d /sbin/xtables* ./sbin                                          && echo "package iptables" \
+    && cp -d /usr/sbin/iptables* ./sbin                                     && echo "package iptables" \
+    && cp -d /usr/sbin/xtables* ./sbin                                      && echo "package iptables" \
     && cp -d /usr/lib/libxtables* ./usr/lib                                 && echo "package iptables" \
     && cp -d /usr/lib/xtables/* ./usr/lib/xtables                           && echo "package iptables" \
     && cp -d /usr/lib/sudo/* ./usr/lib/sudo                                 && echo "package sudo" \
@@ -137,7 +137,7 @@ COPY --from=telegraf-builder /go/telegraf/telegraf /usr/bin/telegraf
 CMD [ "/usr/bin/telegraf"]
 
 #############      tune2fs-builder       #############
-FROM alpine:3.20.3 AS tune2fs-builder
+FROM alpine:3.21.0 AS tune2fs-builder
 
 RUN apk add --update bash e2fsprogs-extra mount gawk ncurses-libs && \
     rm -rf /var/cache/apk/*
@@ -148,8 +148,8 @@ RUN mkdir -p ./lib ./usr/bin/ ./bin ./etc/bash ./usr/lib/bash ./usr/sbin/ ./etc/
     && cp -d /usr/bin/gawk ./usr/bin                                        && echo "package gawk" \
     && cp -d /lib/ld-musl-* ./lib                                           && echo "package musl" \
     && cp -d /lib/libc.musl-* ./lib                                         && echo "package musl" \
-    && cp -d /lib/libmount.so.* ./lib                                       && echo "package mount" \
-    && cp -d /lib/libblkid.so.* ./lib                                       && echo "package mount" \
+    && cp -d /usr/lib/libmount.so.* ./lib                                   && echo "package libmount" \
+    && cp -d /usr/lib/libblkid.so.* ./lib                                   && echo "package libblkid" \
     && cp -d /bin/mount ./bin                                               && echo "package mount" \
     && cp -d -r /etc/terminfo/* ./etc/terminfo                              && echo "package ncurses-terminfo-base" \
     && cp -d /usr/lib/libformw.so.* ./usr/lib                               && echo "package ncurses-libs" \
@@ -161,10 +161,10 @@ RUN mkdir -p ./lib ./usr/bin/ ./bin ./etc/bash ./usr/lib/bash ./usr/sbin/ ./etc/
     && cp -d /bin/bash ./bin                                                && echo "package bash" \
     && cp -d /etc/bash/bashrc ./etc/bash                                    && echo "package bash" \
     && cp -d /usr/lib/bash/* ./usr/lib/bash                                 && echo "package bash" \
-    && cp -d /lib/libext2fs.so.* ./lib                                      && echo "package e2fsprogs-extra" \
-    && cp -d /lib/libcom_err.so.* ./lib                                     && echo "package e2fsprogs-extra" \
-    && cp -d /lib/libuuid.so.* ./lib                                        && echo "package e2fsprogs-extra" \
-    && cp -d /lib/libe2p.so.* ./lib                                         && echo "package e2fsprogs-extra" \
+    && cp -d /usr/lib/libext2fs.so.* ./lib                                  && echo "package e2fsprogs-extra" \
+    && cp -d /usr/lib/libcom_err.so.* ./lib                                 && echo "package e2fsprogs-extra" \
+    && cp -d /usr/lib/libuuid.so.* ./lib                                    && echo "package e2fsprogs-extra" \
+    && cp -d /usr/lib/libe2p.so.* ./lib                                     && echo "package e2fsprogs-extra" \
     && cp -d /usr/sbin/tune2fs ./usr/sbin                                   && echo "package e2fsprogs-extra"
 
 #############      tune2fs       #############
