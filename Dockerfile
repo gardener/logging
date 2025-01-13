@@ -93,7 +93,7 @@ ARG TARGETARCH
 RUN --mount=type=cache,target="/root/.cache/go-build" CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} make build
 
 #############      iptables-builder       #############
-FROM alpine:3.21.0 AS iptables-builder
+FROM alpine:3.21.2 AS iptables-builder
 
 RUN apk add --update bash sudo iptables ncurses-libs libmnl && \
     rm -rf /var/cache/apk/*
@@ -137,7 +137,7 @@ COPY --from=telegraf-builder /go/telegraf/telegraf /usr/bin/telegraf
 CMD [ "/usr/bin/telegraf"]
 
 #############      tune2fs-builder       #############
-FROM alpine:3.21.0 AS tune2fs-builder
+FROM alpine:3.21.2 AS tune2fs-builder
 
 RUN apk add --update bash e2fsprogs-extra mount gawk ncurses-libs && \
     rm -rf /var/cache/apk/*
