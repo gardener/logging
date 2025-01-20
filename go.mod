@@ -173,10 +173,10 @@ replace (
 	// Required by github.com/credativ/vali
 	github.com/prometheus/common => github.com/prometheus/common v0.20.0
 	google.golang.org/grpc => google.golang.org/grpc v1.40.0
+	// Required by github.com/gardener/gardener
 	k8s.io/api => k8s.io/api v0.31.5
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.31.5
 	k8s.io/apimachinery => k8s.io/apimachinery v0.31.5
-	// Required by github.com/gardener/gardener
 	k8s.io/apiserver => k8s.io/apiserver v0.31.5
 	k8s.io/client-go => k8s.io/client-go v0.31.5
 	k8s.io/component-base => k8s.io/component-base v0.31.5
