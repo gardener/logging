@@ -4,7 +4,7 @@ go 1.23.5
 
 require (
 	github.com/cortexproject/cortex v1.10.0
-	github.com/credativ/vali v0.0.0-20240809071551-5cab200ebcfc
+	github.com/credativ/vali v0.0.0-20241206084847-26ee17826034
 	github.com/fluent/fluent-bit-go v0.0.0-20230731091245-a7a013e2473c
 	github.com/gardener/gardener v1.110.4
 	github.com/go-kit/log v0.2.1
