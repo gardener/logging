@@ -165,6 +165,7 @@ RUN mkdir -p ./lib ./usr/bin/ ./bin ./etc/bash ./usr/lib/bash ./usr/sbin/ ./etc/
     && cp -d /usr/lib/libcom_err.so.* ./lib                                 && echo "package e2fsprogs-extra" \
     && cp -d /usr/lib/libuuid.so.* ./lib                                    && echo "package e2fsprogs-extra" \
     && cp -d /usr/lib/libe2p.so.* ./lib                                     && echo "package e2fsprogs-extra" \
+    && cp -d /usr/lib/libeconf.so.* ./lib                                   && echo "package libeconf" \
     && cp -d /usr/sbin/tune2fs ./usr/sbin                                   && echo "package e2fsprogs-extra"
 
 #############      tune2fs       #############
