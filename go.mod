@@ -19,7 +19,7 @@ require (
 	github.com/prometheus/client_golang v1.20.5
 	github.com/prometheus/common v0.61.0
 	github.com/spf13/cobra v1.8.1
-	github.com/spf13/pflag v1.0.5
+	github.com/spf13/pflag v1.0.6
 	github.com/vladimirvivien/gexe v0.4.1
 	github.com/weaveworks/common v0.0.0-20210419092856-009d1eebd624
 	go.uber.org/mock v0.5.0
