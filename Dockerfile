@@ -57,7 +57,7 @@ WORKDIR /
 CMD ["/bin/cp", "/source/plugins/.", "/plugins"]
 
 #############  fluent-bit-vali #############
-FROM ghcr.io/fluent/fluent-operator/fluent-bit:3.1.8 AS fluent-bit-vali
+FROM ghcr.io/fluent/fluent-operator/fluent-bit:3.2.5 AS fluent-bit-vali
 
 COPY --from=builder /go/src/github.com/gardener/logging/build /fluent-bit/plugins
 
