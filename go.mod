@@ -4,6 +4,7 @@ go 1.24.0
 
 tool (
 	github.com/golangci/golangci-lint/cmd/golangci-lint
+	github.com/google/addlicense
 	github.com/incu6us/goimports-reviser/v3
 	golang.org/x/tools/cmd/goimports
 	gotest.tools/gotestsum
@@ -17,7 +18,6 @@ require (
 	github.com/gardener/gardener v1.110.4
 	github.com/go-kit/log v0.2.1
 	github.com/go-logfmt/logfmt v0.6.0
-	github.com/google/addlicense v1.1.1
 	github.com/joncrlsn/dque v2.2.1-0.20200515025108-956d14155fa2+incompatible
 	github.com/json-iterator/go v1.1.12
 	github.com/onsi/ginkgo/v2 v2.22.2
@@ -29,7 +29,6 @@ require (
 	github.com/spf13/pflag v1.0.6
 	github.com/vladimirvivien/gexe v0.4.1
 	github.com/weaveworks/common v0.0.0-20210419092856-009d1eebd624
-	go.uber.org/mock v0.5.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.32.1
 	k8s.io/apimachinery v0.32.1
@@ -141,6 +140,7 @@ require (
 	github.com/golangci/plugin-module-register v0.1.1 // indirect
 	github.com/golangci/revgrep v0.8.0 // indirect
 	github.com/golangci/unconvert v0.0.0-20240309020433-c5143eacb3ed // indirect
+	github.com/google/addlicense v1.1.1 // indirect
 	github.com/google/btree v1.1.3 // indirect
 	github.com/google/gnostic-models v0.6.8 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
@@ -337,7 +337,7 @@ replace (
 	github.com/prometheus/client_golang => github.com/prometheus/client_golang v1.18.0
 	// Required by github.com/credativ/vali
 	github.com/prometheus/common => github.com/prometheus/common v0.20.0
-	google.golang.org/grpc => google.golang.org/grpc v1.40.0
+	google.golang.org/grpc => google.golang.org/grpc v1.45.0
 	// Required by github.com/gardener/gardener
 	k8s.io/api => k8s.io/api v0.31.5
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.31.5
