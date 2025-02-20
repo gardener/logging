@@ -11,17 +11,20 @@ VALI_CURATOR_IMAGE_REPOSITORY              := $(REGISTRY)/vali-curator
 TELEGRAF_IMAGE_REPOSITORY                  := $(REGISTRY)/telegraf-iptables
 TUNE2FS_IMAGE_REPOSITORY                   := $(REGISTRY)/tune2fs
 EVENT_LOGGER_IMAGE_REPOSITORY              := $(REGISTRY)/event-logger
-IMAGE_TAG                                  := $(VERSION)
 EFFECTIVE_VERSION                          := $(VERSION)-$(shell git rev-parse --short HEAD)
 SRC_DIRS                                   := $(shell go list -f '{{.Dir}}' $(REPO_ROOT)/...)
 LD_FLAGS                                   := -s -w $(shell $(REPO_ROOT)/hack/get-build-ld-flags.sh)
 BUILD_PLATFORM                             ?= $(shell uname -s | tr '[:upper:]' '[:lower:]')
 BUILD_ARCH                                 ?= $(shell uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
 
-# project folder structure
-PKG_DIR                                    := $(REPO_ROOT)/pkg
-TOOLS_DIR                                  := $(REPO_ROOT)/tools
 
+ifneq ($(strip $(shell git status --porcelain 2>/dev/null)),)
+	EFFECTIVE_VERSION := $(EFFECTIVE_VERSION)-dirty
+endif
+IMAGE_TAG                                  := $(EFFECTIVE_VERSION)
+
+# project folder structure
+TOOLS_DIR                                  := $(REPO_ROOT)/tools
 include hack/tools.mk
 export PATH := $(abspath $(TOOLS_DIR)):$(PATH)
 
@@ -65,36 +68,16 @@ event-logger: tidy
 		-ldflags="$(LD_FLAGS)" \
 		$(REPO_ROOT)/cmd/event-logger
 
-.PHONY: install
-install: install-vali-curator install-event-logger
-
-.PHONY: install-vali-curator
-install-vali-curator:
+.PHONY: copy
+copy: tidy
 	@echo "building $@ for $(BUILD_PLATFORM)/$(BUILD_ARCH)"
 	@GOOS=$(BUILD_PLATFORM) \
 		GOARCH=$(BUILD_ARCH) \
-		EFFECTIVE_VERSION=$(EFFECTIVE_VERSION) \
-		./hack/install.sh \
-		./cmd/vali-curator
-
-.PHONY: install-event-logger
-install-event-logger:
-	@echo "building $@ for $(BUILD_PLATFORM)/$(BUILD_ARCH)"
-	@GOOS=$(BUILD_PLATFORM) \
-		GOARCH=$(BUILD_ARCH) \
-		EFFECTIVE_VERSION=$(EFFECTIVE_VERSION) \
-		./hack/install.sh \
-		./cmd/event-logger
-
-.PHONY: install-copy
-install-copy:
-	@echo "building $@ for $(BUILD_PLATFORM)/$(BUILD_ARCH)"
-	@GOOS=$(BUILD_PLATFORM) \
-		GOARCH=$(BUILD_ARCH) \
-		EFFECTIVE_VERSION=$(EFFECTIVE_VERSION) \
-		./hack/install.sh \
-		./cmd/copy
-
+		CGO_ENABLED=0 GO111MODULE=on \
+		go build \
+		-o $(REPO_ROOT)/build/copy \
+		-ldflags="$(LD_FLAGS)" \
+		$(REPO_ROOT)/cmd/copy
 
 #################################################################
 # Container imges build targets                                 #
@@ -211,7 +194,7 @@ clean:
 # Tools                                 #
 #########################################
 .PHONY: kind-up
-kind-up: $(KIND) $(KUBECTL)
+kind-up: tidy $(KUBECTL)
 	@$(REPO_ROOT)/hack/kind-up.sh
 
 #########################################
