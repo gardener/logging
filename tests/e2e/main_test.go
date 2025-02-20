@@ -29,12 +29,12 @@ func TestMain(m *testing.M) {
 	kindClusterName := envconf.RandomName("kind-local", 16)
 	pluginUnderTest := envconf.RandomName("e2e/fluent-bit-vali:test", 30)
 	eventLoggerUnderTest := envconf.RandomName("e2e/event-logger:test", 30)
-	slog.Info("Running e2e tests", "pluginUnderTest", pluginUnderTest)
+	slog.Info("Running e2e tests", "pluginUnderTest", pluginUnderTest, "KIND_PATH", os.Getenv("KIND_PATH"))
 
 	testenv.Setup(
 
 		envfuncs.CreateClusterWithConfig(
-			kind.NewProvider(),
+			kind.NewProvider().WithPath(os.Getenv("KIND_PATH")),
 			kindClusterName,
 			"./config/kind-config.yaml",
 		),
