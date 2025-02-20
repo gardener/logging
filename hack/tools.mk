@@ -2,13 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# test dependencies
-GINKGO                                     := $(TOOLS_DIR)/ginkgo
-GINKGO_VERSION                             ?= $(call version_gomod,github.com/onsi/ginkgo/v2)
-# kind dependency
-KIND                                       := $(TOOLS_DIR)/kind
-KIND_VERSION                               ?= v0.24.0
-
 # kubectl dependency
 KUBECTL                                    := $(TOOLS_DIR)/kubectl
 KUBECTL_VERSION                            ?= v1.31.1
@@ -50,15 +43,11 @@ clean-tools:
 	@rm -rf $(TOOLS_DIR)/*
 
 .PHONY: create-tools
-create-tools: $(MOCKGEN) $(GINKGO) $(GOIMPORTS) $(GOIMPORTS_REVISER) $(GO_LINT) $(KIND) $(KUBECTL) $(SKAFFOLD)
+create-tools: $(MOCKGEN) $(GOIMPORTS) $(GOIMPORTS_REVISER) $(KUBECTL) $(SKAFFOLD)
 
 $(MOCKGEN): $(call tool_version_file,$(MOCKGEN),$(MOCKGEN_VERSION))
 	@echo "install target: $@"
 	@go build -o $(MOCKGEN) go.uber.org/mock/mockgen
-
-$(GINKGO): $(call tool_version_file,$(GINKGO),$(GINKGO_VERSION))
-	@echo "install target: $@"
-	@go build -o $(GINKGO) github.com/onsi/ginkgo/v2/ginkgo
 
 $(GOIMPORTS): $(call tool_version_file,$(GOIMPORTS),$(GOIMPORTS_VERSION))
 	@echo "install target: $@"
@@ -68,18 +57,9 @@ $(GOIMPORTS_REVISER): $(call tool_version_file,$(GOIMPORTS_REVISER),$(GOIMPORTS_
 	@echo "install target: $@"
 	@go build -o $(GOIMPORTS_REVISER) github.com/incu6us/goimports-reviser/v3
 
-$(GO_LINT): $(call tool_version_file,$(GO_LINT),$(GO_LINT_VERSION))
-	@echo "install target: $@"
-	@GOBIN=$(abspath $(TOOLS_DIR)) CGO_ENABLED=1 go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GO_LINT_VERSION)
-
 $(GOSEC): $(call tool_version_file,$(GOSEC),$(GOSEC_VERSION))
 	@echo "install target: $@"
 	@GOBIN=$(abspath $(TOOLS_DIR)) go install github.com/securego/gosec/v2/cmd/gosec@$(GOSEC_VERSION)
-
-$(KIND): $(call tool_version_file,$(KIND),$(KIND_VERSION))
-	@echo "install target: $@"
-	@curl -sSL -o $(KIND) "https://kind.sigs.k8s.io/dl/$(KIND_VERSION)/kind-$(BUILD_PLATFORM)-$(BUILD_ARCH)"
-	@chmod +x $(KIND)
 
 $(KUBECTL): $(call tool_version_file,$(KUBECTL),$(KUBECTL_VERSION))
 	@echo "install target: $@"

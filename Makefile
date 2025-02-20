@@ -14,7 +14,7 @@ EVENT_LOGGER_IMAGE_REPOSITORY              := $(REGISTRY)/event-logger
 IMAGE_TAG                                  := $(VERSION)
 EFFECTIVE_VERSION                          := $(VERSION)-$(shell git rev-parse --short HEAD)
 SRC_DIRS                                   := $(shell go list -f '{{.Dir}}' $(REPO_ROOT)/...)
-LD_FLAGS                                   := $(shell $(REPO_ROOT)/hack/get-build-ld-flags.sh)
+LD_FLAGS                                   := -s -w $(shell $(REPO_ROOT)/hack/get-build-ld-flags.sh)
 BUILD_PLATFORM                             ?= $(shell uname -s | tr '[:upper:]' '[:lower:]')
 BUILD_ARCH                                 ?= $(shell uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
 
@@ -147,13 +147,9 @@ tidy:
 	@go mod tidy
 	@go mod download
 
-.PHONY: sast
-sast: $(GOSEC)
-	@$(REPO_ROOT)/hack/sast.sh
-
-.PHONY: sast-report
-sast-report: $(GOSEC)
-	@$(REPO_ROOT)/hack/sast.sh --gosec-report true
+.PHONY: format
+format:
+	@gofmt -l -w $(SRC_DIRS)
 
 .PHONY: check
 check: tidy format
@@ -162,9 +158,26 @@ check: tidy format
 		--timeout 10m \
 		$(SRC_DIRS)
 
-.PHONY: format
-format:
-	@gofmt -l -w $(REPO_ROOT)/cmd $(REPO_ROOT)/pkg $(REPO_ROOT)/tests
+.PHONY: test
+test: tidy
+	@go tool gotestsum $(REPO_ROOT)/pkg/... --v --ginkgo.v --ginkgo.no-color
+	@go tool gotestsum $(REPO_ROOT)/tests/vali_plugin
+
+.PHONY: e2e-tests
+e2e-tests: tidy
+	@KIND_PATH=$(shell go tool -n kind) go tool gotestsum $(REPO_ROOT)/tests/e2e
+
+.PHONY: verify
+verify: check test
+
+.PHONY: sast
+sast: $(GOSEC)
+	@$(REPO_ROOT)/hack/sast.sh
+
+.PHONY: sast-report
+sast-report: $(GOSEC)
+	@$(REPO_ROOT)/hack/sast.sh --gosec-report true
+
 
 .PHONY: goimports
 goimports: goimports_tool goimports-reviser_tool
@@ -186,21 +199,10 @@ goimports-reviser_tool: $(GOIMPORTS_REVISER)
 add-license-headers: $(GO_ADD_LICENSE)
 	@$(REPO_ROOT)/hack/add-license-header.sh
 
-.PHONY: test
-test: $(GINKGO)
-	@go test $(REPO_ROOT)/pkg/... --v --ginkgo.v --ginkgo.no-color
-	@go test $(REPO_ROOT)/tests/vali_plugin
-
-.PHONY: verify
-verify: check test
 
 .PHONY: clean
 clean:
 	@rm -rf $(REPO_ROOT)/build
-
-.PHONY: e2e-tests
-e2e-tests: $(KIND)
-	@go test -v $(REPO_ROOT)/tests/...
 
 #########################################
 # Tools                                 #
