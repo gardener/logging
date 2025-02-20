@@ -10,17 +10,6 @@ KUBECTL_VERSION                            ?= v1.31.1
 SKAFFOLD                                   := $(TOOLS_DIR)/skaffold
 SKAFFOLD_VERSION                           ?= v2.13.2
 
-# goimports dependencies
-GOIMPORTS                                  := $(TOOLS_DIR)/goimports
-GOIMPORTS_VERSION                          ?= $(call version_gomod,golang.org/x/tools)
-
-# goimports_reviser dependencies
-GOIMPORTS_REVISER                          := $(TOOLS_DIR)/goimports-reviser
-GOIMPORTS_REVISER_VERSION                  ?= v3.6.5
-
-MOCKGEN                                    := $(TOOLS_DIR)/mockgen
-MOCKGEN_VERSION                            ?= $(call version_gomod,go.uber.org/mock)
-
 GO_ADD_LICENSE                             := $(TOOLS_DIR)/addlicense
 GO_ADD_LICENSE_VERSION                     ?= $(call version_gomod,github.com/google/addlicense)
 
@@ -43,19 +32,7 @@ clean-tools:
 	@rm -rf $(TOOLS_DIR)/*
 
 .PHONY: create-tools
-create-tools: $(MOCKGEN) $(GOIMPORTS) $(GOIMPORTS_REVISER) $(KUBECTL) $(SKAFFOLD)
-
-$(MOCKGEN): $(call tool_version_file,$(MOCKGEN),$(MOCKGEN_VERSION))
-	@echo "install target: $@"
-	@go build -o $(MOCKGEN) go.uber.org/mock/mockgen
-
-$(GOIMPORTS): $(call tool_version_file,$(GOIMPORTS),$(GOIMPORTS_VERSION))
-	@echo "install target: $@"
-	@go build -o $(GOIMPORTS) golang.org/x/tools/cmd/goimports
-
-$(GOIMPORTS_REVISER): $(call tool_version_file,$(GOIMPORTS_REVISER),$(GOIMPORTS_REVISER_VERSION))
-	@echo "install target: $@"
-	@go build -o $(GOIMPORTS_REVISER) github.com/incu6us/goimports-reviser/v3
+create-tools: $(KUBECTL) $(SKAFFOLD)
 
 $(GOSEC): $(call tool_version_file,$(GOSEC),$(GOSEC_VERSION))
 	@echo "install target: $@"

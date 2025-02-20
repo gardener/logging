@@ -29,7 +29,7 @@ export PATH := $(abspath $(TOOLS_DIR)):$(PATH)
 all: verify
 
 #################################################################
-# Rules related to binary build, Docker image build and release #
+# Build targets                                                 #
 #################################################################
 
 .PHONY: plugin
@@ -95,6 +95,10 @@ install-copy:
 		./hack/install.sh \
 		./cmd/copy
 
+
+#################################################################
+# Container imges build targets                                 #
+#################################################################
 .PHONY: docker-images
 docker-images:
 	@BUILD_ARCH=$(BUILD_ARCH) \
@@ -138,9 +142,9 @@ docker-push:
 	@$(REPO_ROOT)/hack/docker-image-push.sh "tune2fs" \
     $(TUNE2FS_IMAGE_REPOSITORY) $(IMAGE_TAG)
 
-#####################################################################
-# Rules for verification, formatting, linting, testing and cleaning #
-#####################################################################
+#################################################################
+# Code check targets                                            #
+#################################################################
 
 .PHONY: tidy
 tidy:
@@ -170,6 +174,22 @@ e2e-tests: tidy
 .PHONY: verify
 verify: check test
 
+.PHONY: goimports
+goimports: goimports_tool goimports-reviser_tool
+
+.PHONY: goimports_tool
+goimports_tool: tidy
+	@for dir in $(SRC_DIRS); do \
+		go tool goimports -w $$dir/; \
+	done
+
+.PHONY: goimports-reviser_tool
+goimports-reviser_tool: tidy
+	@for dir in $(SRC_DIRS); do \
+		GOIMPORTS_REVISER_OPTIONS="-imports-order std,project,general,company" \
+		go tool goimports-reviser -recursive $$dir/; \
+	done
+
 .PHONY: sast
 sast: $(GOSEC)
 	@$(REPO_ROOT)/hack/sast.sh
@@ -179,21 +199,7 @@ sast-report: $(GOSEC)
 	@$(REPO_ROOT)/hack/sast.sh --gosec-report true
 
 
-.PHONY: goimports
-goimports: goimports_tool goimports-reviser_tool
 
-.PHONY: goimports_tool
-goimports_tool: $(GOIMPORTS)
-	@for dir in $(SRC_DIRS); do \
-		$(GOIMPORTS) -w $$dir/; \
-	done
-
-.PHONY: goimports-reviser_tool
-goimports-reviser_tool: $(GOIMPORTS_REVISER)
-	@for dir in $(SRC_DIRS); do \
-		GOIMPORTS_REVISER_OPTIONS="-imports-order std,project,general,company" \
-		$(GOIMPORTS_REVISER) -recursive $$dir/; \
-	done
 
 .PHONY: add-license-headers
 add-license-headers: $(GO_ADD_LICENSE)

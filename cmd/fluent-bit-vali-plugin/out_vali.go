@@ -19,7 +19,6 @@ import (
 	"unsafe"
 
 	"C"
-
 	"github.com/fluent/fluent-bit-go/output"
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
