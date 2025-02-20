@@ -4,6 +4,8 @@ go 1.24.0
 
 tool (
 	github.com/golangci/golangci-lint/cmd/golangci-lint
+	github.com/incu6us/goimports-reviser/v3
+	golang.org/x/tools/cmd/goimports
 	gotest.tools/gotestsum
 	sigs.k8s.io/kind
 )
@@ -16,7 +18,6 @@ require (
 	github.com/go-kit/log v0.2.1
 	github.com/go-logfmt/logfmt v0.6.0
 	github.com/google/addlicense v1.1.1
-	github.com/incu6us/goimports-reviser/v3 v3.8.2
 	github.com/joncrlsn/dque v2.2.1-0.20200515025108-956d14155fa2+incompatible
 	github.com/json-iterator/go v1.1.12
 	github.com/onsi/ginkgo/v2 v2.22.2
@@ -29,7 +30,6 @@ require (
 	github.com/vladimirvivien/gexe v0.4.1
 	github.com/weaveworks/common v0.0.0-20210419092856-009d1eebd624
 	go.uber.org/mock v0.5.0
-	golang.org/x/tools v0.30.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.32.1
 	k8s.io/apimachinery v0.32.1
@@ -167,6 +167,7 @@ require (
 	github.com/huandu/xstrings v1.5.0 // indirect
 	github.com/imdario/mergo v0.3.16 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/incu6us/goimports-reviser/v3 v3.9.0 // indirect
 	github.com/jgautheron/goconst v1.7.1 // indirect
 	github.com/jingyugao/rowserrcheck v1.1.1 // indirect
 	github.com/jjti/go-spancheck v0.6.4 // indirect
@@ -290,7 +291,7 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/crypto v0.33.0 // indirect
-	golang.org/x/exp v0.0.0-20241204233417-43b7b7cde48d // indirect
+	golang.org/x/exp v0.0.0-20250210185358-939b2ce775ac // indirect
 	golang.org/x/exp/typeparams v0.0.0-20250210185358-939b2ce775ac // indirect
 	golang.org/x/mod v0.23.0 // indirect
 	golang.org/x/net v0.35.0 // indirect
@@ -300,6 +301,7 @@ require (
 	golang.org/x/term v0.29.0 // indirect
 	golang.org/x/text v0.22.0 // indirect
 	golang.org/x/time v0.9.0 // indirect
+	golang.org/x/tools v0.30.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20241209162323-e6fa225c2576 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250127172529-29210b9bc287 // indirect
