@@ -1,5 +1,15 @@
 run:
   concurrency: 4
+  go: "1.24"
+
+linters:
+  disable:
+    - unused
+  enable:
+    - revive
+    - govet
+    - goimports
+    - gosec
 
 linters-settings:
   errcheck:
@@ -10,12 +20,6 @@ linters-settings:
   gosec:
     excludes:
       - G115
-
-linters:
-  disable:
-  - unused
-  enable:
-  - revive
 
 issues:
   exclude-use-default: false
@@ -36,12 +40,12 @@ issues:
   - "could not import github.com/gardener/gardener/pkg/apis/core/v1beta1/constants .*"
   - "Error return value of `informer.AddEventHandler` is not checked"
   exclude-rules:
-  - linters:
-    - staticcheck
-    text: "SA1019:" # Excludes messages where deprecated variables are used
-  - path: cmd/out_vali\.go
-    linters:
-    - deadcode
+    - linters:
+      - staticcheck
+      text: "SA1019:" # Excludes messages where deprecated variables are used
+    - path: cmd/out_vali\.go
+      linters:
+      - deadcode
   exclude-files:
     - ".*\\.pb\\.go$"
     - ".*/out_vali\\.go$"
