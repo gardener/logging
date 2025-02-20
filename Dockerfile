@@ -3,45 +3,9 @@ FROM golang:1.24.0 AS builder
 
 WORKDIR /go/src/github.com/gardener/logging
 
-COPY go.mod go.sum ./
+COPY . .
 RUN go mod download
-
-COPY cmd ./cmd
-COPY pkg ./pkg
-ARG TARGETOS
-ARG TARGETARCH
-ARG LD_FLAGS
-RUN --mount=type=cache,target="/root/.cache/go-build" \
-    GOOS=$TARGETOS \
-    GOARCH=$TARGETARCH \
-    go build -buildmode=c-shared \
-    -o build/out_vali.so \
-    -ldflags="$LD_FLAGS" \
-    ./cmd/fluent-bit-vali-plugin
-
-RUN --mount=type=cache,target="/root/.cache/go-build" \
-    GOOS=$TARGETOS \
-    GOARCH=$TARGETARCH  \
-    CGO_ENABLED=0 \
-    go install  \
-    -ldflags "$LD_FLAGS" \
-    ./cmd/copy
-
-RUN --mount=type=cache,target="/root/.cache/go-build" \
-    GOOS=$TARGETOS \
-    GOARCH=$TARGETARCH  \
-    CGO_ENABLED=0 \
-    go install  \
-    -ldflags "$LD_FLAGS" \
-    ./cmd/vali-curator
-
-RUN --mount=type=cache,target="/root/.cache/go-build" \
-    GOOS=$TARGETOS \
-    GOARCH=$TARGETARCH  \
-    CGO_ENABLED=0 \
-    go install  \
-    -ldflags "$LD_FLAGS" \
-    ./cmd/event-logger
+RUN make plugin copy curator event-logger
 
 ############# distroless-static
 FROM gcr.io/distroless/static-debian12:nonroot AS distroless-static
@@ -49,17 +13,17 @@ FROM gcr.io/distroless/static-debian12:nonroot AS distroless-static
 #############  fluent-bit-plugin #############
 FROM distroless-static AS fluent-bit-plugin
 
-COPY --from=builder /go/src/github.com/gardener/logging/build /source/plugins
-COPY --from=builder /go/bin/copy /bin/cp
+COPY --from=builder /go/src/github.com/gardener/logging/build/out_vali.so /source/plugins/out_vali.so
+COPY --from=builder /go/src/github.com/gardener/logging/build/copy /bin/cp
 
 WORKDIR /
 
-CMD ["/bin/cp", "/source/plugins/.", "/plugins"]
+CMD ["/bin/cp", "/source/plugins/out_vali.so", "/plugins"]
 
 #############  fluent-bit-vali #############
-FROM ghcr.io/fluent/fluent-operator/fluent-bit:3.1.8 AS fluent-bit-vali
+FROM ghcr.io/fluent/fluent-operator/fluent-bit:3.2.5 AS fluent-bit-vali
 
-COPY --from=builder /go/src/github.com/gardener/logging/build /fluent-bit/plugins
+COPY --from=builder /go/src/github.com/gardener/logging/build/out_vali.so /fluent-bit/plugins/out_vali.so
 
 WORKDIR /
 
@@ -68,7 +32,7 @@ CMD ["-e", "/fluent-bit/plugins/out_vali.so", "-c", "/fluent-bit/config/fluent-b
 #############      curator       #############
 FROM distroless-static AS curator
 
-COPY --from=builder /go/bin/vali-curator /curator
+COPY --from=builder /go/src/github.com/gardener/logging/build/curator /curator
 
 WORKDIR /
 EXPOSE 2718
@@ -78,7 +42,7 @@ ENTRYPOINT [ "/curator" ]
 #############      eventlogger       #############
 FROM distroless-static AS event-logger
 
-COPY --from=builder /go/bin/event-logger /event-logger
+COPY --from=builder /go/src/github.com/gardener/logging/build/event-logger /event-logger
 
 WORKDIR /
 
