@@ -4,15 +4,15 @@
 
 # kubectl dependency
 KUBECTL                                    := $(TOOLS_DIR)/kubectl
-KUBECTL_VERSION                            ?= v1.31.1
+KUBECTL_VERSION                            ?= v1.32.0
 
 # skaffold dependency
 SKAFFOLD                                   := $(TOOLS_DIR)/skaffold
-SKAFFOLD_VERSION                           ?= v2.13.2
+SKAFFOLD_VERSION                           ?= v2.14.1
 
 # gosec
-GOSEC     	                           := $(TOOLS_DIR)/gosec
-GOSEC_VERSION		                   ?= v2.21.4
+GOSEC     	                               := $(TOOLS_DIR)/gosec
+GOSEC_VERSION		                       ?= v2.21.4
 
 # Use this "function" to add the version file as a prerequisite for the tool target: e.g.
 tool_version_file = $(TOOLS_DIR)/.version_$(subst $(TOOLS_DIR)/,,$(1))_$(2)
@@ -29,7 +29,7 @@ clean-tools:
 	@rm -rf $(TOOLS_DIR)/*
 
 .PHONY: create-tools
-create-tools: $(KUBECTL) $(SKAFFOLD)
+create-tools:$(GOSEC) $(KUBECTL) $(SKAFFOLD)
 
 $(GOSEC): $(call tool_version_file,$(GOSEC),$(GOSEC_VERSION))
 	@echo "install target: $@"
