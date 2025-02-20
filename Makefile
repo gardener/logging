@@ -156,9 +156,11 @@ sast-report: $(GOSEC)
 	@$(REPO_ROOT)/hack/sast.sh --gosec-report true
 
 .PHONY: check
-check: format sast-report $(GO_LINT)
-	 @$(GO_LINT) run --config=$(REPO_ROOT)/.golangci.yaml --timeout 10m $(REPO_ROOT)/cmd/... $(REPO_ROOT)/pkg/... $(REPO_ROOT)/tests/...
-	 @go vet $(REPO_ROOT)/cmd/... $(REPO_ROOT)/pkg/... $(REPO_ROOT)/tests/...
+check: tidy format
+	 @go tool golangci-lint run \
+	 	--config=$(REPO_ROOT)/.golangci.yaml \
+		--timeout 10m \
+		$(SRC_DIRS)
 
 .PHONY: format
 format:
