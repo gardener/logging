@@ -6,7 +6,7 @@
 
 set -o errexit
 
-repo_root="$(readlink -f $(dirname ${0})/..)"
+root_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." &> /dev/null && pwd )"
 tmp_dir="$( mktemp -d -t tmp-XXXXXX )"
 
 function __cleanup {

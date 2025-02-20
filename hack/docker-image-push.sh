@@ -4,13 +4,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-dir="$(dirname "$0")"
+root_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." &> /dev/null && pwd )"
 
 set -o nounset #catch and prevent errors caused by the use of unset variables.
 set -o pipefail #exit with the exit code of the first error
 set -o errexit #exits immediately if any command in a script exits with a non-zero status
 
-source "$dir/.includes.sh"
+source "${root_dir}/hack/.includes.sh"
 
 echo "> Docker image push"
 
