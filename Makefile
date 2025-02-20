@@ -26,7 +26,7 @@ include hack/tools.mk
 export PATH := $(abspath $(TOOLS_DIR)):$(PATH)
 
 .DEFAULT_GOAL := all
-all: verify
+all: verify plugin curator event-logger
 
 #################################################################
 # Build targets                                                 #
@@ -198,11 +198,8 @@ sast: $(GOSEC)
 sast-report: $(GOSEC)
 	@$(REPO_ROOT)/hack/sast.sh --gosec-report true
 
-
-
-
 .PHONY: add-license-headers
-add-license-headers: $(GO_ADD_LICENSE)
+add-license-headers: tidy
 	@$(REPO_ROOT)/hack/add-license-header.sh
 
 

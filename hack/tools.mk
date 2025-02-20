@@ -10,9 +10,6 @@ KUBECTL_VERSION                            ?= v1.31.1
 SKAFFOLD                                   := $(TOOLS_DIR)/skaffold
 SKAFFOLD_VERSION                           ?= v2.13.2
 
-GO_ADD_LICENSE                             := $(TOOLS_DIR)/addlicense
-GO_ADD_LICENSE_VERSION                     ?= $(call version_gomod,github.com/google/addlicense)
-
 # gosec
 GOSEC     	                           := $(TOOLS_DIR)/gosec
 GOSEC_VERSION		                   ?= v2.21.4
@@ -47,6 +44,3 @@ $(SKAFFOLD): $(call tool_version_file,$(SKAFFOLD),$(SKAFFOLD_VERSION))
 	@echo "install target: $@"
 	@curl -sSL -o $(SKAFFOLD) "https://storage.googleapis.com/skaffold/releases/$(SKAFFOLD_VERSION)/skaffold-$(BUILD_PLATFORM)-$(BUILD_ARCH)"
 	@chmod +x $(SKAFFOLD)
-
-$(GO_ADD_LICENSE):  $(call tool_version_file,$(GO_ADD_LICENSE),$(GO_ADD_LICENSE_VERSION))
-	@go build -o $(GO_ADD_LICENSE) github.com/google/addlicense
