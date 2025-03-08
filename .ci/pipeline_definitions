@@ -9,7 +9,7 @@ logging:
             We use gosec for sast scanning, see attached log.
     steps:
       verify:
-        image: 'golang:1.24.1'
+        image: golang:1.24
     traits:
       version:
         preprocess:

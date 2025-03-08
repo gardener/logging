@@ -12,31 +12,4 @@ git config --global user.name "Gardener CI/CD"
 apt-get update
 apt-get install -y unzip curl grep
 
-ARCH=""
-# Translate the architecture to amd64 or arm64
-case "$(uname -m)" in
-    x86_64)
-        ARCH="amd64"
-        ;;
-    aarch64)
-        ARCH="arm64"
-        ;;
-    *)
-        echo "Unsupported architecture: $ARCH"
-        exit 1
-        ;;
-esac
-
-GOLANG_VERSION=$(grep -oP -m1 '^FROM golang:\K[0-9]+\.[0-9]+\.[0-9]+' "./Dockerfile")
-echo "fetching: https://go.dev/dl/go${GOLANG_VERSION}.linux-${ARCH}.tar.gz"
-curl -LO "https://go.dev/dl/go${GOLANG_VERSION}.linux-${ARCH}.tar.gz"
-rm -rf /usr/local/go && tar -C /usr/local -xzf "go${GOLANG_VERSION}.linux-${ARCH}.tar.gz"
-
-export \
-  PATH="/usr/local/go/bin":$PATH \
-  GOARCH="$(go env GOARCH)" \
-  GOOS="$(go env GOOS)" \
-  GOROOT="/usr/local/go"
-
-go version
-make verify
+make sast-report
