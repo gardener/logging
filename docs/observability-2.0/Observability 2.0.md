@@ -72,7 +72,7 @@ This convergence signals a future where tools interoperate effortlessly, reducin
 To overcome the limitations of Observability 1.0, Gardener can evolve its stack by emplying OpenTelemetry openstandards and toolsets.
 
 Here is a general diagram followed by an implementation roadmap:
-[!Gardener Observability 2.0](/docs/images/Observability%202.0.png)
+![Gardener Observability 2.0](/docs/images/Observability%202.0.png)
 
 Here’s a proposed roadmap:
 
