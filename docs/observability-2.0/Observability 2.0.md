@@ -216,12 +216,12 @@ spec:
   type: shoot-otel-collector
   providerConfig:
     apiVersion: otel-collector.extensions.gardener.cloud/v1alpha1
-      kind: ExporterConfig
-      exporter: otlp
-      endpoint: otelcol2:4317
-      tls:
-        cert_file: file.cert
-        key_file: file.key
+    kind: ExporterConfig
+    exporter: otlp
+    endpoint: otelcol2:4317
+    tls:
+      cert_file: file.cert
+      key_file: file.key
 ...
 ```
 
