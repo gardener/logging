@@ -43,7 +43,7 @@ Gardener’s current setup reflects broader challenges in Observability 1.0:
 
 - Siloed Signals: Logs, metrics, and traces live in separate worlds, with no native correlation.
 - Tool Sprawl: Maintaining distinct infrastructures for each signal increases overhead.
-- Query Challanges: Each tool demands its own query language, steepening the learning curve.
+- Query Challenges: Each tool demands its own query language, steepening the learning curve.
 - Slow MTTR: Manual correlation delays Mean Time to Resolution (MTTR)
 
 ## Observability 2.0: A Unified Vision with OpenTelemetry
@@ -69,7 +69,7 @@ This convergence signals a future where tools interoperate effortlessly, reducin
 
 ## 3. Bringing Observability 2.0 to Gardener
 
-To overcome the limitations of Observability 1.0, Gardener can evolve its stack by emplying OpenTelemetry openstandards and toolsets.
+To overcome the limitations of Observability 1.0, Gardener can evolve its stack by employing OpenTelemetry open standards and toolsets.
 
 Here is a general diagram followed by an implementation roadmap:
 ![Gardener Observability 2.0](/docs/images/Observability%202.0.png)
@@ -79,7 +79,7 @@ Here’s a proposed roadmap:
 ### Step 1: Gardener OpenTelemetry Collector Distribution
 
 - Goal: Establish a tailored OpenTelemetry Collector distribution for Gardener to support its observability needs.
-- Deatils: OpenTelemetry offers four main collector distributions[^12], ranging from the minimal `OTLP Distro` (supporting only OTLP receivers and exporters) to the comprehensive `Contrib Distro` (including all available plugins). For Gardener, we propose starting with the `Core Distro` as a base, augmented with receivers and exporters for the existing stack (e.g., `Vali`, `Prometheus`) and processors for advanced features like routing, filtering, and sampling. This custom distribution will support current signal formats (`vali`, `prometheus`) while enabling a gradual shift to otel. The plugin set will evolve to reflect Gardener’s supported scenarios, ensuring flexibility for future enhancements.
+- Details: OpenTelemetry offers four main collector distributions[^12], ranging from the minimal `OTLP Distro` (supporting only OTLP receivers and exporters) to the comprehensive `Contrib Distro` (including all available plugins). For Gardener, we propose starting with the `Core Distro` as a base, augmented with receivers and exporters for the existing stack (e.g., `Vali`, `Prometheus`) and processors for advanced features like routing, filtering, and sampling. This custom distribution will support current signal formats (`vali`, `prometheus`) while enabling a gradual shift to otel. The plugin set will evolve to reflect Gardener’s supported scenarios, ensuring flexibility for future enhancements.
 - Outcome: A Gardener-specific OTel Collector with a Vali receiver and OTLP exporter[^13] enables a smooth transition from Vali to OTLP-compatible backends, laying the foundation for unified observability.
 
 ### Step 2: Opentelemetry-Operator for Seeds
@@ -107,7 +107,7 @@ spec:
       k8s_events:
         namespaces:
           - "<shoot-control-plane>"
-    # Processors defintions
+    # Processors definitions
     processors:
       batch:
         timeout: 5s
@@ -134,7 +134,7 @@ spec:
 - Details: The OTel Collector offers journald[^14] and filelog[^15] receivers, fully covering Valitail’s current use cases on Shoot nodes. Logs will be pushed to the Shoot Control Plane’s OTel Collector (on Seeds) via OTLP exporters. This shift also opens the door to pushing metrics from Shoot node exporters, transitioning from Prometheus’ pull-based model (via kube-apiserver proxy) to a push-based approach. This reduces kube-apiserver load and enhances metric configuration flexibility.
 - Outcome: Shoot observability signals adopt a unified OTLP format, replacing a stagnant Valitail with an actively developed, versatile component.
 
-### Srep 4: Format Fluent-Bit Inputs as OTel logs
+### Step 4: Format Fluent-Bit Inputs as OTel logs
 
 - Goal: Enable Fluent-bit to collect logs in OTLP format from the source.
 - Details: We’ll update Fluent-bit’s input configurations to produce end-to-end OTLP logs using the opentelemetry_envelope processor[^16], which groups logs with metadata:
@@ -251,7 +251,7 @@ References:
 [^1]: [Fluent-Bit Outputs](https://docs.fluentbit.io/manual/pipeline/outputs)
 [^2]: [Fluent-Bit Outputs Golang APIs](https://docs.fluentbit.io/manual/development/golang-output-plugins)
 [^3]: [Otel Specification Status](https://opentelemetry.io/docs/specs/status/)
-[^4]: [OTel Semantic Convetions](https://opentelemetry.io/docs/concepts/semantic-conventions/)
+[^4]: [OTel Semantic Conventions](https://opentelemetry.io/docs/concepts/semantic-conventions/)
 [^5]: [OTel Context Propagation](https://opentelemetry.io/docs/concepts/context-propagation/)
 [^6]: [OTel Go Compile-Time Instrumentation](https://opentelemetry.io/blog/2025/go-compile-time-instrumentation/)
 [^7]: [OTel Go Run-time Instrumentation (eBPF)](https://github.com/open-telemetry/opentelemetry-go-instrumentation)
@@ -262,7 +262,7 @@ References:
 [^12]: [OTel Collector Releases](https://github.com/open-telemetry/opentelemetry-collector-releases)
 [^13]: [Gardener OTel Collector Distribution](https://github.com/gardener/opentelemetry-collector/blob/main/manifest.yml)
 [^14]: [OTel journald receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/journaldreceiver/README.md)
-[^15]: [OTel fielog receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/filelogreceiver/README.md)
+[^15]: [OTel filelog receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/filelogreceiver/README.md)
 [^16]: [Fluent-Bit otel processor](https://docs.fluentbit.io/manual/pipeline/processors/opentelemetry-envelope)
 [^17]: [VictoriaLogs Benchmarks](https://github.com/VictoriaMetrics/VictoriaMetrics/blob/master/deployment/logs-benchmark/results/loki-grafana-dashboard.png)
 [^18]: [VictoriaLogs Roadmap](https://docs.victoriametrics.com/victorialogs/roadmap/)
