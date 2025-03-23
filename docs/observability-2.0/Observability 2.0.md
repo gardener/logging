@@ -246,6 +246,7 @@ This extension pushes pre-filtered logs and metrics from Shoot Control Plane com
 ## Conclusion
 
 Gardener’s Observability 1.0 has been a solid foundation, but its limitations are increasingly apparent in a world demanding unified, efficient monitoring. Observability 2.0, powered by OpenTelemetry, offers Gardener a transformative opportunity to modernize its stack. The proposed roadmap, gardener collector distribution, operator deployment, log shipper migration, and backend upgrades, sets the stage for a cohesive observability future. By embracing these changes, Gardener not only overcomes current inefficiencies but also positions itself ready for the challenges of tomorrow.
+Needles to say but for the sake of completeness in the scope transformation to the Observability 2.0 are not only the Shoot clusters but also the Garden and the Seed clusters.
 
 References:
 [^1]: [Fluent-Bit Outputs](https://docs.fluentbit.io/manual/pipeline/outputs)
