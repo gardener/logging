@@ -51,8 +51,8 @@ type controllerClient struct {
 
 var _ client.ValiClient = &controllerClient{}
 
-// ControllerClient is a Vali client for the valiplugin controller
-type ControllerClient interface {
+// Client is a Vali client for the valiplugin controller
+type Client interface {
 	client.ValiClient
 	GetState() clusterState
 	SetState(state clusterState)
@@ -166,7 +166,7 @@ func (ctl *controller) deleteControllerClient(clusterName string) {
 	)
 }
 
-func (ctl *controller) updateControllerClientState(client ControllerClient, shoot *gardenercorev1beta1.Shoot) {
+func (ctl *controller) updateControllerClientState(client Client, shoot *gardenercorev1beta1.Shoot) {
 	client.SetState(getShootState(shoot))
 }
 

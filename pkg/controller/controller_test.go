@@ -62,7 +62,7 @@ func (c *fakeValiClient) GetState() clusterState {
 var _ = ginkgov2.Describe("Controller", func() {
 	ginkgov2.Describe("#GetClient", func() {
 		ctl := &controller{
-			clients: map[string]ControllerClient{
+			clients: map[string]Client{
 				"shoot--dev--test1": &fakeValiClient{},
 			},
 		}
@@ -87,7 +87,7 @@ var _ = ginkgov2.Describe("Controller", func() {
 		shootDevTest1 := &fakeValiClient{}
 		shootDevTest2 := &fakeValiClient{}
 		ctl := &controller{
-			clients: map[string]ControllerClient{
+			clients: map[string]Client{
 				"shoot--dev--test1": shootDevTest1,
 				"shoot--dev--test2": shootDevTest2,
 			},
@@ -187,7 +187,7 @@ var _ = ginkgov2.Describe("Controller", func() {
 				},
 			}
 			ctl = &controller{
-				clients: make(map[string]ControllerClient),
+				clients: make(map[string]Client),
 				conf:    conf,
 				logger:  logger,
 			}
@@ -221,7 +221,7 @@ var _ = ginkgov2.Describe("Controller", func() {
 			type args struct {
 				oldCluster         *extensionsv1alpha1.Cluster
 				newCluster         *extensionsv1alpha1.Cluster
-				clients            map[string]ControllerClient
+				clients            map[string]Client
 				shouldClientExists bool
 			}
 
@@ -241,7 +241,7 @@ var _ = ginkgov2.Describe("Controller", func() {
 					args{
 						oldCluster: developmentCluster,
 						newCluster: hibernatedCluster,
-						clients: map[string]ControllerClient{
+						clients: map[string]Client{
 							shootName: &fakeValiClient{},
 						},
 						shouldClientExists: true,
@@ -251,7 +251,7 @@ var _ = ginkgov2.Describe("Controller", func() {
 					args{
 						oldCluster: testingCluster,
 						newCluster: testingCluster,
-						clients: map[string]ControllerClient{
+						clients: map[string]Client{
 							shootName: &fakeValiClient{},
 						},
 						shouldClientExists: true,
@@ -261,7 +261,7 @@ var _ = ginkgov2.Describe("Controller", func() {
 					args{
 						oldCluster:         testingCluster,
 						newCluster:         testingCluster,
-						clients:            map[string]ControllerClient{},
+						clients:            map[string]Client{},
 						shouldClientExists: false,
 					},
 				),
@@ -269,7 +269,7 @@ var _ = ginkgov2.Describe("Controller", func() {
 					args{
 						oldCluster:         hibernatedCluster,
 						newCluster:         developmentCluster,
-						clients:            map[string]ControllerClient{},
+						clients:            map[string]Client{},
 						shouldClientExists: true,
 					},
 				),
@@ -277,14 +277,14 @@ var _ = ginkgov2.Describe("Controller", func() {
 					args{
 						oldCluster:         testingCluster,
 						newCluster:         developmentCluster,
-						clients:            map[string]ControllerClient{},
+						clients:            map[string]Client{},
 						shouldClientExists: true,
 					}),
 				ginkgov2.Entry("client exists and after update cluster has testing purpose ",
 					args{
 						oldCluster:         developmentCluster,
 						newCluster:         testingCluster,
-						clients:            map[string]ControllerClient{},
+						clients:            map[string]Client{},
 						shouldClientExists: false,
 					}),
 			)

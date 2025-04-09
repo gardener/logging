@@ -246,7 +246,7 @@ var _ = ginkgov2.Describe("Controller Client", func() {
 
 		ginkgov2.BeforeEach(func() {
 			ctl = &controller{
-				clients: map[string]ControllerClient{
+				clients: map[string]Client{
 					clientName: testControllerClient,
 				},
 				logger: logger,

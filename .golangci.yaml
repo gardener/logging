@@ -42,18 +42,6 @@ linters:
         text: unexported-return
       - path: (.+)\.go$
         text: indent-error-flow
-      - path: (.+)\.go$
-        text: 'exported: (type|func) name will be used as .* by other packages, and that stutters;'
-      - path: (.+)\.go$
-        text: 'undeclared name: `.*`'
-      - path: (.+)\.go$
-        text: 'invalid operation: cannot compare .*'
-      - path: (.+)\.go$
-        text: client.StopWait undefined .*
-      - path: (.+)\.go$
-        text: could not import github.com/gardener/gardener/pkg/apis/core/v1beta1/constants .*
-      - path: (.+)\.go$
-        text: Error return value of `informer.AddEventHandler` is not checked
 formatters:
   enable:
     - gci

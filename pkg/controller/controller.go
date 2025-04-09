@@ -37,7 +37,7 @@ type controller struct {
 	seedClient client.ValiClient
 	conf       *config.Config
 	lock       sync.RWMutex
-	clients    map[string]ControllerClient
+	clients    map[string]Client
 	logger     log.Logger
 	informer   cache.SharedIndexInformer
 	r          cache.ResourceEventHandlerRegistration
@@ -48,7 +48,7 @@ func NewController(informer cache.SharedIndexInformer, conf *config.Config, seed
 	var err error
 
 	ctl := &controller{
-		clients:    make(map[string]ControllerClient, expectedActiveClusters),
+		clients:    make(map[string]Client, expectedActiveClusters),
 		conf:       conf,
 		seedClient: seedClient,
 		informer:   informer,
