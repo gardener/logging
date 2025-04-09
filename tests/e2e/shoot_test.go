@@ -26,19 +26,23 @@ func TestShootLogs(t *testing.T) {
 		Setup(func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 			var backend appsv1.StatefulSet
 			var client = cfg.Client()
+
 			g.Expect(client.Resources().Get(ctx, ShootBackendName, ShootNamespace, &backend)).To(gomega.Succeed())
-			if &backend != nil {
+
+			if len(backend.Name) > 0 {
 				t.Logf("shoot backend statefulset found: %s", backend.Name)
 			}
 
 			g.Eventually(func() bool {
-				client.Resources().Get(ctx, ShootBackendName, ShootNamespace, &backend)
+				_ = client.Resources().Get(ctx, ShootBackendName, ShootNamespace, &backend)
 				return backend.Status.ReadyReplicas == *backend.Spec.Replicas
 			}).WithTimeout(1 * time.Minute).WithPolling(1 * time.Second).Should(gomega.BeTrue())
 
 			var daemonSet appsv1.DaemonSet
+
 			g.Expect(client.Resources().Get(ctx, DaemonSetName, SeedNamespace, &daemonSet)).To(gomega.Succeed())
-			if &daemonSet != nil {
+
+			if len(daemonSet.Name) > 0 {
 				t.Logf("fluent-bit daemonset found: %s", daemonSet.Name)
 			}
 

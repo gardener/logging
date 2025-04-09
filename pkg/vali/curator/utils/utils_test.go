@@ -10,27 +10,27 @@ import (
 
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	ginkgov2 "github.com/onsi/ginkgo/v2"
+	"github.com/onsi/gomega"
 	"github.com/weaveworks/common/logging"
 
 	"github.com/gardener/logging/pkg/vali/curator/utils"
 )
 
-var _ = Describe("CuratorUtils", func() {
+var _ = ginkgov2.Describe("CuratorUtils", func() {
 
 	var (
-		numOfFiles int = 10
+		numOfFiles = 10
 		logLevel   logging.Level
 	)
 
-	It("Test DeleteFiles", func() {
+	ginkgov2.It("Test DeleteFiles", func() {
 		files := []*os.File{}
 		var tmpFile *os.File
 		var err error
 		for i := 0; i < numOfFiles; i++ {
 			tmpFile, err = ioutil.TempFile(testDir, "temp-file")
-			Expect(err).ToNot(HaveOccurred())
+			gomega.Expect(err).ToNot(gomega.HaveOccurred())
 			files = append(files, tmpFile)
 			defer tmpFile.Close()
 		}
@@ -46,15 +46,15 @@ var _ = Describe("CuratorUtils", func() {
 			return uint64(numOfFiles - currentFiles), nil
 		}
 
-		logLevel.Set("info")
+		_ = logLevel.Set("info")
 		logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
 		logger = level.NewFilter(logger, logLevel.Gokit)
 		deletedFiles, err := utils.DeleteFiles(testDir, uint64(numOfFiles/2), 1, freeSpaceFunc, logger)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(deletedFiles).To(Equal(numOfFiles / 2))
+		gomega.Expect(err).ToNot(gomega.HaveOccurred())
+		gomega.Expect(deletedFiles).To(gomega.Equal(numOfFiles / 2))
 		newDeletedFiles, err := utils.DeleteFiles(testDir, uint64(numOfFiles-deletedFiles), 1, freeSpaceFunc, logger)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(newDeletedFiles).To(Equal(0))
+		gomega.Expect(err).ToNot(gomega.HaveOccurred())
+		gomega.Expect(newDeletedFiles).To(gomega.Equal(0))
 	},
 	)
 })

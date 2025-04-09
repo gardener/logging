@@ -7,11 +7,11 @@ package batch
 import (
 	"time"
 
-	g "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	ginkgov2 "github.com/onsi/ginkgo/v2"
+	"github.com/onsi/gomega"
 )
 
-var _ = g.Describe("Stream", func() {
+var _ = ginkgov2.Describe("Stream", func() {
 
 	type addTestArgs struct {
 		entries        []Entry
@@ -27,16 +27,16 @@ var _ = g.Describe("Stream", func() {
 	timeStamp2 := timeStamp1.Add(time.Second)
 	timeStamp3 := timeStamp2.Add(time.Second)
 
-	g.DescribeTable("#add",
+	ginkgov2.DescribeTable("#add",
 		func(args addTestArgs) {
 			stream := Stream{}
 			for _, entry := range args.entries {
 				stream.add(entry.Timestamp, entry.Line)
 			}
 
-			Expect(stream).To(Equal(args.expectedStream))
+			gomega.Expect(stream).To(gomega.Equal(args.expectedStream))
 		},
-		g.Entry("add one entry", addTestArgs{
+		ginkgov2.Entry("add one entry", addTestArgs{
 			entries: []Entry{
 				{
 					Timestamp: timeStamp1,
@@ -54,7 +54,7 @@ var _ = g.Describe("Stream", func() {
 				isEntryOutOfOrder: false,
 			},
 		}),
-		g.Entry("add two entries", addTestArgs{
+		ginkgov2.Entry("add two entries", addTestArgs{
 			entries: []Entry{
 				{
 					Timestamp: timeStamp1,
@@ -80,7 +80,7 @@ var _ = g.Describe("Stream", func() {
 				isEntryOutOfOrder: false,
 			},
 		}),
-		g.Entry("add two entries without order", addTestArgs{
+		ginkgov2.Entry("add two entries without order", addTestArgs{
 			entries: []Entry{
 				{
 					Timestamp: timeStamp2,
@@ -108,12 +108,12 @@ var _ = g.Describe("Stream", func() {
 		}),
 	)
 
-	g.DescribeTable("#sort",
+	ginkgov2.DescribeTable("#sort",
 		func(args sortTestArgs) {
 			args.stream.sort()
-			Expect(args.stream).To(Equal(args.expectedStream))
+			gomega.Expect(args.stream).To(gomega.Equal(args.expectedStream))
 		},
-		g.Entry("sort stream with two out of order entries", sortTestArgs{
+		ginkgov2.Entry("sort stream with two out of order entries", sortTestArgs{
 			stream: Stream{
 				Entries: []Entry{
 					{
@@ -143,7 +143,7 @@ var _ = g.Describe("Stream", func() {
 				isEntryOutOfOrder: false,
 			},
 		}),
-		g.Entry("sort stream with three out of order entries", sortTestArgs{
+		ginkgov2.Entry("sort stream with three out of order entries", sortTestArgs{
 			stream: Stream{
 				Entries: []Entry{
 					{
@@ -181,7 +181,7 @@ var _ = g.Describe("Stream", func() {
 				isEntryOutOfOrder: false,
 			},
 		}),
-		g.Entry("sort stream with no out of order entries", sortTestArgs{
+		ginkgov2.Entry("sort stream with no out of order entries", sortTestArgs{
 			stream: Stream{
 				Entries: []Entry{
 					{

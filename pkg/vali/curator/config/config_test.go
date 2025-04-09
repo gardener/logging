@@ -5,48 +5,48 @@
 package config_test
 
 import (
-	"io/ioutil"
+	"os"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	ginkgov2 "github.com/onsi/ginkgo/v2"
+	"github.com/onsi/gomega"
 	"gopkg.in/yaml.v2"
 
 	. "github.com/gardener/logging/pkg/vali/curator/config"
 )
 
-var _ = Describe("CuratorConfig", func() {
+var _ = ginkgov2.Describe("CuratorConfig", func() {
 	type testArgs struct {
 		conf    map[string]interface{}
 		want    *CuratorConfig
 		wantErr bool
 	}
 
-	DescribeTable("Test CuratorConfig",
+	ginkgov2.DescribeTable("Test CuratorConfig",
 		func(args testArgs) {
-			testConfigFile, err := ioutil.TempFile(testDir, "curator-config")
-			Expect(err).ToNot(HaveOccurred())
+			testConfigFile, err := os.CreateTemp(testDir, "curator-config")
+			gomega.Expect(err).ToNot(gomega.HaveOccurred())
 			defer testConfigFile.Close()
 
 			out, err := yaml.Marshal(args.conf)
-			Expect(err).ToNot(HaveOccurred())
+			gomega.Expect(err).ToNot(gomega.HaveOccurred())
 			_, err = testConfigFile.Write(out)
-			Expect(err).ToNot(HaveOccurred())
+			gomega.Expect(err).ToNot(gomega.HaveOccurred())
 
 			got, err := ParseConfigurations(testConfigFile.Name())
 			if args.wantErr {
-				Expect(err).To(HaveOccurred())
+				gomega.Expect(err).To(gomega.HaveOccurred())
 			} else {
-				Expect(err).ToNot(HaveOccurred())
-				Expect(args.want).To(Equal(got))
+				gomega.Expect(err).ToNot(gomega.HaveOccurred())
+				gomega.Expect(args.want).To(gomega.Equal(got))
 			}
 		},
-		Entry("default values", testArgs{
+		ginkgov2.Entry("default values", testArgs{
 			map[string]interface{}{},
 			&DefaultCuratorConfig,
 			false},
 		),
-		Entry("overwrite values with the configuration ones", testArgs{
+		ginkgov2.Entry("overwrite values with the configuration ones", testArgs{
 			map[string]interface{}{
 				"LogLevel":        "debug",
 				"DiskPath":        "/test",
@@ -80,28 +80,28 @@ var _ = Describe("CuratorConfig", func() {
 			false},
 		),
 
-		Entry("bad TriggerInterval", testArgs{map[string]interface{}{"TriggerInterval": "0s"}, nil, true}),
-		Entry("bad MinFreeInodesPercentages", testArgs{map[string]interface{}{
+		ginkgov2.Entry("bad TriggerInterval", testArgs{map[string]interface{}{"TriggerInterval": "0s"}, nil, true}),
+		ginkgov2.Entry("bad MinFreeInodesPercentages", testArgs{map[string]interface{}{
 			"InodeConfig": map[string]interface{}{
 				"MinFreePercentages": 101,
 			}}, nil, true}),
-		Entry("bad TargetFreeInodesPercentages", testArgs{map[string]interface{}{
+		ginkgov2.Entry("bad TargetFreeInodesPercentages", testArgs{map[string]interface{}{
 			"InodeConfig": map[string]interface{}{
 				"TargetFreePercentages": -1,
 			}}, nil, true}),
-		Entry("bad InodesPageSizeForDeletionPercentages", testArgs{map[string]interface{}{
+		ginkgov2.Entry("bad InodesPageSizeForDeletionPercentages", testArgs{map[string]interface{}{
 			"InodeConfig": map[string]interface{}{
 				"PageSizeForDeletionPercentages": 101,
 			}}, nil, true}),
-		Entry("bad MinFreeStoragePercentages", testArgs{map[string]interface{}{
+		ginkgov2.Entry("bad MinFreeStoragePercentages", testArgs{map[string]interface{}{
 			"StorageConfig": map[string]interface{}{
 				"MinFreePercentages": -1,
 			}}, nil, true}),
-		Entry("bad TargetFreeStoragePercentages", testArgs{map[string]interface{}{
+		ginkgov2.Entry("bad TargetFreeStoragePercentages", testArgs{map[string]interface{}{
 			"StorageConfig": map[string]interface{}{
 				"TargetFreePercentages": 101,
 			}}, nil, true}),
-		Entry("bad CapacityPageSizeForDeletionPercentages", testArgs{map[string]interface{}{
+		ginkgov2.Entry("bad CapacityPageSizeForDeletionPercentages", testArgs{map[string]interface{}{
 			"StorageConfig": map[string]interface{}{
 				"PageSizeForDeletionPercentages": -1,
 			}}, nil, true}),

@@ -11,8 +11,8 @@ import (
 	"github.com/credativ/vali/pkg/logproto"
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	ginkgov2 "github.com/onsi/ginkgo/v2"
+	"github.com/onsi/gomega"
 	"github.com/prometheus/common/model"
 	"github.com/weaveworks/common/logging"
 
@@ -20,7 +20,7 @@ import (
 	"github.com/gardener/logging/pkg/config"
 )
 
-var _ = Describe("Controller Client", func() {
+var _ = ginkgov2.Describe("Controller Client", func() {
 	var (
 		ctlClient  controllerClient
 		logLevel   logging.Level
@@ -36,7 +36,7 @@ var _ = Describe("Controller Client", func() {
 		entry2     = client.Entry{Labels: labels2, Entry: logproto.Entry{Timestamp: timestamp2, Line: line2}}
 	)
 
-	BeforeEach(func() {
+	ginkgov2.BeforeEach(func() {
 		ctlClient = controllerClient{
 			shootTarget: target{
 				valiClient: &client.FakeValiClient{},
@@ -65,17 +65,17 @@ var _ = Describe("Controller Client", func() {
 		}
 	}
 
-	DescribeTable("#Handle", func(args handleArgs) {
+	ginkgov2.DescribeTable("#Handle", func(args handleArgs) {
 		ctlClient.seedTarget.mute = args.config.muteSeedClient
 		ctlClient.shootTarget.mute = args.config.muteShootClient
 		for _, entry := range args.input {
 			err := ctlClient.Handle(entry.Labels, entry.Timestamp, entry.Line)
-			Expect(err).ToNot(HaveOccurred())
+			gomega.Expect(err).ToNot(gomega.HaveOccurred())
 		}
-		Expect(ctlClient.shootTarget.valiClient.(*client.FakeValiClient).Entries).To(Equal(args.want.shootEntries))
-		Expect(ctlClient.seedTarget.valiClient.(*client.FakeValiClient).Entries).To(Equal(args.want.seedEntries))
+		gomega.Expect(ctlClient.shootTarget.valiClient.(*client.FakeValiClient).Entries).To(gomega.Equal(args.want.shootEntries))
+		gomega.Expect(ctlClient.seedTarget.valiClient.(*client.FakeValiClient).Entries).To(gomega.Equal(args.want.seedEntries))
 	},
-		Entry("Should send only to the main client", handleArgs{
+		ginkgov2.Entry("Should send only to the main client", handleArgs{
 			config: struct {
 				muteSeedClient  bool
 				muteShootClient bool
@@ -86,7 +86,7 @@ var _ = Describe("Controller Client", func() {
 				shootEntries []client.Entry
 			}{nil, []client.Entry{entry1, entry2}},
 		}),
-		Entry("Should send only to the default client", handleArgs{
+		ginkgov2.Entry("Should send only to the default client", handleArgs{
 			config: struct {
 				muteSeedClient  bool
 				muteShootClient bool
@@ -97,7 +97,7 @@ var _ = Describe("Controller Client", func() {
 				shootEntries []client.Entry
 			}{[]client.Entry{entry1, entry2}, nil},
 		}),
-		Entry("Should send to both clients", handleArgs{
+		ginkgov2.Entry("Should send to both clients", handleArgs{
 			config: struct {
 				muteSeedClient  bool
 				muteShootClient bool
@@ -108,7 +108,7 @@ var _ = Describe("Controller Client", func() {
 				shootEntries []client.Entry
 			}{[]client.Entry{entry1, entry2}, []client.Entry{entry1, entry2}},
 		}),
-		Entry("Shouldn't send to both clients", handleArgs{
+		ginkgov2.Entry("Shouldn't send to both clients", handleArgs{
 			config: struct {
 				muteSeedClient  bool
 				muteShootClient bool
@@ -131,17 +131,17 @@ var _ = Describe("Controller Client", func() {
 			state             clusterState
 		}
 	}
-	DescribeTable("#SetState", func(args setStateArgs) {
+	ginkgov2.DescribeTable("#SetState", func(args setStateArgs) {
 		ctlClient.seedTarget.conf = args.defaultClientConf
 		ctlClient.shootTarget.conf = args.mainClientConf
 		ctlClient.state = args.currentState
 		ctlClient.SetState(args.inputState)
 
-		Expect(ctlClient.state).To(Equal(args.want.state))
-		Expect(ctlClient.seedTarget.mute).To(Equal(args.want.muteDefaultClient))
-		Expect(ctlClient.shootTarget.mute).To(Equal(args.want.muteMainClient))
+		gomega.Expect(ctlClient.state).To(gomega.Equal(args.want.state))
+		gomega.Expect(ctlClient.seedTarget.mute).To(gomega.Equal(args.want.muteDefaultClient))
+		gomega.Expect(ctlClient.shootTarget.mute).To(gomega.Equal(args.want.muteMainClient))
 	},
-		Entry("Change state from create to creation", setStateArgs{
+		ginkgov2.Entry("Change state from create to creation", setStateArgs{
 			inputState:        clusterStateCreation,
 			currentState:      clusterStateCreation,
 			defaultClientConf: &config.SeedControllerClientConfig,
@@ -152,7 +152,7 @@ var _ = Describe("Controller Client", func() {
 				state             clusterState
 			}{false, false, clusterStateCreation},
 		}),
-		Entry("Change state from create to ready", setStateArgs{
+		ginkgov2.Entry("Change state from create to ready", setStateArgs{
 			inputState:        clusterStateReady,
 			currentState:      clusterStateCreation,
 			defaultClientConf: &config.SeedControllerClientConfig,
@@ -163,7 +163,7 @@ var _ = Describe("Controller Client", func() {
 				state             clusterState
 			}{false, true, clusterStateReady},
 		}),
-		Entry("Change state from create to hibernating", setStateArgs{
+		ginkgov2.Entry("Change state from create to hibernating", setStateArgs{
 			inputState:        clusterStateHibernating,
 			currentState:      clusterStateCreation,
 			defaultClientConf: &config.SeedControllerClientConfig,
@@ -174,7 +174,7 @@ var _ = Describe("Controller Client", func() {
 				state             clusterState
 			}{true, true, clusterStateHibernating},
 		}),
-		Entry("Change state from create to hibernated", setStateArgs{
+		ginkgov2.Entry("Change state from create to hibernated", setStateArgs{
 			inputState:        clusterStateHibernated,
 			currentState:      clusterStateCreation,
 			defaultClientConf: &config.SeedControllerClientConfig,
@@ -185,7 +185,7 @@ var _ = Describe("Controller Client", func() {
 				state             clusterState
 			}{true, true, clusterStateHibernated},
 		}),
-		Entry("Change state from create to waking", setStateArgs{
+		ginkgov2.Entry("Change state from create to waking", setStateArgs{
 			inputState:        clusterStateWakingUp,
 			currentState:      clusterStateCreation,
 			defaultClientConf: &config.SeedControllerClientConfig,
@@ -196,7 +196,7 @@ var _ = Describe("Controller Client", func() {
 				state             clusterState
 			}{false, true, clusterStateWakingUp},
 		}),
-		Entry("Change state from create to deletion", setStateArgs{
+		ginkgov2.Entry("Change state from create to deletion", setStateArgs{
 			inputState:        clusterStateDeletion,
 			currentState:      clusterStateCreation,
 			defaultClientConf: &config.SeedControllerClientConfig,
@@ -209,31 +209,31 @@ var _ = Describe("Controller Client", func() {
 		}),
 	)
 
-	Describe("#Stop", func() {
-		It("Should stop immediately", func() {
+	ginkgov2.Describe("#Stop", func() {
+		ginkgov2.It("Should stop immediately", func() {
 			ctlClient.Stop()
-			Expect(ctlClient.shootTarget.valiClient.(*client.FakeValiClient).IsStopped).To(BeTrue())
-			Expect(ctlClient.seedTarget.valiClient.(*client.FakeValiClient).IsStopped).To(BeFalse())
+			gomega.Expect(ctlClient.shootTarget.valiClient.(*client.FakeValiClient).IsStopped).To(gomega.BeTrue())
+			gomega.Expect(ctlClient.seedTarget.valiClient.(*client.FakeValiClient).IsStopped).To(gomega.BeFalse())
 		})
 
-		It("Should stop gracefully", func() {
+		ginkgov2.It("Should stop gracefully", func() {
 			ctlClient.StopWait()
-			Expect(ctlClient.shootTarget.valiClient.(*client.FakeValiClient).IsGracefullyStopped).To(BeTrue())
-			Expect(ctlClient.seedTarget.valiClient.(*client.FakeValiClient).IsGracefullyStopped).To(BeFalse())
+			gomega.Expect(ctlClient.shootTarget.valiClient.(*client.FakeValiClient).IsGracefullyStopped).To(gomega.BeTrue())
+			gomega.Expect(ctlClient.seedTarget.valiClient.(*client.FakeValiClient).IsGracefullyStopped).To(gomega.BeFalse())
 		})
 	})
 
-	Describe("#GetState", func() {
-		It("Should get the state", func() {
+	ginkgov2.Describe("#GetState", func() {
+		ginkgov2.It("Should get the state", func() {
 			ctlClient.seedTarget.conf = &config.SeedControllerClientConfig
 			ctlClient.shootTarget.conf = &config.ShootControllerClientConfig
 			ctlClient.SetState(clusterStateReady)
 			currentState := ctlClient.GetState()
-			Expect(currentState).To(Equal(clusterStateReady))
+			gomega.Expect(currentState).To(gomega.Equal(clusterStateReady))
 		})
 	})
 
-	Describe("#GetClient", func() {
+	ginkgov2.Describe("#GetClient", func() {
 		var (
 			ctl                  *controller
 			clientName           = "test-client"
@@ -244,7 +244,7 @@ var _ = Describe("Controller Client", func() {
 			}
 		)
 
-		BeforeEach(func() {
+		ginkgov2.BeforeEach(func() {
 			ctl = &controller{
 				clients: map[string]ControllerClient{
 					clientName: testControllerClient,
@@ -253,23 +253,23 @@ var _ = Describe("Controller Client", func() {
 			}
 		})
 
-		It("Should return the right client", func() {
+		ginkgov2.It("Should return the right client", func() {
 			c, closed := ctl.GetClient(clientName)
-			Expect(closed).To(BeFalse())
-			Expect(c).To(Equal(testControllerClient))
+			gomega.Expect(closed).To(gomega.BeFalse())
+			gomega.Expect(c).To(gomega.Equal(testControllerClient))
 		})
 
-		It("Should not return the right client", func() {
+		ginkgov2.It("Should not return the right client", func() {
 			c, closed := ctl.GetClient("some-fake-name")
-			Expect(closed).To(BeFalse())
-			Expect(c).To(BeNil())
+			gomega.Expect(closed).To(gomega.BeFalse())
+			gomega.Expect(c).To(gomega.BeNil())
 		})
 
-		It("Should not return client when controller is stopped", func() {
+		ginkgov2.It("Should not return client when controller is stopped", func() {
 			ctl.Stop()
 			c, closed := ctl.GetClient(clientName)
-			Expect(closed).To(BeTrue())
-			Expect(c).To(BeNil())
+			gomega.Expect(closed).To(gomega.BeTrue())
+			gomega.Expect(c).To(gomega.BeNil())
 		})
 	})
 })

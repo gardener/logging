@@ -11,8 +11,8 @@ import (
 	"regexp"
 
 	jsoniter "github.com/json-iterator/go"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	ginkgov2 "github.com/onsi/ginkgo/v2"
+	"github.com/onsi/gomega"
 	"github.com/prometheus/common/model"
 
 	"github.com/gardener/logging/pkg/config"
@@ -68,24 +68,26 @@ type fallbackToTagWhenMetadataIsMissing struct {
 	err       error
 }
 
-var _ = Describe("Vali plugin utils", func() {
-	DescribeTable("#createLine",
+var _ = ginkgov2.Describe("Vali plugin utils", func() {
+	ginkgov2.DescribeTable("#createLine",
 		func(args createLineArgs) {
 			got, err := createLine(args.records, args.f)
 			if args.wantErr {
-				Expect(err).To(HaveOccurred())
+				gomega.Expect(err).To(gomega.HaveOccurred())
+
 				return
 			}
-			Expect(err).ToNot(HaveOccurred())
+			gomega.Expect(err).ToNot(gomega.HaveOccurred())
 			if args.f == config.JSONFormat {
 				result, err := compareJSON(got, args.want)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(result).To(BeTrue())
+				gomega.Expect(err).ToNot(gomega.HaveOccurred())
+				gomega.Expect(result).To(gomega.BeTrue())
+
 				return
 			}
-			Expect(got).To(Equal(args.want))
+			gomega.Expect(got).To(gomega.Equal(args.want))
 		},
-		Entry("json",
+		ginkgov2.Entry("json",
 			createLineArgs{
 				records: map[string]interface{}{"foo": "bar", "bar": map[string]interface{}{"bizz": "bazz"}},
 				f:       config.JSONFormat,
@@ -93,7 +95,7 @@ var _ = Describe("Vali plugin utils", func() {
 				wantErr: false,
 			},
 		),
-		Entry("json with number",
+		ginkgov2.Entry("json with number",
 			createLineArgs{
 				records: map[string]interface{}{"foo": "bar", "bar": map[string]interface{}{"bizz": 20}},
 				f:       config.JSONFormat,
@@ -101,7 +103,7 @@ var _ = Describe("Vali plugin utils", func() {
 				wantErr: false,
 			},
 		),
-		Entry("bad json",
+		ginkgov2.Entry("bad json",
 			createLineArgs{
 				records: map[string]interface{}{"foo": make(chan interface{})},
 				f:       config.JSONFormat,
@@ -109,7 +111,7 @@ var _ = Describe("Vali plugin utils", func() {
 				wantErr: true,
 			},
 		),
-		Entry("kv with space",
+		ginkgov2.Entry("kv with space",
 			createLineArgs{
 				records: map[string]interface{}{"foo": "bar", "bar": "foo foo"},
 				f:       config.KvPairFormat,
@@ -117,7 +119,7 @@ var _ = Describe("Vali plugin utils", func() {
 				wantErr: false,
 			},
 		),
-		Entry("kv with number",
+		ginkgov2.Entry("kv with number",
 			createLineArgs{
 				records: map[string]interface{}{"foo": "bar foo", "decimal": 12.2},
 				f:       config.KvPairFormat,
@@ -125,7 +127,7 @@ var _ = Describe("Vali plugin utils", func() {
 				wantErr: false,
 			},
 		),
-		Entry("kv with nil",
+		ginkgov2.Entry("kv with nil",
 			createLineArgs{
 				records: map[string]interface{}{"foo": "bar", "null": nil},
 				f:       config.KvPairFormat,
@@ -133,7 +135,7 @@ var _ = Describe("Vali plugin utils", func() {
 				wantErr: false,
 			},
 		),
-		Entry("kv with array",
+		ginkgov2.Entry("kv with array",
 			createLineArgs{
 				records: map[string]interface{}{"foo": "bar", "array": []string{"foo", "bar"}},
 				f:       config.KvPairFormat,
@@ -141,7 +143,7 @@ var _ = Describe("Vali plugin utils", func() {
 				wantErr: false,
 			},
 		),
-		Entry("kv with map",
+		ginkgov2.Entry("kv with map",
 			createLineArgs{
 				records: map[string]interface{}{"foo": "bar", "map": map[string]interface{}{"foo": "bar", "bar ": "foo "}},
 				f:       config.KvPairFormat,
@@ -149,7 +151,7 @@ var _ = Describe("Vali plugin utils", func() {
 				wantErr: false,
 			},
 		),
-		Entry("kv empty",
+		ginkgov2.Entry("kv empty",
 			createLineArgs{
 				records: map[string]interface{}{},
 				f:       config.KvPairFormat,
@@ -157,7 +159,7 @@ var _ = Describe("Vali plugin utils", func() {
 				wantErr: false,
 			},
 		),
-		Entry("bad format",
+		ginkgov2.Entry("bad format",
 			createLineArgs{
 				records: map[string]interface{}{},
 				f:       config.Format(3),
@@ -166,33 +168,33 @@ var _ = Describe("Vali plugin utils", func() {
 			},
 		))
 
-	DescribeTable("#removeKeys",
+	ginkgov2.DescribeTable("#removeKeys",
 		func(args removeKeysArgs) {
 			removeKeys(args.records, args.keys)
-			Expect(args.expected).To(Equal(args.records))
+			gomega.Expect(args.expected).To(gomega.Equal(args.records))
 		},
-		Entry("remove all keys",
+		ginkgov2.Entry("remove all keys",
 			removeKeysArgs{
 				records:  map[string]interface{}{"foo": "bar", "bar": map[string]interface{}{"bizz": "bazz"}},
 				expected: map[string]interface{}{},
 				keys:     []string{"foo", "bar"},
 			},
 		),
-		Entry("remove none",
+		ginkgov2.Entry("remove none",
 			removeKeysArgs{
 				records:  map[string]interface{}{"foo": "bar"},
 				expected: map[string]interface{}{"foo": "bar"},
 				keys:     []string{},
 			},
 		),
-		Entry("remove not existing",
+		ginkgov2.Entry("remove not existing",
 			removeKeysArgs{
 				records:  map[string]interface{}{"foo": "bar"},
 				expected: map[string]interface{}{"foo": "bar"},
 				keys:     []string{"bar"},
 			},
 		),
-		Entry("remove one",
+		ginkgov2.Entry("remove one",
 			removeKeysArgs{
 				records:  map[string]interface{}{"foo": "bar", "bazz": "buzz"},
 				expected: map[string]interface{}{"foo": "bar"},
@@ -201,47 +203,47 @@ var _ = Describe("Vali plugin utils", func() {
 		),
 	)
 
-	DescribeTable("#extractLabels",
+	ginkgov2.DescribeTable("#extractLabels",
 		func(args extractLabelsArgs) {
 			got := extractLabels(args.records, args.keys)
-			Expect(got).To(Equal(args.want))
+			gomega.Expect(got).To(gomega.Equal(args.want))
 		},
-		Entry("single string",
+		ginkgov2.Entry("single string",
 			extractLabelsArgs{
 				records: map[string]interface{}{"foo": "bar", "bar": map[string]interface{}{"bizz": "bazz"}},
 				keys:    []string{"foo"},
 				want:    model.LabelSet{"foo": "bar"},
 			},
 		),
-		Entry("multiple",
+		ginkgov2.Entry("multiple",
 			extractLabelsArgs{
 				records: map[string]interface{}{"foo": "bar", "bar": map[string]interface{}{"bizz": "bazz"}},
 				keys:    []string{"foo", "bar"},
 				want:    model.LabelSet{"foo": "bar", "bar": "map[bizz:bazz]"},
 			},
 		),
-		Entry("nil",
+		ginkgov2.Entry("nil",
 			extractLabelsArgs{
 				records: map[string]interface{}{"foo": nil},
 				keys:    []string{"foo"},
 				want:    model.LabelSet{"foo": "<nil>"},
 			},
 		),
-		Entry("none",
+		ginkgov2.Entry("none",
 			extractLabelsArgs{
 				records: map[string]interface{}{"foo": nil},
 				keys:    []string{},
 				want:    model.LabelSet{},
 			},
 		),
-		Entry("missing",
+		ginkgov2.Entry("missing",
 			extractLabelsArgs{
 				records: map[string]interface{}{"foo": "bar"},
 				keys:    []string{"foo", "buzz"},
 				want:    model.LabelSet{"foo": "bar"},
 			},
 		),
-		Entry("skip invalid",
+		ginkgov2.Entry("skip invalid",
 			extractLabelsArgs{
 				records: map[string]interface{}{"foo.blah": "bar", "bar": "a\xc5z"},
 				keys:    []string{"foo.blah", "bar"},
@@ -250,24 +252,24 @@ var _ = Describe("Vali plugin utils", func() {
 		),
 	)
 
-	DescribeTable("#extractLabels",
+	ginkgov2.DescribeTable("#extractLabels",
 		func(args toStringMapArgs) {
 			got := toStringMap(args.record)
-			Expect(got).To(Equal(args.want))
+			gomega.Expect(got).To(gomega.Equal(args.want))
 		},
-		Entry("already string",
+		ginkgov2.Entry("already string",
 			toStringMapArgs{
 				record: map[interface{}]interface{}{"string": "foo", "bar": []byte("buzz")},
 				want:   map[string]interface{}{"string": "foo", "bar": "buzz"},
 			},
 		),
-		Entry("skip non string",
+		ginkgov2.Entry("skip non string",
 			toStringMapArgs{
 				record: map[interface{}]interface{}{"string": "foo", 1.0: []byte("buzz")},
 				want:   map[string]interface{}{"string": "foo"},
 			},
 		),
-		Entry("byteslice in array",
+		ginkgov2.Entry("byteslice in array",
 			toStringMapArgs{
 				record: map[interface{}]interface{}{"string": "foo", "bar": []interface{}{map[interface{}]interface{}{"baz": []byte("quux")}}},
 				want:   map[string]interface{}{"string": "foo", "bar": []interface{}{map[string]interface{}{"baz": "quux"}}},
@@ -275,20 +277,20 @@ var _ = Describe("Vali plugin utils", func() {
 		),
 	)
 
-	DescribeTable("labelMapping",
+	ginkgov2.DescribeTable("labelMapping",
 		func(args labelMappingArgs) {
 			got := model.LabelSet{}
 			mapLabels(args.records, args.mapping, got)
-			Expect(got).To(Equal(args.want))
+			gomega.Expect(got).To(gomega.Equal(args.want))
 		},
-		Entry("empty record",
+		ginkgov2.Entry("empty record",
 			labelMappingArgs{
 				records: map[string]interface{}{},
 				mapping: map[string]interface{}{},
 				want:    model.LabelSet{},
 			},
 		),
-		Entry("empty subrecord",
+		ginkgov2.Entry("empty subrecord",
 			labelMappingArgs{
 				records: map[string]interface{}{
 					"kubernetes": map[interface{}]interface{}{
@@ -299,7 +301,7 @@ var _ = Describe("Vali plugin utils", func() {
 				want:    model.LabelSet{},
 			},
 		),
-		Entry("deep string",
+		ginkgov2.Entry("deep string",
 			labelMappingArgs{
 				records: map[string]interface{}{
 					"int":   "42",
@@ -336,12 +338,12 @@ var _ = Describe("Vali plugin utils", func() {
 			},
 		))
 
-	DescribeTable("#getDynamicHostName",
+	ginkgov2.DescribeTable("#getDynamicHostName",
 		func(args getDynamicHostNameArgs) {
 			got := getDynamicHostName(args.records, args.mapping)
-			Expect(got).To(Equal(args.want))
+			gomega.Expect(got).To(gomega.Equal(args.want))
 		},
-		Entry("empty record",
+		ginkgov2.Entry("empty record",
 			getDynamicHostNameArgs{
 				records: map[string]interface{}{},
 				mapping: map[string]interface{}{
@@ -352,7 +354,7 @@ var _ = Describe("Vali plugin utils", func() {
 				want: "",
 			},
 		),
-		Entry("empty mapping",
+		ginkgov2.Entry("empty mapping",
 			getDynamicHostNameArgs{
 				records: map[string]interface{}{
 					"kubernetes": map[string]interface{}{
@@ -364,7 +366,7 @@ var _ = Describe("Vali plugin utils", func() {
 				want:    "",
 			},
 		),
-		Entry("empty subrecord",
+		ginkgov2.Entry("empty subrecord",
 			getDynamicHostNameArgs{
 				records: map[string]interface{}{
 					"kubernetes": map[string]interface{}{
@@ -379,7 +381,7 @@ var _ = Describe("Vali plugin utils", func() {
 				want: "",
 			},
 		),
-		Entry("subrecord",
+		ginkgov2.Entry("subrecord",
 			getDynamicHostNameArgs{
 				records: map[string]interface{}{
 					"kubernetes": map[string]interface{}{
@@ -395,7 +397,7 @@ var _ = Describe("Vali plugin utils", func() {
 				want: "garden",
 			},
 		),
-		Entry("deep string",
+		ginkgov2.Entry("deep string",
 			getDynamicHostNameArgs{
 				records: map[string]interface{}{
 					"int":   "42",
@@ -422,18 +424,18 @@ var _ = Describe("Vali plugin utils", func() {
 			}),
 	)
 
-	DescribeTable("#autoKubernetesLabels",
+	ginkgov2.DescribeTable("#autoKubernetesLabels",
 		func(args autoKubernetesLabelsArgs) {
 			m := toStringMap(args.records)
 			lbs := model.LabelSet{}
 			err := autoLabels(m, lbs)
 			if args.err != nil {
-				Expect(err.Error()).To(Equal(args.err.Error()))
+				gomega.Expect(err.Error()).To(gomega.Equal(args.err.Error()))
 				return
 			}
-			Expect(lbs).To(Equal(args.want))
+			gomega.Expect(lbs).To(gomega.Equal(args.want))
 		},
-		Entry("records without labels",
+		ginkgov2.Entry("records without labels",
 			autoKubernetesLabelsArgs{
 				records: map[interface{}]interface{}{
 					"kubernetes": map[interface{}]interface{}{
@@ -446,7 +448,7 @@ var _ = Describe("Vali plugin utils", func() {
 				err: nil,
 			},
 		),
-		Entry("records without kubernetes labels",
+		ginkgov2.Entry("records without kubernetes labels",
 			autoKubernetesLabelsArgs{
 				records: map[interface{}]interface{}{
 					"foo":   "bar",
@@ -458,18 +460,18 @@ var _ = Describe("Vali plugin utils", func() {
 		),
 	)
 
-	DescribeTable("#fallbackToTagWhenMetadataIsMissing",
+	ginkgov2.DescribeTable("#fallbackToTagWhenMetadataIsMissing",
 		func(args fallbackToTagWhenMetadataIsMissing) {
 			re := regexp.MustCompile(args.tagPrefix + args.tagRegexp)
 			err := extractKubernetesMetadataFromTag(args.records, args.tagKey, re)
 			if args.err != nil {
-				Expect(err.Error()).To(Equal(args.err.Error()))
+				gomega.Expect(err.Error()).To(gomega.Equal(args.err.Error()))
 				return
 			}
-			Expect(err).ToNot(HaveOccurred())
-			Expect(args.records).To(Equal(args.want))
+			gomega.Expect(err).ToNot(gomega.HaveOccurred())
+			gomega.Expect(args.records).To(gomega.Equal(args.want))
 		},
-		Entry("records with correct tag",
+		ginkgov2.Entry("records with correct tag",
 			fallbackToTagWhenMetadataIsMissing{
 				records: map[string]interface{}{
 					config.DefaultKubernetesMetadataTagKey: "kubernetes.var.log.containers.cluster-autoscaler-65d4ccbb7d-w5kd2_shoot--i355448--local-shoot_cluster-autoscaler-a8bba03512b5dd378c620ab3707aec013f83bdb9abae08d347e1644b064ed35f.log",
@@ -489,7 +491,7 @@ var _ = Describe("Vali plugin utils", func() {
 				err: nil,
 			},
 		),
-		Entry("records with incorrect tag",
+		ginkgov2.Entry("records with incorrect tag",
 			fallbackToTagWhenMetadataIsMissing{
 				records: map[string]interface{}{
 					config.DefaultKubernetesMetadataTagKey: "kubernetes.var.log.containers.cluster-autoscaler-65d4ccbb7d-w5kd2_shoot--i355448--local-shoot-cluster-autoscaler-a8bba03512b5dd378c620ab3707aec013f83bdb9abae08d347e1644b064ed35f.log",
@@ -500,7 +502,7 @@ var _ = Describe("Vali plugin utils", func() {
 				err:       fmt.Errorf("invalid format for tag %v. The tag should be in format: %s", "kubernetes.var.log.containers.cluster-autoscaler-65d4ccbb7d-w5kd2_shoot--i355448--local-shoot-cluster-autoscaler-a8bba03512b5dd378c620ab3707aec013f83bdb9abae08d347e1644b064ed35f.log", "kubernetes\\.var\\.log\\.containers"+config.DefaultKubernetesMetadataTagExpression),
 			},
 		),
-		Entry("records with missing tag",
+		ginkgov2.Entry("records with missing tag",
 			fallbackToTagWhenMetadataIsMissing{
 				records: map[string]interface{}{
 					"missing_tag": "kubernetes.var.log.containers.cluster-autoscaler-65d4ccbb7d-w5kd2_shoot--i355448--local-shoot-cluster-autoscaler-a8bba03512b5dd378c620ab3707aec013f83bdb9abae08d347e1644b064ed35f.log",

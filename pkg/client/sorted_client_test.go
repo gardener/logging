@@ -13,8 +13,8 @@ import (
 	valitailclient "github.com/credativ/vali/pkg/valitail/client"
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	ginkgov2 "github.com/onsi/ginkgo/v2"
+	"github.com/onsi/gomega"
 	"github.com/prometheus/common/model"
 	"github.com/weaveworks/common/logging"
 
@@ -22,7 +22,7 @@ import (
 	"github.com/gardener/logging/pkg/config"
 )
 
-var _ = Describe("Sorted Client", func() {
+var _ = ginkgov2.Describe("Sorted Client", func() {
 	const (
 		fiveBytesLine   = "Hello"
 		tenByteLine     = "Hello, sir"
@@ -46,14 +46,14 @@ var _ = Describe("Sorted Client", func() {
 		}
 	)
 
-	BeforeEach(func() {
+	ginkgov2.BeforeEach(func() {
 		var err error
 		fakeClient = &client.FakeValiClient{}
 		var infoLogLevel logging.Level
 		_ = infoLogLevel.Set("info")
 		var clientURL flagext.URLValue
 		err = clientURL.Set("http://localhost:3100/vali/api/v1/push")
-		Expect(err).ToNot(HaveOccurred())
+		gomega.Expect(err).ToNot(gomega.HaveOccurred())
 
 		sortedClient, err = client.NewSortedClientDecorator(config.Config{
 			ClientConfig: config.ClientConfig{
@@ -70,13 +70,13 @@ var _ = Describe("Sorted Client", func() {
 				return fakeClient, nil
 			},
 			level.NewFilter(log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr)), infoLogLevel.Gokit))
-		Expect(err).ToNot(HaveOccurred())
-		Expect(sortedClient).NotTo(BeNil())
+		gomega.Expect(err).ToNot(gomega.HaveOccurred())
+		gomega.Expect(sortedClient).NotTo(gomega.BeNil())
 	})
 
-	Describe("#Handle", func() {
-		Context("Sorting", func() {
-			It("should sort correctly one stream", func() {
+	ginkgov2.Describe("#Handle", func() {
+		ginkgov2.Context("Sorting", func() {
+			ginkgov2.It("should sort correctly one stream", func() {
 				// Because BatchWait is 10 seconds we shall wait at least such
 				// to be sure that the entries are flushed to the fake client.
 				entries := []client.Entry{
@@ -105,26 +105,26 @@ var _ = Describe("Sorted Client", func() {
 
 				for _, entry := range entries {
 					err := sortedClient.Handle(entry.Labels, entry.Timestamp, entry.Line)
-					Expect(err).ToNot(HaveOccurred())
+					gomega.Expect(err).ToNot(gomega.HaveOccurred())
 				}
 
 				time.Sleep(4 * time.Second)
 				fakeClient.Mu.Lock()
 				defer fakeClient.Mu.Unlock()
-				Expect(len(fakeClient.Entries)).To(Equal(3))
-				Expect(fakeClient.Entries[0]).To(Equal(client.Entry{
+				gomega.Expect(len(fakeClient.Entries)).To(gomega.Equal(3))
+				gomega.Expect(fakeClient.Entries[0]).To(gomega.Equal(client.Entry{
 					Labels: MergeLabelSets(streamFoo, model.LabelSet{"id": "0"}),
 					Entry: logproto.Entry{
 						Timestamp: timestampNow,
 						Line:      fiveBytesLine,
 					}}))
-				Expect(fakeClient.Entries[1]).To(Equal(client.Entry{
+				gomega.Expect(fakeClient.Entries[1]).To(gomega.Equal(client.Entry{
 					Labels: MergeLabelSets(streamFoo, model.LabelSet{"id": "0"}),
 					Entry: logproto.Entry{
 						Timestamp: timestampNowPlus1Sec,
 						Line:      tenByteLine,
 					}}))
-				Expect(fakeClient.Entries[2]).To(Equal(client.Entry{
+				gomega.Expect(fakeClient.Entries[2]).To(gomega.Equal(client.Entry{
 					Labels: MergeLabelSets(streamFoo, model.LabelSet{"id": "0"}),
 					Entry: logproto.Entry{
 						Timestamp: timestampNowPlus2Sec,
@@ -132,7 +132,7 @@ var _ = Describe("Sorted Client", func() {
 					}}))
 			})
 
-			It("should sort correctly three stream", func() {
+			ginkgov2.It("should sort correctly three stream", func() {
 				// Because BatchWait is 3 seconds we shall wait at least such
 				// to be sure that the entries are flushed to the fake client.
 				entries := []client.Entry{
@@ -203,13 +203,13 @@ var _ = Describe("Sorted Client", func() {
 
 				for _, entry := range entries {
 					err := sortedClient.Handle(entry.Labels, entry.Timestamp, entry.Line)
-					Expect(err).ToNot(HaveOccurred())
+					gomega.Expect(err).ToNot(gomega.HaveOccurred())
 				}
 
 				time.Sleep(4 * time.Second)
 				fakeClient.Mu.Lock()
 				defer fakeClient.Mu.Unlock()
-				Expect(len(fakeClient.Entries)).To(Equal(9))
+				gomega.Expect(len(fakeClient.Entries)).To(gomega.Equal(9))
 				for _, stream := range []model.LabelSet{
 					streamFoo,
 					streamBar,
@@ -221,7 +221,7 @@ var _ = Describe("Sorted Client", func() {
 					for _, entry := range fakeClient.Entries {
 						entryNamespace := entry.Labels["namespace_name"]
 						if string(entryNamespace) == string(streamNamespace) {
-							Expect(entry.Timestamp.After(oldestTime)).To(BeTrue())
+							gomega.Expect(entry.Timestamp.After(oldestTime)).To(gomega.BeTrue())
 							oldestTime = entry.Timestamp
 						}
 					}
@@ -229,8 +229,8 @@ var _ = Describe("Sorted Client", func() {
 			})
 		})
 
-		Context("BatchSize", func() {
-			It("It should not flush if batch size is less or equal to BatchSize", func() {
+		ginkgov2.Context("BatchSize", func() {
+			ginkgov2.It("It should not flush if batch size is less or equal to BatchSize", func() {
 				entry := client.Entry{
 					Labels: streamFoo,
 					Entry: logproto.Entry{
@@ -240,13 +240,13 @@ var _ = Describe("Sorted Client", func() {
 				}
 
 				err := sortedClient.Handle(entry.Labels, entry.Timestamp, entry.Line)
-				Expect(err).ToNot(HaveOccurred())
+				gomega.Expect(err).ToNot(gomega.HaveOccurred())
 
 				time.Sleep(time.Second)
-				Expect(len(fakeClient.Entries)).To(Equal(0))
+				gomega.Expect(len(fakeClient.Entries)).To(gomega.Equal(0))
 			})
 
-			It("It should flush if batch size is greater than BatchSize", func() {
+			ginkgov2.It("It should flush if batch size is greater than BatchSize", func() {
 				entries := []client.Entry{
 					{
 						Labels: streamFoo,
@@ -266,7 +266,7 @@ var _ = Describe("Sorted Client", func() {
 
 				for _, entry := range entries {
 					err := sortedClient.Handle(entry.Labels, entry.Timestamp, entry.Line)
-					Expect(err).ToNot(HaveOccurred())
+					gomega.Expect(err).ToNot(gomega.HaveOccurred())
 				}
 
 				time.Sleep(time.Second)
@@ -274,12 +274,12 @@ var _ = Describe("Sorted Client", func() {
 				// The second one stays in the next batch.
 				fakeClient.Mu.Lock()
 				defer fakeClient.Mu.Unlock()
-				Expect(len(fakeClient.Entries)).To(Equal(1))
+				gomega.Expect(len(fakeClient.Entries)).To(gomega.Equal(1))
 			})
 		})
 
-		Context("BatchSize", func() {
-			It("It should not flush until BatchWait time duration is passed", func() {
+		ginkgov2.Context("BatchSize", func() {
+			ginkgov2.It("It should not flush until BatchWait time duration is passed", func() {
 				entry := client.Entry{
 					Labels: streamFoo,
 					Entry: logproto.Entry{
@@ -289,15 +289,15 @@ var _ = Describe("Sorted Client", func() {
 				}
 
 				err := sortedClient.Handle(entry.Labels, entry.Timestamp, entry.Line)
-				Expect(err).ToNot(HaveOccurred())
+				gomega.Expect(err).ToNot(gomega.HaveOccurred())
 
 				time.Sleep(time.Second)
 				fakeClient.Mu.Lock()
 				defer fakeClient.Mu.Unlock()
-				Expect(len(fakeClient.Entries)).To(Equal(0))
+				gomega.Expect(len(fakeClient.Entries)).To(gomega.Equal(0))
 			})
 
-			It("It should flush after BatchWait time duration is passed", func() {
+			ginkgov2.It("It should flush after BatchWait time duration is passed", func() {
 				entry := client.Entry{
 					Labels: streamFoo,
 					Entry: logproto.Entry{
@@ -307,36 +307,36 @@ var _ = Describe("Sorted Client", func() {
 				}
 
 				err := sortedClient.Handle(entry.Labels, entry.Timestamp, entry.Line)
-				Expect(err).ToNot(HaveOccurred())
+				gomega.Expect(err).ToNot(gomega.HaveOccurred())
 
 				time.Sleep(4 * time.Second)
 				fakeClient.Mu.Lock()
 				defer fakeClient.Mu.Unlock()
-				Expect(len(fakeClient.Entries)).To(Equal(1))
+				gomega.Expect(len(fakeClient.Entries)).To(gomega.Equal(1))
 
 				entry.Labels = MergeLabelSets(entry.Labels, model.LabelSet{"id": "0"})
-				Expect(fakeClient.Entries[0]).To(Equal(entry))
+				gomega.Expect(fakeClient.Entries[0]).To(gomega.Equal(entry))
 			})
 		})
 	})
 
-	Describe("#Stop", func() {
-		It("should stop", func() {
-			Expect(fakeClient.IsGracefullyStopped).To(BeFalse())
-			Expect(fakeClient.IsStopped).To(BeFalse())
+	ginkgov2.Describe("#Stop", func() {
+		ginkgov2.It("should stop", func() {
+			gomega.Expect(fakeClient.IsGracefullyStopped).To(gomega.BeFalse())
+			gomega.Expect(fakeClient.IsStopped).To(gomega.BeFalse())
 			sortedClient.Stop()
-			Expect(fakeClient.IsGracefullyStopped).To(BeFalse())
-			Expect(fakeClient.IsStopped).To(BeTrue())
+			gomega.Expect(fakeClient.IsGracefullyStopped).To(gomega.BeFalse())
+			gomega.Expect(fakeClient.IsStopped).To(gomega.BeTrue())
 		})
 	})
 
-	Describe("#StopWait", func() {
-		It("should stop", func() {
-			Expect(fakeClient.IsGracefullyStopped).To(BeFalse())
-			Expect(fakeClient.IsStopped).To(BeFalse())
+	ginkgov2.Describe("#StopWait", func() {
+		ginkgov2.It("should stop", func() {
+			gomega.Expect(fakeClient.IsGracefullyStopped).To(gomega.BeFalse())
+			gomega.Expect(fakeClient.IsStopped).To(gomega.BeFalse())
 			sortedClient.StopWait()
-			Expect(fakeClient.IsGracefullyStopped).To(BeTrue())
-			Expect(fakeClient.IsStopped).To(BeFalse())
+			gomega.Expect(fakeClient.IsGracefullyStopped).To(gomega.BeTrue())
+			gomega.Expect(fakeClient.IsStopped).To(gomega.BeFalse())
 		})
 	})
 })

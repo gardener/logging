@@ -8,17 +8,17 @@ import (
 	"os"
 	"testing"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	ginkgov2 "github.com/onsi/ginkgo/v2"
+	"github.com/onsi/gomega"
 )
 
 var testFileName string
 
-var _ = AfterSuite(func() {
-	os.Remove(testFileName)
+var _ = ginkgov2.AfterSuite(func() {
+	_ = os.Remove(testFileName)
 })
 
 func TestVali(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Vali Config Suite")
+	gomega.RegisterFailHandler(ginkgov2.Fail)
+	ginkgov2.RunSpecs(t, "Vali Config Suite")
 }

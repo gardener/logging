@@ -18,7 +18,9 @@ import (
 	"sigs.k8s.io/e2e-framework/pkg/utils"
 )
 
-const digestKey = "e2e/fluent-bit-vali"
+type digestKeyType string
+
+const digestKey = digestKeyType("e2e/fluent-bit-vali")
 
 func pullAndLoadContainerImage(name string, image string) types.EnvFunc {
 	return func(ctx context.Context, config *envconf.Config) (context.Context, error) {
@@ -33,7 +35,7 @@ func pullAndLoadContainerImage(name string, image string) types.EnvFunc {
 }
 
 func createContainerImage(registry string, target string) types.EnvFunc {
-	return func(ctx context.Context, cfg *envconf.Config) (context.Context, error) {
+	return func(ctx context.Context, _ *envconf.Config) (context.Context, error) {
 		var p *exec.Proc
 		if p = utils.RunCommand(fmt.Sprintf("docker build -q --target %s -t %s ../.. ",
 			target, registry)); p.Err() != nil {

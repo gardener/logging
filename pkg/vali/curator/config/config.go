@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	yaml "gopkg.in/yaml.v2"
+	yamlv2 "gopkg.in/yaml.v2"
 )
 
 // CuratorConfig holds the curator's configurations
@@ -60,7 +60,7 @@ func ParseConfigurations(curatorConfigPath string) (*CuratorConfig, error) {
 
 	config := DefaultCuratorConfig
 
-	if err = yaml.Unmarshal(curatorConfigFile, &config); err != nil {
+	if err = yamlv2.Unmarshal(curatorConfigFile, &config); err != nil {
 		return nil, err
 	}
 

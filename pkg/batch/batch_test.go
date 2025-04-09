@@ -7,20 +7,20 @@ package batch
 import (
 	"time"
 
-	g "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	ginkgov2 "github.com/onsi/ginkgo/v2"
+	"github.com/onsi/gomega"
 	"github.com/prometheus/common/model"
 )
 
-var _ = g.Describe("Batch", func() {
-	g.Describe("#NewBatch", func() {
-		g.It("Should create new batch", func() {
+var _ = ginkgov2.Describe("Batch", func() {
+	ginkgov2.Describe("#NewBatch", func() {
+		ginkgov2.It("Should create new batch", func() {
 			var id uint64 = 11
 			batch := NewBatch(model.LabelName("id"), id%10)
-			Expect(batch).ToNot(BeNil())
-			Expect(batch.streams).ToNot(BeNil())
-			Expect(batch.bytes).To(Equal(0))
-			Expect(batch.id).To(Equal(uint64(1)))
+			gomega.Expect(batch).ToNot(gomega.BeNil())
+			gomega.Expect(batch.streams).ToNot(gomega.BeNil())
+			gomega.Expect(batch.bytes).To(gomega.Equal(0))
+			gomega.Expect(batch.id).To(gomega.Equal(uint64(1)))
 
 		})
 	})
@@ -56,22 +56,22 @@ var _ = g.Describe("Batch", func() {
 	timeStamp1 := time.Now()
 	timeStamp2 := timeStamp1.Add(time.Second)
 
-	g.DescribeTable("#Add",
+	ginkgov2.DescribeTable("#Add",
 		func(args addTestArgs) {
 			batch := NewBatch(model.LabelName("id"), 0)
 			for _, entry := range args.entries {
 				batch.Add(entry.LabelSet, entry.Timestamp, entry.Line)
 			}
 
-			Expect(len(batch.streams)).To(Equal(len(args.expectedBatch.streams)))
-			Expect(batch.bytes).To(Equal(args.expectedBatch.bytes))
+			gomega.Expect(len(batch.streams)).To(gomega.Equal(len(args.expectedBatch.streams)))
+			gomega.Expect(batch.bytes).To(gomega.Equal(args.expectedBatch.bytes))
 			for streamName, stream := range batch.streams {
 				s, ok := args.expectedBatch.streams[streamName]
-				Expect(ok).To(BeTrue())
-				Expect(stream).To(Equal(s))
+				gomega.Expect(ok).To(gomega.BeTrue())
+				gomega.Expect(stream).To(gomega.Equal(s))
 			}
 		},
-		g.Entry("add one entry for one stream", addTestArgs{
+		ginkgov2.Entry("add one entry for one stream", addTestArgs{
 			entries: []entry{
 				{
 					LabelSet:  label1,
@@ -95,7 +95,7 @@ var _ = g.Describe("Batch", func() {
 				bytes: 5,
 			},
 		}),
-		g.Entry("add two entry for one stream", addTestArgs{
+		ginkgov2.Entry("add two entry for one stream", addTestArgs{
 			entries: []entry{
 				{
 					LabelSet:  label1,
@@ -128,7 +128,7 @@ var _ = g.Describe("Batch", func() {
 				bytes: 10,
 			},
 		}),
-		g.Entry("Add two entry for two stream", addTestArgs{
+		ginkgov2.Entry("Add two entry for two stream", addTestArgs{
 			entries: []entry{
 				{
 					LabelSet:  label1,
@@ -167,7 +167,7 @@ var _ = g.Describe("Batch", func() {
 				bytes: 10,
 			},
 		}),
-		g.Entry("Add two entry per each for two streams", addTestArgs{
+		ginkgov2.Entry("Add two entry per each for two streams", addTestArgs{
 			entries: []entry{
 				{
 					LabelSet:  label1,
@@ -225,12 +225,12 @@ var _ = g.Describe("Batch", func() {
 			},
 		}),
 	)
-	g.DescribeTable("#Sort",
+	ginkgov2.DescribeTable("#Sort",
 		func(args sortTestArgs) {
 			args.batch.Sort()
-			Expect(args.batch).To(Equal(args.expectedBatch))
+			gomega.Expect(args.batch).To(gomega.Equal(args.expectedBatch))
 		},
-		g.Entry("Sort batch with single stream with single entry", sortTestArgs{
+		ginkgov2.Entry("Sort batch with single stream with single entry", sortTestArgs{
 			batch: Batch{
 				streams: map[string]*Stream{
 					label1.String(): {
@@ -262,7 +262,7 @@ var _ = g.Describe("Batch", func() {
 				bytes: 5,
 			},
 		}),
-		g.Entry("Sort batch with single stream with two entry", sortTestArgs{
+		ginkgov2.Entry("Sort batch with single stream with two entry", sortTestArgs{
 			batch: Batch{
 				streams: map[string]*Stream{
 					label1.String(): {
@@ -303,7 +303,7 @@ var _ = g.Describe("Batch", func() {
 				bytes: 5,
 			},
 		}),
-		g.Entry("Sort batch with two stream with two entry", sortTestArgs{
+		ginkgov2.Entry("Sort batch with two stream with two entry", sortTestArgs{
 			batch: Batch{
 				streams: map[string]*Stream{
 					label1.String(): {

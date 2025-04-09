@@ -6,8 +6,8 @@ package client
 
 import (
 	"github.com/credativ/vali/pkg/valitail/api"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	ginkgov2 "github.com/onsi/ginkgo/v2"
+	"github.com/onsi/gomega"
 	"github.com/prometheus/common/model"
 )
 
@@ -25,7 +25,7 @@ func (c *BlackBoxTestingValiClient) Run() {
 		labelSetStr := LabelSetToString(e.Labels)
 		ls, ok := c.localStreams[labelSetStr]
 		if ok {
-			Expect(ls.add(e.Timestamp)).To(Succeed())
+			gomega.Expect(ls.add(e.Timestamp)).To(gomega.Succeed())
 			continue
 		}
 		c.localStreams[labelSetStr] = &localStream{
@@ -61,7 +61,7 @@ func (c *BlackBoxTestingValiClient) GetLogsCount(ls model.LabelSet) int {
 	for _, entry := range c.receivedEntries {
 		// take into account the id labels which cannot be predicted
 		if labelSetsAreEqual(entry.Labels, ls) {
-			GinkgoWriter.Printf(
+			ginkgov2.GinkgoWriter.Printf(
 				"found logs: %v, labelset: %v \n",
 				c.localStreams[labelSetStr].logCount,
 				ls,

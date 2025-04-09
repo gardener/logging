@@ -11,8 +11,8 @@ import (
 
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	ginkgov2 "github.com/onsi/ginkgo/v2"
+	"github.com/onsi/gomega"
 	"github.com/prometheus/common/model"
 	"github.com/weaveworks/common/logging"
 	"k8s.io/utils/pointer"
@@ -66,7 +66,7 @@ func (c *fakeValiClient) GetEndPoint() string {
 
 var _ client.ValiClient = &fakeValiClient{}
 
-func (c *fakeValiClient) Handle(labels model.LabelSet, time time.Time, entry string) error {
+func (c *fakeValiClient) Handle(_ model.LabelSet, _ time.Time, _ string) error {
 	return nil
 }
 
@@ -92,7 +92,7 @@ var (
 	logger   = log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
 )
 
-var _ = Describe("Vali plugin", func() {
+var _ = ginkgov2.Describe("Vali plugin", func() {
 	var (
 		simpleRecordFixture = map[interface{}]interface{}{
 			"foo":   "bar",
@@ -137,7 +137,7 @@ var _ = Describe("Vali plugin", func() {
 	logger = level.NewFilter(logger, logLevel.Gokit)
 	logger = log.With(logger, "caller", log.Caller(3))
 
-	DescribeTable("#SendRecord",
+	ginkgov2.DescribeTable("#SendRecord",
 		func(args sendRecordArgs) {
 			rec := &recorder{}
 			l := &vali{
@@ -147,14 +147,14 @@ var _ = Describe("Vali plugin", func() {
 			}
 			err := l.SendRecord(args.record, now)
 			if args.wantErr {
-				Expect(err).To(HaveOccurred())
+				gomega.Expect(err).To(gomega.HaveOccurred())
 				return
 			}
-			Expect(err).ToNot(HaveOccurred())
+			gomega.Expect(err).ToNot(gomega.HaveOccurred())
 			got := rec.toEntry()
-			Expect(got).To(Equal(args.want))
+			gomega.Expect(got).To(gomega.Equal(args.want))
 		},
-		Entry("map to JSON",
+		ginkgov2.Entry("map to JSON",
 			sendRecordArgs{
 				cfg: &config.Config{
 					PluginConfig: config.PluginConfig{LabelKeys: []string{"A"}, LineFormat: config.JSONFormat},
@@ -163,7 +163,7 @@ var _ = Describe("Vali plugin", func() {
 				want:    &entry{model.LabelSet{"A": "A"}, `{"B":"B","C":"C","D":"D","E":"E","F":"F","G":"G","H":"H"}`, now},
 				wantErr: false,
 			}),
-		Entry("map to kvPairFormat",
+		ginkgov2.Entry("map to kvPairFormat",
 			sendRecordArgs{
 				cfg: &config.Config{
 					PluginConfig: config.PluginConfig{LabelKeys: []string{"A"}, LineFormat: config.KvPairFormat},
@@ -172,7 +172,7 @@ var _ = Describe("Vali plugin", func() {
 				want:    &entry{model.LabelSet{"A": "A"}, `B=B C=C D=D E=E F=F G=G H=H`, now},
 				wantErr: false,
 			}),
-		Entry(
+		ginkgov2.Entry(
 			"not enough records",
 			sendRecordArgs{
 				cfg: &config.Config{
@@ -182,7 +182,7 @@ var _ = Describe("Vali plugin", func() {
 				want:    nil,
 				wantErr: false,
 			}),
-		Entry("labels",
+		ginkgov2.Entry("labels",
 			sendRecordArgs{
 				cfg: &config.Config{
 					PluginConfig: config.PluginConfig{LabelKeys: []string{"bar", "fake"}, LineFormat: config.JSONFormat, RemoveKeys: []string{"fuzz", "error"}},
@@ -191,7 +191,7 @@ var _ = Describe("Vali plugin", func() {
 				want:    &entry{model.LabelSet{"bar": "500"}, `{"foo":"bar"}`, now},
 				wantErr: false,
 			}),
-		Entry("remove key",
+		ginkgov2.Entry("remove key",
 			sendRecordArgs{
 				cfg: &config.Config{
 					PluginConfig: config.PluginConfig{LabelKeys: []string{"fake"}, LineFormat: config.JSONFormat, RemoveKeys: []string{"foo", "error", "fake"}},
@@ -200,7 +200,7 @@ var _ = Describe("Vali plugin", func() {
 				want:    &entry{model.LabelSet{}, `{"bar":500}`, now},
 				wantErr: false,
 			}),
-		Entry("error",
+		ginkgov2.Entry("error",
 			sendRecordArgs{
 				cfg: &config.Config{
 					PluginConfig: config.PluginConfig{LabelKeys: []string{"fake"}, LineFormat: config.JSONFormat, RemoveKeys: []string{"foo"}},
@@ -209,7 +209,7 @@ var _ = Describe("Vali plugin", func() {
 				want:    nil,
 				wantErr: true,
 			}),
-		Entry("key value",
+		ginkgov2.Entry("key value",
 			sendRecordArgs{
 				cfg: &config.Config{
 					PluginConfig: config.PluginConfig{LabelKeys: []string{"fake"}, LineFormat: config.KvPairFormat, RemoveKeys: []string{"foo", "error", "fake"}},
@@ -218,7 +218,7 @@ var _ = Describe("Vali plugin", func() {
 				want:    &entry{model.LabelSet{}, `bar=500`, now},
 				wantErr: false,
 			}),
-		Entry("single",
+		ginkgov2.Entry("single",
 			sendRecordArgs{
 				cfg: &config.Config{
 					PluginConfig: config.PluginConfig{LabelKeys: []string{"fake"}, DropSingleKey: true, LineFormat: config.KvPairFormat, RemoveKeys: []string{"foo", "error", "fake"}},
@@ -227,7 +227,7 @@ var _ = Describe("Vali plugin", func() {
 				want:    &entry{model.LabelSet{}, `500`, now},
 				wantErr: false,
 			}),
-		Entry("labelmap",
+		ginkgov2.Entry("labelmap",
 			sendRecordArgs{
 				cfg: &config.Config{
 					PluginConfig: config.PluginConfig{LabelMap: map[string]interface{}{"bar": "other"}, LineFormat: config.JSONFormat, RemoveKeys: []string{"bar", "error"}},
@@ -236,7 +236,7 @@ var _ = Describe("Vali plugin", func() {
 				want:    &entry{model.LabelSet{"other": "500"}, `{"foo":"bar"}`, now},
 				wantErr: false,
 			}),
-		Entry("byte array",
+		ginkgov2.Entry("byte array",
 			sendRecordArgs{
 				cfg: &config.Config{
 					PluginConfig: config.PluginConfig{LabelKeys: []string{"label"}, LineFormat: config.JSONFormat},
@@ -245,7 +245,7 @@ var _ = Describe("Vali plugin", func() {
 				want:    &entry{model.LabelSet{"label": "label"}, `{"map":{"inner":"bar"},"outer":"foo"}`, now},
 				wantErr: false,
 			}),
-		Entry("mixed types",
+		ginkgov2.Entry("mixed types",
 			sendRecordArgs{
 				cfg: &config.Config{
 					PluginConfig: config.PluginConfig{LabelKeys: []string{"label"}, LineFormat: config.JSONFormat},
@@ -257,7 +257,7 @@ var _ = Describe("Vali plugin", func() {
 		),
 	)
 
-	Describe("#getClient", func() {
+	ginkgov2.Describe("#getClient", func() {
 		fc := fakeController{
 			clients: map[string]client.ValiClient{
 				"shoot--dev--test1": &fakeValiClient{},
@@ -275,31 +275,31 @@ var _ = Describe("Vali plugin", func() {
 			expectToExists  bool
 		}
 
-		DescribeTable("#getClient",
+		ginkgov2.DescribeTable("#getClient",
 			func(args getClientArgs) {
 				c := valiplug.getClient(args.dynamicHostName)
 				if args.expectToExists {
-					Expect(c).ToNot(BeNil())
+					gomega.Expect(c).ToNot(gomega.BeNil())
 				} else {
-					Expect(c).To(BeNil())
+					gomega.Expect(c).To(gomega.BeNil())
 				}
 			},
-			Entry("Not existing host",
+			ginkgov2.Entry("Not existing host",
 				getClientArgs{
 					dynamicHostName: "shoot--dev--missing",
 					expectToExists:  false,
 				}),
-			Entry("Existing host",
+			ginkgov2.Entry("Existing host",
 				getClientArgs{
 					dynamicHostName: "shoot--dev--test1",
 					expectToExists:  true,
 				}),
-			Entry("Empty host",
+			ginkgov2.Entry("Empty host",
 				getClientArgs{
 					dynamicHostName: "",
 					expectToExists:  true,
 				}),
-			Entry("Not dynamic host",
+			ginkgov2.Entry("Not dynamic host",
 				getClientArgs{
 					dynamicHostName: "kube-system",
 					expectToExists:  true,
@@ -307,7 +307,7 @@ var _ = Describe("Vali plugin", func() {
 		)
 	})
 
-	Describe("#setDynamicTenant", func() {
+	ginkgov2.Describe("#setDynamicTenant", func() {
 		type setDynamicTenantArgs struct {
 			valiplugin vali
 			labelSet   model.LabelSet
@@ -318,13 +318,13 @@ var _ = Describe("Vali plugin", func() {
 			}
 		}
 
-		DescribeTable("#setDynamicTenant",
+		ginkgov2.DescribeTable("#setDynamicTenant",
 			func(args setDynamicTenantArgs) {
 				args.valiplugin.setDynamicTenant(args.records, args.labelSet)
-				Expect(args.want.records).To(Equal(args.records))
-				Expect(args.want.labelSet).To(Equal(args.labelSet))
+				gomega.Expect(args.want.records).To(gomega.Equal(args.records))
+				gomega.Expect(args.want.labelSet).To(gomega.Equal(args.labelSet))
 			},
-			Entry("Existing field with maching regex",
+			ginkgov2.Entry("Existing field with maching regex",
 				setDynamicTenantArgs{
 					valiplugin: vali{
 						dynamicTenantRegexp: regexp.MustCompile("user-exposed.kubernetes"),
@@ -353,7 +353,7 @@ var _ = Describe("Vali plugin", func() {
 						},
 					},
 				}),
-			Entry("Existing field with no maching regex",
+			ginkgov2.Entry("Existing field with no maching regex",
 				setDynamicTenantArgs{
 					valiplugin: vali{
 						dynamicTenantRegexp: regexp.MustCompile("user-exposed.kubernetes"),
@@ -381,7 +381,7 @@ var _ = Describe("Vali plugin", func() {
 						},
 					},
 				}),
-			Entry("Not Existing field with maching regex",
+			ginkgov2.Entry("Not Existing field with maching regex",
 				setDynamicTenantArgs{
 					valiplugin: vali{
 						dynamicTenantRegexp: regexp.MustCompile("user-exposed.kubernetes"),
@@ -412,7 +412,7 @@ var _ = Describe("Vali plugin", func() {
 		)
 	})
 
-	Describe("#addHostnameAsLabel", func() {
+	ginkgov2.Describe("#addHostnameAsLabel", func() {
 		type addHostnameAsLabelArgs struct {
 			valiplugin vali
 			labelSet   model.LabelSet
@@ -422,16 +422,16 @@ var _ = Describe("Vali plugin", func() {
 		}
 
 		hostname, err := os.Hostname()
-		Expect(err).ToNot(HaveOccurred())
+		gomega.Expect(err).ToNot(gomega.HaveOccurred())
 		hostnameKeyPtr := pointer.StringPtr("hostname")
 		hostnameValuePtr := pointer.StringPtr("HOST")
 
-		DescribeTable("#addHostnameAsLabel",
+		ginkgov2.DescribeTable("#addHostnameAsLabel",
 			func(args addHostnameAsLabelArgs) {
-				Expect(args.valiplugin.addHostnameAsLabel(args.labelSet)).To(Succeed())
-				Expect(args.want.labelSet).To(Equal(args.labelSet))
+				gomega.Expect(args.valiplugin.addHostnameAsLabel(args.labelSet)).To(gomega.Succeed())
+				gomega.Expect(args.want.labelSet).To(gomega.Equal(args.labelSet))
 			},
-			Entry("HostnameKey and HostnameValue are nil",
+			ginkgov2.Entry("HostnameKey and HostnameValue are nil",
 				addHostnameAsLabelArgs{
 					valiplugin: vali{
 						cfg: &config.Config{
@@ -452,7 +452,7 @@ var _ = Describe("Vali plugin", func() {
 						},
 					},
 				}),
-			Entry("HostnameKey is not nil and HostnameValue is nil",
+			ginkgov2.Entry("HostnameKey is not nil and HostnameValue is nil",
 				addHostnameAsLabelArgs{
 					valiplugin: vali{
 						cfg: &config.Config{
@@ -474,7 +474,7 @@ var _ = Describe("Vali plugin", func() {
 						},
 					},
 				}),
-			Entry("HostnameKey and HostnameValue are not nil",
+			ginkgov2.Entry("HostnameKey and HostnameValue are not nil",
 				addHostnameAsLabelArgs{
 					valiplugin: vali{
 						cfg: &config.Config{

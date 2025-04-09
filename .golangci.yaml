@@ -26,6 +26,10 @@ linters:
       - linters:
           - deadcode
         path: cmd/out_vali\.go
+      - linters:
+          - revive
+          - errcheck
+        path: tests/*
       - path: (.+)\.go$
         text: Error return value of .((os\.)?std(out|err)\..*|.*Close|.*Flush|os\.Remove(All)?|.*printf?|os\.(Un)?Setenv). is not checked
       - path: (.+)\.go$
@@ -51,10 +55,7 @@ linters:
       - path: (.+)\.go$
         text: Error return value of `informer.AddEventHandler` is not checked
     paths:
-      - .*\.pb\.go$
       - .*/out_vali\.go$
-      - .*/.*_test\.go$
-      - tests/.*
 formatters:
   enable:
     - gci

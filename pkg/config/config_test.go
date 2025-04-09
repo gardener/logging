@@ -13,8 +13,8 @@ import (
 	"github.com/cortexproject/cortex/pkg/util/flagext"
 	valiflag "github.com/credativ/vali/pkg/util/flagext"
 	"github.com/credativ/vali/pkg/valitail/client"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	ginkgov2 "github.com/onsi/ginkgo/v2"
+	"github.com/onsi/gomega"
 	"github.com/prometheus/common/config"
 	"github.com/prometheus/common/model"
 	"github.com/weaveworks/common/logging"
@@ -142,7 +142,7 @@ var (
 	defaultURL = parseURL("http://localhost:3100/vali/api/v1/push")
 )
 
-var _ = Describe("Config", func() {
+var _ = ginkgov2.Describe("Config", func() {
 	type testArgs struct {
 		conf    map[string]string
 		want    *Config
@@ -156,20 +156,20 @@ var _ = Describe("Config", func() {
 	_ = infoLogLevel.Set("info")
 	somewhereURL := parseURL("http://somewhere.com:3100/vali/api/v1/push")
 
-	DescribeTable("Test Config",
+	ginkgov2.DescribeTable("Test Config",
 		func(args testArgs) {
 			got, err := ParseConfig(fakeConfig(args.conf))
 			if args.wantErr {
-				Expect(err).To(HaveOccurred())
+				gomega.Expect(err).To(gomega.HaveOccurred())
 			} else {
-				Expect(err).ToNot(HaveOccurred())
-				Expect(args.want.ClientConfig).To(Equal(got.ClientConfig))
-				Expect(args.want.ControllerConfig).To(Equal(got.ControllerConfig))
-				Expect(args.want.PluginConfig).To(Equal(got.PluginConfig))
-				Expect(args.want.LogLevel.String()).To(Equal(got.LogLevel.String()))
+				gomega.Expect(err).ToNot(gomega.HaveOccurred())
+				gomega.Expect(args.want.ClientConfig).To(gomega.Equal(got.ClientConfig))
+				gomega.Expect(args.want.ControllerConfig).To(gomega.Equal(got.ControllerConfig))
+				gomega.Expect(args.want.PluginConfig).To(gomega.Equal(got.PluginConfig))
+				gomega.Expect(args.want.LogLevel.String()).To(gomega.Equal(got.LogLevel.String()))
 			}
 		},
-		Entry("default values", testArgs{
+		ginkgov2.Entry("default values", testArgs{
 			map[string]string{},
 			&Config{
 				PluginConfig:     defaultPluginConfig,
@@ -179,7 +179,7 @@ var _ = Describe("Config", func() {
 			},
 			expectNoError},
 		),
-		Entry("setting values", testArgs{
+		ginkgov2.Entry("setting values", testArgs{
 			map[string]string{
 				"URL":             "http://somewhere.com:3100/vali/api/v1/push",
 				"ProxyURL":        "http://somewhere-proxy.com:1234",
@@ -237,7 +237,7 @@ var _ = Describe("Config", func() {
 			},
 			expectNoError},
 		),
-		Entry("with label map", testArgs{
+		ginkgov2.Entry("with label map", testArgs{
 			map[string]string{
 				"URL":           "http://somewhere.com:3100/vali/api/v1/push",
 				"LineFormat":    "key_value",
@@ -293,7 +293,7 @@ var _ = Describe("Config", func() {
 			},
 			expectNoError},
 		),
-		Entry("with dynamic configuration", testArgs{
+		ginkgov2.Entry("with dynamic configuration", testArgs{
 			map[string]string{
 				"URL":               "http://somewhere.com:3100/vali/api/v1/push",
 				"LineFormat":        "key_value",
@@ -351,7 +351,7 @@ var _ = Describe("Config", func() {
 			},
 			expectNoError},
 		),
-		Entry("with Buffer configuration", testArgs{
+		ginkgov2.Entry("with Buffer configuration", testArgs{
 			map[string]string{
 				"URL":              "http://somewhere.com:3100/vali/api/v1/push",
 				"LineFormat":       "key_value",
@@ -408,7 +408,7 @@ var _ = Describe("Config", func() {
 			},
 			expectNoError},
 		),
-		Entry("with retries and timeouts configuration", testArgs{
+		ginkgov2.Entry("with retries and timeouts configuration", testArgs{
 			map[string]string{
 				"URL":           "http://somewhere.com:3100/vali/api/v1/push",
 				"LineFormat":    "key_value",
@@ -458,7 +458,7 @@ var _ = Describe("Config", func() {
 			},
 			expectNoError},
 		),
-		Entry("with kubernetes metadata configuration", testArgs{
+		ginkgov2.Entry("with kubernetes metadata configuration", testArgs{
 			map[string]string{
 				"URL":                                "http://somewhere.com:3100/vali/api/v1/push",
 				"LineFormat":                         "key_value",
@@ -511,7 +511,7 @@ var _ = Describe("Config", func() {
 			},
 			expectNoError},
 		),
-		Entry("with metrics  configuration", testArgs{
+		ginkgov2.Entry("with metrics  configuration", testArgs{
 			map[string]string{
 				"URL":                 "http://somewhere.com:3100/vali/api/v1/push",
 				"LineFormat":          "key_value",
@@ -556,7 +556,7 @@ var _ = Describe("Config", func() {
 			},
 			expectNoError},
 		),
-		Entry("With dynamic tenant values", testArgs{
+		ginkgov2.Entry("With dynamic tenant values", testArgs{
 			map[string]string{
 				"DynamicTenant": "  user tag user-exposed.kubernetes.*   ",
 			},
@@ -581,7 +581,7 @@ var _ = Describe("Config", func() {
 			},
 			expectNoError},
 		),
-		Entry("With only two fields for dynamic tenant values", testArgs{
+		ginkgov2.Entry("With only two fields for dynamic tenant values", testArgs{
 			map[string]string{
 				"DynamicTenant": "   user tag    ",
 			},
@@ -606,7 +606,7 @@ var _ = Describe("Config", func() {
 			},
 			expectError},
 		),
-		Entry("With more than 3 fields for dynamic tenant values", testArgs{
+		ginkgov2.Entry("With more than 3 fields for dynamic tenant values", testArgs{
 			map[string]string{
 				"DynamicTenant": "  user tag regex with spaces   ",
 			},
@@ -631,7 +631,7 @@ var _ = Describe("Config", func() {
 			},
 			expectNoError},
 		),
-		Entry("With one field HostnameKeyValue values", testArgs{
+		ginkgov2.Entry("With one field HostnameKeyValue values", testArgs{
 			map[string]string{
 				"HostnameKeyValue": "hostname",
 			},
@@ -651,7 +651,7 @@ var _ = Describe("Config", func() {
 			},
 			expectNoError},
 		),
-		Entry("With two fields for HostnameKeyValue values", testArgs{
+		ginkgov2.Entry("With two fields for HostnameKeyValue values", testArgs{
 			map[string]string{
 				"HostnameKeyValue": "hostname ${HOST}",
 			},
@@ -672,25 +672,25 @@ var _ = Describe("Config", func() {
 			},
 			expectNoError},
 		),
-		Entry("bad url", testArgs{map[string]string{"URL": "::doh.com"}, nil, true}),
-		Entry("bad proxy url", testArgs{map[string]string{"ProxyURL": "::doh.com"}, nil, true}),
-		Entry("bad BatchWait", testArgs{map[string]string{"BatchWait": "a"}, nil, true}),
-		Entry("bad BatchSize", testArgs{map[string]string{"BatchSize": "a"}, nil, true}),
-		Entry("bad labels", testArgs{map[string]string{"Labels": "a"}, nil, true}),
-		Entry("bad format", testArgs{map[string]string{"LineFormat": "a"}, nil, true}),
-		Entry("bad log level", testArgs{map[string]string{"LogLevel": "a"}, nil, true}),
-		Entry("bad drop single key", testArgs{map[string]string{"DropSingleKey": "a"}, nil, true}),
-		Entry("bad labelmap file", testArgs{map[string]string{"LabelMapPath": "a"}, nil, true}),
-		Entry("bad Dynamic Host Path", testArgs{map[string]string{"DynamicHostPath": "a"}, nil, true}),
-		Entry("bad Buffer ", testArgs{map[string]string{"Buffer": "a"}, nil, true}),
-		Entry("bad SortByTimestamp value", testArgs{map[string]string{"SortByTimestamp": "3"}, nil, true}),
-		Entry("bad MaxRetries value", testArgs{map[string]string{"MaxRetries": "a"}, nil, true}),
-		Entry("bad Timeout value", testArgs{map[string]string{"Timeout": "a"}, nil, true}),
-		Entry("bad MinBackoff value", testArgs{map[string]string{"MinBackoff": "a"}, nil, true}),
-		Entry("bad QueueSegmentSize value", testArgs{map[string]string{"QueueSegmentSize": "a"}, nil, true}),
-		Entry("bad QueueSync", testArgs{map[string]string{"QueueSegmentSize": "test"}, nil, true}),
-		Entry("bad FallbackToTagWhenMetadataIsMissing value", testArgs{map[string]string{"FallbackToTagWhenMetadataIsMissing": "a"}, nil, true}),
-		Entry("bad DropLogEntryWithoutK8sMetadata value", testArgs{map[string]string{"DropLogEntryWithoutK8sMetadata": "a"}, nil, true}),
+		ginkgov2.Entry("bad url", testArgs{map[string]string{"URL": "::doh.com"}, nil, true}),
+		ginkgov2.Entry("bad proxy url", testArgs{map[string]string{"ProxyURL": "::doh.com"}, nil, true}),
+		ginkgov2.Entry("bad BatchWait", testArgs{map[string]string{"BatchWait": "a"}, nil, true}),
+		ginkgov2.Entry("bad BatchSize", testArgs{map[string]string{"BatchSize": "a"}, nil, true}),
+		ginkgov2.Entry("bad labels", testArgs{map[string]string{"Labels": "a"}, nil, true}),
+		ginkgov2.Entry("bad format", testArgs{map[string]string{"LineFormat": "a"}, nil, true}),
+		ginkgov2.Entry("bad log level", testArgs{map[string]string{"LogLevel": "a"}, nil, true}),
+		ginkgov2.Entry("bad drop single key", testArgs{map[string]string{"DropSingleKey": "a"}, nil, true}),
+		ginkgov2.Entry("bad labelmap file", testArgs{map[string]string{"LabelMapPath": "a"}, nil, true}),
+		ginkgov2.Entry("bad Dynamic Host Path", testArgs{map[string]string{"DynamicHostPath": "a"}, nil, true}),
+		ginkgov2.Entry("bad Buffer ", testArgs{map[string]string{"Buffer": "a"}, nil, true}),
+		ginkgov2.Entry("bad SortByTimestamp value", testArgs{map[string]string{"SortByTimestamp": "3"}, nil, true}),
+		ginkgov2.Entry("bad MaxRetries value", testArgs{map[string]string{"MaxRetries": "a"}, nil, true}),
+		ginkgov2.Entry("bad Timeout value", testArgs{map[string]string{"Timeout": "a"}, nil, true}),
+		ginkgov2.Entry("bad MinBackoff value", testArgs{map[string]string{"MinBackoff": "a"}, nil, true}),
+		ginkgov2.Entry("bad QueueSegmentSize value", testArgs{map[string]string{"QueueSegmentSize": "a"}, nil, true}),
+		ginkgov2.Entry("bad QueueSync", testArgs{map[string]string{"QueueSegmentSize": "test"}, nil, true}),
+		ginkgov2.Entry("bad FallbackToTagWhenMetadataIsMissing value", testArgs{map[string]string{"FallbackToTagWhenMetadataIsMissing": "a"}, nil, true}),
+		ginkgov2.Entry("bad DropLogEntryWithoutK8sMetadata value", testArgs{map[string]string{"DropLogEntryWithoutK8sMetadata": "a"}, nil, true}),
 	)
 })
 
