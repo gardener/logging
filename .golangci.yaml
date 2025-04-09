@@ -54,8 +54,6 @@ linters:
         text: could not import github.com/gardener/gardener/pkg/apis/core/v1beta1/constants .*
       - path: (.+)\.go$
         text: Error return value of `informer.AddEventHandler` is not checked
-    paths:
-      - .*/out_vali\.go$
 formatters:
   enable:
     - gci
