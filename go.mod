@@ -3,10 +3,9 @@ module github.com/gardener/logging
 go 1.24.2
 
 tool (
+	github.com/daixiang0/gci
 	github.com/golangci/golangci-lint/v2/cmd/golangci-lint
 	github.com/google/addlicense
-	github.com/incu6us/goimports-reviser/v3
-	golang.org/x/tools/cmd/goimports
 	gotest.tools/gotestsum
 	sigs.k8s.io/kind
 )
@@ -174,7 +173,6 @@ require (
 	github.com/huandu/xstrings v1.5.0 // indirect
 	github.com/imdario/mergo v0.3.16 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/incu6us/goimports-reviser/v3 v3.9.0 // indirect
 	github.com/jgautheron/goconst v1.7.1 // indirect
 	github.com/jingyugao/rowserrcheck v1.1.1 // indirect
 	github.com/jjti/go-spancheck v0.6.4 // indirect

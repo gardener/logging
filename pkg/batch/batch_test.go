@@ -81,7 +81,7 @@ var _ = g.Describe("Batch", func() {
 			},
 			expectedBatch: Batch{
 				streams: map[string]*Stream{
-					label1.String(): &Stream{
+					label1.String(): {
 						Labels: label1ID0.Clone(),
 						Entries: []Entry{
 							{
@@ -110,7 +110,7 @@ var _ = g.Describe("Batch", func() {
 			},
 			expectedBatch: Batch{
 				streams: map[string]*Stream{
-					label1.String(): &Stream{
+					label1.String(): {
 						Labels: label1ID0.Clone(),
 						Entries: []Entry{
 							{
@@ -143,7 +143,7 @@ var _ = g.Describe("Batch", func() {
 			},
 			expectedBatch: Batch{
 				streams: map[string]*Stream{
-					label1.String(): &Stream{
+					label1.String(): {
 						Labels: label1ID0.Clone(),
 						Entries: []Entry{
 							{
@@ -153,7 +153,7 @@ var _ = g.Describe("Batch", func() {
 						},
 						lastTimestamp: timeStamp1,
 					},
-					label2.String(): &Stream{
+					label2.String(): {
 						Labels: label2ID0.Clone(),
 						Entries: []Entry{
 							{
@@ -192,7 +192,7 @@ var _ = g.Describe("Batch", func() {
 			},
 			expectedBatch: Batch{
 				streams: map[string]*Stream{
-					label1.String(): &Stream{
+					label1.String(): {
 						Labels: label1ID0.Clone(),
 						Entries: []Entry{
 							{
@@ -206,7 +206,7 @@ var _ = g.Describe("Batch", func() {
 						},
 						lastTimestamp: timeStamp2,
 					},
-					label2.String(): &Stream{
+					label2.String(): {
 						Labels: label2ID0.Clone(),
 						Entries: []Entry{
 							{
@@ -233,7 +233,7 @@ var _ = g.Describe("Batch", func() {
 		g.Entry("Sort batch with single stream with single entry", sortTestArgs{
 			batch: Batch{
 				streams: map[string]*Stream{
-					label1.String(): &Stream{
+					label1.String(): {
 						Labels: label1ID0.Clone(),
 						Entries: []Entry{
 							{
@@ -248,7 +248,7 @@ var _ = g.Describe("Batch", func() {
 			},
 			expectedBatch: Batch{
 				streams: map[string]*Stream{
-					label1.String(): &Stream{
+					label1.String(): {
 						Labels: label1ID0.Clone(),
 						Entries: []Entry{
 							{
@@ -265,7 +265,7 @@ var _ = g.Describe("Batch", func() {
 		g.Entry("Sort batch with single stream with two entry", sortTestArgs{
 			batch: Batch{
 				streams: map[string]*Stream{
-					label1.String(): &Stream{
+					label1.String(): {
 						Labels: label1ID0.Clone(),
 						Entries: []Entry{
 							{
@@ -285,7 +285,7 @@ var _ = g.Describe("Batch", func() {
 			},
 			expectedBatch: Batch{
 				streams: map[string]*Stream{
-					label1.String(): &Stream{
+					label1.String(): {
 						Labels: label1ID0.Clone(),
 						Entries: []Entry{
 							{
@@ -306,7 +306,7 @@ var _ = g.Describe("Batch", func() {
 		g.Entry("Sort batch with two stream with two entry", sortTestArgs{
 			batch: Batch{
 				streams: map[string]*Stream{
-					label1.String(): &Stream{
+					label1.String(): {
 						Labels: label1ID0.Clone(),
 						Entries: []Entry{
 							{
@@ -321,7 +321,7 @@ var _ = g.Describe("Batch", func() {
 						isEntryOutOfOrder: true,
 						lastTimestamp:     timeStamp2,
 					},
-					label2.String(): &Stream{
+					label2.String(): {
 						Labels: label2ID0.Clone(),
 						Entries: []Entry{
 							{
@@ -341,7 +341,7 @@ var _ = g.Describe("Batch", func() {
 			},
 			expectedBatch: Batch{
 				streams: map[string]*Stream{
-					label1.String(): &Stream{
+					label1.String(): {
 						Labels: label1ID0.Clone(),
 						Entries: []Entry{
 							{
@@ -355,7 +355,7 @@ var _ = g.Describe("Batch", func() {
 						},
 						lastTimestamp: timeStamp2,
 					},
-					label2.String(): &Stream{
+					label2.String(): {
 						Labels: label2ID0.Clone(),
 						Entries: []Entry{
 							{

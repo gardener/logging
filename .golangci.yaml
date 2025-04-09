@@ -57,11 +57,11 @@ linters:
       - tests/.*
 formatters:
   enable:
-    - goimports
-  exclusions:
-    generated: lax
-    paths:
-      - .*\.pb\.go$
-      - .*/out_vali\.go$
-      - .*/.*_test\.go$
-      - tests/.*
+    - gci
+    - gofmt
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - prefix(github.com/gardener/logging)

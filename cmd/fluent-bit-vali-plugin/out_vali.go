@@ -8,6 +8,10 @@ Modifications Copyright SAP SE or an SAP affiliate company and Gardener contribu
 package main
 
 import (
+	"C"
+)
+
+import (
 	"fmt"
 	"net/http"
 	_ "net/http/pprof"
@@ -18,7 +22,6 @@ import (
 	"time"
 	"unsafe"
 
-	"C"
 	"github.com/fluent/fluent-bit-go/output"
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
