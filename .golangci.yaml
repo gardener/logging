@@ -36,10 +36,6 @@ linters:
         path: tests/*
       - path: (.+)\.go$
         text: Error return value of .((os\.)?std(out|err)\..*|.*Close|.*Flush|os\.Remove(All)?|.*printf?|os\.(Un)?Setenv). is not checked
-      - path: (.+)\.go$
-        text: var-naming
-      - path: (.+)\.go$
-        text: dot-imports
 formatters:
   enable:
     - gci
