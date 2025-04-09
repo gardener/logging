@@ -1,53 +1,67 @@
+version: "2"
 run:
   concurrency: 4
   go: "1.24"
-
 linters:
+  enable:
+    - gosec
+    - revive
   disable:
     - unused
+  settings:
+    errcheck:
+      exclude-functions:
+        - (github.com/go-kit/kit/log.Logger).Log
+        - (*github.com/weaveworks/common/logging.Level).Set
+        - (*github.com/cortexproject/cortex/pkg/util/flagext.URLValue).Set
+    gosec:
+      excludes:
+        - G115
+  exclusions:
+    generated: lax
+    rules:
+      - linters:
+          - staticcheck
+        text: 'SA1019:'
+      - linters:
+          - deadcode
+        path: cmd/out_vali\.go
+      - path: (.+)\.go$
+        text: Error return value of .((os\.)?std(out|err)\..*|.*Close|.*Flush|os\.Remove(All)?|.*printf?|os\.(Un)?Setenv). is not checked
+      - path: (.+)\.go$
+        text: var-naming
+      - path: (.+)\.go$
+        text: dot-imports
+      - path: (.+)\.go$
+        text: package-comments
+      - path: (.+)\.go$
+        text: unexported-return
+      - path: (.+)\.go$
+        text: indent-error-flow
+      - path: (.+)\.go$
+        text: 'exported: (type|func) name will be used as .* by other packages, and that stutters;'
+      - path: (.+)\.go$
+        text: 'undeclared name: `.*`'
+      - path: (.+)\.go$
+        text: 'invalid operation: cannot compare .*'
+      - path: (.+)\.go$
+        text: client.StopWait undefined .*
+      - path: (.+)\.go$
+        text: could not import github.com/gardener/gardener/pkg/apis/core/v1beta1/constants .*
+      - path: (.+)\.go$
+        text: Error return value of `informer.AddEventHandler` is not checked
+    paths:
+      - .*\.pb\.go$
+      - .*/out_vali\.go$
+      - .*/.*_test\.go$
+      - tests/.*
+formatters:
   enable:
-    - revive
-    - govet
     - goimports
-    - gosec
-
-linters-settings:
-  errcheck:
-    exclude-functions:
-      - (github.com/go-kit/kit/log.Logger).Log
-      - (*github.com/weaveworks/common/logging.Level).Set
-      - (*github.com/cortexproject/cortex/pkg/util/flagext.URLValue).Set
-  gosec:
-    excludes:
-      - G115
-
-issues:
-  exclude-use-default: false
-  exclude:
-  # errcheck: Almost all programs ignore errors on these functions and in most cases it's ok
-  - Error return value of .((os\.)?std(out|err)\..*|.*Close|.*Flush|os\.Remove(All)?|.*printf?|os\.(Un)?Setenv). is not checked
-  # revive:
-  - var-naming # ((var|const|struct field|func) .* should be .*
-  - dot-imports # should not use dot imports
-  - package-comments # package comment should be of the form
-  - unexported-return # exported func .* returns unexported type .*, which can be annoying to use
-  - indent-error-flow # if block ends with a return statement, so drop this else and outdent its block
-  - "exported: (type|func) name will be used as .* by other packages, and that stutters;"
-  # typecheck:
-  - "undeclared name: `.*`"
-  - "invalid operation: cannot compare .*"
-  - "client.StopWait undefined .*"
-  - "could not import github.com/gardener/gardener/pkg/apis/core/v1beta1/constants .*"
-  - "Error return value of `informer.AddEventHandler` is not checked"
-  exclude-rules:
-    - linters:
-      - staticcheck
-      text: "SA1019:" # Excludes messages where deprecated variables are used
-    - path: cmd/out_vali\.go
-      linters:
-      - deadcode
-  exclude-files:
-    - ".*\\.pb\\.go$"
-    - ".*/out_vali\\.go$"
-    - ".*/.*_test\\.go$"
-    - "tests/.*"
+  exclusions:
+    generated: lax
+    paths:
+      - .*\.pb\.go$
+      - .*/out_vali\.go$
+      - .*/.*_test\.go$
+      - tests/.*
