@@ -207,9 +207,9 @@ func initPluginConfig(cfg Getter, res *Config) error {
 		}
 		if labelSetInitCapacityValue <= 0 {
 			return fmt.Errorf("LabelSetInitCapacity can't be zero or negative value: %s", labelSetInitCapacity)
-		} else {
-			res.PluginConfig.LabelSetInitCapacity = labelSetInitCapacityValue
 		}
+
+		res.PluginConfig.LabelSetInitCapacity = labelSetInitCapacityValue
 	} else {
 		res.PluginConfig.LabelSetInitCapacity = 12
 	}

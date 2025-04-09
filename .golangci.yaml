@@ -40,8 +40,6 @@ linters:
         text: package-comments
       - path: (.+)\.go$
         text: unexported-return
-      - path: (.+)\.go$
-        text: indent-error-flow
 formatters:
   enable:
     - gci

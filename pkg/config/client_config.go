@@ -221,9 +221,10 @@ func initClientConfig(cfg Getter, res *Config) error {
 		}
 		if numberOfBatchIDsValue <= 0 {
 			return fmt.Errorf("NumberOfBatchIDs can't be zero or negative value: %s", numberOfBatchIDs)
-		} else {
-			res.ClientConfig.NumberOfBatchIDs = uint64(numberOfBatchIDsValue)
 		}
+
+		res.ClientConfig.NumberOfBatchIDs = uint64(numberOfBatchIDsValue)
+
 	} else {
 		res.ClientConfig.NumberOfBatchIDs = 10
 	}
