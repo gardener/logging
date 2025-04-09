@@ -17,6 +17,10 @@ linters:
     gosec:
       excludes:
         - G115
+    revive:
+      rules:
+        - name: package-comments
+          disabled: true
   exclusions:
     generated: lax
     rules:
@@ -36,10 +40,6 @@ linters:
         text: var-naming
       - path: (.+)\.go$
         text: dot-imports
-      - path: (.+)\.go$
-        text: package-comments
-      - path: (.+)\.go$
-        text: unexported-return
 formatters:
   enable:
     - gci
