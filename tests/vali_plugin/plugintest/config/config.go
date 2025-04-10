@@ -5,7 +5,6 @@
 package config
 
 import (
-	"io/ioutil"
 	"os"
 	"time"
 
@@ -14,13 +13,14 @@ import (
 	"github.com/go-kit/log/level"
 	"github.com/prometheus/common/model"
 	"github.com/weaveworks/common/logging"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/gardener/logging/pkg/config"
 )
 
+// NewConfiguration creates a new configuration for the Vali plugin.
 func NewConfiguration() (config.Config, error) {
-	dir, err := ioutil.TempDir("/tmp", "blackbox-test-*")
+	dir, err := os.MkdirTemp("/tmp", "blackbox-test-*")
 	if err != nil {
 		return config.Config{}, err
 	}
@@ -87,8 +87,8 @@ func NewConfiguration() (config.Config, error) {
 				TagExpression:                      "\\.([^_]+)_([^_]+)_(.+)-([a-z0-9]{64})\\.log$",
 			},
 			LabelSetInitCapacity: 12,
-			HostnameKey:          pointer.StringPtr("nodename"),
-			HostnameValue:        pointer.StringPtr("local-testing-machine"),
+			HostnameKey:          ptr.To("nodename"),
+			HostnameValue:        ptr.To("local-testing-machine"),
 			PreservedLabels: model.LabelSet{
 				"origin":         "",
 				"namespace_name": "",
@@ -108,6 +108,7 @@ func getLogLevel() (logLevel logging.Level) {
 	return logLevel
 }
 
+// NewLogger creates a new logger for the Vali plugin.
 func NewLogger() log.Logger {
 	return log.With(
 		level.NewFilter(

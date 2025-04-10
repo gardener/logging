@@ -25,9 +25,6 @@ linters:
     generated: lax
     rules:
       - linters:
-          - staticcheck
-        text: 'SA1019:'
-      - linters:
           - revive
           - errcheck
         path: tests/*

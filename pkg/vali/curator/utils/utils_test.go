@@ -5,7 +5,6 @@
 package utils_test
 
 import (
-	"io/ioutil"
 	"os"
 
 	"github.com/go-kit/log"
@@ -29,7 +28,7 @@ var _ = ginkgov2.Describe("CuratorUtils", func() {
 		var tmpFile *os.File
 		var err error
 		for i := 0; i < numOfFiles; i++ {
-			tmpFile, err = ioutil.TempFile(testDir, "temp-file")
+			tmpFile, err = os.CreateTemp(testDir, "temp-file")
 			gomega.Expect(err).ToNot(gomega.HaveOccurred())
 			files = append(files, tmpFile)
 			defer func() { _ = tmpFile.Close() }()

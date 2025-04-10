@@ -15,7 +15,7 @@ import (
 	"github.com/onsi/gomega"
 	"github.com/prometheus/common/model"
 	"github.com/weaveworks/common/logging"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/gardener/logging/pkg/client"
 	"github.com/gardener/logging/pkg/config"
@@ -423,8 +423,8 @@ var _ = ginkgov2.Describe("Vali plugin", func() {
 
 		hostname, err := os.Hostname()
 		gomega.Expect(err).ToNot(gomega.HaveOccurred())
-		hostnameKeyPtr := pointer.StringPtr("hostname")
-		hostnameValuePtr := pointer.StringPtr("HOST")
+		hostnameKeyPtr := ptr.To("hostname")
+		hostnameValuePtr := ptr.To("HOST")
 
 		ginkgov2.DescribeTable("#addHostnameAsLabel",
 			func(args addHostnameAsLabelArgs) {

@@ -12,7 +12,7 @@ import (
 	"github.com/onsi/gomega"
 	"github.com/weaveworks/common/logging"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 )
 
 var _ = ginkgov2.Describe("Utils", func() {
@@ -21,8 +21,8 @@ var _ = ginkgov2.Describe("Utils", func() {
 		_                  = logLevel.Set("error")
 		testingPurpuse     = gardencorev1beta1.ShootPurpose("testing")
 		developmentPurpuse = gardencorev1beta1.ShootPurpose("development")
-		notHibernation     = gardencorev1beta1.Hibernation{Enabled: pointer.BoolPtr(false)}
-		hibernation        = gardencorev1beta1.Hibernation{Enabled: pointer.BoolPtr(true)}
+		notHibernation     = gardencorev1beta1.Hibernation{Enabled: ptr.To(false)}
+		hibernation        = gardencorev1beta1.Hibernation{Enabled: ptr.To(true)}
 		shootName          = "shoot--dev--logging"
 		shootObjectMeta    = metav1.ObjectMeta{
 			Name: shootName,

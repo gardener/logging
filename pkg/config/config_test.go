@@ -5,8 +5,8 @@
 package config_test
 
 import (
-	"io/ioutil"
 	"net/url"
+	"os"
 	"time"
 
 	"github.com/cortexproject/cortex/pkg/util"
@@ -18,7 +18,7 @@ import (
 	"github.com/prometheus/common/config"
 	"github.com/prometheus/common/model"
 	"github.com/weaveworks/common/logging"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	. "github.com/gardener/logging/pkg/config"
 )
@@ -642,7 +642,7 @@ var _ = ginkgov2.Describe("Config", func() {
 					DropSingleKey:        defaultDropSingleKey,
 					DynamicHostRegex:     defaultDynamicHostRegex,
 					LabelSetInitCapacity: defaultLabelSetInitCapacity,
-					HostnameKey:          pointer.StringPtr("hostname"),
+					HostnameKey:          ptr.To("hostname"),
 					PreservedLabels:      model.LabelSet{},
 				},
 				ClientConfig:     defaultClientConfig,
@@ -662,8 +662,8 @@ var _ = ginkgov2.Describe("Config", func() {
 					DropSingleKey:        defaultDropSingleKey,
 					DynamicHostRegex:     defaultDynamicHostRegex,
 					LabelSetInitCapacity: defaultLabelSetInitCapacity,
-					HostnameKey:          pointer.StringPtr("hostname"),
-					HostnameValue:        pointer.StringPtr("${HOST}"),
+					HostnameKey:          ptr.To("hostname"),
+					HostnameValue:        ptr.To("${HOST}"),
 					PreservedLabels:      model.LabelSet{},
 				},
 				ClientConfig:     defaultClientConfig,
@@ -700,7 +700,7 @@ func parseURL(u string) flagext.URLValue {
 }
 
 func createTempLabelMap() string {
-	file, _ := ioutil.TempFile("", "labelmap")
+	file, _ := os.CreateTemp("", "labelmap")
 
 	_, _ = file.WriteString(`{
 		"kubernetes": {

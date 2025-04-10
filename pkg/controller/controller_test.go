@@ -22,7 +22,7 @@ import (
 	"github.com/weaveworks/common/logging"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/gardener/logging/pkg/client"
 	"github.com/gardener/logging/pkg/config"
@@ -117,8 +117,8 @@ var _ = ginkgov2.Describe("Controller", func() {
 
 		testingPurpuse := gardencorev1beta1.ShootPurpose("testing")
 		developmentPurpuse := gardencorev1beta1.ShootPurpose("development")
-		notHibernation := gardencorev1beta1.Hibernation{Enabled: pointer.BoolPtr(false)}
-		hibernation := gardencorev1beta1.Hibernation{Enabled: pointer.BoolPtr(true)}
+		notHibernation := gardencorev1beta1.Hibernation{Enabled: ptr.To(false)}
+		hibernation := gardencorev1beta1.Hibernation{Enabled: ptr.To(true)}
 		shootObjectMeta := metav1.ObjectMeta{
 			Name: shootName,
 		}

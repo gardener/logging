@@ -7,7 +7,7 @@ package healthz
 import (
 	"bytes"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
@@ -46,7 +46,7 @@ func (m *metricsChecker) stallMetrics(_ *http.Request) error {
 	defer func() { _ = resp.Body.Close() }()
 
 	//We Read the response body on the line below.
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
