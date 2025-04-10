@@ -72,5 +72,6 @@ func copyLabelSet(ls model.LabelSet, deepCopy bool) model.LabelSet {
 	if deepCopy {
 		return ls.Clone()
 	}
+
 	return ls
 }

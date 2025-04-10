@@ -8,6 +8,10 @@ Modifications Copyright SAP SE or an SAP affiliate company and Gardener contribu
 package main
 
 import (
+	"C"
+)
+
+import (
 	"fmt"
 	"net/http"
 	_ "net/http/pprof"
@@ -18,7 +22,6 @@ import (
 	"time"
 	"unsafe"
 
-	"C"
 	"github.com/fluent/fluent-bit-go/output"
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
@@ -65,7 +68,7 @@ func init() {
 		http.Handle("/metrics", promhttp.Handler())
 		http.Handle("/healthz", healthz.Handler("", ""))
 		if err := http.ListenAndServe(":2021", nil); err != nil {
-			level.Error(logger).Log("Fluent-bit-gardener-output-plugin", err.Error())
+			_ = level.Error(logger).Log("Fluent-bit-gardener-output-plugin", err.Error())
 		}
 	}()
 }
@@ -111,6 +114,8 @@ func (c *pluginConfig) Get(key string) string {
 	return output.FLBPluginConfigKey(c.ctx, key)
 }
 
+// FLBPluginRegister registers the plugin with fluent-bit
+//
 //export FLBPluginRegister
 func FLBPluginRegister(ctx unsafe.Pointer) int {
 	return output.FLBPluginRegister(ctx, "gardenervali", "Ship fluent-bit logs to Credativ Vali")
@@ -127,13 +132,15 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 	// shall create only if not found in the context and in plugins slice
 	if present := output.FLBPluginGetContext(ctx); present != nil && pluginsContains(present.(valiplugin.Vali)) {
 		_ = level.Info(logger).Log("msg", "plugin already present")
+
 		return output.FLB_OK
 	}
 
 	conf, err := config.ParseConfig(&pluginConfig{ctx: ctx})
 	if err != nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorFLBPluginInit).Inc()
-		level.Error(logger).Log("[flb-go]", "failed to launch", "error", err)
+		_ = level.Error(logger).Log("[flb-go]", "failed to launch", "error", err)
+
 		return output.FLB_ERROR
 	}
 
@@ -153,7 +160,8 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 	plugin, err := valiplugin.NewPlugin(informer, conf, _logger)
 	if err != nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorNewPlugin).Inc()
-		level.Error(_logger).Log("msg", "error creating plugin", "err", err)
+		_ = level.Error(_logger).Log("msg", "error creating plugin", "err", err)
+
 		return output.FLB_ERROR
 	}
 
@@ -167,15 +175,19 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 	_ = level.Info(_logger).Log(
 		"msg", "plugin initialized",
 		"length", len(plugins))
+
 	return output.FLB_OK
 }
 
+// FLBPluginFlushCtx is called when the plugin is invoked to flush data
+//
 //export FLBPluginFlushCtx
 func FLBPluginFlushCtx(ctx, data unsafe.Pointer, length C.int, tag *C.char) int {
 	plugin := output.FLBPluginGetContext(ctx).(valiplugin.Vali)
 	if plugin == nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorFLBPluginFlushCtx).Inc()
-		level.Error(logger).Log("[flb-go]", "plugin not initialized")
+		_ = level.Error(logger).Log("[flb-go]", "plugin not initialized")
+
 		return output.FLB_ERROR
 	}
 
@@ -209,6 +221,7 @@ func FLBPluginFlushCtx(ctx, data unsafe.Pointer, length C.int, tag *C.char) int 
 				"tag", C.GoString(tag),
 				"err", err.Error(),
 			)
+
 			return output.FLB_RETRY // max retry of the plugin is set to 3, then it shall be discarded by fluent-bit
 		}
 	}
@@ -221,11 +234,14 @@ func FLBPluginFlushCtx(ctx, data unsafe.Pointer, length C.int, tag *C.char) int 
 	return output.FLB_OK
 }
 
+// FLBPluginExitCtx is called on plugin shutdown
+//
 //export FLBPluginExitCtx
 func FLBPluginExitCtx(ctx unsafe.Pointer) int {
 	plugin := output.FLBPluginGetContext(ctx).(valiplugin.Vali)
 	if plugin == nil {
-		level.Error(logger).Log("[flb-go]", "plugin not known")
+		_ = level.Error(logger).Log("[flb-go]", "plugin not known")
+
 		return output.FLB_ERROR
 	}
 	plugin.Close()
@@ -234,9 +250,12 @@ func FLBPluginExitCtx(ctx unsafe.Pointer) int {
 		"msg", "plugin removed",
 		"length", len(plugins),
 	)
+
 	return output.FLB_OK
 }
 
+// FLBPluginExit is called on fluent-bit shutdown
+//
 //export FLBPluginExit
 func FLBPluginExit() int {
 
@@ -254,6 +273,7 @@ func newLogger(logLevel logging.Level) log.Logger {
 	_logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
 	_logger = level.NewFilter(_logger, logLevel.Gokit)
 	_logger = log.With(_logger, "caller", log.Caller(3))
+
 	return _logger
 }
 
@@ -262,6 +282,7 @@ func inClusterKubernetesClient() (gardenerclientsetversioned.Interface, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get incluster config: %v", err)
 	}
+
 	return gardenerclientsetversioned.NewForConfig(c)
 }
 
@@ -270,6 +291,7 @@ func envKubernetesClient() (gardenerclientsetversioned.Interface, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get kubeconfig from env: %v", err)
 	}
+
 	return gardenerclientsetversioned.NewForConfig(fromFlags)
 }
 
@@ -350,6 +372,7 @@ func pluginsContains(present valiplugin.Vali) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -359,6 +382,7 @@ func pluginsRemove(plugin valiplugin.Vali) {
 	for i, p := range plugins {
 		if plugin == p {
 			plugins = append(plugins[:i], plugins[i+1:]...)
+
 			return
 		}
 	}

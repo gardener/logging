@@ -16,13 +16,13 @@ import (
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	ginkgov2 "github.com/onsi/ginkgo/v2"
+	"github.com/onsi/gomega"
 	"github.com/prometheus/common/model"
 	"github.com/weaveworks/common/logging"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/gardener/logging/pkg/client"
 	"github.com/gardener/logging/pkg/config"
@@ -38,10 +38,11 @@ func (c *fakeValiClient) GetEndPoint() string {
 	return "http://localhost"
 }
 
-func (c *fakeValiClient) Handle(labels model.LabelSet, time time.Time, entry string) error {
+func (c *fakeValiClient) Handle(_ model.LabelSet, _ time.Time, _ string) error {
 	if c.isStopped {
 		return fmt.Errorf("client has been stopped")
 	}
+
 	return nil
 }
 
@@ -53,54 +54,54 @@ func (c *fakeValiClient) StopWait() {
 	c.isStopped = true
 }
 
-func (c *fakeValiClient) SetState(state clusterState) {}
+func (c *fakeValiClient) SetState(_ clusterState) {}
 
 func (c *fakeValiClient) GetState() clusterState {
 	return clusterStateReady
 }
 
-var _ = Describe("Controller", func() {
-	Describe("#GetClient", func() {
+var _ = ginkgov2.Describe("Controller", func() {
+	ginkgov2.Describe("#GetClient", func() {
 		ctl := &controller{
-			clients: map[string]ControllerClient{
+			clients: map[string]Client{
 				"shoot--dev--test1": &fakeValiClient{},
 			},
 		}
 
-		It("Should return existing client", func() {
+		ginkgov2.It("Should return existing client", func() {
 			c, _ := ctl.GetClient("shoot--dev--test1")
-			Expect(c).ToNot(BeNil())
+			gomega.Expect(c).ToNot(gomega.BeNil())
 		})
 
-		It("Should return nil when client name is empty", func() {
+		ginkgov2.It("Should return nil when client name is empty", func() {
 			c, _ := ctl.GetClient("")
-			Expect(c).To(BeNil())
+			gomega.Expect(c).To(gomega.BeNil())
 		})
 
-		It("Should not return client for not existing one", func() {
+		ginkgov2.It("Should not return client for not existing one", func() {
 			c, _ := ctl.GetClient("shoot--dev--notexists")
-			Expect(c).To(BeNil())
+			gomega.Expect(c).To(gomega.BeNil())
 		})
 	})
 
-	Describe("#Stop", func() {
+	ginkgov2.Describe("#Stop", func() {
 		shootDevTest1 := &fakeValiClient{}
 		shootDevTest2 := &fakeValiClient{}
 		ctl := &controller{
-			clients: map[string]ControllerClient{
+			clients: map[string]Client{
 				"shoot--dev--test1": shootDevTest1,
 				"shoot--dev--test2": shootDevTest2,
 			},
 		}
 
-		It("Should stops propperly ", func() {
+		ginkgov2.It("Should stops propperly ", func() {
 			ctl.Stop()
-			Expect(ctl.clients).To(BeNil())
-			Expect(shootDevTest1.isStopped).To(BeTrue())
-			Expect(shootDevTest2.isStopped).To(BeTrue())
+			gomega.Expect(ctl.clients).To(gomega.BeNil())
+			gomega.Expect(shootDevTest1.isStopped).To(gomega.BeTrue())
+			gomega.Expect(shootDevTest2.isStopped).To(gomega.BeTrue())
 		})
 	})
-	Describe("Event functions", func() {
+	ginkgov2.Describe("Event functions", func() {
 		var (
 			conf     *config.Config
 			ctl      *controller
@@ -117,9 +118,9 @@ var _ = Describe("Controller", func() {
 
 		testingPurpuse := gardencorev1beta1.ShootPurpose("testing")
 		developmentPurpuse := gardencorev1beta1.ShootPurpose("development")
-		notHibernation := gardencorev1beta1.Hibernation{Enabled: pointer.BoolPtr(false)}
-		hibernation := gardencorev1beta1.Hibernation{Enabled: pointer.BoolPtr(true)}
-		shootObjectMeta := v1.ObjectMeta{
+		notHibernation := gardencorev1beta1.Hibernation{Enabled: ptr.To(false)}
+		hibernation := gardencorev1beta1.Hibernation{Enabled: ptr.To(true)}
+		shootObjectMeta := metav1.ObjectMeta{
 			Name: shootName,
 		}
 		testingShoot := &gardencorev1beta1.Shoot{
@@ -171,7 +172,7 @@ var _ = Describe("Controller", func() {
 			},
 		}
 
-		BeforeEach(func() {
+		ginkgov2.BeforeEach(func() {
 			conf = &config.Config{
 				ClientConfig: config.ClientConfig{
 					CredativValiConfig: valiclient.Config{
@@ -187,116 +188,116 @@ var _ = Describe("Controller", func() {
 				},
 			}
 			ctl = &controller{
-				clients: make(map[string]ControllerClient),
+				clients: make(map[string]Client),
 				conf:    conf,
 				logger:  logger,
 			}
 		})
 
-		Context("#addFunc", func() {
-			It("Should add new client for a cluster with evaluation purpose", func() {
+		ginkgov2.Context("#addFunc", func() {
+			ginkgov2.It("Should add new client for a cluster with evaluation purpose", func() {
 				ctl.addFunc(developmentCluster)
 				c, ok := ctl.clients[shootName]
-				Expect(c).ToNot(BeNil())
-				Expect(ok).To(BeTrue())
+				gomega.Expect(c).ToNot(gomega.BeNil())
+				gomega.Expect(ok).To(gomega.BeTrue())
 			})
-			It("Should not add new client for a cluster with testing purpose", func() {
+			ginkgov2.It("Should not add new client for a cluster with testing purpose", func() {
 				ctl.addFunc(testingCluster)
 				c, ok := ctl.clients[shootName]
-				Expect(c).To(BeNil())
-				Expect(ok).To(BeFalse())
+				gomega.Expect(c).To(gomega.BeNil())
+				gomega.Expect(ok).To(gomega.BeFalse())
 			})
-			It("Should not overwrite new client for a cluster in hibernation", func() {
+			ginkgov2.It("Should not overwrite new client for a cluster in hibernation", func() {
 				name := "new-shoot-name"
 				newNameCluster := hibernatedCluster.DeepCopy()
 				newNameCluster.Name = name
 				ctl.addFunc(hibernatedCluster)
 				ctl.addFunc(newNameCluster)
-				Expect(ctl.conf.ClientConfig.CredativValiConfig.URL.String()).ToNot(Equal(ctl.conf.ControllerConfig.DynamicHostPrefix + name + ctl.conf.ControllerConfig.DynamicHostSuffix))
-				Expect(ctl.conf.ClientConfig.CredativValiConfig.URL.String()).ToNot(Equal(ctl.conf.ControllerConfig.DynamicHostPrefix + hibernatedCluster.Name + ctl.conf.ControllerConfig.DynamicHostSuffix))
+				gomega.Expect(ctl.conf.ClientConfig.CredativValiConfig.URL.String()).ToNot(gomega.Equal(ctl.conf.ControllerConfig.DynamicHostPrefix + name + ctl.conf.ControllerConfig.DynamicHostSuffix))
+				gomega.Expect(ctl.conf.ClientConfig.CredativValiConfig.URL.String()).ToNot(gomega.Equal(ctl.conf.ControllerConfig.DynamicHostPrefix + hibernatedCluster.Name + ctl.conf.ControllerConfig.DynamicHostSuffix))
 			})
 		})
 
-		Context("#updateFunc", func() {
+		ginkgov2.Context("#updateFunc", func() {
 			type args struct {
 				oldCluster         *extensionsv1alpha1.Cluster
 				newCluster         *extensionsv1alpha1.Cluster
-				clients            map[string]ControllerClient
+				clients            map[string]Client
 				shouldClientExists bool
 			}
 
-			DescribeTable("#updateFunc", func(a args) {
+			ginkgov2.DescribeTable("#updateFunc", func(a args) {
 				ctl.clients = a.clients
 				ctl.updateFunc(a.oldCluster, a.newCluster)
 				c, ok := ctl.clients[a.newCluster.Name]
 				if a.shouldClientExists {
-					Expect(c).ToNot(BeNil())
-					Expect(ok).To(BeTrue())
+					gomega.Expect(c).ToNot(gomega.BeNil())
+					gomega.Expect(ok).To(gomega.BeTrue())
 				} else {
-					Expect(c).To(BeNil())
-					Expect(ok).To(BeFalse())
+					gomega.Expect(c).To(gomega.BeNil())
+					gomega.Expect(ok).To(gomega.BeFalse())
 				}
 			},
-				Entry("client exists and after update cluster is hibernated",
+				ginkgov2.Entry("client exists and after update cluster is hibernated",
 					args{
 						oldCluster: developmentCluster,
 						newCluster: hibernatedCluster,
-						clients: map[string]ControllerClient{
+						clients: map[string]Client{
 							shootName: &fakeValiClient{},
 						},
 						shouldClientExists: true,
 					},
 				),
-				Entry("client exists and after update cluster has no changes",
+				ginkgov2.Entry("client exists and after update cluster has no changes",
 					args{
 						oldCluster: testingCluster,
 						newCluster: testingCluster,
-						clients: map[string]ControllerClient{
+						clients: map[string]Client{
 							shootName: &fakeValiClient{},
 						},
 						shouldClientExists: true,
 					},
 				),
-				Entry("client does not exist and after update cluster has no changes",
+				ginkgov2.Entry("client does not exist and after update cluster has no changes",
 					args{
 						oldCluster:         testingCluster,
 						newCluster:         testingCluster,
-						clients:            map[string]ControllerClient{},
+						clients:            map[string]Client{},
 						shouldClientExists: false,
 					},
 				),
-				Entry("client does not exist and after update cluster is awake ",
+				ginkgov2.Entry("client does not exist and after update cluster is awake ",
 					args{
 						oldCluster:         hibernatedCluster,
 						newCluster:         developmentCluster,
-						clients:            map[string]ControllerClient{},
+						clients:            map[string]Client{},
 						shouldClientExists: true,
 					},
 				),
-				Entry("client does not exist and after update cluster has evaluation purpose ",
+				ginkgov2.Entry("client does not exist and after update cluster has evaluation purpose ",
 					args{
 						oldCluster:         testingCluster,
 						newCluster:         developmentCluster,
-						clients:            map[string]ControllerClient{},
+						clients:            map[string]Client{},
 						shouldClientExists: true,
 					}),
-				Entry("client exists and after update cluster has testing purpose ",
+				ginkgov2.Entry("client exists and after update cluster has testing purpose ",
 					args{
 						oldCluster:         developmentCluster,
 						newCluster:         testingCluster,
-						clients:            map[string]ControllerClient{},
+						clients:            map[string]Client{},
 						shouldClientExists: false,
 					}),
 			)
 		})
 
-		Context("#deleteFunc", func() {
-			It("should delete cluster client when cluster is deleted", func() {
+		ginkgov2.Context("#deleteFunc", func() {
+			ginkgov2.It("should delete cluster client when cluster is deleted", func() {
 				ctl.clients[shootName] = &fakeValiClient{}
 				ctl.delFunc(developmentCluster)
 				c, ok := ctl.clients[shootName]
-				Expect(c).To(BeNil())
-				Expect(ok).To(BeFalse())
+				gomega.Expect(c).To(gomega.BeNil())
+				gomega.Expect(ok).To(gomega.BeFalse())
 			})
 		})
 

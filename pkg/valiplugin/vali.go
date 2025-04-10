@@ -61,7 +61,7 @@ func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger lo
 		"queue", cfg.ClientConfig.BufferConfig.DqueConfig.QueueName,
 	)
 
-	//TODO(nickytd): Remove this magic check and introduce an Id field in the plugin output configuration
+	// TODO(nickytd): Remove this magic check and introduce an Id field in the plugin output configuration
 	// If the plugin ID is "shoot" then we shall have a dynamic host and a default "controller" client
 	if len(cfg.PluginConfig.DynamicHostPath) > 0 {
 		v.dynamicHostRegexp = regexp.MustCompile(cfg.PluginConfig.DynamicHostRegex)
@@ -84,7 +84,7 @@ func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger lo
 			return nil, err
 		}
 
-		//  Controller with default client set, is used when to send logs when shoots are not present.
+		// Controller with default client set, is used when to send logs when shoots are not present.
 		if v.controller, err = controller.NewController(informer, cfg, controllerSeedClient, logger); err != nil {
 			return nil, err
 		}
@@ -105,13 +105,14 @@ func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger lo
 		"seed_client_url", v.seedClient.GetEndPoint(),
 		"seed_queue_name", cfg.ClientConfig.BufferConfig.DqueConfig.QueueName,
 	)
+
 	return v, nil
 }
 
 // SendRecord sends fluent-bit records to vali as an entry.
 func (v *vali) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 	records := toStringMap(r)
-	//_ = level.Debug(v.logger).Log("msg", "processing records", "records", fluentBitRecords(records))
+	// _ = level.Debug(v.logger).Log("msg", "processing records", "records", fluentBitRecords(records))
 	lbs := make(model.LabelSet, v.cfg.PluginConfig.LabelSetInitCapacity)
 
 	// Check if metadata is missing
@@ -127,6 +128,7 @@ func (v *vali) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 			// Drop log entry if configured to do so when metadata is missing
 			if v.cfg.PluginConfig.KubernetesMetadata.DropLogEntryWithoutK8sMetadata {
 				metrics.LogsWithoutMetadata.WithLabelValues(metrics.MissingMetadataType).Inc()
+
 				return nil
 			}
 		}
@@ -163,6 +165,7 @@ func (v *vali) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 	removeKeys(records, append(v.cfg.PluginConfig.LabelKeys, v.cfg.PluginConfig.RemoveKeys...))
 	if len(records) == 0 {
 		_ = level.Debug(v.logger).Log("msg", "no records left after removing keys", "host", dynamicHostName)
+
 		return nil
 	}
 
@@ -170,6 +173,7 @@ func (v *vali) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 
 	if c == nil {
 		metrics.DroppedLogs.WithLabelValues(host).Inc()
+
 		return fmt.Errorf("no client found in controller for host: %v", dynamicHostName)
 	}
 
@@ -190,6 +194,7 @@ func (v *vali) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 				)
 				metrics.Errors.WithLabelValues(metrics.ErrorSendRecordToVali).Inc()
 			}
+
 			return err
 		}
 	}
@@ -197,6 +202,7 @@ func (v *vali) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
 	line, err := createLine(records, v.cfg.PluginConfig.LineFormat)
 	if err != nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorCreateLine).Inc()
+
 		return fmt.Errorf("error creating line: %v", err)
 	}
 
@@ -232,6 +238,7 @@ func (v *vali) getClient(dynamicHosName string) client.ValiClient {
 		if c, isStopped := v.controller.GetClient(dynamicHosName); !isStopped {
 			return c
 		}
+
 		return nil
 	}
 
@@ -256,6 +263,7 @@ func (v *vali) setDynamicTenant(record map[string]interface{}, lbs model.LabelSe
 	if ok && v.dynamicTenantRegexp.MatchString(s) {
 		lbs[grafanavaliclient.ReservedLabelTenantID] = model.LabelValue(v.dynamicTenant)
 	}
+
 	return lbs
 }
 

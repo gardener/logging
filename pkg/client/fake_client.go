@@ -42,6 +42,7 @@ func (c *FakeValiClient) Handle(labels model.LabelSet, timestamp time.Time, line
 		Entry:  logproto.Entry{Timestamp: timestamp, Line: line},
 	})
 	c.Mu.Unlock()
+
 	return nil
 }
 

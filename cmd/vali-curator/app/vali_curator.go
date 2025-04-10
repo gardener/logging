@@ -12,7 +12,7 @@ import (
 	"github.com/go-kit/log/level"
 	"github.com/weaveworks/common/logging"
 
-	config "github.com/gardener/logging/pkg/vali/curator/config"
+	"github.com/gardener/logging/pkg/vali/curator/config"
 )
 
 var (
@@ -59,5 +59,6 @@ func newLogger(logLevelName string) log.Logger {
 
 	l := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
 	l = level.NewFilter(l, logLevel.Gokit)
+
 	return log.With(l, "caller", log.DefaultCaller, "ts", log.DefaultTimestampUTC)
 }

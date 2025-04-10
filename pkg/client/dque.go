@@ -90,6 +90,7 @@ func NewDque(cfg config.Config, logger log.Logger, newClientFunc func(cfg config
 	go q.dequeuer()
 
 	_ = level.Debug(q.logger).Log("msg", "client created", "url", q.url)
+
 	return q, nil
 }
 
@@ -106,6 +107,7 @@ func (c *dqueClient) dequeuer() {
 			default:
 				metrics.Errors.WithLabelValues(metrics.ErrorDequeuer).Inc()
 				_ = level.Error(c.logger).Log("msg", "error dequeue record", "err", err)
+
 				continue
 			}
 		}
@@ -115,6 +117,7 @@ func (c *dqueClient) dequeuer() {
 		if !ok {
 			metrics.Errors.WithLabelValues(metrics.ErrorDequeuerNotValidType).Inc()
 			_ = level.Error(c.logger).Log("msg", "error record is not a valid type")
+
 			continue
 		}
 
@@ -126,6 +129,7 @@ func (c *dqueClient) dequeuer() {
 		c.lock.Lock()
 		if c.isStooped && c.queue.Size() <= 0 {
 			c.lock.Unlock()
+
 			return
 		}
 		c.lock.Unlock()
@@ -174,7 +178,7 @@ func (c *dqueClient) Handle(ls model.LabelSet, t time.Time, s string) error {
 }
 
 func (e *dqueEntry) String() string {
-	return fmt.Sprintf("labels: %+v timestamp: %+v line: %+v", e.LabelSet, e.Entry.Timestamp, e.Entry.Line)
+	return fmt.Sprintf("labels: %+v timestamp: %+v line: %+v", e.LabelSet, e.Timestamp, e.Line)
 }
 
 func (c *dqueClient) stopQue(wait bool) error {
@@ -185,12 +189,14 @@ func (c *dqueClient) stopQue(wait bool) error {
 	c.isStooped = true
 	// In case the dequeuer is blocked on empty queue.
 	if c.queue.Size() == 0 {
-		c.lock.Unlock() //Nothing to wait for
+		c.lock.Unlock() // Nothing to wait for
+
 		return nil
 	}
 	c.lock.Unlock()
-	//TODO: Make time group waiter
+	// TODO: Make time group waiter
 	c.wg.Wait()
+
 	return nil
 }
 

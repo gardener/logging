@@ -71,6 +71,7 @@ func NewSortedClientDecorator(cfg config.Config, newClient NewValiClientFunc, lo
 	c.wg.Add(1)
 	go c.run()
 	_ = level.Debug(c.logger).Log("msg", "client started")
+
 	return c, nil
 }
 
@@ -97,14 +98,16 @@ func (c *sortedClient) run() {
 			// If the batch doesn't exist yet, we create a new one with the entry
 			if c.batch == nil {
 				c.newBatch(e)
+
 				break
 			}
 
 			// If adding the entry to the batch will increase the size over the max
 			// size allowed, we do send the current batch and then create a new one
-			if c.batch.SizeBytesAfter(e.Entry.Line) > c.batchSize {
+			if c.batch.SizeBytesAfter(e.Line) > c.batchSize {
 				c.sendBatch()
 				c.newBatch(e)
+
 				break
 			}
 
@@ -126,6 +129,7 @@ func (c *sortedClient) run() {
 func (c *sortedClient) isBatchWaitExceeded() bool {
 	c.batchLock.Lock()
 	defer c.batchLock.Unlock()
+
 	return c.batch != nil && c.batch.Age() > c.batchWait
 }
 
@@ -155,7 +159,7 @@ func (c *sortedClient) newBatch(e Entry) {
 		c.batch = batch.NewBatch(c.idLabelName, c.batchID%c.numberOfBatchIDs)
 	}
 
-	c.batch.Add(e.Labels.Clone(), e.Entry.Timestamp, e.Entry.Line)
+	c.batch.Add(e.Labels.Clone(), e.Timestamp, e.Line)
 }
 
 func (c *sortedClient) addToBatch(e Entry) {
@@ -191,5 +195,6 @@ func (c *sortedClient) Handle(ls model.LabelSet, t time.Time, s string) error {
 		Timestamp: t,
 		Line:      s,
 	}}
+
 	return nil
 }

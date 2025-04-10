@@ -51,8 +51,8 @@ type controllerClient struct {
 
 var _ client.ValiClient = &controllerClient{}
 
-// ControllerClient is a Vali client for the valiplugin controller
-type ControllerClient interface {
+// Client is a Vali client for the valiplugin controller
+type Client interface {
 	client.ValiClient
 	GetState() clusterState
 	SetState(state clusterState)
@@ -114,6 +114,7 @@ func (ctl *controller) createControllerClient(clusterName string, shoot *gardene
 	if c, ok := ctl.clients[clusterName]; ok {
 		ctl.updateControllerClientState(c, shoot)
 		_ = level.Info(ctl.logger).Log("msg", fmt.Sprintf("controller client for cluster %v already exists", clusterName))
+
 		return
 	}
 
@@ -124,6 +125,7 @@ func (ctl *controller) createControllerClient(clusterName string, shoot *gardene
 			"msg", fmt.Sprintf("failed to make new vali client for cluster %v", clusterName),
 			"error", err.Error(),
 		)
+
 		return
 	}
 
@@ -166,7 +168,7 @@ func (ctl *controller) deleteControllerClient(clusterName string) {
 	)
 }
 
-func (ctl *controller) updateControllerClientState(client ControllerClient, shoot *gardenercorev1beta1.Shoot) {
+func (ctl *controller) updateControllerClientState(client Client, shoot *gardenercorev1beta1.Shoot) {
 	client.SetState(getShootState(shoot))
 }
 
@@ -197,6 +199,7 @@ func (c *controllerClient) Handle(ls model.LabelSet, t time.Time, s string) erro
 		}
 
 	}
+
 	return combineErr
 }
 
@@ -251,6 +254,7 @@ func (c *controllerClient) SetState(state clusterState) {
 		_ = level.Error(c.logger).Log(
 			"msg", fmt.Sprintf("Unknown state %v for cluster %v. The client state will not be changed", state, c.name),
 		)
+
 		return
 	}
 

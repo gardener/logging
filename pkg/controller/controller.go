@@ -37,7 +37,7 @@ type controller struct {
 	seedClient client.ValiClient
 	conf       *config.Config
 	lock       sync.RWMutex
-	clients    map[string]ControllerClient
+	clients    map[string]Client
 	logger     log.Logger
 	informer   cache.SharedIndexInformer
 	r          cache.ResourceEventHandlerRegistration
@@ -48,7 +48,7 @@ func NewController(informer cache.SharedIndexInformer, conf *config.Config, seed
 	var err error
 
 	ctl := &controller{
-		clients:    make(map[string]ControllerClient, expectedActiveClusters),
+		clients:    make(map[string]Client, expectedActiveClusters),
 		conf:       conf,
 		seedClient: seedClient,
 		informer:   informer,
@@ -101,6 +101,7 @@ func (ctl *controller) addFunc(obj interface{}) {
 	if !ok {
 		metrics.Errors.WithLabelValues(metrics.ErrorAddFuncNotACluster).Inc()
 		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("%v is not a cluster", obj))
+
 		return
 	}
 
@@ -108,6 +109,7 @@ func (ctl *controller) addFunc(obj interface{}) {
 	if err != nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorCanNotExtractShoot).Inc()
 		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("can't extract shoot from cluster %v", cluster.Name))
+
 		return
 	}
 
@@ -125,6 +127,7 @@ func (ctl *controller) updateFunc(oldObj interface{}, newObj interface{}) {
 	if !ok {
 		metrics.Errors.WithLabelValues(metrics.ErrorUpdateFuncOldNotACluster).Inc()
 		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("%v is not a cluster", oldCluster))
+
 		return
 	}
 
@@ -132,11 +135,13 @@ func (ctl *controller) updateFunc(oldObj interface{}, newObj interface{}) {
 	if !ok {
 		metrics.Errors.WithLabelValues(metrics.ErrorUpdateFuncNewNotACluster).Inc()
 		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("%v is not a cluster", newCluster))
+
 		return
 	}
 
 	if bytes.Equal(oldCluster.Spec.Shoot.Raw, newCluster.Spec.Shoot.Raw) {
 		_ = level.Debug(ctl.logger).Log("msg", "reconciliation skipped, shoot is the same", "cluster", newCluster.Name)
+
 		return
 	}
 
@@ -144,6 +149,7 @@ func (ctl *controller) updateFunc(oldObj interface{}, newObj interface{}) {
 	if err != nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorCanNotExtractShoot).Inc()
 		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("can't extract shoot from cluster %v", newCluster.Name))
+
 		return
 	}
 
@@ -155,6 +161,7 @@ func (ctl *controller) updateFunc(oldObj interface{}, newObj interface{}) {
 		// The shoot is no longer applicable for logging
 		if !ctl.isAllowedShoot(shoot) {
 			ctl.deleteControllerClient(oldCluster.Name)
+
 			return
 		}
 		// Sanity check
@@ -163,19 +170,17 @@ func (ctl *controller) updateFunc(oldObj interface{}, newObj interface{}) {
 				"msg", fmt.Sprintf("Nil client for cluster: %v, creating...", oldCluster.Name),
 			)
 			ctl.createControllerClient(newCluster.Name, shoot)
+
 			return
 		}
 
 		ctl.updateControllerClientState(_client, shoot)
-	} else {
-		// The client does not exist. Try to create a new one, if the shoot is applicable for logging.
-		if ctl.isAllowedShoot(shoot) {
-			_ = level.Info(ctl.logger).Log(
-				"msg", "client is not found in controller, creating...",
-				"cluster", newCluster.Name,
-			)
-			ctl.createControllerClient(newCluster.Name, shoot)
-		}
+	} else if ctl.isAllowedShoot(shoot) {
+		_ = level.Info(ctl.logger).Log(
+			"msg", "client is not found in controller, creating...",
+			"cluster", newCluster.Name,
+		)
+		ctl.createControllerClient(newCluster.Name, shoot)
 	}
 }
 
@@ -184,6 +189,7 @@ func (ctl *controller) delFunc(obj interface{}) {
 	if !ok {
 		metrics.Errors.WithLabelValues(metrics.ErrorDeleteFuncNotAcluster).Inc()
 		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("%v is not a cluster", obj))
+
 		return
 	}
 
@@ -208,6 +214,7 @@ func (ctl *controller) updateClientConfig(clusterName string) *config.Config {
 			"msg",
 			fmt.Sprintf("failed to parse client URL  for %v: %v", clusterName, err.Error()),
 		)
+
 		return nil
 	}
 

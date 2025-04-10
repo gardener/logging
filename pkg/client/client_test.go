@@ -15,15 +15,15 @@ import (
 	"github.com/credativ/vali/pkg/valitail/client"
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
-	g "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	ginkgov2 "github.com/onsi/ginkgo/v2"
+	"github.com/onsi/gomega"
 	"github.com/prometheus/common/model"
 	"github.com/weaveworks/common/logging"
 
 	"github.com/gardener/logging/pkg/config"
 )
 
-var _ = g.Describe("Client", func() {
+var _ = ginkgov2.Describe("Client", func() {
 	defaultURL, _ := parseURL("http://localhost:3100/vali/api/v1/push")
 	var infoLogLevel logging.Level
 	_ = infoLogLevel.Set("info")
@@ -75,11 +75,11 @@ var _ = g.Describe("Client", func() {
 	logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
 	logger = level.NewFilter(logger, infoLogLevel.Gokit)
 
-	g.Describe("NewClient", func() {
-		g.It("should create a client", func() {
+	ginkgov2.Describe("NewClient", func() {
+		ginkgov2.It("should create a client", func() {
 			c, err := NewClient(conf, logger, Options{})
-			Expect(err).ToNot(HaveOccurred())
-			Expect(c).ToNot(BeNil())
+			gomega.Expect(err).ToNot(gomega.HaveOccurred())
+			gomega.Expect(c).ToNot(gomega.BeNil())
 		})
 	})
 })
@@ -89,5 +89,6 @@ func parseURL(u string) (flagext.URLValue, error) {
 	if err != nil {
 		return flagext.URLValue{}, err
 	}
+
 	return flagext.URLValue{URL: parsed}, nil
 }

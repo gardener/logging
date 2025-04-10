@@ -42,6 +42,7 @@ func WithCustomResyncConfig(resyncConfig map[v1.Object]time.Duration) SharedInfo
 		for k, v := range resyncConfig {
 			factory.customResync[reflect.TypeOf(k)] = v
 		}
+
 		return factory
 	}
 }
@@ -50,6 +51,7 @@ func WithCustomResyncConfig(resyncConfig map[v1.Object]time.Duration) SharedInfo
 func WithTweakListOptions(tweakListOptions internalinterfaces.TweakListOptionsFunc) SharedInformerOption {
 	return func(factory *sharedInformerFactory) *sharedInformerFactory {
 		factory.tweakListOptions = tweakListOptions
+
 		return factory
 	}
 }
@@ -58,6 +60,7 @@ func WithTweakListOptions(tweakListOptions internalinterfaces.TweakListOptionsFu
 func WithNamespace(namespace string) SharedInformerOption {
 	return func(factory *sharedInformerFactory) *sharedInformerFactory {
 		factory.namespace = namespace
+
 		return factory
 	}
 }
@@ -119,6 +122,7 @@ func (f *sharedInformerFactory) WaitForCacheSync(stopCh <-chan struct{}) map[ref
 				informers[informerType] = informer
 			}
 		}
+
 		return informers
 	}()
 
@@ -126,6 +130,7 @@ func (f *sharedInformerFactory) WaitForCacheSync(stopCh <-chan struct{}) map[ref
 	for informType, informer := range informers {
 		res[informType] = cache.WaitForCacheSync(stopCh, informer.HasSynced)
 	}
+
 	return res
 }
 

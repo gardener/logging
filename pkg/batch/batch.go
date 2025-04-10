@@ -44,6 +44,7 @@ func (b *Batch) Add(ls model.LabelSet, t time.Time, line string) {
 	labels := ls.String()
 	if stream, ok := b.streams[labels]; ok {
 		stream.add(t, line)
+
 		return
 	}
 

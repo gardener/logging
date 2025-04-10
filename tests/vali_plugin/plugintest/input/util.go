@@ -5,21 +5,22 @@
 package input
 
 import (
-	"math/rand"
-	"time"
+	"crypto/rand"
+	"math/big"
 )
-
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
 
 var letterRunes = []rune("1234567890abcdefghijklmnopqrstuvwxyz")
 
 func randStringRunes(n int) string {
 	b := make([]rune, n)
 	for i := range b {
-		b[i] = letterRunes[rand.Intn(len(letterRunes))] // #nosec G404 -- used in tests only
+		num, err := rand.Int(rand.Reader, big.NewInt(int64(len(letterRunes))))
+		if err != nil {
+			panic("failed to generate random number")
+		}
+		b[i] = letterRunes[num.Int64()]
 	}
+
 	return string(b)
 }
 

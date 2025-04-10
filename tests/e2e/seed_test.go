@@ -28,18 +28,22 @@ func TestSeedLogs(t *testing.T) {
 			var client = cfg.Client()
 
 			g.Expect(client.Resources().Get(ctx, SeedBackendName, SeedNamespace, &backend)).To(gomega.Succeed())
-			if &backend != nil {
+
+			if len(backend.Name) > 0 {
 				t.Logf("seed backend statefulset found: %s", backend.Name)
 			}
 
 			g.Eventually(func() bool {
-				client.Resources().Get(ctx, SeedBackendName, SeedNamespace, &backend)
+				_ = client.Resources().Get(ctx, SeedBackendName, SeedNamespace, &backend)
+
 				return backend.Status.ReadyReplicas == *backend.Spec.Replicas
 			}).WithTimeout(2 * time.Minute).WithPolling(1 * time.Second).Should(gomega.BeTrue())
 
 			var daemonSet appsv1.DaemonSet
+
 			g.Expect(client.Resources().Get(ctx, DaemonSetName, SeedNamespace, &daemonSet)).To(gomega.Succeed())
-			if &daemonSet != nil {
+
+			if len(daemonSet.Name) > 0 {
 				t.Logf("fluent-bit daemonset found: %s", daemonSet.Name)
 			}
 
@@ -47,6 +51,7 @@ func TestSeedLogs(t *testing.T) {
 				list := appsv1.DaemonSetList{}
 				g.Expect(client.Resources().List(ctx, &list, resources.WithLabelSelector("app.kubernetes.io/name=fluent-bit"))).To(gomega.Succeed())
 				g.Expect(len(list.Items)).To(gomega.BeNumerically("==", 1))
+
 				return list.Items[0].Status.NumberAvailable == list.Items[0].Status.DesiredNumberScheduled &&
 					list.Items[0].Status.NumberUnavailable == 0
 			}).WithTimeout(1 * time.Minute).WithPolling(1 * time.Second).Should(gomega.BeTrue())
@@ -55,6 +60,7 @@ func TestSeedLogs(t *testing.T) {
 			// Shall start a log generator pod to check if logs are being collected at the backend
 			logger := newLoggerPod(SeedNamespace, "logger")
 			g.Expect(client.Resources().Create(ctx, logger)).To(gomega.Succeed())
+
 			return ctx
 		}).
 		Assess("check logs in seed backend", func(ctx context.Context, t *testing.T,
@@ -89,6 +95,7 @@ func TestSeedLogs(t *testing.T) {
 					&stderr,
 				); err != nil {
 					t.Logf("failed to exec in pod: %s, stdout: %v", err.Error(), stdout.String())
+
 					return 0
 				}
 
@@ -100,6 +107,7 @@ func TestSeedLogs(t *testing.T) {
 					sum += v
 				}
 				t.Logf("total logs collected: %d", sum)
+
 				return sum
 			}).WithTimeout(5 * time.Minute).WithPolling(3 * time.Second).Should(gomega.BeNumerically("==", 1000))
 

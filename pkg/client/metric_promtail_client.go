@@ -54,6 +54,7 @@ func NewPromtailClient(cfg client.Config, logger log.Logger) (ValiClient, error)
 		logger:     log.With(logger, "component", componentNamePromTail, "host", cfg.URL),
 	}
 	_ = level.Debug(metric.logger).Log("msg", "client created")
+
 	return metric, nil
 }
 
@@ -69,6 +70,7 @@ func newTestingPromtailClient(c client.Client, cfg client.Config) (ValiClient, e
 func (c *valitailClientWithForwardedLogsMetricCounter) Handle(ls model.LabelSet, t time.Time, s string) error {
 	c.valiclient.Chan() <- api.Entry{Labels: ls, Entry: logproto.Entry{Timestamp: t, Line: s}}
 	metrics.ForwardedLogs.WithLabelValues(c.host).Inc()
+
 	return nil
 }
 

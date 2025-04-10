@@ -17,6 +17,7 @@ LD_FLAGS                                   := -s -w $(shell $(REPO_ROOT)/hack/ge
 BUILD_PLATFORM                             ?= $(shell uname -s | tr '[:upper:]' '[:lower:]')
 BUILD_ARCH                                 ?= $(shell uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
 
+GCI_OPT                                    ?= -s standard -s default -s "prefix($(shell go list -m))" --skip-generated
 
 ifneq ($(strip $(shell git status --porcelain 2>/dev/null)),)
 	EFFECTIVE_VERSION := $(EFFECTIVE_VERSION)-dirty
@@ -132,17 +133,27 @@ docker-push:
 .PHONY: tidy
 tidy:
 	@go mod tidy
-	@go mod download
-
-.PHONY: format
-format:
-	@gofmt -l -w $(SRC_DIRS)
 
 .PHONY: check
-check: tidy format
+check: tidy fmt gci lint
+
+.PHONY: fmt
+fmt: tidy
+	@echo "Running fmt..."
+	@go tool golangci-lint fmt \
+	 	--config=$(REPO_ROOT)/.golangci.yaml \
+		$(SRC_DIRS)
+
+.PHONY: gci
+gci: tidy
+	@echo "Running gci..."
+	@go tool gci write $(GCI_OPT) $(SRC_DIRS)
+
+.PHONY: lint
+check: tidy
+	@echo "Running lint..."
 	 @go tool golangci-lint run \
 	 	--config=$(REPO_ROOT)/.golangci.yaml \
-		--timeout 10m \
 		$(SRC_DIRS)
 
 .PHONY: test
@@ -156,22 +167,6 @@ e2e-tests: tidy
 
 .PHONY: verify
 verify: check test
-
-.PHONY: goimports
-goimports: goimports_tool goimports-reviser_tool
-
-.PHONY: goimports_tool
-goimports_tool: tidy
-	@for dir in $(SRC_DIRS); do \
-		go tool goimports -w $$dir/; \
-	done
-
-.PHONY: goimports-reviser_tool
-goimports-reviser_tool: tidy
-	@for dir in $(SRC_DIRS); do \
-		GOIMPORTS_REVISER_OPTIONS="-imports-order std,project,general,company" \
-		go tool goimports-reviser -recursive $$dir/; \
-	done
 
 .PHONY: sast
 sast: $(GOSEC)

@@ -57,6 +57,7 @@ func addEventHandler(informer cache.SharedIndexInformer, origin string) error {
 
 func isV1Event(obj interface{}) bool {
 	_, ok := obj.(*v1.Event)
+
 	return ok
 }
 

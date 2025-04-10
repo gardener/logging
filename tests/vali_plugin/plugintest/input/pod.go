@@ -28,12 +28,14 @@ func NewPod(namespace, podName, container string) Pod {
 	}
 	p.logFilePath = getTag(p.namespace, p.name, p.container, p.containerID)
 	p.output = newPodOutput(p.namespace, p.name, p.container, p.containerID)
+
 	return p
 }
 
 // GenerateLogRecord generate log record passed to the Vali plugin as is from a real pod.
 func (p *pod) GenerateLogRecord() map[interface{}]interface{} {
 	defer func() { p.output.generatedLogsCount++ }()
+
 	return map[interface{}]interface{}{
 		"tag":      p.logFilePath,
 		"origin":   "seed",

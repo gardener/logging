@@ -40,6 +40,7 @@ func NewCommandStartGardenerEventLogger() *cobra.Command {
 			}
 
 			stopCh := signals.SetupSignalHandler()
+
 			return opts.Run(stopCh.Done())
 		},
 		SilenceUsage: true,
@@ -59,7 +60,6 @@ func NewCommandStartGardenerEventLogger() *cobra.Command {
 type Options struct {
 	SeedEventWatcher  events.SeedOptions
 	ShootEventWatcher events.ShootOptions
-	//Logs              *logs.KlogWriter
 }
 
 // NewOptions returns a new Options object.
@@ -67,7 +67,6 @@ func NewOptions() *Options {
 	o := &Options{
 		SeedEventWatcher:  events.SeedOptions{},
 		ShootEventWatcher: events.ShootOptions{},
-		//Logs:              logs.KlogWriter,
 	}
 
 	return o
@@ -77,7 +76,6 @@ func NewOptions() *Options {
 func (o *Options) AddFlags(flags *pflag.FlagSet) {
 	o.SeedEventWatcher.AddFlags(flags)
 	o.ShootEventWatcher.AddFlags(flags)
-	//o.Logs.AddFlags(flags)
 }
 
 // Validate validates all the required options.
@@ -85,11 +83,6 @@ func (o *Options) Validate() error {
 	var errs []error
 	errs = append(errs, o.SeedEventWatcher.Validate()...)
 	errs = append(errs, o.ShootEventWatcher.Validate()...)
-
-	// Activate logging as soon as possible
-	// if err := o.Logs.ValidateAndApply(); err != nil {
-	// 	return err
-	// }
 
 	return utilerrors.NewAggregate(errs)
 }
@@ -128,11 +121,11 @@ func (o *Options) config(seedKubeAPIServerConfig *rest.Config, seedKubeClient *k
 
 // Run runs gardener-apiserver with the given Options.
 func (o *Options) Run(stopCh <-chan struct{}) error {
-	logger, err := logger.NewZapLogger(logger.InfoLevel, logger.FormatJSON)
+	log, err := logger.NewZapLogger(logger.InfoLevel, logger.FormatJSON)
 	if err != nil {
 		return err
 	}
-	logger.Info("Starting Gardener Event Logger...", "Version", version.Get())
+	log.Info("Starting Gardener Event Logger...", "Version", version.Get())
 
 	// Create clientset for the native Kubernetes API group
 	// Use remote kubeconfig file (if set) or in-cluster config to create a new Kubernetes client for the native Kubernetes API groups
@@ -201,5 +194,6 @@ func (o *Options) ApplyTo(config *events.GardenerEventWatcherConfig) error {
 	if err := o.ShootEventWatcher.ApplyTo(&config.ShootEventWatcherConfig); err != nil {
 		return err
 	}
+
 	return nil
 }

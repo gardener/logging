@@ -48,6 +48,7 @@ func NewPackClientDecorator(cfg config.Config, newClient NewValiClientFunc, logg
 	}
 
 	_ = level.Debug(pack.logger).Log("msg", "client created")
+
 	return pack, nil
 }
 
@@ -100,5 +101,6 @@ func (c *packClient) checkIfLabelSetContainsExcludedLabels(ls model.LabelSet) bo
 			return true
 		}
 	}
+
 	return false
 }

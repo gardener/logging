@@ -12,7 +12,7 @@ import (
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/gardener/logging/tests/vali_plugin/plugintest/input"
 )
@@ -34,6 +34,7 @@ func CreateNClusters(numberOfClusters int) []Cluster {
 	for i := 0; i < numberOfClusters; i++ {
 		result[i] = newCluster(i)
 	}
+
 	return result
 }
 
@@ -52,6 +53,7 @@ func (c *cluster) ChangeStateToReady() (*extensionsv1alpha1.Cluster, *extensions
 func (c *cluster) changeState(newState string) (newCluster, oldCluster *extensionsv1alpha1.Cluster) {
 	oldCluster = c.cluster
 	c.cluster = getCluster(c.number, newState)
+
 	return
 }
 
@@ -59,9 +61,9 @@ func getCluster(number int, state string) *extensionsv1alpha1.Cluster {
 	shoot := &gardencorev1beta1.Shoot{
 		Spec: gardencorev1beta1.ShootSpec{
 			Hibernation: &gardencorev1beta1.Hibernation{
-				Enabled: pointer.BoolPtr(false),
+				Enabled: ptr.To(false),
 			},
-			Purpose: (*gardencorev1beta1.ShootPurpose)(pointer.StringPtr("evaluation")),
+			Purpose: (*gardencorev1beta1.ShootPurpose)(ptr.To("evaluation")),
 		},
 	}
 
@@ -74,13 +76,13 @@ func getCluster(number int, state string) *extensionsv1alpha1.Cluster {
 	case "deletion":
 		shoot.DeletionTimestamp = &metav1.Time{}
 	case "hibernating":
-		shoot.Spec.Hibernation.Enabled = pointer.BoolPtr(true)
+		shoot.Spec.Hibernation.Enabled = ptr.To(true)
 		shoot.Status.IsHibernated = false
 	case "hibernated":
-		shoot.Spec.Hibernation.Enabled = pointer.BoolPtr(true)
+		shoot.Spec.Hibernation.Enabled = ptr.To(true)
 		shoot.Status.IsHibernated = true
 	case "wailing":
-		shoot.Spec.Hibernation.Enabled = pointer.BoolPtr(false)
+		shoot.Spec.Hibernation.Enabled = ptr.To(false)
 		shoot.Status.IsHibernated = true
 	case "ready":
 		shoot.Status.LastOperation = &gardencorev1beta1.LastOperation{
@@ -113,5 +115,6 @@ func getCluster(number int, state string) *extensionsv1alpha1.Cluster {
 
 func encode(obj runtime.Object) []byte {
 	data, _ := json.Marshal(obj)
+
 	return data
 }

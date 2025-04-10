@@ -17,7 +17,7 @@ type FakeExtensionsV1alpha1 struct {
 }
 
 func (c *FakeExtensionsV1alpha1) Clusters() v1alpha1.ClusterInterface {
-	return &FakeClusters{c}
+	return &Clusters{c}
 }
 
 // RESTClient returns a RESTClient that is used to communicate

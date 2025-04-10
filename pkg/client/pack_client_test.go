@@ -12,7 +12,7 @@ import (
 	"github.com/credativ/vali/pkg/logproto"
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
-	g "github.com/onsi/ginkgo/v2"
+	ginkgov2 "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/prometheus/common/model"
 	"github.com/weaveworks/common/logging"
@@ -21,11 +21,11 @@ import (
 	"github.com/gardener/logging/pkg/config"
 )
 
-var _ = g.Describe("Pack Client", func() {
+var _ = ginkgov2.Describe("Pack Client", func() {
 
 	var (
 		fakeClient *client.FakeValiClient
-		//packClient      types.ValiClient
+		// packClient      types.ValiClient
 		preservedLabels = model.LabelSet{
 			"origin":    "",
 			"namespace": "",
@@ -46,7 +46,7 @@ var _ = g.Describe("Pack Client", func() {
 		logger log.Logger
 	)
 
-	g.BeforeEach(func() {
+	ginkgov2.BeforeEach(func() {
 		fakeClient = &client.FakeValiClient{}
 		cfg = config.Config{}
 
@@ -62,7 +62,7 @@ var _ = g.Describe("Pack Client", func() {
 		wantedEntries   []client.Entry
 	}
 
-	g.DescribeTable("#Handle", func(args handleArgs) {
+	ginkgov2.DescribeTable("#Handle", func(args handleArgs) {
 		cfg.PluginConfig.PreservedLabels = args.preservedLabels
 		packClient, err := client.NewPackClientDecorator(cfg, newValiClientFunc, logger)
 		Expect(err).ToNot(HaveOccurred())
@@ -74,12 +74,12 @@ var _ = g.Describe("Pack Client", func() {
 
 		Expect(len(fakeClient.Entries)).To(Equal(len(args.wantedEntries)))
 		for idx, entry := range fakeClient.Entries {
-			entry.Timestamp.After(args.wantedEntries[idx].Timestamp)
+			_ = entry.Timestamp.After(args.wantedEntries[idx].Timestamp)
 			Expect((entry.Labels)).To(Equal(args.wantedEntries[idx].Labels))
 			Expect((entry.Line)).To(Equal(args.wantedEntries[idx].Line))
 		}
 	},
-		g.Entry("Handle record without preserved labels", handleArgs{
+		ginkgov2.Entry("Handle record without preserved labels", handleArgs{
 			preservedLabels: model.LabelSet{},
 			incomingEntries: []client.Entry{
 				{
@@ -100,7 +100,7 @@ var _ = g.Describe("Pack Client", func() {
 				},
 			},
 		}),
-		g.Entry("Handle one record which contains only one reserved label", handleArgs{
+		ginkgov2.Entry("Handle one record which contains only one reserved label", handleArgs{
 			preservedLabels: preservedLabels,
 			incomingEntries: []client.Entry{
 				{
@@ -125,7 +125,7 @@ var _ = g.Describe("Pack Client", func() {
 				},
 			},
 		}),
-		g.Entry("Handle two record which contains only the reserved label", handleArgs{
+		ginkgov2.Entry("Handle two record which contains only the reserved label", handleArgs{
 			preservedLabels: preservedLabels,
 			incomingEntries: []client.Entry{
 				{
@@ -172,7 +172,7 @@ var _ = g.Describe("Pack Client", func() {
 				},
 			},
 		}),
-		g.Entry("Handle three record which contains various label", handleArgs{
+		ginkgov2.Entry("Handle three record which contains various label", handleArgs{
 			preservedLabels: preservedLabels,
 			incomingEntries: []client.Entry{
 				{
@@ -239,8 +239,8 @@ var _ = g.Describe("Pack Client", func() {
 		}),
 	)
 
-	g.Describe("#Stop", func() {
-		g.It("should stop", func() {
+	ginkgov2.Describe("#Stop", func() {
+		ginkgov2.It("should stop", func() {
 			packClient, err := client.NewPackClientDecorator(cfg, newValiClientFunc, logger)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -253,8 +253,8 @@ var _ = g.Describe("Pack Client", func() {
 		})
 	})
 
-	g.Describe("#StopWait", func() {
-		g.It("should stop", func() {
+	ginkgov2.Describe("#StopWait", func() {
+		ginkgov2.It("should stop", func() {
 			packClient, err := client.NewPackClientDecorator(cfg, newValiClientFunc, logger)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -280,5 +280,6 @@ func packLog(ls model.LabelSet, t time.Time, logLine string) string {
 	if err != nil {
 		return err.Error()
 	}
+
 	return string(jsonStr)
 }

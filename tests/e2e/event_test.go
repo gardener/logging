@@ -26,22 +26,26 @@ func TestShootEventsLogs(t *testing.T) {
 	deploymentFeature := features.New("shoot/events").WithLabel("type", "events").
 		Setup(func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 
-			var backend appsv1.StatefulSet
-			var client = cfg.Client()
+			var (
+				backend appsv1.StatefulSet
+				client  = cfg.Client()
+			)
 
 			g.Expect(client.Resources().Get(ctx, SeedBackendName, SeedNamespace, &backend)).To(gomega.Succeed())
-			if &backend != nil {
+			if len(backend.Name) > 0 {
 				t.Logf("seed backend statefulset found: %s", backend.Name)
 			}
 
 			g.Eventually(func() bool {
-				client.Resources().Get(ctx, SeedBackendName, SeedNamespace, &backend)
+				_ = client.Resources().Get(ctx, SeedBackendName, SeedNamespace, &backend)
+
 				return backend.Status.ReadyReplicas == *backend.Spec.Replicas
 			}).WithTimeout(2 * time.Minute).WithPolling(1 * time.Second).Should(gomega.BeTrue())
 
 			var daemonSet appsv1.DaemonSet
+
 			g.Expect(client.Resources().Get(ctx, DaemonSetName, SeedNamespace, &daemonSet)).To(gomega.Succeed())
-			if &daemonSet != nil {
+			if len(daemonSet.Name) > 0 {
 				t.Logf("fluent-bit daemonset found: %s", daemonSet.Name)
 			}
 
@@ -49,6 +53,7 @@ func TestShootEventsLogs(t *testing.T) {
 				list := appsv1.DaemonSetList{}
 				g.Expect(client.Resources().List(ctx, &list, resources.WithLabelSelector("app.kubernetes.io/name=fluent-bit"))).To(gomega.Succeed())
 				g.Expect(len(list.Items)).To(gomega.BeNumerically("==", 1))
+
 				return list.Items[0].Status.NumberAvailable == list.Items[0].Status.DesiredNumberScheduled &&
 					list.Items[0].Status.NumberUnavailable == 0
 			}).WithTimeout(1 * time.Minute).WithPolling(1 * time.Second).Should(gomega.BeTrue())
@@ -73,6 +78,7 @@ func TestShootEventsLogs(t *testing.T) {
 			}
 
 			g.Expect(client.Resources().Create(ctx, &event)).To(gomega.Succeed())
+
 			return ctx
 		}).
 		Assess("check events in in shoot backend", func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
@@ -106,6 +112,7 @@ func TestShootEventsLogs(t *testing.T) {
 					&stderr,
 				); err != nil {
 					t.Logf("failed to exec in pod: %s, stdout: %v", err.Error(), stdout.String())
+
 					return 0
 				}
 
@@ -118,6 +125,7 @@ func TestShootEventsLogs(t *testing.T) {
 				}
 
 				t.Logf("total events collected: %d", sum)
+
 				return sum
 			}).WithTimeout(5 * time.Minute).WithPolling(3 * time.Second).Should(gomega.BeNumerically(">", 0))
 

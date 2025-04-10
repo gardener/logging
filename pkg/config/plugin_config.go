@@ -41,17 +41,17 @@ type PluginConfig struct {
 	DynamicHostRegex string
 	// KubernetesMetadata holds the configurations for retrieving the meta data from a tag.
 	KubernetesMetadata KubernetesMetadataExtraction
-	//DynamicTenant holds the configurations for retrieving the tenant from a record key.
+	// DynamicTenant holds the configurations for retrieving the tenant from a record key.
 	DynamicTenant DynamicTenant
-	//LabelSetInitCapacity the initial capacity of the labelset stream.
+	// LabelSetInitCapacity the initial capacity of the labelset stream.
 	LabelSetInitCapacity int
-	//HostnameKey is the key name of the hostname key/value pair.
+	// HostnameKey is the key name of the hostname key/value pair.
 	HostnameKey *string
-	//HostnameValue is the value name of the hostname key/value pair.
+	// HostnameValue is the value name of the hostname key/value pair.
 	HostnameValue *string
-	//PreservedLabels is the set of label which will be preserved after packing the handled logs.
+	// PreservedLabels is the set of label which will be preserved after packing the handled logs.
 	PreservedLabels model.LabelSet
-	//EnableMultiTenancy switch on and off the parsing of __gardener_multitenancy_id__ label
+	// EnableMultiTenancy switch on and off the parsing of __gardener_multitenancy_id__ label
 	EnableMultiTenancy bool
 }
 
@@ -207,9 +207,9 @@ func initPluginConfig(cfg Getter, res *Config) error {
 		}
 		if labelSetInitCapacityValue <= 0 {
 			return fmt.Errorf("LabelSetInitCapacity can't be zero or negative value: %s", labelSetInitCapacity)
-		} else {
-			res.PluginConfig.LabelSetInitCapacity = labelSetInitCapacityValue
 		}
+
+		res.PluginConfig.LabelSetInitCapacity = labelSetInitCapacityValue
 	} else {
 		res.PluginConfig.LabelSetInitCapacity = 12
 	}

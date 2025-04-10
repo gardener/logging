@@ -11,15 +11,15 @@ import (
 
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
-	g "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	ginkgov2 "github.com/onsi/ginkgo/v2"
+	"github.com/onsi/gomega"
 	"github.com/prometheus/common/model"
 	"github.com/weaveworks/common/logging"
 
 	"github.com/gardener/logging/pkg/config"
 )
 
-var _ = g.Describe("Buffer", func() {
+var _ = ginkgov2.Describe("Buffer", func() {
 	var infoLogLevel logging.Level
 	_ = infoLogLevel.Set("info")
 	var conf config.Config
@@ -27,8 +27,8 @@ var _ = g.Describe("Buffer", func() {
 	logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
 	logger = level.NewFilter(logger, infoLogLevel.Gokit)
 
-	g.Describe("NewBuffer", func() {
-		g.BeforeEach(func() {
+	ginkgov2.Describe("NewBuffer", func() {
+		ginkgov2.BeforeEach(func() {
 			conf = config.Config{
 				ClientConfig: config.ClientConfig{
 					BufferConfig: config.BufferConfig{
@@ -44,30 +44,30 @@ var _ = g.Describe("Buffer", func() {
 				},
 			}
 		})
-		g.AfterEach(func() {
-			os.RemoveAll("/tmp/dque")
+		ginkgov2.AfterEach(func() {
+			_ = os.RemoveAll("/tmp/dque")
 		})
-		g.It("should create a buffered client when buffer is set", func() {
+		ginkgov2.It("should create a buffered client when buffer is set", func() {
 			conf := conf
 			conf.ClientConfig.BufferConfig.Buffer = true
 			c, err := NewBuffer(conf, logger, newFakeValiClient)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(c).ToNot(BeNil())
+			gomega.Expect(err).ToNot(gomega.HaveOccurred())
+			gomega.Expect(c).ToNot(gomega.BeNil())
 		})
 
-		g.It("should not create a buffered client when buffer type is wrong", func() {
+		ginkgov2.It("should not create a buffered client when buffer type is wrong", func() {
 			conf := conf
 			conf.ClientConfig.BufferConfig.BufferType = "wrong-buffer"
 			c, err := NewBuffer(conf, logger, newFakeValiClient)
-			Expect(err).To(HaveOccurred())
-			Expect(c).To(BeNil())
+			gomega.Expect(err).To(gomega.HaveOccurred())
+			gomega.Expect(c).To(gomega.BeNil())
 		})
 	})
 
-	g.Describe("newDque", func() {
+	ginkgov2.Describe("newDque", func() {
 		var valiclient ValiClient
 
-		g.BeforeEach(func() {
+		ginkgov2.BeforeEach(func() {
 			var err error
 			conf = config.Config{
 				ClientConfig: config.ClientConfig{
@@ -84,58 +84,58 @@ var _ = g.Describe("Buffer", func() {
 				},
 			}
 			valiclient, err = NewDque(conf, logger, newFakeValiClient)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(valiclient).ToNot(BeNil())
+			gomega.Expect(err).ToNot(gomega.HaveOccurred())
+			gomega.Expect(valiclient).ToNot(gomega.BeNil())
 		})
-		g.AfterEach(func() {
+		ginkgov2.AfterEach(func() {
 			err := os.RemoveAll("/tmp/gardener")
-			Expect(err).ToNot(HaveOccurred())
+			gomega.Expect(err).ToNot(gomega.HaveOccurred())
 		})
-		g.It("should sent log successfully", func() {
+		ginkgov2.It("should sent log successfully", func() {
 			ls := model.LabelSet{
 				"foo": "bar",
 			}
 			ts := time.Now()
 			line := "this is the message"
 			err := valiclient.Handle(ls, ts, line)
-			Expect(err).ToNot(HaveOccurred())
+			gomega.Expect(err).ToNot(gomega.HaveOccurred())
 			dQueCleint, ok := valiclient.(*dqueClient)
-			Expect(ok).To(BeTrue())
+			gomega.Expect(ok).To(gomega.BeTrue())
 			fakeVali, ok := dQueCleint.vali.(*fakeValiclient)
-			Expect(ok).To(BeTrue())
+			gomega.Expect(ok).To(gomega.BeTrue())
 			time.Sleep(2 * time.Second)
 			fakeVali.mu.Lock()
 			defer fakeVali.mu.Unlock()
 			log := fakeVali.sentLogs[0]
-			Expect(log.labelSet).To(Equal(ls))
-			Expect(log.timestamp).To(Equal(ts))
-			Expect(log.line).To(Equal(line))
+			gomega.Expect(log.labelSet).To(gomega.Equal(ls))
+			gomega.Expect(log.timestamp).To(gomega.Equal(ts))
+			gomega.Expect(log.line).To(gomega.Equal(line))
 		})
-		g.It("should stop correctly", func() {
+		ginkgov2.It("should stop correctly", func() {
 			valiclient.Stop()
 			dQueCleint, ok := valiclient.(*dqueClient)
-			Expect(ok).To(BeTrue())
+			gomega.Expect(ok).To(gomega.BeTrue())
 			fakeVali, ok := dQueCleint.vali.(*fakeValiclient)
-			Expect(ok).To(BeTrue())
+			gomega.Expect(ok).To(gomega.BeTrue())
 			time.Sleep(2 * time.Second)
 			fakeVali.mu.Lock()
 			defer fakeVali.mu.Unlock()
-			Expect(fakeVali.stopped).To(BeTrue())
+			gomega.Expect(fakeVali.stopped).To(gomega.BeTrue())
 			_, err := os.Stat("/tmp/gardener")
-			Expect(os.IsNotExist(err)).To(BeFalse())
+			gomega.Expect(os.IsNotExist(err)).To(gomega.BeFalse())
 		})
-		g.It("should gracefully stop correctly", func() {
+		ginkgov2.It("should gracefully stop correctly", func() {
 			valiclient.StopWait()
 			dQueCleint, ok := valiclient.(*dqueClient)
-			Expect(ok).To(BeTrue())
+			gomega.Expect(ok).To(gomega.BeTrue())
 			fakeVali, ok := dQueCleint.vali.(*fakeValiclient)
-			Expect(ok).To(BeTrue())
+			gomega.Expect(ok).To(gomega.BeTrue())
 			time.Sleep(2 * time.Second)
 			fakeVali.mu.Lock()
 			defer fakeVali.mu.Unlock()
-			Expect(fakeVali.stopped).To(BeTrue())
+			gomega.Expect(fakeVali.stopped).To(gomega.BeTrue())
 			_, err := os.Stat("/tmp/gardener")
-			Expect(os.IsNotExist(err)).To(BeTrue())
+			gomega.Expect(os.IsNotExist(err)).To(gomega.BeTrue())
 		})
 	})
 
@@ -153,7 +153,7 @@ func (c *fakeValiclient) GetEndPoint() string {
 
 var _ ValiClient = &fakeValiclient{}
 
-func newFakeValiClient(c config.Config, logger log.Logger) (ValiClient, error) {
+func newFakeValiClient(_ config.Config, _ log.Logger) (ValiClient, error) {
 	return &fakeValiclient{}, nil
 }
 
@@ -161,6 +161,7 @@ func (c *fakeValiclient) Handle(labels model.LabelSet, time time.Time, entry str
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.sentLogs = append(c.sentLogs, logEntry{time, labels, entry})
+
 	return nil
 }
 

@@ -5,29 +5,30 @@
 package config_test
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	ginkgov2 "github.com/onsi/ginkgo/v2"
+	"github.com/onsi/gomega"
 )
 
 var testDir string
 
-var _ = BeforeSuite(func() {
+var _ = ginkgov2.BeforeSuite(func() {
 	var err error
-	testDir, err = ioutil.TempDir("/tmp", "curator-config")
-	Expect(err).ToNot(HaveOccurred())
+
+	testDir, err = os.MkdirTemp("/tmp", "curator-config")
+	gomega.Expect(err).ToNot(gomega.HaveOccurred())
 })
 
-var _ = AfterSuite(func() {
+var _ = ginkgov2.AfterSuite(func() {
 	var err error
-	os.RemoveAll(testDir)
-	Expect(err).ToNot(HaveOccurred())
+
+	_ = os.RemoveAll(testDir)
+	gomega.Expect(err).ToNot(gomega.HaveOccurred())
 })
 
 func TestVali(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Curator Config Suite")
+	gomega.RegisterFailHandler(ginkgov2.Fail)
+	ginkgov2.RunSpecs(t, "Curator Config Suite")
 }

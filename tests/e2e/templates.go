@@ -270,6 +270,7 @@ func newEventLoggerRBAC(namespace string, name string) (*v1.Role, *v1.RoleBindin
 			},
 		},
 	}
+
 	return role, roleBinding
 }
 
@@ -303,5 +304,6 @@ func newEventLoggerDeployment(namespace string, name string, image string) *apps
 
 func encode(obj runtime.Object) []byte {
 	data, _ := json.Marshal(obj)
+
 	return data
 }

@@ -7,7 +7,7 @@ package healthz
 import (
 	"bytes"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
@@ -43,10 +43,10 @@ func (m *metricsChecker) stallMetrics(_ *http.Request) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
-	//We Read the response body on the line below.
-	body, err := ioutil.ReadAll(resp.Body)
+	// We Read the response body on the line below.
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
@@ -55,5 +55,6 @@ func (m *metricsChecker) stallMetrics(_ *http.Request) error {
 		return errors.New("the metrics have not been changed since last healthz check")
 	}
 	m.previousMetrics = body
+
 	return nil
 }

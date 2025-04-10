@@ -7,8 +7,8 @@ package vali_plugin
 import (
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	ginkgov2 "github.com/onsi/ginkgo/v2"
+	"github.com/onsi/gomega"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllertest"
 
 	"github.com/gardener/logging/pkg/config"
@@ -25,7 +25,7 @@ const (
 	numberOfLogs     = 1000
 )
 
-var _ = Describe("Plugin Test", Ordered, func() {
+var _ = ginkgov2.Describe("Plugin Test", ginkgov2.Ordered, func() {
 	var (
 		testClient              *plugintestclient.BlackBoxTestingValiClient
 		valiPluginConfiguration config.Config
@@ -37,31 +37,31 @@ var _ = Describe("Plugin Test", Ordered, func() {
 		err                     error
 	)
 
-	It("set up a blackbox plugin client", func() {
+	ginkgov2.It("set up a blackbox plugin client", func() {
 		testClient = plugintestclient.NewBlackBoxTestingValiClient()
 
 		go func() {
-			defer GinkgoRecover()
+			defer ginkgov2.GinkgoRecover()
 			testClient.Run()
 		}()
 	})
 
-	It(" set up the plugin", func() {
+	ginkgov2.It(" set up the plugin", func() {
 		valiPluginConfiguration, err = plugintestconfig.NewConfiguration()
 		valiPluginConfiguration.ClientConfig.TestingClient = testClient
-		Expect(valiPluginConfiguration).NotTo(BeNil())
-		Expect(err).NotTo(HaveOccurred())
+		gomega.Expect(valiPluginConfiguration).NotTo(gomega.BeNil())
+		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 		fakeInformer = &controllertest.FakeInformer{Synced: true}
 
 		plugin, err = valiplugin.NewPlugin(fakeInformer, &valiPluginConfiguration, plugintestconfig.NewLogger())
-		Expect(plugin).NotTo(BeNil())
-		Expect(err).NotTo(HaveOccurred())
+		gomega.Expect(plugin).NotTo(gomega.BeNil())
+		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 	})
 
-	It("create clusters and generate logs", func() {
+	ginkgov2.It("create clusters and generate logs", func() {
 		clusters = plugintestcluster.CreateNClusters(numberOfClusters)
-		Expect(clusters).Should(HaveLen(numberOfClusters))
+		gomega.Expect(clusters).Should(gomega.HaveLen(numberOfClusters))
 
 		for i := 0; i < numberOfClusters; i++ {
 			fakeInformer.Add(clusters[i].GetCluster())
@@ -76,26 +76,27 @@ var _ = Describe("Plugin Test", Ordered, func() {
 		loggerController.Wait()
 
 		pods = loggerController.GetPods()
-		Expect(pods).Should(HaveLen(numberOfClusters))
+		gomega.Expect(pods).Should(gomega.HaveLen(numberOfClusters))
 		for p := range pods {
-			Expect(pods[p].GetOutput().GetGeneratedLogsCount()).Should(Equal(numberOfLogs))
+			gomega.Expect(pods[p].GetOutput().GetGeneratedLogsCount()).Should(gomega.Equal(numberOfLogs))
 		}
 	})
 
-	It("validate logs", func() {
+	ginkgov2.It("validate logs", func() {
 		_matcher := matcher.NewMatcher()
 
-		Eventually(func() bool {
+		gomega.Eventually(func() bool {
 			for _, pod := range pods {
 				if !_matcher.Match(pod, testClient) {
 					return false
 				}
 			}
+
 			return true
-		}).WithTimeout(60 * time.Second).WithPolling(1 * time.Second).Should(BeTrue())
+		}).WithTimeout(60 * time.Second).WithPolling(1 * time.Second).Should(gomega.BeTrue())
 	})
 
-	AfterAll(func() {
+	ginkgov2.AfterAll(func() {
 		plugin.Close()
 	})
 })

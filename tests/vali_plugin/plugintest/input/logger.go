@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega"
 
 	"github.com/gardener/logging/pkg/valiplugin"
 )
@@ -60,9 +60,9 @@ func (c *LoggerController) worker(pod Pod) {
 			recordStr = append(recordStr, fmt.Sprintf("%v=%v", key, value))
 		}
 		sort.Strings(recordStr)
-		//GinkgoWriter.Println("--> ", strings.Join(recordStr, ","))
+		// GinkgoWriter.Println("--> ", strings.Join(recordStr, ","))
 		err := c.plugin.SendRecord(record, time.Now())
-		Expect(err).NotTo(HaveOccurred())
+		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 		runtime.Gosched()
 	}
 }
