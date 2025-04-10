@@ -32,7 +32,7 @@ var _ = ginkgov2.Describe("CuratorUtils", func() {
 			tmpFile, err = ioutil.TempFile(testDir, "temp-file")
 			gomega.Expect(err).ToNot(gomega.HaveOccurred())
 			files = append(files, tmpFile)
-			defer tmpFile.Close()
+			defer func() { _ = tmpFile.Close() }()
 		}
 
 		freeSpaceFunc := func() (uint64, error) {

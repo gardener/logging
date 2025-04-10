@@ -43,7 +43,7 @@ func (m *metricsChecker) stallMetrics(_ *http.Request) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	//We Read the response body on the line below.
 	body, err := ioutil.ReadAll(resp.Body)

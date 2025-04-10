@@ -71,7 +71,7 @@ func GetNOldestFiles(dirPath string, filePageSize int) ([]file, error) {
 	if err != nil {
 		return []file{}, err
 	}
-	defer openedDir.Close()
+	defer func() { _ = openedDir.Close() }()
 
 	oldestNFiles, err := getNextNFiles(nil, openedDir, filePageSize)
 	if err != nil {

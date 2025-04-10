@@ -26,7 +26,7 @@ var _ = ginkgov2.Describe("CuratorConfig", func() {
 		func(args testArgs) {
 			testConfigFile, err := os.CreateTemp(testDir, "curator-config")
 			gomega.Expect(err).ToNot(gomega.HaveOccurred())
-			defer testConfigFile.Close()
+			defer func() { _ = testConfigFile.Close() }()
 
 			out, err := yaml.Marshal(args.conf)
 			gomega.Expect(err).ToNot(gomega.HaveOccurred())

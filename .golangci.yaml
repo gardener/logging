@@ -34,8 +34,6 @@ linters:
           - revive
           - errcheck
         path: tests/*
-      - path: (.+)\.go$
-        text: Error return value of .((os\.)?std(out|err)\..*|.*Close|.*Flush|os\.Remove(All)?|.*printf?|os\.(Un)?Setenv). is not checked
 formatters:
   enable:
     - gci
