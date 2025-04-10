@@ -11,7 +11,7 @@ import (
 // EventWatcherConfig is a configuration fot the event watcher.
 type EventWatcherConfig struct {
 	// Kubeconfig is the path to the kubeconfig file
-	Kubeconfig string //Do I need this field?
+	Kubeconfig string // Do I need this field?
 	// Namespaces to watch for events in.
 	Namespaces []string
 }

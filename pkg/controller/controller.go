@@ -167,15 +167,12 @@ func (ctl *controller) updateFunc(oldObj interface{}, newObj interface{}) {
 		}
 
 		ctl.updateControllerClientState(_client, shoot)
-	} else {
-		// The client does not exist. Try to create a new one, if the shoot is applicable for logging.
-		if ctl.isAllowedShoot(shoot) {
-			_ = level.Info(ctl.logger).Log(
-				"msg", "client is not found in controller, creating...",
-				"cluster", newCluster.Name,
-			)
-			ctl.createControllerClient(newCluster.Name, shoot)
-		}
+	} else if ctl.isAllowedShoot(shoot) {
+		_ = level.Info(ctl.logger).Log(
+			"msg", "client is not found in controller, creating...",
+			"cluster", newCluster.Name,
+		)
+		ctl.createControllerClient(newCluster.Name, shoot)
 	}
 }
 

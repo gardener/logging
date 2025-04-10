@@ -60,7 +60,7 @@ func (c *LoggerController) worker(pod Pod) {
 			recordStr = append(recordStr, fmt.Sprintf("%v=%v", key, value))
 		}
 		sort.Strings(recordStr)
-		//GinkgoWriter.Println("--> ", strings.Join(recordStr, ","))
+		// GinkgoWriter.Println("--> ", strings.Join(recordStr, ","))
 		err := c.plugin.SendRecord(record, time.Now())
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 		runtime.Gosched()

@@ -4,6 +4,7 @@ run:
   go: "1.24"
 linters:
   enable:
+    - gocritic
     - gosec
     - revive
   settings:

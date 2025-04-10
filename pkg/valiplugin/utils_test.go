@@ -145,9 +145,9 @@ var _ = ginkgov2.Describe("Vali plugin utils", func() {
 		),
 		ginkgov2.Entry("kv with map",
 			createLineArgs{
-				records: map[string]interface{}{"foo": "bar", "map": map[string]interface{}{"foo": "bar", "bar ": "foo "}},
+				records: map[string]interface{}{"foo": "bar", "map": map[string]interface{}{"foo": "bar", "bar": "foo "}},
 				f:       config.KvPairFormat,
-				want:    `foo=bar map="map[bar :foo  foo:bar]"`,
+				want:    `foo=bar map="map[bar:foo  foo:bar]"`,
 				wantErr: false,
 			},
 		),

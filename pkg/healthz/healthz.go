@@ -45,7 +45,7 @@ func (m *metricsChecker) stallMetrics(_ *http.Request) error {
 	}
 	defer func() { _ = resp.Body.Close() }()
 
-	//We Read the response body on the line below.
+	// We Read the response body on the line below.
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err

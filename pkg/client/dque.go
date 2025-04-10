@@ -185,11 +185,11 @@ func (c *dqueClient) stopQue(wait bool) error {
 	c.isStooped = true
 	// In case the dequeuer is blocked on empty queue.
 	if c.queue.Size() == 0 {
-		c.lock.Unlock() //Nothing to wait for
+		c.lock.Unlock() // Nothing to wait for
 		return nil
 	}
 	c.lock.Unlock()
-	//TODO: Make time group waiter
+	// TODO: Make time group waiter
 	c.wg.Wait()
 	return nil
 }

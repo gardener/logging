@@ -25,7 +25,7 @@ var _ = ginkgov2.Describe("Pack Client", func() {
 
 	var (
 		fakeClient *client.FakeValiClient
-		//packClient      types.ValiClient
+		// packClient      types.ValiClient
 		preservedLabels = model.LabelSet{
 			"origin":    "",
 			"namespace": "",
