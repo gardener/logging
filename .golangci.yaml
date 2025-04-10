@@ -9,11 +9,6 @@ linters:
   disable:
     - unused
   settings:
-    errcheck:
-      exclude-functions:
-        - (github.com/go-kit/kit/log.Logger).Log
-        - (*github.com/weaveworks/common/logging.Level).Set
-        - (*github.com/cortexproject/cortex/pkg/util/flagext.URLValue).Set
     gosec:
       excludes:
         - G115
