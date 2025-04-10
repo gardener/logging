@@ -3,7 +3,7 @@ run:
   concurrency: 4
   go: "1.24"
 linters:
-  enable:
+  enable: # set of linters in addition to the default set (https://golangci-lint.run/usage/linters/#enabled-by-default)
     - gocritic
     - gosec
     - nlreturn
