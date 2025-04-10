@@ -14,13 +14,6 @@ linters:
       rules:
         - name: package-comments
           disabled: true
-  exclusions:
-    generated: lax
-    rules:
-      - linters:
-          - revive
-          - errcheck
-        path: tests/*
 formatters:
   enable:
     - gci
