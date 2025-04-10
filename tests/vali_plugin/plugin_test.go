@@ -91,6 +91,7 @@ var _ = ginkgov2.Describe("Plugin Test", ginkgov2.Ordered, func() {
 					return false
 				}
 			}
+
 			return true
 		}).WithTimeout(60 * time.Second).WithPolling(1 * time.Second).Should(gomega.BeTrue())
 	})

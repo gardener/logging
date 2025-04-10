@@ -161,6 +161,7 @@ func (c *fakeValiclient) Handle(labels model.LabelSet, time time.Time, entry str
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.sentLogs = append(c.sentLogs, logEntry{time, labels, entry})
+
 	return nil
 }
 

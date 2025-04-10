@@ -34,6 +34,7 @@ func CreateNClusters(numberOfClusters int) []Cluster {
 	for i := 0; i < numberOfClusters; i++ {
 		result[i] = newCluster(i)
 	}
+
 	return result
 }
 
@@ -52,6 +53,7 @@ func (c *cluster) ChangeStateToReady() (*extensionsv1alpha1.Cluster, *extensions
 func (c *cluster) changeState(newState string) (newCluster, oldCluster *extensionsv1alpha1.Cluster) {
 	oldCluster = c.cluster
 	c.cluster = getCluster(c.number, newState)
+
 	return
 }
 
@@ -113,5 +115,6 @@ func getCluster(number int, state string) *extensionsv1alpha1.Cluster {
 
 func encode(obj runtime.Object) []byte {
 	data, _ := json.Marshal(obj)
+
 	return data
 }

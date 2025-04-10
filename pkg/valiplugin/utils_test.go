@@ -431,6 +431,7 @@ var _ = ginkgov2.Describe("Vali plugin utils", func() {
 			err := autoLabels(m, lbs)
 			if args.err != nil {
 				gomega.Expect(err.Error()).To(gomega.Equal(args.err.Error()))
+
 				return
 			}
 			gomega.Expect(lbs).To(gomega.Equal(args.want))
@@ -466,6 +467,7 @@ var _ = ginkgov2.Describe("Vali plugin utils", func() {
 			err := extractKubernetesMetadataFromTag(args.records, args.tagKey, re)
 			if args.err != nil {
 				gomega.Expect(err.Error()).To(gomega.Equal(args.err.Error()))
+
 				return
 			}
 			gomega.Expect(err).ToNot(gomega.HaveOccurred())
@@ -530,5 +532,6 @@ func compareJSON(got, want string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+
 	return reflect.DeepEqual(g, w), nil
 }

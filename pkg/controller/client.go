@@ -114,6 +114,7 @@ func (ctl *controller) createControllerClient(clusterName string, shoot *gardene
 	if c, ok := ctl.clients[clusterName]; ok {
 		ctl.updateControllerClientState(c, shoot)
 		_ = level.Info(ctl.logger).Log("msg", fmt.Sprintf("controller client for cluster %v already exists", clusterName))
+
 		return
 	}
 
@@ -124,6 +125,7 @@ func (ctl *controller) createControllerClient(clusterName string, shoot *gardene
 			"msg", fmt.Sprintf("failed to make new vali client for cluster %v", clusterName),
 			"error", err.Error(),
 		)
+
 		return
 	}
 
@@ -197,6 +199,7 @@ func (c *controllerClient) Handle(ls model.LabelSet, t time.Time, s string) erro
 		}
 
 	}
+
 	return combineErr
 }
 
@@ -251,6 +254,7 @@ func (c *controllerClient) SetState(state clusterState) {
 		_ = level.Error(c.logger).Log(
 			"msg", fmt.Sprintf("Unknown state %v for cluster %v. The client state will not be changed", state, c.name),
 		)
+
 		return
 	}
 

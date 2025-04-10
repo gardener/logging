@@ -6,6 +6,7 @@ linters:
   enable:
     - gocritic
     - gosec
+    - nlreturn
     - revive
   settings:
     gosec:
@@ -15,6 +16,12 @@ linters:
       rules:
         - name: package-comments
           disabled: true
+  exclusions:
+    generated: lax
+    rules:
+      - path: "pkg/cluster/.*.go$" # exclude controller-gen generated code
+        linters:
+          - nlreturn
 formatters:
   enable:
     - gci

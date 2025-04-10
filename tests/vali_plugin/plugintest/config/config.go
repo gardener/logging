@@ -105,6 +105,7 @@ func NewConfiguration() (config.Config, error) {
 
 func getLogLevel() (logLevel logging.Level) {
 	_ = logLevel.Set("info")
+
 	return logLevel
 }
 

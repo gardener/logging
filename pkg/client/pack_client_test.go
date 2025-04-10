@@ -280,5 +280,6 @@ func packLog(ls model.LabelSet, t time.Time, logLine string) string {
 	if err != nil {
 		return err.Error()
 	}
+
 	return string(jsonStr)
 }

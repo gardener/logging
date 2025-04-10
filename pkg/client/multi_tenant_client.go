@@ -71,6 +71,7 @@ func (c *multiTenantClient) Handle(ls model.LabelSet, t time.Time, s string) err
 		for _, er := range errs {
 			combineErr = giterrors.Wrap(combineErr, er.Error())
 		}
+
 		return combineErr
 	}
 
@@ -85,6 +86,7 @@ func getTenants(rawIdsStr string) []string {
 		tenant = strings.TrimSpace(tenant)
 		if tenant == "" {
 			numberOfEmptyTenants++
+
 			continue
 		}
 		multiTenantIDs[idx-numberOfEmptyTenants] = tenant
@@ -129,6 +131,7 @@ func (c *multiTenantClient) handleStream(stream batch.Stream) error {
 			combineErr = giterrors.Wrap(combineErr, err.Error())
 		}
 	}
+
 	return combineErr
 }
 
@@ -140,6 +143,7 @@ func (c *multiTenantClient) handleEntries(ls model.LabelSet, entries []batch.Ent
 			combineErr = giterrors.Wrap(combineErr, err.Error())
 		}
 	}
+
 	return combineErr
 }
 
@@ -165,6 +169,7 @@ func NewRemoveMultiTenantIdClientDecorator(cfg config.Config, newClient NewValiC
 
 func (c *removeMultiTenantIdClient) Handle(ls model.LabelSet, t time.Time, s string) error {
 	delete(ls, MultiTenantClientLabel)
+
 	return c.valiclient.Handle(ls, t, s)
 }
 

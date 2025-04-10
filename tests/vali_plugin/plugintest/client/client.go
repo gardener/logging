@@ -26,6 +26,7 @@ func (c *BlackBoxTestingValiClient) Run() {
 		ls, ok := c.localStreams[labelSetStr]
 		if ok {
 			gomega.Expect(ls.add(e.Timestamp)).To(gomega.Succeed())
+
 			continue
 		}
 		c.localStreams[labelSetStr] = &localStream{
@@ -66,9 +67,11 @@ func (c *BlackBoxTestingValiClient) GetLogsCount(ls model.LabelSet) int {
 				c.localStreams[labelSetStr].logCount,
 				ls,
 			)
+
 			return c.localStreams[labelSetStr].logCount
 		}
 	}
+
 	return 0
 }
 
@@ -89,5 +92,6 @@ func labelSetsAreEqual(ls1, ls2 model.LabelSet) bool {
 			return false
 		}
 	}
+
 	return true
 }

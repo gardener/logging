@@ -94,6 +94,7 @@ func NewClient(cfg config.Config, logger log.Logger, options Options) (ValiClien
 		"msg", "building a new client",
 		"queue_name", cfg.ClientConfig.BufferConfig.DqueConfig.QueueName,
 	)
+
 	return ncf(cfg, logger)
 }
 
@@ -119,6 +120,7 @@ func NewRemoveTenantIdClientDecorator(cfg config.Config, newClient NewValiClient
 
 func (c *removeTenantIdClient) Handle(ls model.LabelSet, t time.Time, s string) error {
 	delete(ls, client.ReservedLabelTenantID)
+
 	return c.valiclient.Handle(ls, t, s)
 }
 
@@ -136,5 +138,6 @@ func newValiClient(cfg config.Config, newClient NewValiClientFunc, logger log.Lo
 	if newClient != nil {
 		return newClient(cfg, logger)
 	}
+
 	return NewPromtailClient(cfg.ClientConfig.CredativValiConfig, logger)
 }

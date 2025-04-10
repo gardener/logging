@@ -42,6 +42,7 @@ func (c *fakeValiClient) Handle(_ model.LabelSet, _ time.Time, _ string) error {
 	if c.isStopped {
 		return fmt.Errorf("client has been stopped")
 	}
+
 	return nil
 }
 

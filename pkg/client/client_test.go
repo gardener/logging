@@ -89,5 +89,6 @@ func parseURL(u string) (flagext.URLValue, error) {
 	if err != nil {
 		return flagext.URLValue{}, err
 	}
+
 	return flagext.URLValue{URL: parsed}, nil
 }

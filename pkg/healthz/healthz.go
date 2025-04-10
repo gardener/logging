@@ -55,5 +55,6 @@ func (m *metricsChecker) stallMetrics(_ *http.Request) error {
 		return errors.New("the metrics have not been changed since last healthz check")
 	}
 	m.previousMetrics = body
+
 	return nil
 }

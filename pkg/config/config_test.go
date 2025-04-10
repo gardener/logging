@@ -696,6 +696,7 @@ var _ = ginkgov2.Describe("Config", func() {
 
 func parseURL(u string) flagext.URLValue {
 	parsed, _ := url.Parse(u)
+
 	return flagext.URLValue{URL: parsed}
 }
 

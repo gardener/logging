@@ -48,6 +48,7 @@ func toStringSlice(slice []interface{}) []interface{} {
 			s = append(s, t)
 		}
 	}
+
 	return s
 }
 
@@ -69,6 +70,7 @@ func toStringMap(record map[interface{}]interface{}) map[string]interface{} {
 			m[key] = v
 		}
 	}
+
 	return m
 }
 
@@ -139,6 +141,7 @@ func extractLabels(records map[string]interface{}, keys []string) model.LabelSet
 		}
 		res[ln] = lv
 	}
+
 	return res
 }
 
@@ -180,6 +183,7 @@ func getDynamicHostName(records map[string]interface{}, mapping map[string]inter
 			}
 		}
 	}
+
 	return ""
 }
 
@@ -194,6 +198,7 @@ func getRecordValue(key string, records map[string]interface{}) (string, bool) {
 			return fmt.Sprintf("%v", typedVal), true
 		}
 	}
+
 	return "", false
 }
 
@@ -224,6 +229,7 @@ func createLine(records map[string]interface{}, f config.Format) (string, error)
 		if err != nil {
 			return "", err
 		}
+
 		return string(js), nil
 	case config.KvPairFormat:
 		buf := &bytes.Buffer{}
@@ -240,12 +246,14 @@ func createLine(records map[string]interface{}, f config.Format) (string, error)
 				if err != nil {
 					return "", nil
 				}
+
 				continue
 			}
 			if err != nil {
 				return "", nil
 			}
 		}
+
 		return buf.String(), nil
 	default:
 		return "", fmt.Errorf("invalid line format: %v", f)

@@ -20,6 +20,7 @@ func randStringRunes(n int) string {
 		}
 		b[i] = letterRunes[num.Int64()]
 	}
+
 	return string(b)
 }
 

@@ -26,6 +26,7 @@ func (m *logMatcher) Match(pod input.Pod, endClient client.EndClient) bool {
 
 	generated := pod.GetOutput().GetGeneratedLogsCount()
 	received := endClient.GetLogsCount(getLabelSets(pod))
+
 	return generated == received
 }
 

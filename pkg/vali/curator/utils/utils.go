@@ -61,6 +61,7 @@ func deleteNOldestFiles(dirPath string, filePageSize int) (int, error) {
 		}
 		deletedFiles++
 	}
+
 	return deletedFiles, err
 }
 
@@ -71,6 +72,7 @@ func GetNOldestFiles(dirPath string, filePageSize int) ([]file, error) {
 	if err != nil {
 		return []file{}, err
 	}
+
 	defer func() { _ = openedDir.Close() }()
 
 	oldestNFiles, err := getNextNFiles(nil, openedDir, filePageSize)
@@ -89,10 +91,12 @@ func GetNOldestFiles(dirPath string, filePageSize int) ([]file, error) {
 		for oldestNFilesIndex+filePageIndex < filePageSize {
 			if filePageIndex >= len(filePage) {
 				tempBuffer = append(tempBuffer, oldestNFiles[oldestNFilesIndex:]...)
+
 				break
 			}
 			if oldestNFilesIndex >= len(oldestNFiles) {
 				tempBuffer = append(tempBuffer, filePage[filePageIndex:]...)
+
 				break
 			}
 
@@ -106,6 +110,7 @@ func GetNOldestFiles(dirPath string, filePageSize int) ([]file, error) {
 		}
 		oldestNFiles, tempBuffer = tempBuffer, oldestNFiles[:0]
 	}
+
 	return oldestNFiles, err
 }
 
@@ -121,6 +126,7 @@ func getNextNFiles(nextNFiles []file, openedDir *os.File, count int) ([]file, er
 	for _, fileInfo := range nextNFilesInfo {
 		nextNFiles = append(nextNFiles, file{name: fileInfo.Name(), modTime: fileInfo.ModTime().Unix()})
 	}
+
 	return nextNFiles, nil
 }
 
@@ -144,5 +150,6 @@ func (ms MemStat) String() string {
 	fmt.Fprintf(&ms.sb, "Fragmentation Memory Waste: %d\n", memoryWastedFragmentation)
 	memoryThatCouldBeReturnedToOS := m.HeapIdle - m.HeapReleased
 	fmt.Fprintf(&ms.sb, "Memory That Could Be Returned To OS: %d\n", memoryThatCouldBeReturnedToOS)
+
 	return ms.sb.String()
 }

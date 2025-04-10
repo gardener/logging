@@ -25,6 +25,7 @@ func (s *localStream) add(timestamp time.Time) error {
 	}
 	s.lastTimestamp = timestamp
 	s.logCount++
+
 	return nil
 }
 
@@ -36,5 +37,6 @@ func LabelSetToString(ls model.LabelSet) string {
 	}
 
 	sort.Strings(labelSetStr)
+
 	return strings.Join(labelSetStr, ",")
 }

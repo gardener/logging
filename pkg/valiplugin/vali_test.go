@@ -43,6 +43,7 @@ func (r *recorder) Handle(labels model.LabelSet, time time.Time, e string) error
 		e,
 		time,
 	}
+
 	return nil
 }
 
@@ -81,6 +82,7 @@ func (ctl *fakeController) GetClient(name string) (client.ValiClient, bool) {
 	if client, ok := ctl.clients[name]; ok {
 		return client, false
 	}
+
 	return nil, false
 }
 
@@ -148,6 +150,7 @@ var _ = ginkgov2.Describe("Vali plugin", func() {
 			err := l.SendRecord(args.record, now)
 			if args.wantErr {
 				gomega.Expect(err).To(gomega.HaveOccurred())
+
 				return
 			}
 			gomega.Expect(err).ToNot(gomega.HaveOccurred())
@@ -498,5 +501,4 @@ var _ = ginkgov2.Describe("Vali plugin", func() {
 				}),
 		)
 	})
-
 })

@@ -40,6 +40,7 @@ func NewCommandStartGardenerEventLogger() *cobra.Command {
 			}
 
 			stopCh := signals.SetupSignalHandler()
+
 			return opts.Run(stopCh.Done())
 		},
 		SilenceUsage: true,
@@ -193,5 +194,6 @@ func (o *Options) ApplyTo(config *events.GardenerEventWatcherConfig) error {
 	if err := o.ShootEventWatcher.ApplyTo(&config.ShootEventWatcherConfig); err != nil {
 		return err
 	}
+
 	return nil
 }

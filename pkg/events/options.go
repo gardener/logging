@@ -35,6 +35,7 @@ func (o *Options) Validate() []error {
 func (o *Options) ApplyTo(config *EventWatcherConfig) error {
 	config.Kubeconfig = o.Kubeconfig
 	config.Namespaces = o.Namespaces
+
 	return nil
 }
 

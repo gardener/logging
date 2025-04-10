@@ -30,6 +30,7 @@ func main() {
 			fmt.Println(err.Error())
 			os.Exit(3)
 		}
+
 		return
 	default:
 		printAndExitWithValue("CP require only two arguments. Found more!", 4)
@@ -95,6 +96,7 @@ func createDirectory(path string) error {
 			// The dir does not exist so create it.
 			return os.MkdirAll(path, fs.FileMode(0750))
 		}
+
 		return err
 	}
 
