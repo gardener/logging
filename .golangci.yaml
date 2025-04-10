@@ -28,9 +28,6 @@ linters:
           - staticcheck
         text: 'SA1019:'
       - linters:
-          - deadcode
-        path: cmd/out_vali\.go
-      - linters:
           - revive
           - errcheck
         path: tests/*
