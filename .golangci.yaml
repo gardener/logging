@@ -6,8 +6,6 @@ linters:
   enable:
     - gosec
     - revive
-  disable:
-    - unused
   settings:
     gosec:
       excludes:
