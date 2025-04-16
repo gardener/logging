@@ -36,3 +36,10 @@ updates:
       interval: weekly
     commit-message:
       prefix: ":seedling:"
+  # Create PRs for GitHub Actions updates
+  - package-ecosystem: "github-actions"
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ":seedling:"
