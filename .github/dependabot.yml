@@ -36,6 +36,11 @@ updates:
       interval: weekly
     commit-message:
       prefix: ":seedling:"
+    ignore:
+      # Skip fluent-bit image updates. These shall be updated manually and in sync with the fluent-bit version in the Gardener project.
+      - dependency-name: ghcr.io/fluent/fluent-operator/fluent-bit-*
+        versions:
+          - "*"
   # Create PRs for GitHub Actions updates
   - package-ecosystem: "github-actions"
     directory: /
