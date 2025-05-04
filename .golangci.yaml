@@ -13,8 +13,23 @@ linters:
       excludes:
         - G115
     revive:
+      enable-all-rules: true
       rules:
+        - name: add-constant
+          disabled: true
+        - name: cognitive-complexity
+          disabled: true
+        - name: cyclomatic
+          disabled: true
+        - name: dot-imports
+          disabled: true
+        - name: function-length
+          disabled: true
+        - name: line-length-limit
+          disabled: true
         - name: package-comments
+          disabled: true
+        - name: use-errors-new
           disabled: true
   exclusions:
     generated: lax
