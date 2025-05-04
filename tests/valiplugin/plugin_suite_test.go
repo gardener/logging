@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package vali_plugin_test
+package valiplugin_test
 
 import (
 	"testing"

@@ -37,6 +37,7 @@ linters:
       - path: "pkg/cluster/.*.go$" # exclude controller-gen generated code
         linters:
           - nlreturn
+          - revive
 formatters:
   enable:
     - gci

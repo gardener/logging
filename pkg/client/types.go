@@ -17,7 +17,7 @@ import (
 // ValiClient represents an instance which sends logs to Vali ingester
 type ValiClient interface {
 	// Handle processes logs and then sends them to Vali ingester
-	Handle(labels model.LabelSet, time time.Time, entry string) error
+	Handle(labels model.LabelSet, t time.Time, entry string) error
 	// Stop shut down the client immediately without waiting to send the saved logs
 	Stop()
 	// StopWait stops the client of receiving new logs and waits all saved logs to be sent until shuting down

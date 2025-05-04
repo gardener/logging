@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"time"
 
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	kubeinformersinterfaces "k8s.io/client-go/informers/internalinterfaces"
 	"k8s.io/client-go/kubernetes"
@@ -27,7 +27,7 @@ func NewEventInformerFuncForNamespace(namespace string) kubeinformersinterfaces.
 		)
 		informer := cache.NewSharedIndexInformer(
 			watchlist,
-			&v1.Event{},
+			&corev1.Event{},
 			resyncPeriod,
 			cache.Indexers{},
 		)
@@ -38,30 +38,26 @@ func NewEventInformerFuncForNamespace(namespace string) kubeinformersinterfaces.
 
 func addEventHandler(informer cache.SharedIndexInformer, origin string) error {
 	_, err := informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
-			if isV1Event(obj) {
-				v1Event := obj.(*v1.Event)
-				printV1Event(v1Event, origin)
+		AddFunc: func(obj any) {
+			v1Event, ok := obj.(*corev1.Event)
+			if !ok {
+				return
 			}
+			printV1Event(v1Event, origin)
 		},
-		UpdateFunc: func(_ interface{}, newObject interface{}) {
-			if isV1Event(newObject) {
-				v1Event := newObject.(*v1.Event)
-				printV1Event(v1Event, origin)
+		UpdateFunc: func(_ any, newObject any) {
+			v1Event, ok := newObject.(*corev1.Event)
+			if !ok {
+				return
 			}
+			printV1Event(v1Event, origin)
 		},
 	})
 
 	return err
 }
 
-func isV1Event(obj interface{}) bool {
-	_, ok := obj.(*v1.Event)
-
-	return ok
-}
-
-func getEventFromV1Event(v1Event *v1.Event, origin string) *event {
+func getEventFromV1Event(v1Event *corev1.Event, origin string) *event {
 	involvedObject := v1Event.InvolvedObject.Name
 	if v1Event.InvolvedObject.Kind != "" {
 		involvedObject = v1Event.InvolvedObject.Kind + "/" + involvedObject
@@ -83,17 +79,17 @@ func getEventFromV1Event(v1Event *v1.Event, origin string) *event {
 	}
 }
 
-func isOlderThan(event *v1.Event, than time.Duration) bool {
+func isOlderThan(event *corev1.Event, than time.Duration) bool {
 	return time.Since(event.CreationTimestamp.Time) > than
 }
 
-func printV1Event(v1Event *v1.Event, origin string) {
+func printV1Event(v1Event *corev1.Event, origin string) {
 	if isOlderThan(v1Event, time.Second*5) {
 		return
 	}
 	j, err := json.Marshal(getEventFromV1Event(v1Event, origin))
 	if err != nil {
-		fmt.Printf("%s\n", err.Error())
+		_, _ = fmt.Printf("%s\n", err.Error())
 	}
-	fmt.Printf("%s\n", string(j))
+	_, _ = fmt.Printf("%s\n", string(j))
 }

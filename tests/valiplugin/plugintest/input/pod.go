@@ -19,6 +19,7 @@ type pod struct {
 
 var _ Pod = &pod{}
 
+// NewPod creates a new Pod instance with the given namespace, pod name, and container name.
 func NewPod(namespace, podName, container string) Pod {
 	p := &pod{
 		namespace:   namespace,
@@ -33,10 +34,10 @@ func NewPod(namespace, podName, container string) Pod {
 }
 
 // GenerateLogRecord generate log record passed to the Vali plugin as is from a real pod.
-func (p *pod) GenerateLogRecord() map[interface{}]interface{} {
+func (p *pod) GenerateLogRecord() map[any]any {
 	defer func() { p.output.generatedLogsCount++ }()
 
-	return map[interface{}]interface{}{
+	return map[any]any{
 		"tag":      p.logFilePath,
 		"origin":   "seed",
 		"severity": "INFO",

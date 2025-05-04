@@ -51,7 +51,7 @@ func DeleteFiles(dirPath string, targetFreeSpace uint64, pageSize int, freeSpace
 
 func deleteNOldestFiles(dirPath string, filePageSize int) (int, error) {
 	var deletedFiles int
-	oldestFiles, err := GetNOldestFiles(dirPath, filePageSize)
+	oldestFiles, err := getNOldestFiles(dirPath, filePageSize)
 	if err != nil {
 		return deletedFiles, err
 	}
@@ -66,7 +66,7 @@ func deleteNOldestFiles(dirPath string, filePageSize int) (int, error) {
 }
 
 // GetNOldestFiles returns the N oldest files on success or empty file slice and an error.
-func GetNOldestFiles(dirPath string, filePageSize int) ([]file, error) {
+func getNOldestFiles(dirPath string, filePageSize int) ([]file, error) {
 	var filePage []file
 	openedDir, err := os.Open(filepath.Clean(dirPath))
 	if err != nil {
@@ -145,11 +145,11 @@ func (ms MemStat) String() string {
 	var m runtime.MemStats
 	defer ms.sb.Reset()
 	runtime.ReadMemStats(&m)
-	fmt.Fprintf(&ms.sb, "%+v\n", m)
+	_, _ = fmt.Fprintf(&ms.sb, "%+v\n", m)
 	memoryWastedFragmentation := m.HeapInuse - m.HeapAlloc
-	fmt.Fprintf(&ms.sb, "Fragmentation Memory Waste: %d\n", memoryWastedFragmentation)
+	_, _ = fmt.Fprintf(&ms.sb, "Fragmentation Memory Waste: %d\n", memoryWastedFragmentation)
 	memoryThatCouldBeReturnedToOS := m.HeapIdle - m.HeapReleased
-	fmt.Fprintf(&ms.sb, "Memory That Could Be Returned To OS: %d\n", memoryThatCouldBeReturnedToOS)
+	_, _ = fmt.Fprintf(&ms.sb, "Memory That Could Be Returned To OS: %d\n", memoryThatCouldBeReturnedToOS)
 
 	return ms.sb.String()
 }

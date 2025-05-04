@@ -32,8 +32,8 @@ type ClientConfig struct {
 	// NumberOfBatchIDs is number of id per batch.
 	// This increase the number of vali label streams
 	NumberOfBatchIDs uint64
-	// IdLabelName is the name of the batch id label key.
-	IdLabelName model.LabelName
+	// IDLabelName is the name of the batch id label key.
+	IDLabelName model.LabelName
 	// TestingClient is mocked credativ/vali client used for testing purposes
 	TestingClient client.Client
 }
@@ -224,7 +224,6 @@ func initClientConfig(cfg Getter, res *Config) error {
 		}
 
 		res.ClientConfig.NumberOfBatchIDs = uint64(numberOfBatchIDsValue)
-
 	} else {
 		res.ClientConfig.NumberOfBatchIDs = 10
 	}
@@ -237,7 +236,7 @@ func initClientConfig(cfg Getter, res *Config) error {
 	if !idLabelName.IsValid() {
 		return fmt.Errorf("invalid IdLabelName: %s", idLabelNameStr)
 	}
-	res.ClientConfig.IdLabelName = idLabelName
+	res.ClientConfig.IDLabelName = idLabelName
 
 	return nil
 }

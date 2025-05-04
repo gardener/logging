@@ -21,7 +21,6 @@ var _ = ginkgov2.Describe("Batch", func() {
 			gomega.Expect(batch.streams).ToNot(gomega.BeNil())
 			gomega.Expect(batch.bytes).To(gomega.Equal(0))
 			gomega.Expect(batch.id).To(gomega.Equal(uint64(1)))
-
 		})
 	})
 

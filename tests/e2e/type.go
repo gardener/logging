@@ -4,6 +4,8 @@
 
 package e2e
 
+// SearchResponse represents the response structure for a search query.
+// revive:disable:nested-structs
 type SearchResponse struct {
 	Status string `json:"status"`
 	Data   struct {
@@ -12,3 +14,5 @@ type SearchResponse struct {
 		} `json:"result"`
 	} `json:"data"`
 }
+
+// revive:enable:nested-structs

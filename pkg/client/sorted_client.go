@@ -62,8 +62,8 @@ func NewSortedClientDecorator(cfg config.Config, newClient NewValiClientFunc, lo
 		batchSize:        cfg.ClientConfig.CredativValiConfig.BatchSize,
 		batchID:          0,
 		numberOfBatchIDs: cfg.ClientConfig.NumberOfBatchIDs,
-		batch:            batch.NewBatch(cfg.ClientConfig.IdLabelName, 0),
-		idLabelName:      cfg.ClientConfig.IdLabelName,
+		batch:            batch.NewBatch(cfg.ClientConfig.IDLabelName, 0),
+		idLabelName:      cfg.ClientConfig.IDLabelName,
 		quit:             make(chan struct{}),
 		entries:          make(chan Entry),
 	}
@@ -168,17 +168,14 @@ func (c *sortedClient) addToBatch(e Entry) {
 
 // Stop the client.
 func (c *sortedClient) Stop() {
-
 	close(c.quit)
 	c.wg.Wait()
 	c.valiclient.Stop()
 	_ = level.Debug(c.logger).Log("msg", "client stopped without waiting")
-
 }
 
 // StopWait stops the client waiting all saved logs to be sent.
 func (c *sortedClient) StopWait() {
-
 	close(c.quit)
 	c.wg.Wait()
 	if c.batch != nil {
@@ -186,7 +183,6 @@ func (c *sortedClient) StopWait() {
 	}
 	c.valiclient.StopWait()
 	_ = level.Debug(c.logger).Log("msg", "client stopped")
-
 }
 
 // Handle implement EntryHandler; adds a new line to the next batch; send is async.

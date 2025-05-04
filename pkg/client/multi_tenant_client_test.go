@@ -135,7 +135,6 @@ var _ = ginkgov2.Describe("Multi Tenant Client", func() {
 			gomega.Expect(fakeClient.IsStopped).To(gomega.BeFalse())
 		})
 	})
-
 })
 
 var _ = ginkgov2.Describe("Remove Multi Tenant Client", func() {
@@ -150,7 +149,7 @@ var _ = ginkgov2.Describe("Remove Multi Tenant Client", func() {
 		var infoLogLevel logging.Level
 		_ = infoLogLevel.Set("info")
 
-		mtc, err = client.NewRemoveMultiTenantIdClientDecorator(config.Config{},
+		mtc, err = client.NewRemoveMultiTenantIDClientDecorator(config.Config{},
 			func(_ config.Config, _ log.Logger) (client.ValiClient, error) {
 				return fakeClient, nil
 			},
@@ -231,5 +230,4 @@ var _ = ginkgov2.Describe("Remove Multi Tenant Client", func() {
 			gomega.Expect(fakeClient.IsStopped).To(gomega.BeFalse())
 		})
 	})
-
 })

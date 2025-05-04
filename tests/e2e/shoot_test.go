@@ -27,21 +27,21 @@ func TestShootLogs(t *testing.T) {
 			var backend appsv1.StatefulSet
 			var client = cfg.Client()
 
-			g.Expect(client.Resources().Get(ctx, ShootBackendName, ShootNamespace, &backend)).To(gomega.Succeed())
+			g.Expect(client.Resources().Get(ctx, shootBackendName, shootNamespace, &backend)).To(gomega.Succeed())
 
 			if len(backend.Name) > 0 {
 				t.Logf("shoot backend statefulset found: %s", backend.Name)
 			}
 
 			g.Eventually(func() bool {
-				_ = client.Resources().Get(ctx, ShootBackendName, ShootNamespace, &backend)
+				_ = client.Resources().Get(ctx, shootBackendName, shootNamespace, &backend)
 
 				return backend.Status.ReadyReplicas == *backend.Spec.Replicas
 			}).WithTimeout(1 * time.Minute).WithPolling(1 * time.Second).Should(gomega.BeTrue())
 
 			var daemonSet appsv1.DaemonSet
 
-			g.Expect(client.Resources().Get(ctx, DaemonSetName, SeedNamespace, &daemonSet)).To(gomega.Succeed())
+			g.Expect(client.Resources().Get(ctx, daemonSetName, seedNamespace, &daemonSet)).To(gomega.Succeed())
 
 			if len(daemonSet.Name) > 0 {
 				t.Logf("fluent-bit daemonset found: %s", daemonSet.Name)
@@ -56,21 +56,19 @@ func TestShootLogs(t *testing.T) {
 					list.Items[0].Status.NumberUnavailable == 0
 			}).WithTimeout(1 * time.Minute).WithPolling(1 * time.Second).Should(gomega.BeTrue())
 
-			logger := newLoggerPod(ShootNamespace, "logger")
+			logger := newLoggerPod(shootNamespace, "logger")
 			g.Expect(client.Resources().Create(ctx, logger)).To(gomega.Succeed())
 
 			return ctx
 		}).
-		Assess("check logs in shoot backend", func(ctx context.Context, t *testing.T,
-			cfg *envconf.Config) context.Context {
-
+		Assess("check logs in shoot backend", func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 			var client = cfg.Client()
 			podList := corev1.PodList{}
 			g.Expect(client.Resources().List(
 				ctx,
 				&podList,
-				resources.WithLabelSelector("statefulset.kubernetes.io/pod-name="+ShootBackendName+"-0"),
-				resources.WithFieldSelector("metadata.namespace="+ShootNamespace),
+				resources.WithLabelSelector("statefulset.kubernetes.io/pod-name="+shootBackendName+"-0"),
+				resources.WithFieldSelector("metadata.namespace="+shootNamespace),
 			)).To(gomega.Succeed())
 
 			g.Expect(len(podList.Items)).To(gomega.BeNumerically("==", 1))
@@ -112,7 +110,7 @@ func TestShootLogs(t *testing.T) {
 
 			return ctx
 		}).
-		Teardown(func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+		Teardown(func(ctx context.Context, _ *testing.T, _ *envconf.Config) context.Context {
 			return ctx
 		}).Feature()
 

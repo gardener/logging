@@ -34,7 +34,7 @@ type fakeValiClient struct {
 	isStopped bool
 }
 
-func (c *fakeValiClient) GetEndPoint() string {
+func (*fakeValiClient) GetEndPoint() string {
 	return "http://localhost"
 }
 
@@ -54,9 +54,9 @@ func (c *fakeValiClient) StopWait() {
 	c.isStopped = true
 }
 
-func (c *fakeValiClient) SetState(_ clusterState) {}
+func (*fakeValiClient) SetState(_ clusterState) {}
 
-func (c *fakeValiClient) GetState() clusterState {
+func (*fakeValiClient) GetState() clusterState {
 	return clusterStateReady
 }
 
@@ -300,6 +300,5 @@ var _ = ginkgov2.Describe("Controller", func() {
 				gomega.Expect(ok).To(gomega.BeFalse())
 			})
 		})
-
 	})
 })

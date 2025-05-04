@@ -63,7 +63,7 @@ var _ = ginkgov2.Describe("Sorted Client", func() {
 					URL:       clientURL,
 				},
 				NumberOfBatchIDs: 2,
-				IdLabelName:      model.LabelName("id"),
+				IDLabelName:      model.LabelName("id"),
 			},
 		},
 			func(_ config.Config, _ log.Logger) (client.ValiClient, error) {

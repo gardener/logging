@@ -18,7 +18,7 @@ import (
 	"github.com/go-logfmt/logfmt"
 	"github.com/prometheus/common/model"
 
-	client "github.com/gardener/logging/pkg/client"
+	"github.com/gardener/logging/pkg/client"
 	"github.com/gardener/logging/pkg/config"
 )
 
@@ -34,15 +34,15 @@ const (
 // prevent base64-encoding []byte values (default json.Encoder rule) by
 // converting them to strings
 
-func toStringSlice(slice []interface{}) []interface{} {
-	s := make([]interface{}, 0, len(slice))
+func toStringSlice(slice []any) []any {
+	s := make([]any, 0, len(slice))
 	for _, v := range slice {
 		switch t := v.(type) {
 		case []byte:
 			s = append(s, string(t))
-		case map[interface{}]interface{}:
+		case map[any]any:
 			s = append(s, toStringMap(t))
-		case []interface{}:
+		case []any:
 			s = append(s, toStringSlice(t))
 		default:
 			s = append(s, t)
@@ -52,8 +52,8 @@ func toStringSlice(slice []interface{}) []interface{} {
 	return s
 }
 
-func toStringMap(record map[interface{}]interface{}) map[string]interface{} {
-	m := make(map[string]interface{}, len(record)+inCaseKubernetesMetadataIsMissing)
+func toStringMap(record map[any]any) map[string]any {
+	m := make(map[string]any, len(record)+inCaseKubernetesMetadataIsMissing)
 	for k, v := range record {
 		key, ok := k.(string)
 		if !ok {
@@ -62,9 +62,9 @@ func toStringMap(record map[interface{}]interface{}) map[string]interface{} {
 		switch t := v.(type) {
 		case []byte:
 			m[key] = string(t)
-		case map[interface{}]interface{}:
+		case map[any]any:
 			m[key] = toStringMap(t)
-		case []interface{}:
+		case []any:
 			m[key] = toStringSlice(t)
 		default:
 			m[key] = v
@@ -74,17 +74,25 @@ func toStringMap(record map[interface{}]interface{}) map[string]interface{} {
 	return m
 }
 
-func autoLabels(records map[string]interface{}, kuberneteslbs model.LabelSet) error {
+func autoLabels(records map[string]any, kuberneteslbs model.LabelSet) error {
 	kube, ok := records["kubernetes"]
 	if !ok {
 		return fmt.Errorf("kubernetes labels not found, no labels will be added")
 	}
 
 	replacer := strings.NewReplacer("/", "_", ".", "_", "-", "_")
-	for k, v := range kube.(map[string]interface{}) {
+	received, ok := kube.(map[string]any)
+	if !ok {
+		return fmt.Errorf("kubernetes labels not found, no labels will be added")
+	}
+	for k, v := range received {
 		switch k {
 		case "labels":
-			for m, n := range v.(map[string]interface{}) {
+			labels, ok := v.(map[string]any)
+			if !ok {
+				return fmt.Errorf("no labels found in records")
+			}
+			for m, n := range labels {
 				kuberneteslbs[model.LabelName(replacer.Replace(m))] = model.LabelValue(fmt.Sprintf("%v", n))
 			}
 		case "pod_id", "annotations":
@@ -102,7 +110,7 @@ func autoLabels(records map[string]interface{}, kuberneteslbs model.LabelSet) er
 // The tag should be in the format: pod_name.namespace_name.container_name.container_id
 // This is required since the fluent-bit does not use the kubernetes filter plugin, reason for it is to avoid querying
 // the kubernetes API server for the metadata.
-func extractKubernetesMetadataFromTag(records map[string]interface{}, tagKey string, re *regexp.Regexp) error {
+func extractKubernetesMetadataFromTag(records map[string]any, tagKey string, re *regexp.Regexp) error {
 	tag, ok := records[tagKey].(string)
 	if !ok {
 		return fmt.Errorf("the tag entry for key %q is missing", tagKey)
@@ -113,7 +121,7 @@ func extractKubernetesMetadataFromTag(records map[string]interface{}, tagKey str
 		return fmt.Errorf("invalid format for tag %v. The tag should be in format: %s", tag, re.String())
 	}
 
-	records["kubernetes"] = map[string]interface{}{
+	records["kubernetes"] = map[string]any{
 		podName:       kubernetesMetaData[1],
 		namespaceName: kubernetesMetaData[2],
 		containerName: kubernetesMetaData[3],
@@ -123,7 +131,7 @@ func extractKubernetesMetadataFromTag(records map[string]interface{}, tagKey str
 	return nil
 }
 
-func extractLabels(records map[string]interface{}, keys []string) model.LabelSet {
+func extractLabels(records map[string]any, keys []string) model.LabelSet {
 	res := model.LabelSet{}
 	for _, k := range keys {
 		v, ok := records[k]
@@ -145,13 +153,13 @@ func extractLabels(records map[string]interface{}, keys []string) model.LabelSet
 	return res
 }
 
-// mapLabels convert records into labels using a json map[string]interface{} mapping
-func mapLabels(records map[string]interface{}, mapping map[string]interface{}, res model.LabelSet) {
+// mapLabels convert records into labels using a json map[string]any mapping
+func mapLabels(records map[string]any, mapping map[string]any, res model.LabelSet) {
 	for k, v := range mapping {
 		switch nextKey := v.(type) {
 		// if the next level is a map we are expecting we need to move deeper in the tree
-		case map[string]interface{}:
-			if nextValue, ok := records[k].(map[string]interface{}); ok {
+		case map[string]any:
+			if nextValue, ok := records[k].(map[string]any); ok {
 				// recursively search through the next level map.
 				mapLabels(nextValue, nextKey, res)
 			}
@@ -168,12 +176,12 @@ func mapLabels(records map[string]interface{}, mapping map[string]interface{}, r
 	}
 }
 
-func getDynamicHostName(records map[string]interface{}, mapping map[string]interface{}) string {
+func getDynamicHostName(records map[string]any, mapping map[string]any) string {
 	for k, v := range mapping {
 		switch nextKey := v.(type) {
 		// if the next level is a map we are expecting we need to move deeper in the tree
-		case map[string]interface{}:
-			if nextValue, ok := records[k].(map[string]interface{}); ok {
+		case map[string]any:
+			if nextValue, ok := records[k].(map[string]any); ok {
 				// recursively search through the next level map.
 				return getDynamicHostName(nextValue, nextKey)
 			}
@@ -187,7 +195,7 @@ func getDynamicHostName(records map[string]interface{}, mapping map[string]inter
 	return ""
 }
 
-func getRecordValue(key string, records map[string]interface{}) (string, bool) {
+func getRecordValue(key string, records map[string]any) (string, bool) {
 	if value, ok := records[key]; ok {
 		switch typedVal := value.(type) {
 		case string:
@@ -202,13 +210,13 @@ func getRecordValue(key string, records map[string]interface{}) (string, bool) {
 	return "", false
 }
 
-func removeKeys(records map[string]interface{}, keys []string) {
+func removeKeys(records map[string]any, keys []string) {
 	for _, k := range keys {
 		delete(records, k)
 	}
 }
 
-func extractMultiTenantClientLabel(records map[string]interface{}, res model.LabelSet) {
+func extractMultiTenantClientLabel(records map[string]any, res model.LabelSet) {
 	if value, ok := getRecordValue(client.MultiTenantClientLabel, records); ok {
 		lName := model.LabelName(client.MultiTenantClientLabel)
 		lValue := model.LabelValue(value)
@@ -218,11 +226,11 @@ func extractMultiTenantClientLabel(records map[string]interface{}, res model.Lab
 	}
 }
 
-func removeMultiTenantClientLabel(records map[string]interface{}) {
+func removeMultiTenantClientLabel(records map[string]any) {
 	delete(records, client.MultiTenantClientLabel)
 }
 
-func createLine(records map[string]interface{}, f config.Format) (string, error) {
+func createLine(records map[string]any, f config.Format) (string, error) {
 	switch f {
 	case config.JSONFormat:
 		js, err := json.Marshal(records)
@@ -260,8 +268,8 @@ func createLine(records map[string]interface{}, f config.Format) (string, error)
 	}
 }
 
-type fluentBitRecords map[string]interface{}
+type fluentBitRecords map[string]any
 
 func (r fluentBitRecords) String() string {
-	return fmt.Sprintf("%+v", map[string]interface{}(r))
+	return fmt.Sprintf("%+v", map[string]any(r))
 }

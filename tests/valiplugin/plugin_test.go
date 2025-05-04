@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package vali_plugin
+package valiplugin
 
 import (
 	"time"
@@ -13,11 +13,11 @@ import (
 
 	"github.com/gardener/logging/pkg/config"
 	"github.com/gardener/logging/pkg/valiplugin"
-	plugintestclient "github.com/gardener/logging/tests/vali_plugin/plugintest/client"
-	plugintestcluster "github.com/gardener/logging/tests/vali_plugin/plugintest/cluster"
-	plugintestconfig "github.com/gardener/logging/tests/vali_plugin/plugintest/config"
-	"github.com/gardener/logging/tests/vali_plugin/plugintest/input"
-	"github.com/gardener/logging/tests/vali_plugin/plugintest/matcher"
+	plugintestclient "github.com/gardener/logging/tests/valiplugin/plugintest/client"
+	plugintestcluster "github.com/gardener/logging/tests/valiplugin/plugintest/cluster"
+	plugintestconfig "github.com/gardener/logging/tests/valiplugin/plugintest/config"
+	"github.com/gardener/logging/tests/valiplugin/plugintest/input"
+	"github.com/gardener/logging/tests/valiplugin/plugintest/matcher"
 )
 
 const (

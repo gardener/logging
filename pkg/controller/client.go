@@ -168,8 +168,8 @@ func (ctl *controller) deleteControllerClient(clusterName string) {
 	)
 }
 
-func (ctl *controller) updateControllerClientState(client Client, shoot *gardenercorev1beta1.Shoot) {
-	client.SetState(getShootState(shoot))
+func (*controller) updateControllerClientState(c Client, shoot *gardenercorev1beta1.Shoot) {
+	c.SetState(getShootState(shoot))
 }
 
 func (c *controllerClient) GetEndPoint() string {
@@ -186,18 +186,17 @@ func (c *controllerClient) Handle(ls model.LabelSet, t time.Time, s string) erro
 	if sendToShoot {
 		// Because this client does not alter the labels set we don't need to clone
 		// it if we don't spread the logs between the two clients. But if we
-		// are sending the log record to both client we have to pass a copy because
+		// are sending the log record to both shoot and seed clients we have to pass a copy because
 		// we are not sure what kind of label set processing will be done in the corresponding
 		// client which can lead to "concurrent map iteration and map write error".
-		if err := c.shootTarget.valiClient.Handle(copyLabelSet(ls, sendToShoot), t, s); err != nil {
+		if err := c.shootTarget.valiClient.Handle(ls.Clone(), t, s); err != nil {
 			combineErr = giterrors.Wrap(combineErr, err.Error())
 		}
 	}
 	if sendToSeed {
-		if err := c.seedTarget.valiClient.Handle(copyLabelSet(ls, sendToSeed), t, s); err != nil {
+		if err := c.seedTarget.valiClient.Handle(ls.Clone(), t, s); err != nil {
 			combineErr = giterrors.Wrap(combineErr, err.Error())
 		}
-
 	}
 
 	return combineErr

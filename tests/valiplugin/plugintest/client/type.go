@@ -9,12 +9,14 @@ import (
 	"github.com/prometheus/common/model"
 )
 
+// EndClient is an interface that defines the methods for running, shutting down, and getting logs count.
 type EndClient interface {
 	Run()
 	Shutdown()
 	GetLogsCount(ls model.LabelSet) int
 }
 
+// BlackBoxTestingValiClient is a struct that implements the EndClient interface.
 type BlackBoxTestingValiClient struct {
 	entries         chan api.Entry
 	receivedEntries []api.Entry

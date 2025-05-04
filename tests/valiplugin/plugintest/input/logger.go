@@ -16,13 +16,16 @@ import (
 	"github.com/gardener/logging/pkg/valiplugin"
 )
 
+// NamespacePrefix is the prefix used for the namespaces created by the logger controller.
 const NamespacePrefix = "shoot--logging--test-"
 
+// LoggerControllerConfig holds the configuration for the LoggerController.
 type LoggerControllerConfig struct {
 	NumberOfClusters int
 	NumberOfLogs     int
 }
 
+// LoggerController is responsible for managing the logger pods and sending log records.
 type LoggerController struct {
 	config LoggerControllerConfig
 	plugin valiplugin.Vali
@@ -30,6 +33,7 @@ type LoggerController struct {
 	wg     sync.WaitGroup
 }
 
+// NewLoggerController creates a new instance of LoggerController with the given plugin and configuration.
 func NewLoggerController(plugin valiplugin.Vali, cfg LoggerControllerConfig) LoggerController {
 	return LoggerController{
 		config: cfg,
@@ -37,6 +41,7 @@ func NewLoggerController(plugin valiplugin.Vali, cfg LoggerControllerConfig) Log
 	}
 }
 
+// Run starts the logger pods and sends log records.
 func (c *LoggerController) Run() {
 	for clusterNum := 0; clusterNum < c.config.NumberOfClusters; clusterNum++ {
 		namespace := fmt.Sprintf("%s-%d", NamespacePrefix, clusterNum)
@@ -67,10 +72,12 @@ func (c *LoggerController) worker(pod Pod) {
 	}
 }
 
+// GetPods returns the list of pods managed by the LoggerController.
 func (c *LoggerController) GetPods() []Pod {
 	return c.pods
 }
 
+// Wait waits for all logger pods to finish sending log records.
 func (c *LoggerController) Wait() {
 	c.wg.Wait()
 }

@@ -42,11 +42,11 @@ func main() {
 		}
 	}()
 
-	curator := curator.NewCurator(*conf, logger)
+	valiCurator := curator.NewCurator(*conf, logger)
 	c := make(chan os.Signal, 2)
 	signal.Notify(c, os.Interrupt)
-	go func() { curator.Run() }()
+	go func() { valiCurator.Run() }()
 	sig := <-c
 	_ = level.Error(logger).Log("msg", "error", "Got %s signal. Aborting...", sig)
-	curator.Stop()
+	valiCurator.Stop()
 }

@@ -11,7 +11,7 @@ import (
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
 
-	config "github.com/gardener/logging/pkg/vali/curator/config"
+	"github.com/gardener/logging/pkg/vali/curator/config"
 	"github.com/gardener/logging/pkg/vali/curator/metrics"
 	"github.com/gardener/logging/pkg/vali/curator/utils"
 )
@@ -44,7 +44,7 @@ func (c *Curator) Run() {
 		case <-c.ticker.C:
 			_ = level.Debug(c.logger).Log("mem_status", ms)
 			c.curate()
-			runtime.GC()
+			runtime.GC() // revive:disable-line:call-to-gc
 		}
 	}
 }

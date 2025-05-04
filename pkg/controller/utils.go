@@ -7,7 +7,6 @@ package controller
 import (
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
-	"github.com/prometheus/common/model"
 )
 
 func isShootInHibernation(shoot *gardencorev1beta1.Shoot) bool {
@@ -66,12 +65,4 @@ func getShootState(shoot *gardencorev1beta1.Shoot) clusterState {
 	}
 
 	return clusterStateReady
-}
-
-func copyLabelSet(ls model.LabelSet, deepCopy bool) model.LabelSet {
-	if deepCopy {
-		return ls.Clone()
-	}
-
-	return ls
 }
