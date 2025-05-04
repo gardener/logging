@@ -187,13 +187,9 @@ func (o *Options) Run(stopCh <-chan struct{}) error {
 
 // ApplyTo applies the options to the given config.
 func (o *Options) ApplyTo(config *events.GardenerEventWatcherConfig) error {
-
 	if err := o.SeedEventWatcher.ApplyTo(&config.SeedEventWatcherConfig); err != nil {
 		return err
 	}
-	if err := o.ShootEventWatcher.ApplyTo(&config.ShootEventWatcherConfig); err != nil {
-		return err
-	}
 
-	return nil
+	return o.ShootEventWatcher.ApplyTo(&config.ShootEventWatcherConfig)
 }

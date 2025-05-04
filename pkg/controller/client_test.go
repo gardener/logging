@@ -53,6 +53,7 @@ var _ = ginkgov2.Describe("Controller Client", func() {
 		}
 	})
 
+	// revive:disable:nested-structs
 	type handleArgs struct {
 		config struct {
 			muteSeedClient  bool
@@ -64,6 +65,7 @@ var _ = ginkgov2.Describe("Controller Client", func() {
 			shootEntries []client.Entry
 		}
 	}
+	// revive:enable:nested-structs
 
 	ginkgov2.DescribeTable("#Handle", func(args handleArgs) {
 		ctlClient.seedTarget.mute = args.config.muteSeedClient
@@ -120,6 +122,8 @@ var _ = ginkgov2.Describe("Controller Client", func() {
 			}{nil, nil},
 		}),
 	)
+
+	// revive:disable:nested-structs
 	type setStateArgs struct {
 		inputState        clusterState
 		currentState      clusterState
@@ -131,6 +135,8 @@ var _ = ginkgov2.Describe("Controller Client", func() {
 			state             clusterState
 		}
 	}
+	// revive:enable:nested-structs
+
 	ginkgov2.DescribeTable("#SetState", func(args setStateArgs) {
 		ctlClient.seedTarget.conf = args.defaultClientConf
 		ctlClient.shootTarget.conf = args.mainClientConf
@@ -280,8 +286,8 @@ type fakeControllerClient struct {
 	name  string
 }
 
-func (c *fakeControllerClient) Handle(labels model.LabelSet, time time.Time, entry string) error {
-	return c.FakeValiClient.Handle(labels, time, entry)
+func (c *fakeControllerClient) Handle(labels model.LabelSet, t time.Time, entry string) error {
+	return c.FakeValiClient.Handle(labels, t, entry)
 }
 
 func (c *fakeControllerClient) SetState(state clusterState) {

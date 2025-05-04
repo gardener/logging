@@ -31,7 +31,7 @@ type dqueEntry struct {
 	logproto.Entry
 }
 
-func dqueEntryBuilder() interface{} {
+func dqueEntryBuilder() any {
 	return &dqueEntry{}
 }
 
@@ -138,22 +138,19 @@ func (c *dqueClient) dequeuer() {
 
 // Stop the client
 func (c *dqueClient) Stop() {
-
-	if err := c.closeQue(false); err != nil {
+	if err := c.closeQue(); err != nil {
 		_ = level.Error(c.logger).Log("msg", "error closing buffered client", "err", err.Error())
 	}
 	c.vali.Stop()
 	_ = level.Debug(c.logger).Log("msg", "client stopped, without waiting")
-
 }
 
 // StopWait the client waiting all saved logs to be sent.
 func (c *dqueClient) StopWait() {
-
-	if err := c.stopQue(true); err != nil {
+	if err := c.stopQue(); err != nil {
 		_ = level.Error(c.logger).Log("msg", "error stopping buffered client", "err", err.Error())
 	}
-	if err := c.closeQue(true); err != nil {
+	if err := c.closeQueWithClean(); err != nil {
 		_ = level.Error(c.logger).Log("msg", "error closing buffered client", "err", err.Error())
 	}
 	c.vali.StopWait()
@@ -181,10 +178,7 @@ func (e *dqueEntry) String() string {
 	return fmt.Sprintf("labels: %+v timestamp: %+v line: %+v", e.LabelSet, e.Timestamp, e.Line)
 }
 
-func (c *dqueClient) stopQue(wait bool) error {
-	if !wait {
-		return nil
-	}
+func (c *dqueClient) stopQue() error {
 	c.lock.Lock()
 	c.isStooped = true
 	// In case the dequeuer is blocked on empty queue.
@@ -200,15 +194,20 @@ func (c *dqueClient) stopQue(wait bool) error {
 	return nil
 }
 
-func (c *dqueClient) closeQue(cleanUnderlyingFileBuffer bool) error {
+func (c *dqueClient) closeQue() error {
 	if err := c.queue.Close(); err != nil {
 		return fmt.Errorf("cannot close %s buffer: %v", c.queue.Name, err)
 	}
 
-	if cleanUnderlyingFileBuffer {
-		if err := os.RemoveAll(path.Join(c.queue.DirPath, c.queue.Name)); err != nil {
-			return fmt.Errorf("cannot close %s buffer: %v", c.queue.Name, err)
-		}
+	return nil
+}
+
+func (c *dqueClient) closeQueWithClean() error {
+	if err := c.closeQue(); err != nil {
+		return fmt.Errorf("cannot close %s buffer: %v", c.queue.Name, err)
+	}
+	if err := os.RemoveAll(path.Join(c.queue.DirPath, c.queue.Name)); err != nil {
+		return fmt.Errorf("cannot clean %s buffer: %v", c.queue.Name, err)
 	}
 
 	return nil

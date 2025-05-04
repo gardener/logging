@@ -14,7 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
 
-	"github.com/gardener/logging/tests/vali_plugin/plugintest/input"
+	"github.com/gardener/logging/tests/valiplugin/plugintest/input"
 )
 
 type cluster struct {
@@ -29,6 +29,7 @@ func newCluster(number int) Cluster {
 	}
 }
 
+// CreateNClusters creates a slice of Cluster instances
 func CreateNClusters(numberOfClusters int) []Cluster {
 	result := make([]Cluster, numberOfClusters)
 	for i := 0; i < numberOfClusters; i++ {
@@ -38,23 +39,30 @@ func CreateNClusters(numberOfClusters int) []Cluster {
 	return result
 }
 
+// GetCluster returns the Cluster instance
 func (c *cluster) GetCluster() *extensionsv1alpha1.Cluster {
 	return c.cluster
 }
 
+// revive:disable
+
+// ChangeStateToHibernating changes the state of the cluster to deletion
 func (c *cluster) ChangeStateToDeletion() (*extensionsv1alpha1.Cluster, *extensionsv1alpha1.Cluster) {
 	return c.changeState("deletion")
 }
 
+// ChangeStateToHibernating changes the state of the cluster to ready
 func (c *cluster) ChangeStateToReady() (*extensionsv1alpha1.Cluster, *extensionsv1alpha1.Cluster) {
 	return c.changeState("ready")
 }
+
+// revive:enable
 
 func (c *cluster) changeState(newState string) (newCluster, oldCluster *extensionsv1alpha1.Cluster) {
 	oldCluster = c.cluster
 	c.cluster = getCluster(c.number, newState)
 
-	return
+	return oldCluster, c.cluster
 }
 
 func getCluster(number int, state string) *extensionsv1alpha1.Cluster {

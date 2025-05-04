@@ -27,7 +27,7 @@ type FakeValiClient struct {
 }
 
 // GetEndPoint returns the target logging backend endpoint
-func (c *FakeValiClient) GetEndPoint() string {
+func (*FakeValiClient) GetEndPoint() string {
 	return "http://localhost"
 }
 

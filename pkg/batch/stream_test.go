@@ -12,7 +12,6 @@ import (
 )
 
 var _ = ginkgov2.Describe("Stream", func() {
-
 	type addTestArgs struct {
 		entries        []Entry
 		expectedStream Stream

@@ -17,7 +17,6 @@ import (
 )
 
 var _ = ginkgov2.Describe("CuratorUtils", func() {
-
 	var (
 		numOfFiles = 10
 		logLevel   logging.Level
@@ -54,6 +53,5 @@ var _ = ginkgov2.Describe("CuratorUtils", func() {
 		newDeletedFiles, err := utils.DeleteFiles(testDir, uint64(numOfFiles-deletedFiles), 1, freeSpaceFunc, logger)
 		gomega.Expect(err).ToNot(gomega.HaveOccurred())
 		gomega.Expect(newDeletedFiles).To(gomega.Equal(0))
-	},
-	)
+	})
 })

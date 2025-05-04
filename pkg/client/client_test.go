@@ -57,8 +57,8 @@ var _ = ginkgov2.Describe("Client", func() {
 			LabelKeys:     []string{"foo", "bar"},
 			RemoveKeys:    []string{"buzz", "fuzz"},
 			DropSingleKey: false,
-			DynamicHostPath: map[string]interface{}{
-				"kubernetes": map[string]interface{}{
+			DynamicHostPath: map[string]any{
+				"kubernetes": map[string]any{
 					"namespace_name": "namespace",
 				},
 			},

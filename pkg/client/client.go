@@ -67,7 +67,7 @@ func NewClient(cfg config.Config, logger log.Logger, options Options) (ValiClien
 	if options.RemoveTenantID {
 		tempNCF := ncf
 		ncf = func(c config.Config, l log.Logger) (ValiClient, error) {
-			return NewRemoveTenantIdClientDecorator(c, tempNCF, l)
+			return NewRemoveTenantIDClientDecorator(c, tempNCF, l)
 		}
 	}
 
@@ -79,7 +79,7 @@ func NewClient(cfg config.Config, logger log.Logger, options Options) (ValiClien
 	} else {
 		tempNCF := ncf
 		ncf = func(c config.Config, l log.Logger) (ValiClient, error) {
-			return NewRemoveMultiTenantIdClientDecorator(c, tempNCF, l)
+			return NewRemoveMultiTenantIDClientDecorator(c, tempNCF, l)
 		}
 	}
 
@@ -98,39 +98,39 @@ func NewClient(cfg config.Config, logger log.Logger, options Options) (ValiClien
 	return ncf(cfg, logger)
 }
 
-type removeTenantIdClient struct {
+type removeTenantIDClient struct {
 	valiclient ValiClient
 }
 
-var _ ValiClient = &removeTenantIdClient{}
+var _ ValiClient = &removeTenantIDClient{}
 
-func (c *removeTenantIdClient) GetEndPoint() string {
+func (c *removeTenantIDClient) GetEndPoint() string {
 	return c.valiclient.GetEndPoint()
 }
 
-// NewRemoveTenantIdClientDecorator return vali client which removes the __tenant_id__ value from the label set
-func NewRemoveTenantIdClientDecorator(cfg config.Config, newClient NewValiClientFunc, logger log.Logger) (ValiClient, error) {
+// NewRemoveTenantIDClientDecorator return vali client which removes the __tenant_id__ value from the label set
+func NewRemoveTenantIDClientDecorator(cfg config.Config, newClient NewValiClientFunc, logger log.Logger) (ValiClient, error) {
 	c, err := newValiClient(cfg, newClient, logger)
 	if err != nil {
 		return nil, err
 	}
 
-	return &removeTenantIdClient{c}, nil
+	return &removeTenantIDClient{c}, nil
 }
 
-func (c *removeTenantIdClient) Handle(ls model.LabelSet, t time.Time, s string) error {
+func (c *removeTenantIDClient) Handle(ls model.LabelSet, t time.Time, s string) error {
 	delete(ls, client.ReservedLabelTenantID)
 
 	return c.valiclient.Handle(ls, t, s)
 }
 
 // Stop the client.
-func (c *removeTenantIdClient) Stop() {
+func (c *removeTenantIDClient) Stop() {
 	c.valiclient.Stop()
 }
 
 // StopWait stops the client waiting all saved logs to be sent.
-func (c *removeTenantIdClient) StopWait() {
+func (c *removeTenantIDClient) StopWait() {
 	c.valiclient.StopWait()
 }
 

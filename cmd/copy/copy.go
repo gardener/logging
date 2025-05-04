@@ -19,21 +19,23 @@ Usage:
 )
 
 func main() {
-
 	switch len(os.Args) {
 	case 1:
-		printAndExitWithValue("Missing source and destination files arguments", 1)
+		printAndExitWithValue("Missing source and destination files arguments")
+		os.Exit(1)
 	case 2:
-		printAndExitWithValue("Missing destination path", 2)
+		printAndExitWithValue("Missing destination path")
+		os.Exit(2)
 	case 3:
 		if err := copyFile(os.Args[1], os.Args[2]); err != nil {
-			fmt.Println(err.Error())
+			_, _ = fmt.Println(err.Error())
 			os.Exit(3)
 		}
 
 		return
 	default:
-		printAndExitWithValue("CP require only two arguments. Found more!", 4)
+		printAndExitWithValue("CP require only two arguments. Found more!")
+		os.Exit(4)
 	}
 }
 
@@ -81,12 +83,12 @@ func copyDir(src, dst string) error {
 	return nil
 }
 
-func printAndExitWithValue(errMsg string, exitValue int) {
+func printAndExitWithValue(errMsg string) {
 	if errMsg != "" {
-		fmt.Println(errMsg)
+		_, _ = fmt.Println(errMsg)
 	}
-	fmt.Println(usage)
-	os.Exit(exitValue)
+
+	_, _ = fmt.Println(usage)
 }
 
 func createDirectory(path string) error {

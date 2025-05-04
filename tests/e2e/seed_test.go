@@ -27,21 +27,21 @@ func TestSeedLogs(t *testing.T) {
 			var backend appsv1.StatefulSet
 			var client = cfg.Client()
 
-			g.Expect(client.Resources().Get(ctx, SeedBackendName, SeedNamespace, &backend)).To(gomega.Succeed())
+			g.Expect(client.Resources().Get(ctx, seedBackendName, seedNamespace, &backend)).To(gomega.Succeed())
 
 			if len(backend.Name) > 0 {
 				t.Logf("seed backend statefulset found: %s", backend.Name)
 			}
 
 			g.Eventually(func() bool {
-				_ = client.Resources().Get(ctx, SeedBackendName, SeedNamespace, &backend)
+				_ = client.Resources().Get(ctx, seedBackendName, seedNamespace, &backend)
 
 				return backend.Status.ReadyReplicas == *backend.Spec.Replicas
 			}).WithTimeout(2 * time.Minute).WithPolling(1 * time.Second).Should(gomega.BeTrue())
 
 			var daemonSet appsv1.DaemonSet
 
-			g.Expect(client.Resources().Get(ctx, DaemonSetName, SeedNamespace, &daemonSet)).To(gomega.Succeed())
+			g.Expect(client.Resources().Get(ctx, daemonSetName, seedNamespace, &daemonSet)).To(gomega.Succeed())
 
 			if len(daemonSet.Name) > 0 {
 				t.Logf("fluent-bit daemonset found: %s", daemonSet.Name)
@@ -58,7 +58,7 @@ func TestSeedLogs(t *testing.T) {
 
 			// At this point, the seed backend and fluent-bit daemonset are ready
 			// Shall start a log generator pod to check if logs are being collected at the backend
-			logger := newLoggerPod(SeedNamespace, "logger")
+			logger := newLoggerPod(seedNamespace, "logger")
 			g.Expect(client.Resources().Create(ctx, logger)).To(gomega.Succeed())
 
 			return ctx
@@ -70,8 +70,8 @@ func TestSeedLogs(t *testing.T) {
 			g.Expect(client.Resources().List(
 				ctx,
 				&podList,
-				resources.WithLabelSelector("statefulset.kubernetes.io/pod-name="+SeedBackendName+"-0"),
-				resources.WithFieldSelector("metadata.namespace="+SeedNamespace),
+				resources.WithLabelSelector("statefulset.kubernetes.io/pod-name="+seedBackendName+"-0"),
+				resources.WithFieldSelector("metadata.namespace="+seedNamespace),
 			)).To(gomega.Succeed())
 
 			g.Expect(len(podList.Items)).To(gomega.BeNumerically("==", 1))
@@ -113,10 +113,10 @@ func TestSeedLogs(t *testing.T) {
 
 			return ctx
 		}).
-		Assess("assess seed logs", func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+		Assess("assess seed logs", func(ctx context.Context, _ *testing.T, _ *envconf.Config) context.Context {
 			return ctx
 		}).
-		Teardown(func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+		Teardown(func(ctx context.Context, _ *testing.T, _ *envconf.Config) context.Context {
 			return ctx
 		}).Feature()
 

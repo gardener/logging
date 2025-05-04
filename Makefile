@@ -159,7 +159,7 @@ check: tidy
 .PHONY: test
 test: tidy
 	@go tool gotestsum $(REPO_ROOT)/pkg/... --v --ginkgo.v --ginkgo.no-color
-	@go tool gotestsum $(REPO_ROOT)/tests/vali_plugin
+	@go tool gotestsum $(REPO_ROOT)/tests/valiplugin
 
 .PHONY: e2e-tests
 e2e-tests: tidy

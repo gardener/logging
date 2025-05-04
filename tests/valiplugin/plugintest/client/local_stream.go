@@ -29,6 +29,7 @@ func (s *localStream) add(timestamp time.Time) error {
 	return nil
 }
 
+// LabelSetToString converts a LabelSet to a string representation.
 func LabelSetToString(ls model.LabelSet) string {
 	var labelSetStr []string
 

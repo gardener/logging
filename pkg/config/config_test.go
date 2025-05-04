@@ -105,7 +105,7 @@ var (
 		CredativValiConfig: defaultCredativValiConfig,
 		BufferConfig:       defaultBufferConfig,
 		NumberOfBatchIDs:   defaultNumberOfBatchIDs,
-		IdLabelName:        model.LabelName("id"),
+		IDLabelName:        model.LabelName("id"),
 	}
 
 	defaultShootControllerClientConfig = ControllerClientConfiguration{
@@ -229,7 +229,7 @@ var _ = ginkgov2.Describe("Config", func() {
 						DqueConfig: defaultDqueConfig,
 					},
 					NumberOfBatchIDs: defaultNumberOfBatchIDs,
-					IdLabelName:      model.LabelName("id"),
+					IDLabelName:      model.LabelName("id"),
 					SortByTimestamp:  true,
 				},
 				ControllerConfig: defaultControllerConfig,
@@ -256,13 +256,13 @@ var _ = ginkgov2.Describe("Config", func() {
 					LabelKeys:     nil,
 					RemoveKeys:    []string{"buzz", "fuzz"},
 					DropSingleKey: false,
-					LabelMap: map[string]interface{}{
-						"kubernetes": map[string]interface{}{
+					LabelMap: map[string]any{
+						"kubernetes": map[string]any{
 							"container_name": "container",
 							"host":           "host",
 							"namespace_name": "namespace",
 							"pod_name":       "instance",
-							"labels": map[string]interface{}{
+							"labels": map[string]any{
 								"component": "component",
 								"tier":      "tier",
 							},
@@ -285,7 +285,7 @@ var _ = ginkgov2.Describe("Config", func() {
 						Timeout:        defaultTimeout,
 					},
 					BufferConfig:     defaultBufferConfig,
-					IdLabelName:      model.LabelName("id"),
+					IDLabelName:      model.LabelName("id"),
 					NumberOfBatchIDs: defaultNumberOfBatchIDs,
 				},
 				ControllerConfig: defaultControllerConfig,
@@ -315,8 +315,8 @@ var _ = ginkgov2.Describe("Config", func() {
 					LabelKeys:     []string{"foo", "bar"},
 					RemoveKeys:    []string{"buzz", "fuzz"},
 					DropSingleKey: false,
-					DynamicHostPath: map[string]interface{}{
-						"kubernetes": map[string]interface{}{
+					DynamicHostPath: map[string]any{
+						"kubernetes": map[string]any{
 							"namespace_name": "namespace",
 						},
 					},
@@ -336,7 +336,7 @@ var _ = ginkgov2.Describe("Config", func() {
 						Timeout:        defaultTimeout,
 					},
 					BufferConfig:     defaultBufferConfig,
-					IdLabelName:      model.LabelName("id"),
+					IDLabelName:      model.LabelName("id"),
 					NumberOfBatchIDs: defaultNumberOfBatchIDs,
 				},
 				ControllerConfig: ControllerConfig{
@@ -401,7 +401,7 @@ var _ = ginkgov2.Describe("Config", func() {
 						},
 					},
 					NumberOfBatchIDs: defaultNumberOfBatchIDs,
-					IdLabelName:      model.LabelName("id"),
+					IDLabelName:      model.LabelName("id"),
 				},
 				ControllerConfig: defaultControllerConfig,
 				LogLevel:         warnLogLevel,
@@ -451,7 +451,7 @@ var _ = ginkgov2.Describe("Config", func() {
 					},
 					BufferConfig:     defaultBufferConfig,
 					NumberOfBatchIDs: defaultNumberOfBatchIDs,
-					IdLabelName:      model.LabelName("id"),
+					IDLabelName:      model.LabelName("id"),
 				},
 				ControllerConfig: defaultControllerConfig,
 				LogLevel:         warnLogLevel,
@@ -504,7 +504,7 @@ var _ = ginkgov2.Describe("Config", func() {
 					},
 					BufferConfig:     defaultBufferConfig,
 					NumberOfBatchIDs: defaultNumberOfBatchIDs,
-					IdLabelName:      model.LabelName("id"),
+					IDLabelName:      model.LabelName("id"),
 				},
 				ControllerConfig: defaultControllerConfig,
 				LogLevel:         warnLogLevel,
@@ -549,7 +549,7 @@ var _ = ginkgov2.Describe("Config", func() {
 					},
 					BufferConfig:     defaultBufferConfig,
 					NumberOfBatchIDs: defaultNumberOfBatchIDs,
-					IdLabelName:      model.LabelName("id"),
+					IDLabelName:      model.LabelName("id"),
 				},
 				ControllerConfig: defaultControllerConfig,
 				LogLevel:         warnLogLevel,
@@ -570,7 +570,7 @@ var _ = ginkgov2.Describe("Config", func() {
 						Tenant:                                "user",
 						Field:                                 "tag",
 						Regex:                                 "user-exposed.kubernetes.*",
-						RemoveTenantIdWhenSendingToDefaultURL: true,
+						RemoveTenantIDWhenSendingToDefaultURL: true,
 					},
 					LabelSetInitCapacity: defaultLabelSetInitCapacity,
 					PreservedLabels:      model.LabelSet{},
@@ -595,7 +595,7 @@ var _ = ginkgov2.Describe("Config", func() {
 						Tenant:                                "user",
 						Field:                                 "tag",
 						Regex:                                 "user-exposed.kubernetes.*",
-						RemoveTenantIdWhenSendingToDefaultURL: true,
+						RemoveTenantIDWhenSendingToDefaultURL: true,
 					},
 					LabelSetInitCapacity: defaultLabelSetInitCapacity,
 					PreservedLabels:      model.LabelSet{},
@@ -620,7 +620,7 @@ var _ = ginkgov2.Describe("Config", func() {
 						Tenant:                                "user",
 						Field:                                 "tag",
 						Regex:                                 "regex with spaces",
-						RemoveTenantIdWhenSendingToDefaultURL: true,
+						RemoveTenantIDWhenSendingToDefaultURL: true,
 					},
 					LabelSetInitCapacity: defaultLabelSetInitCapacity,
 					PreservedLabels:      model.LabelSet{},

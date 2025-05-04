@@ -128,7 +128,6 @@ func FLBPluginRegister(ctx unsafe.Pointer) int {
 //
 //export FLBPluginInit
 func FLBPluginInit(ctx unsafe.Pointer) int {
-
 	// shall create only if not found in the context and in plugins slice
 	if present := output.FLBPluginGetContext(ctx); present != nil && pluginsContains(present.(valiplugin.Vali)) {
 		_ = level.Info(logger).Log("msg", "plugin already present")
@@ -183,8 +182,8 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 //
 //export FLBPluginFlushCtx
 func FLBPluginFlushCtx(ctx, data unsafe.Pointer, length C.int, tag *C.char) int {
-	plugin := output.FLBPluginGetContext(ctx).(valiplugin.Vali)
-	if plugin == nil {
+	plugin, ok := output.FLBPluginGetContext(ctx).(valiplugin.Vali)
+	if !ok {
 		metrics.Errors.WithLabelValues(metrics.ErrorFLBPluginFlushCtx).Inc()
 		_ = level.Error(logger).Log("[flb-go]", "plugin not initialized")
 
@@ -192,8 +191,8 @@ func FLBPluginFlushCtx(ctx, data unsafe.Pointer, length C.int, tag *C.char) int 
 	}
 
 	var ret int
-	var ts interface{}
-	var record map[interface{}]interface{}
+	var ts any
+	var record map[any]any
 
 	dec := output.NewDecoder(data, int(length))
 
@@ -238,8 +237,8 @@ func FLBPluginFlushCtx(ctx, data unsafe.Pointer, length C.int, tag *C.char) int 
 //
 //export FLBPluginExitCtx
 func FLBPluginExitCtx(ctx unsafe.Pointer) int {
-	plugin := output.FLBPluginGetContext(ctx).(valiplugin.Vali)
-	if plugin == nil {
+	plugin, ok := output.FLBPluginGetContext(ctx).(valiplugin.Vali)
+	if !ok {
 		_ = level.Error(logger).Log("[flb-go]", "plugin not known")
 
 		return output.FLB_ERROR
@@ -258,7 +257,6 @@ func FLBPluginExitCtx(ctx unsafe.Pointer) int {
 //
 //export FLBPluginExit
 func FLBPluginExit() int {
-
 	for _, plugin := range plugins {
 		plugin.Close()
 	}
@@ -332,7 +330,7 @@ func dumpConfiguration(_logger log.Logger, conf *config.Config) {
 	_ = level.Debug(paramLogger).Log("TagExpression", fmt.Sprintf("%+v", conf.PluginConfig.KubernetesMetadata.TagExpression))
 	_ = level.Debug(paramLogger).Log("DropLogEntryWithoutK8sMetadata", fmt.Sprintf("%+v", conf.PluginConfig.KubernetesMetadata.DropLogEntryWithoutK8sMetadata))
 	_ = level.Debug(paramLogger).Log("NumberOfBatchIDs", fmt.Sprintf("%+v", conf.ClientConfig.NumberOfBatchIDs))
-	_ = level.Debug(paramLogger).Log("IdLabelName", fmt.Sprintf("%+v", conf.ClientConfig.IdLabelName))
+	_ = level.Debug(paramLogger).Log("IdLabelName", fmt.Sprintf("%+v", conf.ClientConfig.IDLabelName))
 	_ = level.Debug(paramLogger).Log("DeletedClientTimeExpiration", fmt.Sprintf("%+v", conf.ControllerConfig.DeletedClientTimeExpiration))
 	_ = level.Debug(paramLogger).Log("DynamicTenant", fmt.Sprintf("%+v", conf.PluginConfig.DynamicTenant.Tenant))
 	_ = level.Debug(paramLogger).Log("DynamicField", fmt.Sprintf("%+v", conf.PluginConfig.DynamicTenant.Field))

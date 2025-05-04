@@ -96,7 +96,7 @@ func (ctl *controller) Stop() {
 }
 
 // cluster informer callback
-func (ctl *controller) addFunc(obj interface{}) {
+func (ctl *controller) addFunc(obj any) {
 	cluster, ok := obj.(*extensionsv1alpha1.Cluster)
 	if !ok {
 		metrics.Errors.WithLabelValues(metrics.ErrorAddFuncNotACluster).Inc()
@@ -122,7 +122,7 @@ func (ctl *controller) addFunc(obj interface{}) {
 	}
 }
 
-func (ctl *controller) updateFunc(oldObj interface{}, newObj interface{}) {
+func (ctl *controller) updateFunc(oldObj any, newObj any) {
 	oldCluster, ok := oldObj.(*extensionsv1alpha1.Cluster)
 	if !ok {
 		metrics.Errors.WithLabelValues(metrics.ErrorUpdateFuncOldNotACluster).Inc()
@@ -184,7 +184,7 @@ func (ctl *controller) updateFunc(oldObj interface{}, newObj interface{}) {
 	}
 }
 
-func (ctl *controller) delFunc(obj interface{}) {
+func (ctl *controller) delFunc(obj any) {
 	cluster, ok := obj.(*extensionsv1alpha1.Cluster)
 	if !ok {
 		metrics.Errors.WithLabelValues(metrics.ErrorDeleteFuncNotAcluster).Inc()
@@ -226,12 +226,12 @@ func (ctl *controller) updateClientConfig(clusterName string) *config.Config {
 }
 
 // Shoots which are testing shoots should not be targeted for logging
-func (ctl *controller) isAllowedShoot(shoot *gardenercorev1beta1.Shoot) bool {
+func (*controller) isAllowedShoot(shoot *gardenercorev1beta1.Shoot) bool {
 	return !isTestingShoot(shoot)
 }
 
 // Shoots in deleting state should not be targeted for logging
-func (ctl *controller) isDeletedShoot(shoot *gardenercorev1beta1.Shoot) bool {
+func (*controller) isDeletedShoot(shoot *gardenercorev1beta1.Shoot) bool {
 	return shoot != nil && shoot.DeletionTimestamp != nil
 }
 

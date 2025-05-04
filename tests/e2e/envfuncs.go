@@ -54,7 +54,6 @@ func createContainerImage(registry string, target string) types.EnvFunc {
 
 func createFluentBitDaemonSet(namespace string, name string, image string, config string, lua string) types.EnvFunc {
 	return func(ctx context.Context, cfg *envconf.Config) (context.Context, error) {
-
 		serviceAccount := newServiceAccount(namespace, name)
 		if err := cfg.Client().Resources().Create(ctx, serviceAccount); err != nil {
 			return ctx, fmt.Errorf("failed to create fluent-bit service account: %w", err)

@@ -242,7 +242,6 @@ var _ = ginkgov2.Describe("Utils", func() {
 		ginkgov2.It("should not detect a cluster with reconcile annotation as marked for restoration", func() {
 			gomega.Expect(isShootMarkedForRestoration(restoringShootWithoutAnnotation)).To(gomega.BeFalse())
 		})
-
 	})
 
 	ginkgov2.Describe("#isShootInRestoration", func() {

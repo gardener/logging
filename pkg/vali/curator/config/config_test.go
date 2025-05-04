@@ -17,7 +17,7 @@ import (
 
 var _ = ginkgov2.Describe("CuratorConfig", func() {
 	type testArgs struct {
-		conf    map[string]interface{}
+		conf    map[string]any
 		want    *CuratorConfig
 		wantErr bool
 	}
@@ -42,21 +42,21 @@ var _ = ginkgov2.Describe("CuratorConfig", func() {
 			}
 		},
 		ginkgov2.Entry("default values", testArgs{
-			map[string]interface{}{},
+			map[string]any{},
 			&DefaultCuratorConfig,
 			false},
 		),
 		ginkgov2.Entry("overwrite values with the configuration ones", testArgs{
-			map[string]interface{}{
+			map[string]any{
 				"LogLevel":        "debug",
 				"DiskPath":        "/test",
 				"TriggerInterval": "1s",
-				"InodeConfig": map[string]interface{}{
+				"InodeConfig": map[string]any{
 					"MinFreePercentages":             2,
 					"TargetFreePercentages":          3,
 					"PageSizeForDeletionPercentages": 4,
 				},
-				"StorageConfig": map[string]interface{}{
+				"StorageConfig": map[string]any{
 					"MinFreePercentages":             5,
 					"TargetFreePercentages":          6,
 					"PageSizeForDeletionPercentages": 7,
@@ -80,29 +80,29 @@ var _ = ginkgov2.Describe("CuratorConfig", func() {
 			false},
 		),
 
-		ginkgov2.Entry("bad TriggerInterval", testArgs{map[string]interface{}{"TriggerInterval": "0s"}, nil, true}),
-		ginkgov2.Entry("bad MinFreeInodesPercentages", testArgs{map[string]interface{}{
-			"InodeConfig": map[string]interface{}{
+		ginkgov2.Entry("bad TriggerInterval", testArgs{map[string]any{"TriggerInterval": "0s"}, nil, true}),
+		ginkgov2.Entry("bad MinFreeInodesPercentages", testArgs{map[string]any{
+			"InodeConfig": map[string]any{
 				"MinFreePercentages": 101,
 			}}, nil, true}),
-		ginkgov2.Entry("bad TargetFreeInodesPercentages", testArgs{map[string]interface{}{
-			"InodeConfig": map[string]interface{}{
+		ginkgov2.Entry("bad TargetFreeInodesPercentages", testArgs{map[string]any{
+			"InodeConfig": map[string]any{
 				"TargetFreePercentages": -1,
 			}}, nil, true}),
-		ginkgov2.Entry("bad InodesPageSizeForDeletionPercentages", testArgs{map[string]interface{}{
-			"InodeConfig": map[string]interface{}{
+		ginkgov2.Entry("bad InodesPageSizeForDeletionPercentages", testArgs{map[string]any{
+			"InodeConfig": map[string]any{
 				"PageSizeForDeletionPercentages": 101,
 			}}, nil, true}),
-		ginkgov2.Entry("bad MinFreeStoragePercentages", testArgs{map[string]interface{}{
-			"StorageConfig": map[string]interface{}{
+		ginkgov2.Entry("bad MinFreeStoragePercentages", testArgs{map[string]any{
+			"StorageConfig": map[string]any{
 				"MinFreePercentages": -1,
 			}}, nil, true}),
-		ginkgov2.Entry("bad TargetFreeStoragePercentages", testArgs{map[string]interface{}{
-			"StorageConfig": map[string]interface{}{
+		ginkgov2.Entry("bad TargetFreeStoragePercentages", testArgs{map[string]any{
+			"StorageConfig": map[string]any{
 				"TargetFreePercentages": 101,
 			}}, nil, true}),
-		ginkgov2.Entry("bad CapacityPageSizeForDeletionPercentages", testArgs{map[string]interface{}{
-			"StorageConfig": map[string]interface{}{
+		ginkgov2.Entry("bad CapacityPageSizeForDeletionPercentages", testArgs{map[string]any{
+			"StorageConfig": map[string]any{
 				"PageSizeForDeletionPercentages": -1,
 			}}, nil, true}),
 	)

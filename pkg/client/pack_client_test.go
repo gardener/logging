@@ -22,7 +22,6 @@ import (
 )
 
 var _ = ginkgov2.Describe("Pack Client", func() {
-
 	var (
 		fakeClient *client.FakeValiClient
 		// packClient      types.ValiClient
@@ -53,7 +52,6 @@ var _ = ginkgov2.Describe("Pack Client", func() {
 		var infoLogLevel logging.Level
 		_ = infoLogLevel.Set("info")
 		logger = level.NewFilter(log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr)), infoLogLevel.Gokit)
-
 	})
 
 	type handleArgs struct {
@@ -266,17 +264,16 @@ var _ = ginkgov2.Describe("Pack Client", func() {
 			Expect(fakeClient.IsStopped).To(BeFalse())
 		})
 	})
-
 })
 
 func packLog(ls model.LabelSet, t time.Time, logLine string) string {
-	log := make(map[string]string, len(ls))
-	log["_entry"] = logLine
-	log["time"] = t.String()
+	l := make(map[string]string, len(ls))
+	l["_entry"] = logLine
+	l["time"] = t.String()
 	for key, value := range ls {
-		log[string(key)] = string(value)
+		l[string(key)] = string(value)
 	}
-	jsonStr, err := json.Marshal(log)
+	jsonStr, err := json.Marshal(l)
 	if err != nil {
 		return err.Error()
 	}

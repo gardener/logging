@@ -34,9 +34,9 @@ type PluginConfig struct {
 	// the value of the record key.
 	DropSingleKey bool
 	// LabelMap is path to a json file defining how to transform nested records.
-	LabelMap map[string]interface{}
+	LabelMap map[string]any
 	// DynamicHostPath is jsonpath in the log labels to the dynamic host.
-	DynamicHostPath map[string]interface{}
+	DynamicHostPath map[string]any
 	// DynamicHostRegex is regex to check if the dynamic host is valid.
 	DynamicHostRegex string
 	// KubernetesMetadata holds the configurations for retrieving the meta data from a tag.
@@ -69,7 +69,7 @@ type DynamicTenant struct {
 	Tenant                                string
 	Field                                 string
 	Regex                                 string
-	RemoveTenantIdWhenSendingToDefaultURL bool
+	RemoveTenantIDWhenSendingToDefaultURL bool
 }
 
 func initPluginConfig(cfg Getter, res *Config) error {
@@ -188,14 +188,14 @@ func initPluginConfig(cfg Getter, res *Config) error {
 		res.PluginConfig.DynamicTenant.Tenant = dynamicTenantValues[0]
 		res.PluginConfig.DynamicTenant.Field = dynamicTenantValues[1]
 		res.PluginConfig.DynamicTenant.Regex = dynamicTenantValues[2]
-		removeTenantIdWhenSendingToDefaultURL := cfg.Get("RemoveTenantIdWhenSendingToDefaultURL")
-		if removeTenantIdWhenSendingToDefaultURL != "" {
-			res.PluginConfig.DynamicTenant.RemoveTenantIdWhenSendingToDefaultURL, err = strconv.ParseBool(removeTenantIdWhenSendingToDefaultURL)
+		removeTenantIDWhenSendingToDefaultURL := cfg.Get("RemoveTenantIDWhenSendingToDefaultURL")
+		if removeTenantIDWhenSendingToDefaultURL != "" {
+			res.PluginConfig.DynamicTenant.RemoveTenantIDWhenSendingToDefaultURL, err = strconv.ParseBool(removeTenantIDWhenSendingToDefaultURL)
 			if err != nil {
-				return fmt.Errorf("invalid value for RemoveTenantIdWhenSendingToDefaultURL, error: %v", err)
+				return fmt.Errorf("invalid value for RemoveTenantIDWhenSendingToDefaultURL, error: %v", err)
 			}
 		} else {
-			res.PluginConfig.DynamicTenant.RemoveTenantIdWhenSendingToDefaultURL = true
+			res.PluginConfig.DynamicTenant.RemoveTenantIDWhenSendingToDefaultURL = true
 		}
 	}
 

@@ -46,7 +46,7 @@ func NewConfiguration() (config.Config, error) {
 			},
 			SortByTimestamp:  true,
 			NumberOfBatchIDs: uint64(5),
-			IdLabelName:      model.LabelName("id"),
+			IDLabelName:      model.LabelName("id"),
 		},
 		ControllerConfig: config.ControllerConfig{
 			CtlSyncTimeout:              60 * time.Minute,
@@ -61,8 +61,8 @@ func NewConfiguration() (config.Config, error) {
 			EnableMultiTenancy:   false,
 			RemoveKeys:           []string{"kubernetes", "stream", "time", "tag", "job"},
 			LabelKeys:            nil,
-			LabelMap: map[string]interface{}{
-				"kubernetes": map[string]interface{}{
+			LabelMap: map[string]any{
+				"kubernetes": map[string]any{
 					"container_id":   "container_id",
 					"container_name": "container_name",
 					"namespace_name": "namespace_name",
@@ -73,8 +73,8 @@ func NewConfiguration() (config.Config, error) {
 			},
 			LineFormat:    config.KvPairFormat,
 			DropSingleKey: false,
-			DynamicHostPath: map[string]interface{}{
-				"kubernetes": map[string]interface{}{
+			DynamicHostPath: map[string]any{
+				"kubernetes": map[string]any{
 					"namespace_name": "namespace",
 				},
 			},

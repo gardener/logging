@@ -11,14 +11,13 @@ import (
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/rbac/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
 )
 
 func newBackendStatefulSet(namespace string, name string, image string) *appsv1.StatefulSet {
-
 	return &appsv1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace, Labels: map[string]string{"app.kubernetes.io/name": "vali"}},
 		Spec: appsv1.StatefulSetSpec{
@@ -109,7 +108,7 @@ func newFluentBitDaemonSet(namespace string, name string, image string) *appsv1.
 							Name: "fluent-bit-config",
 							VolumeSource: corev1.VolumeSource{ConfigMap: &corev1.
 								ConfigMapVolumeSource{LocalObjectReference: corev1.
-								LocalObjectReference{Name: DaemonSetName + "-config"},
+								LocalObjectReference{Name: daemonSetName + "-config"},
 								Optional: ptr.To(false)}},
 						},
 						{
@@ -125,15 +124,15 @@ func newFluentBitDaemonSet(namespace string, name string, image string) *appsv1.
 
 func newFluentBitConfigMap(namespace string, data string, lua string) *corev1.ConfigMap {
 	return &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{Name: DaemonSetName + "-config", Namespace: namespace},
+		ObjectMeta: metav1.ObjectMeta{Name: daemonSetName + "-config", Namespace: namespace},
 		Data:       map[string]string{"fluent-bit.conf": data, "add_tag_to_record.lua": lua},
 	}
 }
 
-func newFluentBitRBAC(namespace string, name string) (*v1.ClusterRole, *v1.ClusterRoleBinding) {
-	clusterRole := &v1.ClusterRole{
+func newFluentBitRBAC(namespace string, name string) (*rbacv1.ClusterRole, *rbacv1.ClusterRoleBinding) {
+	clusterRole := &rbacv1.ClusterRole{
 		ObjectMeta: metav1.ObjectMeta{Name: name},
-		Rules: []v1.PolicyRule{
+		Rules: []rbacv1.PolicyRule{
 			{
 				APIGroups: []string{"extensions.gardener.cloud"},
 				Resources: []string{"clusters"},
@@ -141,14 +140,14 @@ func newFluentBitRBAC(namespace string, name string) (*v1.ClusterRole, *v1.Clust
 			},
 		},
 	}
-	clusterRoleBinding := &v1.ClusterRoleBinding{
+	clusterRoleBinding := &rbacv1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{Name: name},
-		RoleRef: v1.RoleRef{
+		RoleRef: rbacv1.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
 			Kind:     "ClusterRole",
 			Name:     name,
 		},
-		Subjects: []v1.Subject{
+		Subjects: []rbacv1.Subject{
 			{
 				Kind:      "ServiceAccount",
 				Name:      name,
@@ -167,7 +166,6 @@ func newServiceAccount(namespace string, name string) *corev1.ServiceAccount {
 }
 
 func newLoggerPod(namespace string, name string) *corev1.Pod {
-
 	return &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace, Labels: map[string]string{"run": "logs-generator"}},
 		Spec: corev1.PodSpec{
@@ -243,10 +241,10 @@ func newExtensionCluster(name string, state string) *extensionsv1alpha1.Cluster 
 	}
 }
 
-func newEventLoggerRBAC(namespace string, name string) (*v1.Role, *v1.RoleBinding) {
-	role := &v1.Role{
+func newEventLoggerRBAC(namespace string, name string) (*rbacv1.Role, *rbacv1.RoleBinding) {
+	role := &rbacv1.Role{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
-		Rules: []v1.PolicyRule{
+		Rules: []rbacv1.PolicyRule{
 			{
 				APIGroups: []string{""},
 				Resources: []string{"events"},
@@ -255,14 +253,14 @@ func newEventLoggerRBAC(namespace string, name string) (*v1.Role, *v1.RoleBindin
 		},
 	}
 
-	roleBinding := &v1.RoleBinding{
+	roleBinding := &rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
-		RoleRef: v1.RoleRef{
+		RoleRef: rbacv1.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
 			Kind:     "Role",
 			Name:     name,
 		},
-		Subjects: []v1.Subject{
+		Subjects: []rbacv1.Subject{
 			{
 				Kind:      "ServiceAccount",
 				Name:      name,

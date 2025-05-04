@@ -11,6 +11,7 @@ import (
 	"github.com/prometheus/common/model"
 )
 
+// NewBlackBoxTestingValiClient creates a new instance of BlackBoxTestingValiClient.
 func NewBlackBoxTestingValiClient() *BlackBoxTestingValiClient {
 	return &BlackBoxTestingValiClient{
 		entries:      make(chan api.Entry),
@@ -18,8 +19,8 @@ func NewBlackBoxTestingValiClient() *BlackBoxTestingValiClient {
 	}
 }
 
+// Run starts the BlackBoxTestingValiClient and processes entries from the channel.
 func (c *BlackBoxTestingValiClient) Run() {
-
 	for e := range c.entries {
 		delete(e.Labels, model.LabelName("id"))
 		labelSetStr := LabelSetToString(e.Labels)
@@ -37,26 +38,32 @@ func (c *BlackBoxTestingValiClient) Run() {
 	}
 }
 
+// Chan returns the channel for sending entries.
 func (c *BlackBoxTestingValiClient) Chan() chan<- api.Entry {
 	return c.entries
 }
 
+// Stop increments the stopped counter.
 func (c *BlackBoxTestingValiClient) Stop() {
 	c.stopped++
 }
 
+// StopNow increments the stopped counter and returns immediately.
 func (c *BlackBoxTestingValiClient) StopNow() {
 	c.stopped++
 }
 
+// Shutdown is used to close the entries channel.
 func (c *BlackBoxTestingValiClient) Shutdown() {
 	close(c.entries)
 }
 
+// GetEntries returns the received entries.
 func (c *BlackBoxTestingValiClient) GetEntries() []api.Entry {
 	return c.receivedEntries
 }
 
+// GetLogsCount returns the count of logs for a given label set.
 func (c *BlackBoxTestingValiClient) GetLogsCount(ls model.LabelSet) int {
 	labelSetStr := LabelSetToString(ls)
 	for _, entry := range c.receivedEntries {

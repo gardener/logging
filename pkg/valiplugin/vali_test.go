@@ -33,60 +33,58 @@ type recorder struct {
 	*entry
 }
 
-func (r *recorder) GetEndPoint() string {
+func (*recorder) GetEndPoint() string {
 	return "http://localhost"
 }
 
-func (r *recorder) Handle(labels model.LabelSet, time time.Time, e string) error {
-	r.entry = &entry{
-		labels,
-		e,
-		time,
-	}
+func (r *recorder) Handle(labels model.LabelSet, t time.Time, e string) error {
+	r.entry = &entry{labels, e, t}
 
 	return nil
 }
 
 func (r *recorder) toEntry() *entry { return r.entry }
 
-func (r *recorder) Stop()     {}
-func (r *recorder) StopWait() {}
+func (*recorder) Stop()     {}
+func (*recorder) StopWait() {}
 
 type sendRecordArgs struct {
 	cfg     *config.Config
-	record  map[interface{}]interface{}
+	record  map[any]any
 	want    *entry
 	wantErr bool
 }
 
 type fakeValiClient struct{}
 
-func (c *fakeValiClient) GetEndPoint() string {
+func (*fakeValiClient) GetEndPoint() string {
 	return "http://localhost"
 }
 
 var _ client.ValiClient = &fakeValiClient{}
 
-func (c *fakeValiClient) Handle(_ model.LabelSet, _ time.Time, _ string) error {
+func (*fakeValiClient) Handle(_ model.LabelSet, _ time.Time, _ string) error {
 	return nil
 }
 
-func (c *fakeValiClient) Stop()     {}
-func (c *fakeValiClient) StopWait() {}
+func (*fakeValiClient) Stop()     {}
+func (*fakeValiClient) StopWait() {}
 
 type fakeController struct {
 	clients map[string]client.ValiClient
 }
 
+// GetClient returns a client by name. If the client does not exist, it returns nil and false.
 func (ctl *fakeController) GetClient(name string) (client.ValiClient, bool) {
-	if client, ok := ctl.clients[name]; ok {
-		return client, false
+	if c, ok := ctl.clients[name]; ok {
+		return c, false
 	}
 
 	return nil, false
 }
 
-func (ctl *fakeController) Stop() {}
+// Stop stops all clients.
+func (*fakeController) Stop() {}
 
 var (
 	now      = time.Now()
@@ -96,12 +94,12 @@ var (
 
 var _ = ginkgov2.Describe("Vali plugin", func() {
 	var (
-		simpleRecordFixture = map[interface{}]interface{}{
+		simpleRecordFixture = map[any]any{
 			"foo":   "bar",
 			"bar":   500,
 			"error": make(chan struct{}),
 		}
-		mapRecordFixture = map[interface{}]interface{}{
+		mapRecordFixture = map[any]any{
 			// lots of key/value pairs in map to increase chances of test hitting in case of unsorted map marshalling
 			"A": "A",
 			"B": "B",
@@ -113,21 +111,21 @@ var _ = ginkgov2.Describe("Vali plugin", func() {
 			"H": "H",
 		}
 
-		byteArrayRecordFixture = map[interface{}]interface{}{
+		byteArrayRecordFixture = map[any]any{
 			"label": "label",
 			"outer": []byte("foo"),
-			"map": map[interface{}]interface{}{
+			"map": map[any]any{
 				"inner": []byte("bar"),
 			},
 		}
 
-		mixedTypesRecordFixture = map[interface{}]interface{}{
+		mixedTypesRecordFixture = map[any]any{
 			"label": "label",
 			"int":   42,
 			"float": 42.42,
-			"array": []interface{}{42, 42.42, "foo"},
-			"map": map[interface{}]interface{}{
-				"nested": map[interface{}]interface{}{
+			"array": []any{42, 42.42, "foo"},
+			"map": map[any]any{
+				"nested": map[any]any{
 					"foo":     "bar",
 					"invalid": []byte("a\xc5z"),
 				},
@@ -233,7 +231,7 @@ var _ = ginkgov2.Describe("Vali plugin", func() {
 		ginkgov2.Entry("labelmap",
 			sendRecordArgs{
 				cfg: &config.Config{
-					PluginConfig: config.PluginConfig{LabelMap: map[string]interface{}{"bar": "other"}, LineFormat: config.JSONFormat, RemoveKeys: []string{"bar", "error"}},
+					PluginConfig: config.PluginConfig{LabelMap: map[string]any{"bar": "other"}, LineFormat: config.JSONFormat, RemoveKeys: []string{"bar", "error"}},
 				},
 				record:  simpleRecordFixture,
 				want:    &entry{model.LabelSet{"other": "500"}, `{"foo":"bar"}`, now},
@@ -314,10 +312,10 @@ var _ = ginkgov2.Describe("Vali plugin", func() {
 		type setDynamicTenantArgs struct {
 			valiplugin vali
 			labelSet   model.LabelSet
-			records    map[string]interface{}
-			want       struct {
+			records    map[string]any
+			want       struct { // revive:disable-line:nested-structs
 				labelSet model.LabelSet
-				records  map[string]interface{}
+				records  map[string]any
 			}
 		}
 
@@ -338,19 +336,19 @@ var _ = ginkgov2.Describe("Vali plugin", func() {
 					labelSet: model.LabelSet{
 						"foo": "bar",
 					},
-					records: map[string]interface{}{
+					records: map[string]any{
 						"log": "The most important log in the world",
 						"tag": "user-exposed.kubernetes.var.log.containers.super-secret-pod_super-secret-namespace_ultra-sicret-container_1234567890.log",
 					},
 					want: struct {
 						labelSet model.LabelSet
-						records  map[string]interface{}
+						records  map[string]any
 					}{
 						labelSet: model.LabelSet{
 							"foo":           "bar",
 							"__tenant_id__": "test-user",
 						},
-						records: map[string]interface{}{
+						records: map[string]any{
 							"log": "The most important log in the world",
 							"tag": "user-exposed.kubernetes.var.log.containers.super-secret-pod_super-secret-namespace_ultra-sicret-container_1234567890.log",
 						},
@@ -367,18 +365,18 @@ var _ = ginkgov2.Describe("Vali plugin", func() {
 					labelSet: model.LabelSet{
 						"foo": "bar",
 					},
-					records: map[string]interface{}{
+					records: map[string]any{
 						"log": "The most important log in the world",
 						"tag": "operator-exposed.kubernetes.var.log.containers.super-secret-pod_super-secret-namespace_ultra-sicret-container_1234567890.log",
 					},
 					want: struct {
 						labelSet model.LabelSet
-						records  map[string]interface{}
+						records  map[string]any
 					}{
 						labelSet: model.LabelSet{
 							"foo": "bar",
 						},
-						records: map[string]interface{}{
+						records: map[string]any{
 							"log": "The most important log in the world",
 							"tag": "operator-exposed.kubernetes.var.log.containers.super-secret-pod_super-secret-namespace_ultra-sicret-container_1234567890.log",
 						},
@@ -395,18 +393,18 @@ var _ = ginkgov2.Describe("Vali plugin", func() {
 					labelSet: model.LabelSet{
 						"foo": "bar",
 					},
-					records: map[string]interface{}{
+					records: map[string]any{
 						"log":     "The most important log in the world",
 						"not-tag": "user-exposed.kubernetes.var.log.containers.super-secret-pod_super-secret-namespace_ultra-sicret-container_1234567890.log",
 					},
 					want: struct {
 						labelSet model.LabelSet
-						records  map[string]interface{}
+						records  map[string]any
 					}{
 						labelSet: model.LabelSet{
 							"foo": "bar",
 						},
-						records: map[string]interface{}{
+						records: map[string]any{
 							"log":     "The most important log in the world",
 							"not-tag": "user-exposed.kubernetes.var.log.containers.super-secret-pod_super-secret-namespace_ultra-sicret-container_1234567890.log",
 						},
@@ -419,7 +417,7 @@ var _ = ginkgov2.Describe("Vali plugin", func() {
 		type addHostnameAsLabelArgs struct {
 			valiplugin vali
 			labelSet   model.LabelSet
-			want       struct {
+			want       struct { // revive:disable-line:nested-structs
 				labelSet model.LabelSet
 			}
 		}

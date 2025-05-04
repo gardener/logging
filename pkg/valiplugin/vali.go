@@ -27,7 +27,7 @@ import (
 
 // Vali plugin interface
 type Vali interface {
-	SendRecord(r map[interface{}]interface{}, ts time.Time) error
+	SendRecord(r map[any]any, ts time.Time) error
 	Close()
 }
 
@@ -49,7 +49,7 @@ func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger lo
 	v := &vali{cfg: cfg, logger: logger}
 
 	if v.seedClient, err = client.NewClient(*cfg, logger, client.Options{
-		RemoveTenantID:    cfg.PluginConfig.DynamicTenant.RemoveTenantIdWhenSendingToDefaultURL,
+		RemoveTenantID:    cfg.PluginConfig.DynamicTenant.RemoveTenantIDWhenSendingToDefaultURL,
 		MultiTenantClient: false,
 	}); err != nil {
 		return nil, err
@@ -69,7 +69,7 @@ func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger lo
 		cfgShallowCopy := *cfg
 		cfgShallowCopy.ClientConfig.BufferConfig.DqueConfig.QueueName = cfg.ClientConfig.BufferConfig.DqueConfig.QueueName + "-controller"
 		controllerSeedClient, err := client.NewClient(cfgShallowCopy, logger, client.Options{
-			RemoveTenantID:    cfg.PluginConfig.DynamicTenant.RemoveTenantIdWhenSendingToDefaultURL,
+			RemoveTenantID:    cfg.PluginConfig.DynamicTenant.RemoveTenantIDWhenSendingToDefaultURL,
 			MultiTenantClient: false,
 			PreservedLabels:   cfg.PluginConfig.PreservedLabels,
 		})
@@ -110,7 +110,7 @@ func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger lo
 }
 
 // SendRecord sends fluent-bit records to vali as an entry.
-func (v *vali) SendRecord(r map[interface{}]interface{}, ts time.Time) error {
+func (v *vali) SendRecord(r map[any]any, ts time.Time) error {
 	records := toStringMap(r)
 	// _ = level.Debug(v.logger).Log("msg", "processing records", "records", fluentBitRecords(records))
 	lbs := make(model.LabelSet, v.cfg.PluginConfig.LabelSetInitCapacity)
@@ -251,7 +251,7 @@ func (v *vali) isDynamicHost(dynamicHostName string) bool {
 		v.dynamicHostRegexp.MatchString(dynamicHostName)
 }
 
-func (v *vali) setDynamicTenant(record map[string]interface{}, lbs model.LabelSet) model.LabelSet {
+func (v *vali) setDynamicTenant(record map[string]any, lbs model.LabelSet) model.LabelSet {
 	if v.dynamicTenantRegexp == nil {
 		return lbs
 	}
@@ -267,8 +267,8 @@ func (v *vali) setDynamicTenant(record map[string]interface{}, lbs model.LabelSe
 	return lbs
 }
 
-func (v *vali) send(client client.ValiClient, lbs model.LabelSet, ts time.Time, line string) error {
-	return client.Handle(lbs, ts, line)
+func (*vali) send(c client.ValiClient, lbs model.LabelSet, ts time.Time, line string) error {
+	return c.Handle(lbs, ts, line)
 }
 
 func (v *vali) addHostnameAsLabel(res model.LabelSet) error {

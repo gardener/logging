@@ -25,26 +25,25 @@ func TestShootEventsLogs(t *testing.T) {
 	g := gomega.NewWithT(t)
 	deploymentFeature := features.New("shoot/events").WithLabel("type", "events").
 		Setup(func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-
 			var (
 				backend appsv1.StatefulSet
 				client  = cfg.Client()
 			)
 
-			g.Expect(client.Resources().Get(ctx, SeedBackendName, SeedNamespace, &backend)).To(gomega.Succeed())
+			g.Expect(client.Resources().Get(ctx, seedBackendName, seedNamespace, &backend)).To(gomega.Succeed())
 			if len(backend.Name) > 0 {
 				t.Logf("seed backend statefulset found: %s", backend.Name)
 			}
 
 			g.Eventually(func() bool {
-				_ = client.Resources().Get(ctx, SeedBackendName, SeedNamespace, &backend)
+				_ = client.Resources().Get(ctx, seedBackendName, seedNamespace, &backend)
 
 				return backend.Status.ReadyReplicas == *backend.Spec.Replicas
 			}).WithTimeout(2 * time.Minute).WithPolling(1 * time.Second).Should(gomega.BeTrue())
 
 			var daemonSet appsv1.DaemonSet
 
-			g.Expect(client.Resources().Get(ctx, DaemonSetName, SeedNamespace, &daemonSet)).To(gomega.Succeed())
+			g.Expect(client.Resources().Get(ctx, daemonSetName, seedNamespace, &daemonSet)).To(gomega.Succeed())
 			if len(daemonSet.Name) > 0 {
 				t.Logf("fluent-bit daemonset found: %s", daemonSet.Name)
 			}
@@ -59,10 +58,10 @@ func TestShootEventsLogs(t *testing.T) {
 			}).WithTimeout(1 * time.Minute).WithPolling(1 * time.Second).Should(gomega.BeTrue())
 
 			event := corev1.Event{
-				ObjectMeta: metav1.ObjectMeta{Name: "test-event", Namespace: ShootNamespace},
+				ObjectMeta: metav1.ObjectMeta{Name: "test-event", Namespace: shootNamespace},
 				InvolvedObject: corev1.ObjectReference{
 					Kind:      "Deployment",
-					Namespace: ShootNamespace,
+					Namespace: shootNamespace,
 					Name:      "test-deployment",
 					UID:       "123456",
 				},
@@ -87,8 +86,8 @@ func TestShootEventsLogs(t *testing.T) {
 			g.Expect(client.Resources().List(
 				ctx,
 				&podList,
-				resources.WithLabelSelector("statefulset.kubernetes.io/pod-name="+ShootBackendName+"-0"),
-				resources.WithFieldSelector("metadata.namespace="+ShootNamespace),
+				resources.WithLabelSelector("statefulset.kubernetes.io/pod-name="+shootBackendName+"-0"),
+				resources.WithFieldSelector("metadata.namespace="+shootNamespace),
 			)).To(gomega.Succeed())
 
 			g.Expect(len(podList.Items)).To(gomega.BeNumerically("==", 1))
@@ -131,8 +130,7 @@ func TestShootEventsLogs(t *testing.T) {
 
 			return ctx
 		}).
-		Teardown(func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-
+		Teardown(func(ctx context.Context, _ *testing.T, _ *envconf.Config) context.Context {
 			return ctx
 		}).Feature()
 
