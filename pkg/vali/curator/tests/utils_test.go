@@ -13,7 +13,7 @@ import (
 	"github.com/onsi/gomega"
 	"github.com/weaveworks/common/logging"
 
-	"github.com/gardener/logging/pkg/vali/curator/utils"
+	"github.com/gardener/logging/pkg/vali/curator"
 )
 
 var _ = ginkgov2.Describe("CuratorUtils", func() {
@@ -47,10 +47,10 @@ var _ = ginkgov2.Describe("CuratorUtils", func() {
 		_ = logLevel.Set("info")
 		logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
 		logger = level.NewFilter(logger, logLevel.Gokit)
-		deletedFiles, err := utils.DeleteFiles(testDir, uint64(numOfFiles/2), 1, freeSpaceFunc, logger)
+		deletedFiles, err := curator.DeleteFiles(testDir, uint64(numOfFiles/2), 1, freeSpaceFunc, logger)
 		gomega.Expect(err).ToNot(gomega.HaveOccurred())
 		gomega.Expect(deletedFiles).To(gomega.Equal(numOfFiles / 2))
-		newDeletedFiles, err := utils.DeleteFiles(testDir, uint64(numOfFiles-deletedFiles), 1, freeSpaceFunc, logger)
+		newDeletedFiles, err := curator.DeleteFiles(testDir, uint64(numOfFiles-deletedFiles), 1, freeSpaceFunc, logger)
 		gomega.Expect(err).ToNot(gomega.HaveOccurred())
 		gomega.Expect(newDeletedFiles).To(gomega.Equal(0))
 	})
