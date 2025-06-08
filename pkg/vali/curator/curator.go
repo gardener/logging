@@ -13,7 +13,6 @@ import (
 
 	"github.com/gardener/logging/pkg/vali/curator/config"
 	"github.com/gardener/logging/pkg/vali/curator/metrics"
-	"github.com/gardener/logging/pkg/vali/curator/utils"
 )
 
 // Curator holds needed propperties for a curator
@@ -36,7 +35,7 @@ func NewCurator(conf config.CuratorConfig, logger log.Logger) *Curator {
 
 // Run the ticker
 func (c *Curator) Run() {
-	ms := utils.MemStat{}
+	ms := MemStat{}
 	for {
 		select {
 		case <-c.closed:

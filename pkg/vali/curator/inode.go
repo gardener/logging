@@ -11,7 +11,6 @@ import (
 	"github.com/go-kit/log/level"
 
 	"github.com/gardener/logging/pkg/vali/curator/metrics"
-	"github.com/gardener/logging/pkg/vali/curator/utils"
 )
 
 // freeUpInodeCapacityIfNeeded checks the current inode usage and runs cleanup if needed
@@ -41,7 +40,7 @@ func (c *Curator) freeUpInodeCapacityIfNeeded() error {
 		}
 
 		pageSize := int(stat.Files/100) * c.config.InodeConfig.PageSizeForDeletionPercentages
-		deletedCount, err := utils.DeleteFiles(c.config.DiskPath, targetFreeInodes, pageSize, currFreeSpaceFunc, c.logger)
+		deletedCount, err := DeleteFiles(c.config.DiskPath, targetFreeInodes, pageSize, currFreeSpaceFunc, c.logger)
 		metrics.DeletedFilesDueToInodes.Add(float64(deletedCount))
 		if err != nil {
 			return fmt.Errorf("%s; Failed to clean the needed inodes. DeletedInodes: %d", err.Error(), deletedCount)

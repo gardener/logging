@@ -11,7 +11,6 @@ import (
 	"github.com/go-kit/log/level"
 
 	"github.com/gardener/logging/pkg/vali/curator/metrics"
-	"github.com/gardener/logging/pkg/vali/curator/utils"
 )
 
 // freeUpDiskCapacityIfNeeded checks the current disk usage and runs cleanup if needed
@@ -44,7 +43,7 @@ func (c *Curator) freeUpDiskCapacityIfNeeded() error {
 		}
 
 		pageSize := int(stat.Files/100) * c.config.StorageConfig.PageSizeForDeletionPercentages
-		deletedCount, err := utils.DeleteFiles(c.config.DiskPath, targetFreeCap, pageSize, currFreeSpaceFunc, c.logger)
+		deletedCount, err := DeleteFiles(c.config.DiskPath, targetFreeCap, pageSize, currFreeSpaceFunc, c.logger)
 		metrics.DeletedFilesDueToStorage.Add(float64(deletedCount))
 		if err != nil {
 			return fmt.Errorf("%s; Failed to clean the needed capacity. DeletedFiles: %d", err.Error(), deletedCount)
