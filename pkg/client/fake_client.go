@@ -5,7 +5,7 @@
 package client
 
 import (
-	"fmt"
+	"errors"
 	"sync"
 	"time"
 
@@ -34,7 +34,7 @@ func (*FakeValiClient) GetEndPoint() string {
 // Handle processes and stores the received entries.
 func (c *FakeValiClient) Handle(labels model.LabelSet, timestamp time.Time, line string) error {
 	if c.IsStopped || c.IsGracefullyStopped {
-		return fmt.Errorf("client has been stopped")
+		return errors.New("client has been stopped")
 	}
 	c.Mu.Lock()
 	c.Entries = append(c.Entries, Entry{

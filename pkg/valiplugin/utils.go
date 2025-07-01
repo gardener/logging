@@ -10,6 +10,7 @@ package valiplugin
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"regexp"
 	"sort"
@@ -77,20 +78,20 @@ func toStringMap(record map[any]any) map[string]any {
 func autoLabels(records map[string]any, kuberneteslbs model.LabelSet) error {
 	kube, ok := records["kubernetes"]
 	if !ok {
-		return fmt.Errorf("kubernetes labels not found, no labels will be added")
+		return errors.New("kubernetes labels not found, no labels will be added")
 	}
 
 	replacer := strings.NewReplacer("/", "_", ".", "_", "-", "_")
 	received, ok := kube.(map[string]any)
 	if !ok {
-		return fmt.Errorf("kubernetes labels not found, no labels will be added")
+		return errors.New("kubernetes labels not found, no labels will be added")
 	}
 	for k, v := range received {
 		switch k {
 		case "labels":
 			labels, ok := v.(map[string]any)
 			if !ok {
-				return fmt.Errorf("no labels found in records")
+				return errors.New("no labels found in records")
 			}
 			for m, n := range labels {
 				kuberneteslbs[model.LabelName(replacer.Replace(m))] = model.LabelValue(fmt.Sprintf("%v", n))
