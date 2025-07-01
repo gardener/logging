@@ -59,5 +59,5 @@ func TestMain(m *testing.M) {
 		envfuncs.ExportClusterLogs(kindClusterName, "./logs"),
 		envfuncs.DestroyCluster(kindClusterName),
 	)
-	os.Exit(testenv.Run(m))
+	testenv.Run(m)
 }

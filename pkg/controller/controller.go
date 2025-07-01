@@ -6,6 +6,7 @@ package controller
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -69,7 +70,7 @@ func NewController(informer cache.SharedIndexInformer, conf *config.Config, seed
 	})
 
 	if !cache.WaitForNamedCacheSync("controller", stopChan, informer.HasSynced) {
-		return nil, fmt.Errorf("failed to wait for caches to sync")
+		return nil, errors.New("failed to wait for caches to sync")
 	}
 
 	return ctl, nil
