@@ -1,0 +1,116 @@
+name: Build
+
+on:
+  workflow_call:
+    inputs:
+      mode:
+        required: true
+        type: string
+        default: snapshot
+        description: |
+          the mode to use. either `snapshot` or `release`. Will affect effective version, as well
+          as target-oci-registry.
+
+jobs:
+  prepare:
+    uses: gardener/cc-utils/.github/workflows/prepare.yaml@master
+    with:
+      mode: ${{ inputs.mode }}
+      version-commit-callback-action-path:
+    permissions:
+      contents: read
+
+  oci-images:
+    name: Build OCI-Images
+    needs:
+      - prepare
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    secrets: inherit
+    uses: gardener/cc-utils/.github/workflows/oci-ocm.yaml@master
+    strategy:
+      matrix:
+        args:
+          - name: fluent-bit-to-vali
+            target: fluent-bit-plugin
+            oci-repository: gardener/fluent-bit-to-vali
+            ocm-labels:
+              name: gardener.cloud/cve-categorisation
+              value:
+                network_exposure: private
+                authentication_enforced: false
+                user_interaction: gardener-operator
+                confidentiality_requirement: none
+                integrity_requirement: none
+                availability_requirement: none
+                comment: no data is stored of processed by the installer
+          - name: vali-curator
+            target: curator
+            oci-repository: gardener/vali-curator
+            ocm-labels:
+              name: gardener.cloud/cve-categorisation
+              value:
+                network_exposure: private
+                authentication_enforced: false
+                user_interaction: gardener-operator
+                confidentiality_requirement: none
+                integrity_requirement: high
+                availability_requirement: low
+          - name: telegraf-iptables
+            target: telegraf
+            oci-repository: gardener/telegraf-iptables
+            ocm-labels:
+              name: gardener.cloud/cve-categorisation
+              value:
+                network_exposure: private
+                authentication_enforced: false
+                user_interaction: gardener-operator
+                confidentiality_requirement: none
+                integrity_requirement: none
+                availability_requirement: none
+                comment: >-
+                  telegraf is not accessible from outside the seed-cluster and does not
+                  interact with confidential data
+          - name: event-logger
+            target: event-logger
+            oci-repository: gardener/event-logger
+            ocm-labels:
+              name: gardener.cloud/cve-categorisation
+              value:
+                network_exposure: private
+                authentication_enforced: false
+                user_interaction: gardener-operator
+                confidentiality_requirement: high
+                integrity_requirement: high
+                availability_requirement: low
+          - name: tune2fs
+            target: tune2fs
+            oci-repository: gardener/tune2fs
+            ocm-labels:
+              name: gardener.cloud/cve-categorisation
+              value:
+                network_exposure: private
+                authentication_enforced: false
+                user_interaction: gardener-operator
+                confidentiality_requirement: none
+                integrity_requirement: none
+                availability_requirement: low
+    with:
+      name: ${{ matrix.args.name }}
+      version: ${{ needs.prepare.outputs.version }}
+      target: ${{ matrix.args.target }}
+      oci-registry: ${{ needs.prepare.outputs.oci-registry }}
+      oci-repository: ${{ matrix.args.oci-repository }}
+      oci-platforms: linux/amd64,linux/arm64
+      ocm-labels: ${{ toJSON(matrix.args.ocm-labels) }}
+      extra-tags: latest
+
+  sast-lint:
+    uses: gardener/cc-utils/.github/workflows/sastlint-ocm.yaml@master
+    permissions:
+      contents: read
+    with:
+      linter: gosec
+      run: .ci/verify
