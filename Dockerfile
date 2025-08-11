@@ -1,5 +1,5 @@
 #############      builder       #############
-FROM golang:1.24.5 AS builder
+FROM golang:1.24.6 AS builder
 
 WORKDIR /go/src/github.com/gardener/logging
 
@@ -49,7 +49,7 @@ WORKDIR /
 ENTRYPOINT [ "/event-logger" ]
 
 #############      telegraf-builder       #############
-FROM golang:1.24.5 AS telegraf-builder
+FROM golang:1.24.6 AS telegraf-builder
 RUN git clone --depth 1 --branch v1.26.0 https://github.com/influxdata/telegraf.git
 WORKDIR /go/telegraf
 ARG TARGETOS
