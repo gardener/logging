@@ -62,6 +62,7 @@ func getShootState(shoot *gardencorev1beta1.Shoot) clusterState {
 		return clusterStateHibernated
 	case !isShootInHibernation(shoot) && shoot.Status.IsHibernated:
 		return clusterStateWakingUp
+	default:
 	}
 
 	return clusterStateReady

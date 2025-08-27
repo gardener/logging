@@ -97,6 +97,7 @@ func getCluster(number int, state string) *extensionsv1alpha1.Cluster {
 			Type:  gardencorev1beta1.LastOperationTypeReconcile,
 			State: gardencorev1beta1.LastOperationStateSucceeded,
 		}
+	default:
 	}
 
 	return &extensionsv1alpha1.Cluster{
