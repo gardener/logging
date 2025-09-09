@@ -12,7 +12,7 @@ SKAFFOLD_VERSION                           ?= v2.14.1
 
 # gosec
 GOSEC     	                               := $(TOOLS_DIR)/gosec
-GOSEC_VERSION		                       ?= v2.21.4
+GOSEC_VERSION		                       ?= v2.22.8
 
 # Use this "function" to add the version file as a prerequisite for the tool target: e.g.
 tool_version_file = $(TOOLS_DIR)/.version_$(subst $(TOOLS_DIR)/,,$(1))_$(2)
