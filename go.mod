@@ -336,7 +336,6 @@ require (
 	sigs.k8s.io/json v0.0.0-20241014173422-cfa47c3a1cc8 // indirect
 	sigs.k8s.io/kind v0.29.0 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
-	sigs.k8s.io/structured-merge-diff/v4 v4.7.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v6 v6.3.0 // indirect
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )
@@ -349,10 +348,10 @@ replace (
 	github.com/prometheus/common => github.com/prometheus/common v0.20.0
 	google.golang.org/grpc => google.golang.org/grpc v1.45.0
 	// Required by github.com/gardener/gardener
-	k8s.io/api => k8s.io/api v0.33.0
-	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.33.0
-	k8s.io/apimachinery => k8s.io/apimachinery v0.33.0
-	k8s.io/apiserver => k8s.io/apiserver v0.33.0
-	k8s.io/client-go => k8s.io/client-go v0.33.0
-	k8s.io/component-base => k8s.io/component-base v0.33.0
+	k8s.io/api => k8s.io/api v0.34.0
+	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.34.0
+	k8s.io/apimachinery => k8s.io/apimachinery v0.34.0
+	k8s.io/apiserver => k8s.io/apiserver v0.34.0
+	k8s.io/client-go => k8s.io/client-go v0.34.0
+	k8s.io/component-base => k8s.io/component-base v0.34.0
 )
