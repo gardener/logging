@@ -25,7 +25,7 @@ require (
 	github.com/prometheus/client_golang v1.23.0
 	github.com/prometheus/common v0.65.0
 	github.com/spf13/cobra v1.10.1
-	github.com/spf13/pflag v1.0.9
+	github.com/spf13/pflag v1.0.10
 	github.com/vladimirvivien/gexe v0.5.0
 	github.com/weaveworks/common v0.0.0-20210419092856-009d1eebd624
 	gopkg.in/yaml.v2 v2.4.0
