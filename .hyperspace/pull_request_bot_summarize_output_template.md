@@ -12,7 +12,7 @@
 {{ additional_context }}
 
 **Which issue(s) this PR fixes**:
-Fixes #
+Fixes #{{issue_number}}
 
 **Special notes for your reviewer**:
 
