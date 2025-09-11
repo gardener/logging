@@ -13,7 +13,6 @@ import (
 	"github.com/go-kit/log/level"
 	"github.com/prometheus/common/model"
 	"github.com/weaveworks/common/logging"
-	"k8s.io/utils/ptr"
 
 	"github.com/gardener/logging/pkg/config"
 )
@@ -87,8 +86,8 @@ func NewConfiguration() (config.Config, error) {
 				TagExpression:                      "\\.([^_]+)_([^_]+)_(.+)-([a-z0-9]{64})\\.log$",
 			},
 			LabelSetInitCapacity: 12,
-			HostnameKey:          ptr.To("nodename"),
-			HostnameValue:        ptr.To("local-testing-machine"),
+			HostnameKey:          "nodename",
+			HostnameValue:        "local-testing-machine",
 			PreservedLabels: model.LabelSet{
 				"origin":         "",
 				"namespace_name": "",

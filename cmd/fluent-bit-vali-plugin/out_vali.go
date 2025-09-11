@@ -114,6 +114,60 @@ func (c *pluginConfig) Get(key string) string {
 	return output.FLBPluginConfigKey(c.ctx, key)
 }
 
+// toStringMap converts the pluginConfig to a map[string]string for configuration parsing.
+// It extracts all configuration values from the fluent-bit plugin context and returns them
+// as a string map that can be used by the config parser. This is necessary because there
+// is no direct C interface to retrieve the complete plugin configuration at once.
+//
+// When adding new configuration options to the plugin, the corresponding keys must be
+// added to the configKeys slice below to ensure they are properly extracted.
+func (c *pluginConfig) toStringMap() map[string]string {
+	configMap := make(map[string]string)
+
+	// Define all possible configuration keys based on the structs and documentation
+	configKeys := []string{
+		// Client config
+		"Url", "TenantID", "BatchWait", "BatchSize", "Labels", "Timeout", "MinBackoff", "MaxBackoff", "MaxRetries",
+		"SortByTimestamp", "NumberOfBatchIDs", "IdLabelName",
+
+		// Plugin config
+		"AutoKubernetesLabels", "LineFormat", "DropSingleKey", "LabelKeys", "RemoveKeys", "LabelMapPath",
+		"DynamicHostPath", "DynamicHostPrefix", "DynamicHostSuffix", "DynamicHostRegex",
+		"LabelSetInitCapacity", "HostnameKey", "HostnameValue", "PreservedLabels", "EnableMultiTenancy",
+
+		// Kubernetes metadata
+		"FallbackToTagWhenMetadataIsMissing", "DropLogEntryWithoutK8sMetadata",
+		"TagKey", "TagPrefix", "TagExpression",
+
+		// Dynamic tenant
+		"DynamicTenant", "RemoveTenantIDWhenSendingToDefaultURL",
+
+		// Buffer config
+		"Buffer", "BufferType", "QueueDir", "QueueSegmentSize", "QueueSync", "QueueName",
+
+		// Controller config
+		"DeletedClientTimeExpiration", "ControllerSyncTimeout",
+		"SendLogsToMainClusterWhenIsInCreationState", "SendLogsToMainClusterWhenIsInReadyState",
+		"SendLogsToMainClusterWhenIsInHibernatingState", "SendLogsToMainClusterWhenIsInHibernatedState",
+		"SendLogsToMainClusterWhenIsInDeletionState", "SendLogsToMainClusterWhenIsInRestoreState",
+		"SendLogsToMainClusterWhenIsInMigrationState",
+		"SendLogsToDefaultClientWhenClusterIsInCreationState", "SendLogsToDefaultClientWhenClusterIsInReadyState",
+		"SendLogsToDefaultClientWhenClusterIsInHibernatingState", "SendLogsToDefaultClientWhenClusterIsInHibernatedState",
+
+		// General config
+		"LogLevel", "Pprof",
+	}
+
+	// Extract values for all known keys
+	for _, key := range configKeys {
+		if value := c.Get(key); value != "" {
+			configMap[key] = value
+		}
+	}
+
+	return configMap
+}
+
 // FLBPluginRegister registers the plugin with fluent-bit
 //
 //export FLBPluginRegister
@@ -135,7 +189,8 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 		return output.FLB_OK
 	}
 
-	conf, err := config.ParseConfig(&pluginConfig{ctx: ctx})
+	pluginCfg := &pluginConfig{ctx: ctx}
+	conf, err := config.ParseConfigFromStringMap(pluginCfg.toStringMap())
 	if err != nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorFLBPluginInit).Inc()
 		_ = level.Error(logger).Log("[flb-go]", "failed to launch", "error", err)
@@ -336,11 +391,11 @@ func dumpConfiguration(_logger log.Logger, conf *config.Config) {
 	_ = level.Debug(paramLogger).Log("DynamicField", fmt.Sprintf("%+v", conf.PluginConfig.DynamicTenant.Field))
 	_ = level.Debug(paramLogger).Log("DynamicRegex", fmt.Sprintf("%+v", conf.PluginConfig.DynamicTenant.Regex))
 	_ = level.Debug(paramLogger).Log("Pprof", fmt.Sprintf("%+v", conf.Pprof))
-	if conf.PluginConfig.HostnameKey != nil {
-		_ = level.Debug(paramLogger).Log("HostnameKey", fmt.Sprintf("%+v", *conf.PluginConfig.HostnameKey))
+	if len(conf.PluginConfig.HostnameKey) > 0 {
+		_ = level.Debug(paramLogger).Log("HostnameKey", conf.PluginConfig.HostnameKey)
 	}
-	if conf.PluginConfig.HostnameValue != nil {
-		_ = level.Debug(paramLogger).Log("HostnameValue", fmt.Sprintf("%+v", *conf.PluginConfig.HostnameValue))
+	if len(conf.PluginConfig.HostnameValue) > 0 {
+		_ = level.Debug(paramLogger).Log("HostnameValue", conf.PluginConfig.HostnameValue)
 	}
 	if conf.PluginConfig.PreservedLabels != nil {
 		_ = level.Debug(paramLogger).Log("PreservedLabels", fmt.Sprintf("%+v", conf.PluginConfig.PreservedLabels))

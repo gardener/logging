@@ -1,707 +1,26 @@
-// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
-//
-// SPDX-License-Identifier: Apache-2.0
-
 package config_test
 
 import (
-	"net/url"
 	"os"
+	"testing"
 	"time"
 
-	"github.com/cortexproject/cortex/pkg/util"
-	"github.com/cortexproject/cortex/pkg/util/flagext"
-	valiflag "github.com/credativ/vali/pkg/util/flagext"
-	"github.com/credativ/vali/pkg/valitail/client"
-	ginkgov2 "github.com/onsi/ginkgo/v2"
-	"github.com/onsi/gomega"
-	"github.com/prometheus/common/config"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"github.com/prometheus/common/model"
-	"github.com/weaveworks/common/logging"
-	"k8s.io/utils/ptr"
 
-	. "github.com/gardener/logging/pkg/config"
+	"github.com/gardener/logging/pkg/config"
 )
 
-type fakeConfig map[string]string
-
-func (f fakeConfig) Get(key string) string {
-	return f[key]
+func TestConfig(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Config Suite")
 }
 
-const (
-	defaultJSONFormat                  = 0
-	defaultLabelSetInitCapacity        = 12
-	defaultDynamicHostRegex            = "*"
-	defaultDropSingleKey               = true
-	defaultBatchSize                   = 1024 * 1024
-	defaultBatchWait                   = 1 * time.Second
-	defaultMinBackoff                  = (1 * time.Second) / 2
-	defaultMaxBackoff                  = 300 * time.Second
-	defaultMaxRetries                  = 10
-	defaultTimeout                     = 10 * time.Second
-	defaultQueueDir                    = "/tmp/flb-storage/vali"
-	defaultQueueSegmentSize            = 500
-	defaultQueueSync                   = false
-	defaultQueueName                   = "dque"
-	defaultBuffer                      = false
-	defaultBufferType                  = "dque"
-	defaultNumberOfBatchIDs            = 10
-	defaultCtlSyncTimeout              = 60000000000
-	defaultDeletedClientTimeExpiration = 3600000000000
-	defaultAllow                       = true
-	defaultDeny                        = false
-	expectError                        = true
-	expectNoError                      = false
-)
-
-var (
-	defaultKubernetesMetadata = KubernetesMetadataExtraction{
-		TagKey:        "tag",
-		TagPrefix:     "kubernetes\\.var\\.log\\.containers",
-		TagExpression: "\\.([^_]+)_([^_]+)_(.+)-([a-z0-9]{64})\\.log$",
-	}
-
-	defaultPluginConfig = PluginConfig{
-		LineFormat:           defaultJSONFormat,
-		KubernetesMetadata:   defaultKubernetesMetadata,
-		DropSingleKey:        defaultDropSingleKey,
-		DynamicHostRegex:     defaultDynamicHostRegex,
-		LabelSetInitCapacity: defaultLabelSetInitCapacity,
-		PreservedLabels:      model.LabelSet{},
-	}
-
-	defaultBackoffConfig = util.BackoffConfig{
-		MinBackoff: defaultMinBackoff,
-		MaxBackoff: defaultMaxBackoff,
-		MaxRetries: defaultMaxRetries,
-	}
-
-	defaultExternalLabels = valiflag.LabelSet{LabelSet: model.LabelSet{"job": "fluent-bit"}}
-
-	defaultCredativValiConfig = client.Config{
-		URL:            defaultURL,
-		BatchSize:      defaultBatchSize,
-		BatchWait:      defaultBatchWait,
-		ExternalLabels: defaultExternalLabels,
-		BackoffConfig:  defaultBackoffConfig,
-		Timeout:        defaultTimeout,
-	}
-
-	defaultDqueConfig = DqueConfig{
-		QueueDir:         defaultQueueDir,
-		QueueSegmentSize: defaultQueueSegmentSize,
-		QueueSync:        defaultQueueSync,
-		QueueName:        defaultQueueName,
-	}
-
-	defaultBufferConfig = BufferConfig{
-		Buffer:     defaultBuffer,
-		BufferType: defaultBufferType,
-		DqueConfig: defaultDqueConfig,
-	}
-
-	defaultClientConfig = ClientConfig{
-		CredativValiConfig: defaultCredativValiConfig,
-		BufferConfig:       defaultBufferConfig,
-		NumberOfBatchIDs:   defaultNumberOfBatchIDs,
-		IDLabelName:        model.LabelName("id"),
-	}
-
-	defaultShootControllerClientConfig = ControllerClientConfiguration{
-		SendLogsWhenIsInCreationState:    defaultAllow,
-		SendLogsWhenIsInReadyState:       defaultAllow,
-		SendLogsWhenIsInHibernatingState: defaultDeny,
-		SendLogsWhenIsInHibernatedState:  defaultDeny,
-		SendLogsWhenIsInWakingState:      defaultAllow,
-		SendLogsWhenIsInDeletionState:    defaultAllow,
-		SendLogsWhenIsInDeletedState:     defaultAllow,
-		SendLogsWhenIsInRestoreState:     defaultAllow,
-		SendLogsWhenIsInMigrationState:   defaultAllow,
-	}
-
-	defaultControllerClientConfig = ControllerClientConfiguration{
-		SendLogsWhenIsInCreationState:    defaultAllow,
-		SendLogsWhenIsInReadyState:       defaultDeny,
-		SendLogsWhenIsInHibernatingState: defaultDeny,
-		SendLogsWhenIsInHibernatedState:  defaultDeny,
-		SendLogsWhenIsInWakingState:      defaultDeny,
-		SendLogsWhenIsInDeletionState:    defaultAllow,
-		SendLogsWhenIsInDeletedState:     defaultAllow,
-		SendLogsWhenIsInRestoreState:     defaultAllow,
-		SendLogsWhenIsInMigrationState:   defaultAllow,
-	}
-
-	defaultControllerConfig = ControllerConfig{
-		CtlSyncTimeout:              defaultCtlSyncTimeout,
-		DeletedClientTimeExpiration: defaultDeletedClientTimeExpiration,
-		ShootControllerClientConfig: defaultShootControllerClientConfig,
-		SeedControllerClientConfig:  defaultControllerClientConfig,
-	}
-
-	defaultURL = parseURL("http://localhost:3100/vali/api/v1/push")
-)
-
-var _ = ginkgov2.Describe("Config", func() {
-	type testArgs struct {
-		conf    map[string]string
-		want    *Config
-		wantErr bool
-	}
-
-	var warnLogLevel logging.Level
-	var infoLogLevel logging.Level
-
-	_ = warnLogLevel.Set("warn")
-	_ = infoLogLevel.Set("info")
-	somewhereURL := parseURL("http://somewhere.com:3100/vali/api/v1/push")
-
-	ginkgov2.DescribeTable("Test Config",
-		func(args testArgs) {
-			got, err := ParseConfig(fakeConfig(args.conf))
-			if args.wantErr {
-				gomega.Expect(err).To(gomega.HaveOccurred())
-			} else {
-				gomega.Expect(err).ToNot(gomega.HaveOccurred())
-				gomega.Expect(args.want.ClientConfig).To(gomega.Equal(got.ClientConfig))
-				gomega.Expect(args.want.ControllerConfig).To(gomega.Equal(got.ControllerConfig))
-				gomega.Expect(args.want.PluginConfig).To(gomega.Equal(got.PluginConfig))
-				gomega.Expect(args.want.LogLevel.String()).To(gomega.Equal(got.LogLevel.String()))
-			}
-		},
-		ginkgov2.Entry("default values", testArgs{
-			map[string]string{},
-			&Config{
-				PluginConfig:     defaultPluginConfig,
-				ClientConfig:     defaultClientConfig,
-				ControllerConfig: defaultControllerConfig,
-				LogLevel:         infoLogLevel,
-			},
-			expectNoError},
-		),
-		ginkgov2.Entry("setting values", testArgs{
-			map[string]string{
-				"URL":             "http://somewhere.com:3100/vali/api/v1/push",
-				"ProxyURL":        "http://somewhere-proxy.com:1234",
-				"TenantID":        "my-tenant-id",
-				"LineFormat":      "key_value",
-				"LogLevel":        "warn",
-				"Labels":          `{app="foo"}`,
-				"BatchWait":       "30s",
-				"BatchSize":       "100",
-				"RemoveKeys":      "buzz,fuzz",
-				"LabelKeys":       "foo,bar",
-				"DropSingleKey":   "false",
-				"SortByTimestamp": "true",
-				"PreservedLabels": "namesapce, origin",
-			},
-			&Config{
-				PluginConfig: PluginConfig{
-					LineFormat:           KvPairFormat,
-					LabelKeys:            []string{"foo", "bar"},
-					RemoveKeys:           []string{"buzz", "fuzz"},
-					DropSingleKey:        false,
-					DynamicHostRegex:     defaultDynamicHostRegex,
-					KubernetesMetadata:   defaultKubernetesMetadata,
-					LabelSetInitCapacity: defaultLabelSetInitCapacity,
-					PreservedLabels: model.LabelSet{
-						"namesapce": "",
-						"origin":    "",
-					},
-				},
-
-				ClientConfig: ClientConfig{
-					CredativValiConfig: client.Config{
-						URL:            somewhereURL,
-						TenantID:       "my-tenant-id",
-						BatchSize:      100,
-						BatchWait:      30 * time.Second,
-						ExternalLabels: valiflag.LabelSet{LabelSet: model.LabelSet{"app": "foo"}},
-						BackoffConfig:  defaultBackoffConfig,
-						Timeout:        defaultTimeout,
-						Client: config.HTTPClientConfig{
-							ProxyURL: config.URL{URL: parseURL("http://somewhere-proxy.com:1234").URL},
-						},
-					},
-					BufferConfig: BufferConfig{
-						Buffer:     defaultBuffer,
-						BufferType: defaultBufferType,
-						DqueConfig: defaultDqueConfig,
-					},
-					NumberOfBatchIDs: defaultNumberOfBatchIDs,
-					IDLabelName:      model.LabelName("id"),
-					SortByTimestamp:  true,
-				},
-				ControllerConfig: defaultControllerConfig,
-				LogLevel:         warnLogLevel,
-			},
-			expectNoError},
-		),
-		ginkgov2.Entry("with label map", testArgs{
-			map[string]string{
-				"URL":           "http://somewhere.com:3100/vali/api/v1/push",
-				"LineFormat":    "key_value",
-				"LogLevel":      "warn",
-				"Labels":        `{app="foo"}`,
-				"BatchWait":     "30s",
-				"BatchSize":     "100",
-				"RemoveKeys":    "buzz,fuzz",
-				"LabelKeys":     "foo,bar",
-				"DropSingleKey": "false",
-				"LabelMapPath":  createTempLabelMap(),
-			},
-			&Config{
-				PluginConfig: PluginConfig{
-					LineFormat:    KvPairFormat,
-					LabelKeys:     nil,
-					RemoveKeys:    []string{"buzz", "fuzz"},
-					DropSingleKey: false,
-					LabelMap: map[string]any{
-						"kubernetes": map[string]any{
-							"container_name": "container",
-							"host":           "host",
-							"namespace_name": "namespace",
-							"pod_name":       "instance",
-							"labels": map[string]any{
-								"component": "component",
-								"tier":      "tier",
-							},
-						},
-						"stream": "stream",
-					},
-					DynamicHostRegex:     defaultDynamicHostRegex,
-					KubernetesMetadata:   defaultKubernetesMetadata,
-					LabelSetInitCapacity: defaultLabelSetInitCapacity,
-					PreservedLabels:      model.LabelSet{},
-				},
-				ClientConfig: ClientConfig{
-					CredativValiConfig: client.Config{
-						URL:            somewhereURL,
-						TenantID:       "", // empty as not set in fluent-bit plugin config map
-						BatchSize:      100,
-						BatchWait:      30 * time.Second,
-						ExternalLabels: valiflag.LabelSet{LabelSet: model.LabelSet{"app": "foo"}},
-						BackoffConfig:  defaultBackoffConfig,
-						Timeout:        defaultTimeout,
-					},
-					BufferConfig:     defaultBufferConfig,
-					IDLabelName:      model.LabelName("id"),
-					NumberOfBatchIDs: defaultNumberOfBatchIDs,
-				},
-				ControllerConfig: defaultControllerConfig,
-				LogLevel:         warnLogLevel,
-			},
-			expectNoError},
-		),
-		ginkgov2.Entry("with dynamic configuration", testArgs{
-			map[string]string{
-				"URL":               "http://somewhere.com:3100/vali/api/v1/push",
-				"LineFormat":        "key_value",
-				"LogLevel":          "warn",
-				"Labels":            `{app="foo"}`,
-				"BatchWait":         "30s",
-				"BatchSize":         "100",
-				"RemoveKeys":        "buzz,fuzz",
-				"LabelKeys":         "foo,bar",
-				"DropSingleKey":     "false",
-				"DynamicHostPath":   "{\"kubernetes\": {\"namespace_name\" : \"namespace\"}}",
-				"DynamicHostPrefix": "http://vali.",
-				"DynamicHostSuffix": ".svc:3100/vali/api/v1/push",
-				"DynamicHostRegex":  "shoot--",
-			},
-			&Config{
-				PluginConfig: PluginConfig{
-					LineFormat:    KvPairFormat,
-					LabelKeys:     []string{"foo", "bar"},
-					RemoveKeys:    []string{"buzz", "fuzz"},
-					DropSingleKey: false,
-					DynamicHostPath: map[string]any{
-						"kubernetes": map[string]any{
-							"namespace_name": "namespace",
-						},
-					},
-					DynamicHostRegex:     "shoot--",
-					KubernetesMetadata:   defaultKubernetesMetadata,
-					LabelSetInitCapacity: defaultLabelSetInitCapacity,
-					PreservedLabels:      model.LabelSet{},
-				},
-				ClientConfig: ClientConfig{
-					CredativValiConfig: client.Config{
-						URL:            somewhereURL,
-						TenantID:       "", // empty as not set in fluent-bit plugin config map
-						BatchSize:      100,
-						BatchWait:      30 * time.Second,
-						ExternalLabels: valiflag.LabelSet{LabelSet: model.LabelSet{"app": "foo"}},
-						BackoffConfig:  defaultBackoffConfig,
-						Timeout:        defaultTimeout,
-					},
-					BufferConfig:     defaultBufferConfig,
-					IDLabelName:      model.LabelName("id"),
-					NumberOfBatchIDs: defaultNumberOfBatchIDs,
-				},
-				ControllerConfig: ControllerConfig{
-					DynamicHostPrefix:           "http://vali.",
-					DynamicHostSuffix:           ".svc:3100/vali/api/v1/push",
-					CtlSyncTimeout:              defaultCtlSyncTimeout,
-					DeletedClientTimeExpiration: defaultDeletedClientTimeExpiration,
-					ShootControllerClientConfig: defaultShootControllerClientConfig,
-					SeedControllerClientConfig:  defaultControllerClientConfig,
-				},
-				LogLevel: warnLogLevel,
-			},
-			expectNoError},
-		),
-		ginkgov2.Entry("with Buffer configuration", testArgs{
-			map[string]string{
-				"URL":              "http://somewhere.com:3100/vali/api/v1/push",
-				"LineFormat":       "key_value",
-				"LogLevel":         "warn",
-				"Labels":           `{app="foo"}`,
-				"BatchWait":        "30s",
-				"BatchSize":        "100",
-				"RemoveKeys":       "buzz,fuzz",
-				"LabelKeys":        "foo,bar",
-				"DropSingleKey":    "false",
-				"Buffer":           "true",
-				"BufferType":       "dque",
-				"QueueDir":         "/foo/bar",
-				"QueueSegmentSize": "600",
-				"QueueSync":        "full",
-				"QueueName":        "buzz",
-			},
-			&Config{
-				PluginConfig: PluginConfig{
-					LineFormat:           KvPairFormat,
-					LabelKeys:            []string{"foo", "bar"},
-					RemoveKeys:           []string{"buzz", "fuzz"},
-					DropSingleKey:        false,
-					KubernetesMetadata:   defaultKubernetesMetadata,
-					DynamicHostRegex:     defaultDynamicHostRegex,
-					LabelSetInitCapacity: defaultLabelSetInitCapacity,
-					PreservedLabels:      model.LabelSet{},
-				},
-				ClientConfig: ClientConfig{
-					CredativValiConfig: client.Config{
-						URL:            somewhereURL,
-						TenantID:       "", // empty as not set in fluent-bit plugin config map
-						BatchSize:      100,
-						BatchWait:      30 * time.Second,
-						ExternalLabels: valiflag.LabelSet{LabelSet: model.LabelSet{"app": "foo"}},
-						BackoffConfig:  defaultBackoffConfig,
-						Timeout:        defaultTimeout,
-					},
-					BufferConfig: BufferConfig{
-						Buffer:     true,
-						BufferType: "dque",
-						DqueConfig: DqueConfig{
-							QueueDir:         "/foo/bar",
-							QueueSegmentSize: 600,
-							QueueSync:        true,
-							QueueName:        "buzz",
-						},
-					},
-					NumberOfBatchIDs: defaultNumberOfBatchIDs,
-					IDLabelName:      model.LabelName("id"),
-				},
-				ControllerConfig: defaultControllerConfig,
-				LogLevel:         warnLogLevel,
-			},
-			expectNoError},
-		),
-		ginkgov2.Entry("with retries and timeouts configuration", testArgs{
-			map[string]string{
-				"URL":           "http://somewhere.com:3100/vali/api/v1/push",
-				"LineFormat":    "key_value",
-				"LogLevel":      "warn",
-				"Labels":        `{app="foo"}`,
-				"BatchWait":     "30s",
-				"BatchSize":     "100",
-				"RemoveKeys":    "buzz,fuzz",
-				"LabelKeys":     "foo,bar",
-				"DropSingleKey": "false",
-				"Timeout":       "20s",
-				"MinBackoff":    "30s",
-				"MaxBackoff":    "120s",
-				"MaxRetries":    "3",
-			},
-			&Config{
-				PluginConfig: PluginConfig{
-					LineFormat:           KvPairFormat,
-					LabelKeys:            []string{"foo", "bar"},
-					RemoveKeys:           []string{"buzz", "fuzz"},
-					DropSingleKey:        false,
-					DynamicHostRegex:     defaultDynamicHostRegex,
-					KubernetesMetadata:   defaultKubernetesMetadata,
-					LabelSetInitCapacity: defaultLabelSetInitCapacity,
-					PreservedLabels:      model.LabelSet{},
-				},
-				ClientConfig: ClientConfig{
-					CredativValiConfig: client.Config{
-						URL:            somewhereURL,
-						TenantID:       "", // empty as not set in fluent-bit plugin config map
-						BatchSize:      100,
-						BatchWait:      30 * time.Second,
-						ExternalLabels: valiflag.LabelSet{LabelSet: model.LabelSet{"app": "foo"}},
-						Timeout:        time.Second * 20,
-						BackoffConfig: util.BackoffConfig{
-							MinBackoff: 30 * time.Second,
-							MaxBackoff: 120 * time.Second,
-							MaxRetries: 3,
-						},
-					},
-					BufferConfig:     defaultBufferConfig,
-					NumberOfBatchIDs: defaultNumberOfBatchIDs,
-					IDLabelName:      model.LabelName("id"),
-				},
-				ControllerConfig: defaultControllerConfig,
-				LogLevel:         warnLogLevel,
-			},
-			expectNoError},
-		),
-		ginkgov2.Entry("with kubernetes metadata configuration", testArgs{
-			map[string]string{
-				"URL":                                "http://somewhere.com:3100/vali/api/v1/push",
-				"LineFormat":                         "key_value",
-				"LogLevel":                           "warn",
-				"Labels":                             `{app="foo"}`,
-				"BatchWait":                          "30s",
-				"BatchSize":                          "100",
-				"RemoveKeys":                         "buzz,fuzz",
-				"LabelKeys":                          "foo,bar",
-				"DropSingleKey":                      "false",
-				"FallbackToTagWhenMetadataIsMissing": "true",
-				"TagKey":                             "testKey",
-				"TagPrefix":                          "testPrefix",
-				"TagExpression":                      "testExpression",
-				"DropLogEntryWithoutK8sMetadata":     "true",
-			},
-			&Config{
-				PluginConfig: PluginConfig{
-					LineFormat:       KvPairFormat,
-					LabelKeys:        []string{"foo", "bar"},
-					RemoveKeys:       []string{"buzz", "fuzz"},
-					DropSingleKey:    false,
-					DynamicHostRegex: defaultDynamicHostRegex,
-					KubernetesMetadata: KubernetesMetadataExtraction{
-						FallbackToTagWhenMetadataIsMissing: true,
-						DropLogEntryWithoutK8sMetadata:     true,
-						TagKey:                             "testKey",
-						TagPrefix:                          "testPrefix",
-						TagExpression:                      "testExpression",
-					},
-					LabelSetInitCapacity: defaultLabelSetInitCapacity,
-					PreservedLabels:      model.LabelSet{},
-				},
-				ClientConfig: ClientConfig{
-					CredativValiConfig: client.Config{
-						URL:            somewhereURL,
-						TenantID:       "", // empty as not set in fluent-bit plugin config map
-						BatchSize:      100,
-						BatchWait:      30 * time.Second,
-						ExternalLabels: valiflag.LabelSet{LabelSet: model.LabelSet{"app": "foo"}},
-						BackoffConfig:  defaultBackoffConfig,
-						Timeout:        defaultTimeout,
-					},
-					BufferConfig:     defaultBufferConfig,
-					NumberOfBatchIDs: defaultNumberOfBatchIDs,
-					IDLabelName:      model.LabelName("id"),
-				},
-				ControllerConfig: defaultControllerConfig,
-				LogLevel:         warnLogLevel,
-			},
-			expectNoError},
-		),
-		ginkgov2.Entry("with metrics  configuration", testArgs{
-			map[string]string{
-				"URL":                 "http://somewhere.com:3100/vali/api/v1/push",
-				"LineFormat":          "key_value",
-				"LogLevel":            "warn",
-				"Labels":              `{app="foo"}`,
-				"BatchWait":           "30s",
-				"BatchSize":           "100",
-				"RemoveKeys":          "buzz,fuzz",
-				"LabelKeys":           "foo,bar",
-				"DropSingleKey":       "false",
-				"MetricsTickWindow":   "60",
-				"MetricsTickInterval": "5",
-			},
-			&Config{
-				PluginConfig: PluginConfig{
-					LineFormat:           KvPairFormat,
-					LabelKeys:            []string{"foo", "bar"},
-					RemoveKeys:           []string{"buzz", "fuzz"},
-					DropSingleKey:        false,
-					DynamicHostRegex:     defaultDynamicHostRegex,
-					KubernetesMetadata:   defaultKubernetesMetadata,
-					LabelSetInitCapacity: defaultLabelSetInitCapacity,
-					PreservedLabels:      model.LabelSet{},
-				},
-
-				ClientConfig: ClientConfig{
-					CredativValiConfig: client.Config{
-						URL:            somewhereURL,
-						TenantID:       "", // empty as not set in fluent-bit plugin config map
-						BatchSize:      100,
-						BatchWait:      30 * time.Second,
-						ExternalLabels: valiflag.LabelSet{LabelSet: model.LabelSet{"app": "foo"}},
-						BackoffConfig:  defaultBackoffConfig,
-						Timeout:        defaultTimeout,
-					},
-					BufferConfig:     defaultBufferConfig,
-					NumberOfBatchIDs: defaultNumberOfBatchIDs,
-					IDLabelName:      model.LabelName("id"),
-				},
-				ControllerConfig: defaultControllerConfig,
-				LogLevel:         warnLogLevel,
-			},
-			expectNoError},
-		),
-		ginkgov2.Entry("With dynamic tenant values", testArgs{
-			map[string]string{
-				"DynamicTenant": "  user tag user-exposed.kubernetes.*   ",
-			},
-			&Config{
-				PluginConfig: PluginConfig{
-					LineFormat:         defaultJSONFormat,
-					KubernetesMetadata: defaultKubernetesMetadata,
-					DropSingleKey:      defaultDropSingleKey,
-					DynamicHostRegex:   defaultDynamicHostRegex,
-					DynamicTenant: DynamicTenant{
-						Tenant:                                "user",
-						Field:                                 "tag",
-						Regex:                                 "user-exposed.kubernetes.*",
-						RemoveTenantIDWhenSendingToDefaultURL: true,
-					},
-					LabelSetInitCapacity: defaultLabelSetInitCapacity,
-					PreservedLabels:      model.LabelSet{},
-				},
-				ClientConfig:     defaultClientConfig,
-				ControllerConfig: defaultControllerConfig,
-				LogLevel:         infoLogLevel,
-			},
-			expectNoError},
-		),
-		ginkgov2.Entry("With only two fields for dynamic tenant values", testArgs{
-			map[string]string{
-				"DynamicTenant": "   user tag    ",
-			},
-			&Config{
-				PluginConfig: PluginConfig{
-					LineFormat:         defaultJSONFormat,
-					KubernetesMetadata: defaultKubernetesMetadata,
-					DropSingleKey:      defaultDropSingleKey,
-					DynamicHostRegex:   defaultDynamicHostRegex,
-					DynamicTenant: DynamicTenant{
-						Tenant:                                "user",
-						Field:                                 "tag",
-						Regex:                                 "user-exposed.kubernetes.*",
-						RemoveTenantIDWhenSendingToDefaultURL: true,
-					},
-					LabelSetInitCapacity: defaultLabelSetInitCapacity,
-					PreservedLabels:      model.LabelSet{},
-				},
-				ClientConfig:     defaultClientConfig,
-				ControllerConfig: defaultControllerConfig,
-				LogLevel:         infoLogLevel,
-			},
-			expectError},
-		),
-		ginkgov2.Entry("With more than 3 fields for dynamic tenant values", testArgs{
-			map[string]string{
-				"DynamicTenant": "  user tag regex with spaces   ",
-			},
-			&Config{
-				PluginConfig: PluginConfig{
-					LineFormat:         JSONFormat,
-					KubernetesMetadata: defaultKubernetesMetadata,
-					DropSingleKey:      defaultDropSingleKey,
-					DynamicHostRegex:   defaultDynamicHostRegex,
-					DynamicTenant: DynamicTenant{
-						Tenant:                                "user",
-						Field:                                 "tag",
-						Regex:                                 "regex with spaces",
-						RemoveTenantIDWhenSendingToDefaultURL: true,
-					},
-					LabelSetInitCapacity: defaultLabelSetInitCapacity,
-					PreservedLabels:      model.LabelSet{},
-				},
-				ClientConfig:     defaultClientConfig,
-				ControllerConfig: defaultControllerConfig,
-				LogLevel:         infoLogLevel,
-			},
-			expectNoError},
-		),
-		ginkgov2.Entry("With one field HostnameKeyValue values", testArgs{
-			map[string]string{
-				"HostnameKeyValue": "hostname",
-			},
-			&Config{
-				PluginConfig: PluginConfig{
-					LineFormat:           defaultJSONFormat,
-					KubernetesMetadata:   defaultKubernetesMetadata,
-					DropSingleKey:        defaultDropSingleKey,
-					DynamicHostRegex:     defaultDynamicHostRegex,
-					LabelSetInitCapacity: defaultLabelSetInitCapacity,
-					HostnameKey:          ptr.To("hostname"),
-					PreservedLabels:      model.LabelSet{},
-				},
-				ClientConfig:     defaultClientConfig,
-				ControllerConfig: defaultControllerConfig,
-				LogLevel:         infoLogLevel,
-			},
-			expectNoError},
-		),
-		ginkgov2.Entry("With two fields for HostnameKeyValue values", testArgs{
-			map[string]string{
-				"HostnameKeyValue": "hostname ${HOST}",
-			},
-			&Config{
-				PluginConfig: PluginConfig{
-					LineFormat:           defaultJSONFormat,
-					KubernetesMetadata:   defaultKubernetesMetadata,
-					DropSingleKey:        defaultDropSingleKey,
-					DynamicHostRegex:     defaultDynamicHostRegex,
-					LabelSetInitCapacity: defaultLabelSetInitCapacity,
-					HostnameKey:          ptr.To("hostname"),
-					HostnameValue:        ptr.To("${HOST}"),
-					PreservedLabels:      model.LabelSet{},
-				},
-				ClientConfig:     defaultClientConfig,
-				ControllerConfig: defaultControllerConfig,
-				LogLevel:         infoLogLevel,
-			},
-			expectNoError},
-		),
-		ginkgov2.Entry("bad url", testArgs{map[string]string{"URL": "::doh.com"}, nil, true}),
-		ginkgov2.Entry("bad proxy url", testArgs{map[string]string{"ProxyURL": "::doh.com"}, nil, true}),
-		ginkgov2.Entry("bad BatchWait", testArgs{map[string]string{"BatchWait": "a"}, nil, true}),
-		ginkgov2.Entry("bad BatchSize", testArgs{map[string]string{"BatchSize": "a"}, nil, true}),
-		ginkgov2.Entry("bad labels", testArgs{map[string]string{"Labels": "a"}, nil, true}),
-		ginkgov2.Entry("bad format", testArgs{map[string]string{"LineFormat": "a"}, nil, true}),
-		ginkgov2.Entry("bad log level", testArgs{map[string]string{"LogLevel": "a"}, nil, true}),
-		ginkgov2.Entry("bad drop single key", testArgs{map[string]string{"DropSingleKey": "a"}, nil, true}),
-		ginkgov2.Entry("bad labelmap file", testArgs{map[string]string{"LabelMapPath": "a"}, nil, true}),
-		ginkgov2.Entry("bad Dynamic Host Path", testArgs{map[string]string{"DynamicHostPath": "a"}, nil, true}),
-		ginkgov2.Entry("bad Buffer ", testArgs{map[string]string{"Buffer": "a"}, nil, true}),
-		ginkgov2.Entry("bad SortByTimestamp value", testArgs{map[string]string{"SortByTimestamp": "3"}, nil, true}),
-		ginkgov2.Entry("bad MaxRetries value", testArgs{map[string]string{"MaxRetries": "a"}, nil, true}),
-		ginkgov2.Entry("bad Timeout value", testArgs{map[string]string{"Timeout": "a"}, nil, true}),
-		ginkgov2.Entry("bad MinBackoff value", testArgs{map[string]string{"MinBackoff": "a"}, nil, true}),
-		ginkgov2.Entry("bad QueueSegmentSize value", testArgs{map[string]string{"QueueSegmentSize": "a"}, nil, true}),
-		ginkgov2.Entry("bad QueueSync", testArgs{map[string]string{"QueueSegmentSize": "test"}, nil, true}),
-		ginkgov2.Entry("bad FallbackToTagWhenMetadataIsMissing value", testArgs{map[string]string{"FallbackToTagWhenMetadataIsMissing": "a"}, nil, true}),
-		ginkgov2.Entry("bad DropLogEntryWithoutK8sMetadata value", testArgs{map[string]string{"DropLogEntryWithoutK8sMetadata": "a"}, nil, true}),
-	)
-})
-
-func parseURL(u string) flagext.URLValue {
-	parsed, _ := url.Parse(u)
-
-	return flagext.URLValue{URL: parsed}
-}
-
+// Helper function to create a temporary label map file for testing
 func createTempLabelMap() string {
 	file, _ := os.CreateTemp("", "labelmap")
+	defer func() { _ = file.Close() }()
 
 	_, _ = file.WriteString(`{
 		"kubernetes": {
@@ -719,3 +38,440 @@ func createTempLabelMap() string {
 
 	return file.Name()
 }
+
+var _ = Describe("Config", func() {
+	Context("ParseConfig", func() {
+		It("should parse config with default values", func() {
+			configMap := map[string]any{}
+
+			cfg, err := config.ParseConfig(configMap)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(cfg).ToNot(BeNil())
+
+			// Basic config defaults
+			Expect(cfg.LogLevel.String()).To(Equal("info"))
+			Expect(cfg.Pprof).To(BeFalse())
+
+			// Client config defaults
+			Expect(cfg.ClientConfig.CredativValiConfig.URL.String()).To(Equal("http://localhost:3100/vali/api/v1/push"))
+			Expect(cfg.ClientConfig.CredativValiConfig.ExternalLabels.LabelSet).To(HaveKeyWithValue(model.LabelName("job"), model.LabelValue("fluent-bit")))
+			Expect(cfg.ClientConfig.CredativValiConfig.BatchSize).To(Equal(1024 * 1024))
+			Expect(cfg.ClientConfig.CredativValiConfig.BatchWait).To(Equal(time.Second))
+			Expect(cfg.ClientConfig.CredativValiConfig.Timeout).To(Equal(10 * time.Second))
+			Expect(cfg.ClientConfig.CredativValiConfig.BackoffConfig.MinBackoff).To(Equal(500 * time.Millisecond))
+			Expect(cfg.ClientConfig.CredativValiConfig.BackoffConfig.MaxBackoff).To(Equal(5 * time.Minute))
+			Expect(cfg.ClientConfig.CredativValiConfig.BackoffConfig.MaxRetries).To(Equal(10))
+			Expect(cfg.ClientConfig.NumberOfBatchIDs).To(Equal(uint64(10)))
+			Expect(cfg.ClientConfig.IDLabelName).To(Equal(model.LabelName("id")))
+			Expect(cfg.ClientConfig.SortByTimestamp).To(BeFalse())
+
+			// Buffer config defaults
+			Expect(cfg.ClientConfig.BufferConfig.Buffer).To(BeFalse())
+			Expect(cfg.ClientConfig.BufferConfig.BufferType).To(Equal("dque"))
+			Expect(cfg.ClientConfig.BufferConfig.DqueConfig.QueueDir).To(Equal("/tmp/flb-storage/vali"))
+			Expect(cfg.ClientConfig.BufferConfig.DqueConfig.QueueSegmentSize).To(Equal(500))
+			Expect(cfg.ClientConfig.BufferConfig.DqueConfig.QueueSync).To(BeFalse())
+			Expect(cfg.ClientConfig.BufferConfig.DqueConfig.QueueName).To(Equal("dque"))
+
+			// Controller config defaults
+			Expect(cfg.ControllerConfig.CtlSyncTimeout).To(Equal(60 * time.Second))
+			Expect(cfg.ControllerConfig.DeletedClientTimeExpiration).To(Equal(time.Hour))
+			Expect(cfg.ControllerConfig.DynamicHostPrefix).To(BeEmpty())
+			Expect(cfg.ControllerConfig.DynamicHostSuffix).To(BeEmpty())
+
+			// Shoot controller client config defaults
+			Expect(cfg.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInCreationState).To(BeTrue())
+			Expect(cfg.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInReadyState).To(BeTrue())
+			Expect(cfg.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInHibernatingState).To(BeFalse())
+			Expect(cfg.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInHibernatedState).To(BeFalse())
+			Expect(cfg.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInWakingState).To(BeTrue())
+			Expect(cfg.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInDeletionState).To(BeTrue())
+			Expect(cfg.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInDeletedState).To(BeTrue())
+			Expect(cfg.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInRestoreState).To(BeTrue())
+			Expect(cfg.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInMigrationState).To(BeTrue())
+
+			// Seed controller client config defaults
+			Expect(cfg.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInCreationState).To(BeTrue())
+			Expect(cfg.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInReadyState).To(BeFalse())
+			Expect(cfg.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInHibernatingState).To(BeFalse())
+			Expect(cfg.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInHibernatedState).To(BeFalse())
+			Expect(cfg.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInWakingState).To(BeFalse())
+			Expect(cfg.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInDeletionState).To(BeTrue())
+			Expect(cfg.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInDeletedState).To(BeTrue())
+			Expect(cfg.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInRestoreState).To(BeTrue())
+			Expect(cfg.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInMigrationState).To(BeTrue())
+
+			// Plugin config defaults
+			Expect(cfg.PluginConfig.LineFormat).To(Equal(config.JSONFormat))
+			Expect(cfg.PluginConfig.DropSingleKey).To(BeTrue())
+			Expect(cfg.PluginConfig.AutoKubernetesLabels).To(BeFalse())
+			Expect(cfg.PluginConfig.EnableMultiTenancy).To(BeFalse())
+			Expect(cfg.PluginConfig.DynamicHostRegex).To(Equal("*"))
+			Expect(cfg.PluginConfig.LabelSetInitCapacity).To(Equal(12))
+			Expect(cfg.PluginConfig.LabelKeys).To(BeNil())
+			Expect(cfg.PluginConfig.RemoveKeys).To(BeNil())
+			Expect(cfg.PluginConfig.LabelMap).To(BeNil())
+			Expect(cfg.PluginConfig.HostnameKey).To(BeEmpty())
+			Expect(cfg.PluginConfig.HostnameValue).To(BeEmpty())
+			Expect(cfg.PluginConfig.PreservedLabels).To(Equal(model.LabelSet{}))
+
+			// Kubernetes metadata defaults
+			Expect(cfg.PluginConfig.KubernetesMetadata.TagKey).To(Equal("tag"))
+			Expect(cfg.PluginConfig.KubernetesMetadata.TagPrefix).To(Equal("kubernetes\\.var\\.log\\.containers"))
+			Expect(cfg.PluginConfig.KubernetesMetadata.TagExpression).To(Equal("\\.([^_]+)_([^_]+)_(.+)-([a-z0-9]{64})\\.log$"))
+			Expect(cfg.PluginConfig.KubernetesMetadata.FallbackToTagWhenMetadataIsMissing).To(BeFalse())
+			Expect(cfg.PluginConfig.KubernetesMetadata.DropLogEntryWithoutK8sMetadata).To(BeFalse())
+
+			// Dynamic tenant defaults
+			Expect(cfg.PluginConfig.DynamicTenant.Tenant).To(BeEmpty())
+			Expect(cfg.PluginConfig.DynamicTenant.Field).To(BeEmpty())
+			Expect(cfg.PluginConfig.DynamicTenant.Regex).To(BeEmpty())
+			Expect(cfg.PluginConfig.DynamicTenant.RemoveTenantIDWhenSendingToDefaultURL).To(BeFalse())
+		})
+
+		It("should parse config with custom values", func() {
+			configMap := map[string]any{
+				"URL":             "http://somewhere.com:3100/vali/api/v1/push",
+				"TenantID":        "my-tenant-id",
+				"LineFormat":      "key_value",
+				"LogLevel":        "warn",
+				"Labels":          `{app="foo"}`,
+				"BatchWait":       "30s",
+				"BatchSize":       "100",
+				"RemoveKeys":      "buzz,fuzz",
+				"LabelKeys":       "foo,bar",
+				"DropSingleKey":   "false",
+				"SortByTimestamp": "true",
+				"PreservedLabels": "namespace, origin",
+			}
+
+			cfg, err := config.ParseConfig(configMap)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(cfg).ToNot(BeNil())
+
+			Expect(cfg.LogLevel.String()).To(Equal("warn"))
+			Expect(cfg.PluginConfig.LineFormat).To(Equal(config.KvPairFormat))
+			Expect(cfg.PluginConfig.LabelKeys).To(Equal([]string{"foo", "bar"}))
+			Expect(cfg.PluginConfig.RemoveKeys).To(Equal([]string{"buzz", "fuzz"}))
+			Expect(cfg.PluginConfig.DropSingleKey).To(BeFalse())
+			Expect(cfg.ClientConfig.SortByTimestamp).To(BeTrue())
+			Expect(cfg.ClientConfig.CredativValiConfig.TenantID).To(Equal("my-tenant-id"))
+			Expect(cfg.ClientConfig.CredativValiConfig.BatchSize).To(Equal(100))
+			Expect(cfg.ClientConfig.CredativValiConfig.BatchWait).To(Equal(30 * time.Second))
+			// Verify PreservedLabels parsing (note: "namespace, origin" has spaces)
+			Expect(cfg.PluginConfig.PreservedLabels).To(HaveKeyWithValue(model.LabelName("namespace"), model.LabelValue("")))
+			Expect(cfg.PluginConfig.PreservedLabels).To(HaveKeyWithValue(model.LabelName("origin"), model.LabelValue("")))
+		})
+
+		It("should parse config with label map", func() {
+			labelMapFile := createTempLabelMap()
+			defer func() { _ = os.Remove(labelMapFile) }()
+
+			configMap := map[string]any{
+				"URL":           "http://somewhere.com:3100/vali/api/v1/push",
+				"LineFormat":    "key_value",
+				"LogLevel":      "warn",
+				"Labels":        `{app="foo"}`,
+				"BatchWait":     "30s",
+				"BatchSize":     "100",
+				"RemoveKeys":    "buzz,fuzz",
+				"LabelKeys":     "foo,bar",
+				"DropSingleKey": "false",
+				"LabelMapPath":  labelMapFile,
+			}
+
+			cfg, err := config.ParseConfig(configMap)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(cfg).ToNot(BeNil())
+
+			// When LabelMapPath is used, LabelKeys should be cleared
+			Expect(cfg.PluginConfig.LabelKeys).To(BeNil())
+			Expect(cfg.PluginConfig.LabelMap).ToNot(BeNil())
+			Expect(cfg.PluginConfig.LabelMap).To(HaveKey("kubernetes"))
+		})
+
+		It("should parse config with buffer configuration", func() {
+			configMap := map[string]any{
+				"URL":              "http://somewhere.com:3100/vali/api/v1/push",
+				"Buffer":           "true",
+				"BufferType":       "dque",
+				"QueueDir":         "/foo/bar",
+				"QueueSegmentSize": "600",
+				"QueueSync":        "full",
+				"QueueName":        "buzz",
+			}
+
+			cfg, err := config.ParseConfig(configMap)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(cfg).ToNot(BeNil())
+
+			Expect(cfg.ClientConfig.BufferConfig.Buffer).To(BeTrue())
+			Expect(cfg.ClientConfig.BufferConfig.BufferType).To(Equal("dque"))
+			Expect(cfg.ClientConfig.BufferConfig.DqueConfig.QueueDir).To(Equal("/foo/bar"))
+			Expect(cfg.ClientConfig.BufferConfig.DqueConfig.QueueSegmentSize).To(Equal(600))
+			Expect(cfg.ClientConfig.BufferConfig.DqueConfig.QueueSync).To(BeTrue())
+			Expect(cfg.ClientConfig.BufferConfig.DqueConfig.QueueName).To(Equal("buzz"))
+		})
+
+		It("should parse config with dynamic tenant", func() {
+			configMap := map[string]any{
+				"DynamicTenant": "user tag user-exposed.kubernetes.*",
+			}
+
+			cfg, err := config.ParseConfig(configMap)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(cfg).ToNot(BeNil())
+
+			Expect(cfg.PluginConfig.DynamicTenant.Tenant).To(Equal("user"))
+			Expect(cfg.PluginConfig.DynamicTenant.Field).To(Equal("tag"))
+			Expect(cfg.PluginConfig.DynamicTenant.Regex).To(Equal("user-exposed.kubernetes.*"))
+			Expect(cfg.PluginConfig.DynamicTenant.RemoveTenantIDWhenSendingToDefaultURL).To(BeTrue())
+		})
+
+		It("should parse config with hostname key value", func() {
+			configMap := map[string]any{
+				"HostnameKeyValue": "hostname ${HOST}",
+			}
+
+			cfg, err := config.ParseConfig(configMap)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(cfg).ToNot(BeNil())
+
+			Expect(cfg.PluginConfig.HostnameKey).To(Equal("hostname"))
+			Expect(cfg.PluginConfig.HostnameValue).To(Equal("${HOST}"))
+		})
+
+		It("should parse DynamicHostPath from JSON string", func() {
+			configMap := map[string]any{
+				"URL":             "http://somewhere.com:3100/vali/api/v1/push",
+				"DynamicHostPath": `{"kubernetes": {"namespace_name": "namespace"}}`,
+			}
+
+			cfg, err := config.ParseConfig(configMap)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(cfg).ToNot(BeNil())
+
+			Expect(cfg.PluginConfig.DynamicHostPath).ToNot(BeNil())
+			Expect(cfg.PluginConfig.DynamicHostPath).To(HaveKey("kubernetes"))
+			kubernetesMap, ok := cfg.PluginConfig.DynamicHostPath["kubernetes"].(map[string]any)
+			Expect(ok).To(BeTrue())
+			Expect(kubernetesMap).To(HaveKeyWithValue("namespace_name", "namespace"))
+		})
+
+		It("should handle errors for invalid configurations", func() {
+			// Test invalid URL
+			configMap := map[string]any{
+				"URL": "::invalid-url",
+			}
+			_, err := config.ParseConfig(configMap)
+			Expect(err).To(HaveOccurred())
+
+			// Test invalid BatchWait
+			configMap = map[string]any{
+				"BatchWait": "invalid-duration",
+			}
+			_, err = config.ParseConfig(configMap)
+			Expect(err).To(HaveOccurred())
+
+			// Test invalid Labels
+			configMap = map[string]any{
+				"Labels": "invalid{labels",
+			}
+			_, err = config.ParseConfig(configMap)
+			Expect(err).To(HaveOccurred())
+
+			// Test invalid DynamicHostPath JSON
+			configMap = map[string]any{
+				"DynamicHostPath": "invalid{json",
+			}
+			_, err = config.ParseConfig(configMap)
+			Expect(err).To(HaveOccurred())
+		})
+	})
+
+	Context("ParseConfigFromStringMap", func() {
+		It("should parse config from string map for backward compatibility", func() {
+			stringMap := map[string]string{
+				"URL":        "http://localhost:3100/vali/api/v1/push",
+				"LogLevel":   "debug",
+				"BatchSize":  "512",
+				"LineFormat": "json",
+			}
+
+			cfg, err := config.ParseConfigFromStringMap(stringMap)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(cfg).ToNot(BeNil())
+			Expect(cfg.LogLevel.String()).To(Equal("debug"))
+			Expect(cfg.ClientConfig.CredativValiConfig.BatchSize).To(Equal(512))
+			Expect(cfg.PluginConfig.LineFormat).To(Equal(config.JSONFormat))
+		})
+
+		It("should parse DynamicHostPath from string map", func() {
+			stringMap := map[string]string{
+				"URL":             "http://localhost:3100/vali/api/v1/push",
+				"DynamicHostPath": `{"kubernetes": {"namespace_name": "namespace"}}`,
+			}
+
+			cfg, err := config.ParseConfigFromStringMap(stringMap)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(cfg).ToNot(BeNil())
+
+			Expect(cfg.PluginConfig.DynamicHostPath).ToNot(BeNil())
+			Expect(cfg.PluginConfig.DynamicHostPath).To(HaveKey("kubernetes"))
+			kubernetesMap, ok := cfg.PluginConfig.DynamicHostPath["kubernetes"].(map[string]any)
+			Expect(ok).To(BeTrue())
+			Expect(kubernetesMap).To(HaveKeyWithValue("namespace_name", "namespace"))
+		})
+
+		It("should parse comprehensive seed configuration from string map (fluent-bit format)", func() {
+			// This test mirrors the actual fluent-bit configuration format from /Users/i032870/tmp/config
+			stringMap := map[string]string{
+				// Basic output plugin settings
+				"Labels":        `{origin="seed"}`,
+				"DropSingleKey": "false",
+
+				// Dynamic host configuration
+				"DynamicHostPath":   `{"kubernetes": {"namespace_name": "namespace"}}`,
+				"DynamicHostPrefix": "http://logging.",
+				"DynamicHostSuffix": ".svc:3100/vali/api/v1/push",
+				"DynamicHostRegex":  "^shoot-",
+
+				// Queue and buffer configuration
+				"QueueDir":         "/fluent-bit/buffers/seed",
+				"QueueName":        "seed-dynamic",
+				"QueueSegmentSize": "300",
+				"QueueSync":        "normal",
+				"Buffer":           "true",
+				"BufferType":       "dque",
+
+				// Controller configuration
+				"ControllerSyncTimeout": "120s",
+
+				// Logging configuration
+				"LogLevel": "info",
+				"Url":      "http://logging.garden.svc:3100/vali/api/v1/push",
+
+				// Batch configuration
+				"BatchWait":        "60s",
+				"BatchSize":        "30720",
+				"NumberOfBatchIDs": "5",
+
+				// Format and processing
+				"LineFormat":           "json",
+				"SortByTimestamp":      "true",
+				"AutoKubernetesLabels": "false",
+				"HostnameKeyValue":     "nodename ${NODE_NAME}",
+
+				// Network configuration
+				"MaxRetries": "3",
+				"Timeout":    "10s",
+				"MinBackoff": "30s",
+
+				// Label processing
+				"PreservedLabels": "origin,namespace_name,pod_name",
+				"RemoveKeys":      "kubernetes,stream,time,tag,gardenuser,job",
+				"LabelMapPath":    `{"kubernetes": {"container_name":"container_name","container_id":"container_id","namespace_name":"namespace_name","pod_name":"pod_name"},"severity": "severity","job": "job"}`,
+
+				// Kubernetes metadata extraction
+				"FallbackToTagWhenMetadataIsMissing": "true",
+				"TagKey":                             "tag",
+				"DropLogEntryWithoutK8sMetadata":     "true",
+			}
+
+			cfg, err := config.ParseConfigFromStringMap(stringMap)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(cfg).ToNot(BeNil())
+
+			// "Labels": `{origin="seed"}`
+			Expect(cfg.ClientConfig.CredativValiConfig.ExternalLabels.LabelSet).To(HaveKeyWithValue(model.LabelName("origin"), model.LabelValue("seed")))
+			// "DropSingleKey": "false"
+			Expect(cfg.PluginConfig.DropSingleKey).To(BeFalse())
+
+			// Dynamic host configuration
+			// "DynamicHostPath": `{"kubernetes": {"namespace_name": "namespace"}}`
+			Expect(cfg.PluginConfig.DynamicHostPath).ToNot(BeNil())
+			Expect(cfg.PluginConfig.DynamicHostPath).To(HaveKey("kubernetes"))
+			kubernetesMap, ok := cfg.PluginConfig.DynamicHostPath["kubernetes"].(map[string]any)
+			Expect(ok).To(BeTrue())
+			Expect(kubernetesMap).To(HaveKeyWithValue("namespace_name", "namespace"))
+			// "DynamicHostPrefix": "http://logging."
+			Expect(cfg.ControllerConfig.DynamicHostPrefix).To(Equal("http://logging."))
+			// "DynamicHostSuffix": ".svc:3100/vali/api/v1/push"
+			Expect(cfg.ControllerConfig.DynamicHostSuffix).To(Equal(".svc:3100/vali/api/v1/push"))
+			// "DynamicHostRegex": "^shoot-"
+			Expect(cfg.PluginConfig.DynamicHostRegex).To(Equal("^shoot-"))
+
+			// Queue and buffer configuration
+			// "QueueDir": "/fluent-bit/buffers/seed"
+			Expect(cfg.ClientConfig.BufferConfig.DqueConfig.QueueDir).To(Equal("/fluent-bit/buffers/seed"))
+			// "QueueName": "seed-dynamic"
+			Expect(cfg.ClientConfig.BufferConfig.DqueConfig.QueueName).To(Equal("seed-dynamic"))
+			// "QueueSegmentSize": "300"
+			Expect(cfg.ClientConfig.BufferConfig.DqueConfig.QueueSegmentSize).To(Equal(300))
+			// "QueueSync": "normal"
+			Expect(cfg.ClientConfig.BufferConfig.DqueConfig.QueueSync).To(BeFalse())
+			// "Buffer": "true"
+			Expect(cfg.ClientConfig.BufferConfig.Buffer).To(BeTrue())
+			// "BufferType": "dque"
+			Expect(cfg.ClientConfig.BufferConfig.BufferType).To(Equal("dque"))
+
+			// Controller configuration
+			// "ControllerSyncTimeout": "120s"
+			Expect(cfg.ControllerConfig.CtlSyncTimeout).To(Equal(120 * time.Second))
+
+			// Logging configuration
+			// "LogLevel": "info"
+			Expect(cfg.LogLevel.String()).To(Equal("info"))
+			// "Url": "http://logging.garden.svc:3100/vali/api/v1/push"
+			Expect(cfg.ClientConfig.CredativValiConfig.URL.String()).To(Equal("http://logging.garden.svc:3100/vali/api/v1/push"))
+
+			// Batch configuration
+			// "BatchWait": "60s"
+			Expect(cfg.ClientConfig.CredativValiConfig.BatchWait).To(Equal(60 * time.Second))
+			// "BatchSize": "30720"
+			Expect(cfg.ClientConfig.CredativValiConfig.BatchSize).To(Equal(30720))
+			// "NumberOfBatchIDs": "5"
+			Expect(cfg.ClientConfig.NumberOfBatchIDs).To(Equal(uint64(5)))
+
+			// Format and processing
+			// "LineFormat": "json"
+			Expect(cfg.PluginConfig.LineFormat).To(Equal(config.JSONFormat))
+			// "SortByTimestamp": "true"
+			Expect(cfg.ClientConfig.SortByTimestamp).To(BeTrue())
+			// "AutoKubernetesLabels": "false"
+			Expect(cfg.PluginConfig.AutoKubernetesLabels).To(BeFalse())
+			// "HostnameKeyValue": "nodename ${NODE_NAME}"
+			Expect(cfg.PluginConfig.HostnameKey).To(Equal("nodename"))
+			Expect(cfg.PluginConfig.HostnameValue).To(Equal("${NODE_NAME}"))
+
+			// Network configuration
+			// "MaxRetries": "3"
+			Expect(cfg.ClientConfig.CredativValiConfig.BackoffConfig.MaxRetries).To(Equal(3))
+			// "Timeout": "10s"
+			Expect(cfg.ClientConfig.CredativValiConfig.Timeout).To(Equal(10 * time.Second))
+			// "MinBackoff": "30s"
+			Expect(cfg.ClientConfig.CredativValiConfig.BackoffConfig.MinBackoff).To(Equal(30 * time.Second))
+
+			// Label processing
+			// "PreservedLabels": "origin,namespace_name,pod_name"
+			Expect(cfg.PluginConfig.PreservedLabels).To(HaveKeyWithValue(model.LabelName("origin"), model.LabelValue("")))
+			Expect(cfg.PluginConfig.PreservedLabels).To(HaveKeyWithValue(model.LabelName("namespace_name"), model.LabelValue("")))
+			Expect(cfg.PluginConfig.PreservedLabels).To(HaveKeyWithValue(model.LabelName("pod_name"), model.LabelValue("")))
+			// "RemoveKeys": "kubernetes,stream,time,tag,gardenuser,job"
+			Expect(cfg.PluginConfig.RemoveKeys).To(Equal([]string{"kubernetes", "stream", "time", "tag", "gardenuser", "job"}))
+			// "LabelMapPath": `{"kubernetes": {"container_name":"container_name",...}}`
+			Expect(cfg.PluginConfig.LabelMap).ToNot(BeNil())
+			Expect(cfg.PluginConfig.LabelMap).To(HaveKey("kubernetes"))
+			Expect(cfg.PluginConfig.LabelMap).To(HaveKey("severity"))
+			Expect(cfg.PluginConfig.LabelMap).To(HaveKey("job"))
+
+			// Kubernetes metadata extraction
+			// "FallbackToTagWhenMetadataIsMissing": "true"
+			Expect(cfg.PluginConfig.KubernetesMetadata.FallbackToTagWhenMetadataIsMissing).To(BeTrue())
+			// "TagKey": "tag"
+			Expect(cfg.PluginConfig.KubernetesMetadata.TagKey).To(Equal("tag"))
+			// "DropLogEntryWithoutK8sMetadata": "true"
+			Expect(cfg.PluginConfig.KubernetesMetadata.DropLogEntryWithoutK8sMetadata).To(BeTrue())
+		})
+	})
+})
