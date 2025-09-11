@@ -9,9 +9,9 @@ package config
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
@@ -334,17 +334,12 @@ func processLabelMapPath(labelMapPath string, config *Config) error {
 		labelMapData = []byte(labelMapPath)
 	} else {
 		// It's a file path - validate to prevent directory traversal attacks
-		if strings.Contains(labelMapPath, "..") {
-			return errors.New("invalid LabelMapPath: path contains directory traversal")
-		}
-
-		// #nosec G304 - file path is validated above to prevent directory traversal
-		labelMapData, err = os.ReadFile(labelMapPath)
+		cleanPath := filepath.Clean(labelMapPath)
+		labelMapData, err = os.ReadFile(cleanPath)
 		if err != nil {
 			return fmt.Errorf("failed to read LabelMapPath file: %w", err)
 		}
 	}
-
 	var labelMap map[string]any
 	if err := json.Unmarshal(labelMapData, &labelMap); err != nil {
 		return fmt.Errorf("failed to parse LabelMapPath JSON: %w", err)
