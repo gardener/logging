@@ -2,6 +2,7 @@ package config_test
 
 import (
 	"os"
+	"testing"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -10,6 +11,11 @@ import (
 
 	"github.com/gardener/logging/pkg/config"
 )
+
+func TestConfig(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Config Suite")
+}
 
 // Helper function to create a temporary label map file for testing
 func createTempLabelMap() string {

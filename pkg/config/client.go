@@ -13,7 +13,7 @@ import (
 	"github.com/prometheus/common/model"
 )
 
-// ClientConfig holds configuration for the clients
+// ClientConfig holds configuration for the chain of clients.
 type ClientConfig struct {
 	// URL for the Vali instance
 	URL flagext.URLValue `mapstructure:"-"`
