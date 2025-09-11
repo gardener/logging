@@ -272,17 +272,17 @@ func (*vali) send(c client.ValiClient, lbs model.LabelSet, ts time.Time, line st
 }
 
 func (v *vali) addHostnameAsLabel(res model.LabelSet) error {
-	if v.cfg.PluginConfig.HostnameKey == nil {
+	if v.cfg.PluginConfig.HostnameKey == "" {
 		return nil
 	}
-	if v.cfg.PluginConfig.HostnameValue != nil {
-		res[model.LabelName(*v.cfg.PluginConfig.HostnameKey)] = model.LabelValue(*v.cfg.PluginConfig.HostnameValue)
+	if len(v.cfg.PluginConfig.HostnameValue) > 0 {
+		res[model.LabelName(v.cfg.PluginConfig.HostnameKey)] = model.LabelValue(v.cfg.PluginConfig.HostnameValue)
 	} else {
 		hostname, err := os.Hostname()
 		if err != nil {
 			return err
 		}
-		res[model.LabelName(*v.cfg.PluginConfig.HostnameKey)] = model.LabelValue(hostname)
+		res[model.LabelName(v.cfg.PluginConfig.HostnameKey)] = model.LabelValue(hostname)
 	}
 
 	return nil

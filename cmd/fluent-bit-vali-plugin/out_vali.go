@@ -391,11 +391,11 @@ func dumpConfiguration(_logger log.Logger, conf *config.Config) {
 	_ = level.Debug(paramLogger).Log("DynamicField", fmt.Sprintf("%+v", conf.PluginConfig.DynamicTenant.Field))
 	_ = level.Debug(paramLogger).Log("DynamicRegex", fmt.Sprintf("%+v", conf.PluginConfig.DynamicTenant.Regex))
 	_ = level.Debug(paramLogger).Log("Pprof", fmt.Sprintf("%+v", conf.Pprof))
-	if conf.PluginConfig.HostnameKey != nil {
-		_ = level.Debug(paramLogger).Log("HostnameKey", fmt.Sprintf("%+v", *conf.PluginConfig.HostnameKey))
+	if len(conf.PluginConfig.HostnameKey) > 0 {
+		_ = level.Debug(paramLogger).Log("HostnameKey", conf.PluginConfig.HostnameKey)
 	}
-	if conf.PluginConfig.HostnameValue != nil {
-		_ = level.Debug(paramLogger).Log("HostnameValue", fmt.Sprintf("%+v", *conf.PluginConfig.HostnameValue))
+	if len(conf.PluginConfig.HostnameValue) > 0 {
+		_ = level.Debug(paramLogger).Log("HostnameValue", conf.PluginConfig.HostnameValue)
 	}
 	if conf.PluginConfig.PreservedLabels != nil {
 		_ = level.Debug(paramLogger).Log("PreservedLabels", fmt.Sprintf("%+v", conf.PluginConfig.PreservedLabels))

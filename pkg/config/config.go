@@ -399,8 +399,8 @@ func processHostnameKeyValue(configMap map[string]any, config *Config) error {
 		if len(parts) >= 2 {
 			key := parts[0]
 			value := strings.Join(parts[1:], " ")
-			config.PluginConfig.HostnameKey = &key
-			config.PluginConfig.HostnameValue = &value
+			config.PluginConfig.HostnameKey = key
+			config.PluginConfig.HostnameValue = value
 		}
 	}
 

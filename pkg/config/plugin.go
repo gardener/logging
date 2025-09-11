@@ -36,9 +36,12 @@ type PluginConfig struct {
 	// LabelSetInitCapacity sets the initial capacity for label sets
 	LabelSetInitCapacity int `mapstructure:"LabelSetInitCapacity"`
 	// HostnameKey specifies the hostname key
-	HostnameKey *string `mapstructure:"-"`
+	HostnameKey string `mapstructure:"HostnameKey"`
 	// HostnameValue specifies the hostname value
-	HostnameValue *string `mapstructure:"-"`
+	HostnameValue string `mapstructure:"HostnameValue"`
+	// HostnameKeyValue specifies the hostname key value pair,
+	//it has higher priority than HostnameKey and HostnameValue
+	HostnameKeyValue *string `mapstructure:"-"`
 	// PreservedLabels specifies labels to preserve
 	PreservedLabels model.LabelSet `mapstructure:"-"`
 	// EnableMultiTenancy enables multi-tenancy support
