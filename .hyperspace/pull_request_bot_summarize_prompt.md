@@ -1,9 +1,9 @@
 # PR Summarization Prompt
 
 Summarize the changes in this pull request for a technical audience.
-Highlight the main features improvements in one paragraph - required.
-Add bug fixes if any in second paragraph - optional.
-List breaking changes if any in third paragraph - optional.
+Highlight the main features and improvements in one paragraph - required.
+Add bug fixes if any in the second paragraph - optional.
+List breaking changes if any in the third paragraph - optional.
 
 Set the PR kind using the appropriate "/kind" identifiers. It shall be one of the following:
 api-change|bug|cleanup|discussion|enhancement|epic|impediment|poc|post-mortem|question|regression|task|technical-debt|test
