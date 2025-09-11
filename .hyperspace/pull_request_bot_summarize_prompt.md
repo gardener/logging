@@ -7,7 +7,7 @@ List breaking changes if any in third paragraph - optional.
 
 Set the PR kind using the appropriate "/kind" identifiers. It shall be one of the following:
 api-change|bug|cleanup|discussion|enhancement|epic|impediment|poc|post-mortem|question|regression|task|technical-debt|test
-Set the PR area using  "/area logging" identifier.
+Set the PR area using the "/area logging" identifier.
 
 Link any related issues using "Fixes #<issue_number>".
 
