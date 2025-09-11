@@ -10,7 +10,7 @@
       "use_tabular_summarize_output_template": false
     },
     "review": {
-      "auto_generate_review": true,
+      "auto_generate_review": false,
       "use_custom_review_focus": false
     }
   }

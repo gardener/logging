@@ -1,5 +1,7 @@
 # PR Summarization Prompt
 
+"auto_insert_summary" only applies when the PR description is empty.
+
 Summarize the changes in this pull request for a technical audience.
 Highlight the main features and improvements in one paragraph - required.
 Add bug fixes if any in the second paragraph - optional.
