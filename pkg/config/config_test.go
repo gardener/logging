@@ -111,8 +111,8 @@ var _ = Describe("Config", func() {
 			Expect(cfg.PluginConfig.LabelKeys).To(BeNil())
 			Expect(cfg.PluginConfig.RemoveKeys).To(BeNil())
 			Expect(cfg.PluginConfig.LabelMap).To(BeNil())
-			Expect(cfg.PluginConfig.HostnameKey).To(BeNil())
-			Expect(cfg.PluginConfig.HostnameValue).To(BeNil())
+			Expect(cfg.PluginConfig.HostnameKey).To(BeEmpty())
+			Expect(cfg.PluginConfig.HostnameValue).To(BeEmpty())
 			Expect(cfg.PluginConfig.PreservedLabels).To(Equal(model.LabelSet{}))
 
 			// Kubernetes metadata defaults
@@ -237,10 +237,8 @@ var _ = Describe("Config", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(cfg).ToNot(BeNil())
 
-			Expect(cfg.PluginConfig.HostnameKey).ToNot(BeNil())
-			Expect(*cfg.PluginConfig.HostnameKey).To(Equal("hostname"))
-			Expect(cfg.PluginConfig.HostnameValue).ToNot(BeNil())
-			Expect(*cfg.PluginConfig.HostnameValue).To(Equal("${HOST}"))
+			Expect(cfg.PluginConfig.HostnameKey).To(Equal("hostname"))
+			Expect(cfg.PluginConfig.HostnameValue).To(Equal("${HOST}"))
 		})
 
 		It("should parse DynamicHostPath from JSON string", func() {
@@ -443,10 +441,8 @@ var _ = Describe("Config", func() {
 			// "AutoKubernetesLabels": "false"
 			Expect(cfg.PluginConfig.AutoKubernetesLabels).To(BeFalse())
 			// "HostnameKeyValue": "nodename ${NODE_NAME}"
-			Expect(cfg.PluginConfig.HostnameKey).ToNot(BeNil())
-			Expect(*cfg.PluginConfig.HostnameKey).To(Equal("nodename"))
-			Expect(cfg.PluginConfig.HostnameValue).ToNot(BeNil())
-			Expect(*cfg.PluginConfig.HostnameValue).To(Equal("${NODE_NAME}"))
+			Expect(cfg.PluginConfig.HostnameKey).To(Equal("nodename"))
+			Expect(cfg.PluginConfig.HostnameValue).To(Equal("${NODE_NAME}"))
 
 			// Network configuration
 			// "MaxRetries": "3"
