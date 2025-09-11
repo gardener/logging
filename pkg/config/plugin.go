@@ -40,7 +40,7 @@ type PluginConfig struct {
 	// HostnameValue specifies the hostname value
 	HostnameValue string `mapstructure:"HostnameValue"`
 	// HostnameKeyValue specifies the hostname key value pair,
-	//it has higher priority than HostnameKey and HostnameValue
+	// it has higher priority than HostnameKey and HostnameValue
 	HostnameKeyValue *string `mapstructure:"-"`
 	// PreservedLabels specifies labels to preserve
 	PreservedLabels model.LabelSet `mapstructure:"-"`

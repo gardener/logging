@@ -423,8 +423,6 @@ var _ = ginkgov2.Describe("Vali plugin", func() {
 
 		hostname, err := os.Hostname()
 		gomega.Expect(err).ToNot(gomega.HaveOccurred())
-		//hostnameKeyPtr := ptr.To("hostname")
-		//hostnameValuePtr := ptr.To("HOST")
 
 		ginkgov2.DescribeTable("#addHostnameAsLabel",
 			func(args addHostnameAsLabelArgs) {
