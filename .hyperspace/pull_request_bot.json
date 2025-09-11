@@ -5,12 +5,12 @@
     "summarize": {
       "auto_generate_summary": true,
       "auto_insert_summary": true,
-      "use_custom_summarize_prompt": false,
-      "use_custom_summarize_output_template": false,
+      "use_custom_summarize_prompt": true,
+      "use_custom_summarize_output_template": true,
       "use_tabular_summarize_output_template": false
     },
     "review": {
-      "auto_generate_review": true,
+      "auto_generate_review": false,
       "use_custom_review_focus": false
     }
   }
