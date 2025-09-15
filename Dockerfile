@@ -21,7 +21,7 @@ WORKDIR /
 CMD ["/bin/cp", "/source/plugins/out_vali.so", "/plugins"]
 
 #############  fluent-bit-vali #############
-FROM ghcr.io/fluent/fluent-operator/fluent-bit:4.0.1 AS fluent-bit-vali
+FROM ghcr.io/fluent/fluent-operator/fluent-bit:4.0.9 AS fluent-bit-vali
 
 COPY --from=builder /go/src/github.com/gardener/logging/build/out_vali.so /fluent-bit/plugins/out_vali.so
 
