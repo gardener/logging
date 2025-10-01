@@ -27,14 +27,6 @@ import (
 	"github.com/weaveworks/common/logging"
 )
 
-// DefaultClientCfg is the default gardener vali plugin client configuration.
-var DefaultClientCfg = client.Config{}
-
-func init() {
-	// Init everything with default values.
-	flagext.RegisterFlags(&DefaultClientCfg)
-}
-
 // Format is the log line format
 type Format int
 
@@ -64,12 +56,12 @@ type Config struct {
 
 // ParseConfig parses a configuration from a map of string interfaces
 func ParseConfig(configMap map[string]any) (*Config, error) {
-	config := &Config{}
-
 	// Set default LogLevel
-	var defaultLevel logging.Level
-	_ = defaultLevel.Set("info")
-	config.LogLevel = defaultLevel
+
+	config, err := defaultConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create default config: %w", err)
+	}
 
 	// Create mapstructure decoder with custom decode hooks
 	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
@@ -91,18 +83,13 @@ func ParseConfig(configMap map[string]any) (*Config, error) {
 	}
 
 	// Decode the configuration
-	if err := decoder.Decode(configMap); err != nil {
+	if err = decoder.Decode(configMap); err != nil {
 		return nil, fmt.Errorf("failed to decode configuration: %w", err)
 	}
 
 	// Apply custom processing for complex fields that can't be handled by mapstructure
-	if err := postProcessConfig(config, configMap); err != nil {
+	if err = postProcessConfig(config, configMap); err != nil {
 		return nil, fmt.Errorf("failed to post-process config: %w", err)
-	}
-
-	// Apply default values after decoding
-	if err := applyDefaults(config, configMap); err != nil {
-		return nil, fmt.Errorf("failed to apply defaults: %w", err)
 	}
 
 	return config, nil
@@ -299,7 +286,8 @@ func postProcessConfig(config *Config, configMap map[string]any) error {
 		}
 	}
 
-	return nil
+	// Handle controller configuration boolean fields
+	return processControllerConfigBoolFields(configMap, config)
 }
 
 // Helper functions for common processing patterns
@@ -419,94 +407,112 @@ func processDynamicHostPath(configMap map[string]any, config *Config) error {
 	return nil
 }
 
-func applyDefaults(config *Config, configMap map[string]any) error {
-	// Set default client config
-	if config.ClientConfig.CredativValiConfig.URL.URL == nil {
-		defaultURL := flagext.URLValue{}
-		if err := defaultURL.Set("http://localhost:3100/vali/api/v1/push"); err != nil {
-			return fmt.Errorf("failed to set default URL: %w", err)
+// processControllerConfigBoolFields handles boolean configuration fields for controller config
+func processControllerConfigBoolFields(configMap map[string]any, config *Config) error {
+	// Map of ConfigMap keys to their corresponding ShootControllerClientConfig fields
+	shootConfigMapping := map[string]*bool{
+		"SendLogsToMainClusterWhenIsInCreationState":    &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInCreationState,
+		"SendLogsToMainClusterWhenIsInReadyState":       &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInReadyState,
+		"SendLogsToMainClusterWhenIsInHibernatingState": &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInHibernatingState,
+		"SendLogsToMainClusterWhenIsInHibernatedState":  &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInHibernatedState,
+		"SendLogsToMainClusterWhenIsInWakingState":      &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInWakingState,
+		"SendLogsToMainClusterWhenIsInDeletionState":    &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInDeletionState,
+		"SendLogsToMainClusterWhenIsInDeletedState":     &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInDeletedState,
+		"SendLogsToMainClusterWhenIsInRestoreState":     &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInRestoreState,
+		"SendLogsToMainClusterWhenIsInMigrationState":   &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInMigrationState,
+	}
+
+	// Map of ConfigMap keys to their corresponding SeedControllerClientConfig fields
+	seedConfigMapping := map[string]*bool{
+		"SendLogsToDefaultClientWhenClusterIsInCreationState":    &config.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInCreationState,
+		"SendLogsToDefaultClientWhenClusterIsInReadyState":       &config.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInReadyState,
+		"SendLogsToDefaultClientWhenClusterIsInHibernatingState": &config.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInHibernatingState,
+		"SendLogsToDefaultClientWhenClusterIsInHibernatedState":  &config.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInHibernatedState,
+		"SendLogsToDefaultClientWhenClusterIsInWakingState":      &config.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInWakingState,
+		"SendLogsToDefaultClientWhenClusterIsInDeletionState":    &config.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInDeletionState,
+		"SendLogsToDefaultClientWhenClusterIsInDeletedState":     &config.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInDeletedState,
+		"SendLogsToDefaultClientWhenClusterIsInRestoreState":     &config.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInRestoreState,
+		"SendLogsToDefaultClientWhenClusterIsInMigrationState":   &config.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInMigrationState,
+	}
+
+	// Process ShootControllerClientConfig fields - only override if key exists in ConfigMap
+	for configKey, fieldPtr := range shootConfigMapping {
+		if value, ok := configMap[configKey].(string); ok && value != "" {
+			boolVal, err := strconv.ParseBool(value)
+			if err != nil {
+				return fmt.Errorf("failed to parse %s as boolean: %w", configKey, err)
+			}
+			*fieldPtr = boolVal
 		}
-		config.ClientConfig.CredativValiConfig.URL = defaultURL
 	}
 
-	// Set default labels if not provided
-	if config.ClientConfig.CredativValiConfig.ExternalLabels.LabelSet == nil {
-		config.ClientConfig.CredativValiConfig.ExternalLabels = valiflag.LabelSet{
-			LabelSet: model.LabelSet{"job": "fluent-bit"},
+	// Process SeedControllerClientConfig fields - only override if key exists in ConfigMap
+	for configKey, fieldPtr := range seedConfigMapping {
+		if value, ok := configMap[configKey].(string); ok && value != "" {
+			boolVal, err := strconv.ParseBool(value)
+			if err != nil {
+				return fmt.Errorf("failed to parse %s as boolean: %w", configKey, err)
+			}
+			*fieldPtr = boolVal
 		}
-	}
-
-	// Set default batch values
-	if config.ClientConfig.CredativValiConfig.BatchSize == 0 {
-		config.ClientConfig.CredativValiConfig.BatchSize = 1024 * 1024
-	}
-	if config.ClientConfig.CredativValiConfig.BatchWait == 0 {
-		config.ClientConfig.CredativValiConfig.BatchWait = time.Second
-	}
-	if config.ClientConfig.CredativValiConfig.Timeout == 0 {
-		config.ClientConfig.CredativValiConfig.Timeout = 10 * time.Second
-	}
-
-	// Set default backoff config
-	if config.ClientConfig.CredativValiConfig.BackoffConfig.MaxRetries == 0 {
-		config.ClientConfig.CredativValiConfig.BackoffConfig = util.BackoffConfig{
-			MinBackoff: 500 * time.Millisecond,
-			MaxBackoff: 5 * time.Minute,
-			MaxRetries: 10,
-		}
-	}
-
-	// Set default buffer config
-	if config.ClientConfig.BufferConfig.BufferType == "" {
-		config.ClientConfig.BufferConfig = DefaultBufferConfig
-	}
-
-	// Set default controller config
-	if config.ControllerConfig.CtlSyncTimeout == 0 {
-		config.ControllerConfig.CtlSyncTimeout = 60 * time.Second
-	}
-	if config.ControllerConfig.DeletedClientTimeExpiration == 0 {
-		config.ControllerConfig.DeletedClientTimeExpiration = time.Hour
-	}
-	if config.ControllerConfig.ShootControllerClientConfig == (ControllerClientConfiguration{}) {
-		config.ControllerConfig.ShootControllerClientConfig = ShootControllerClientConfig
-	}
-	if config.ControllerConfig.SeedControllerClientConfig == (ControllerClientConfiguration{}) {
-		config.ControllerConfig.SeedControllerClientConfig = SeedControllerClientConfig
-	}
-
-	// Set default plugin config
-	if config.PluginConfig.LineFormat == 0 {
-		config.PluginConfig.LineFormat = JSONFormat
-	}
-	// Set default DropSingleKey only if it wasn't explicitly provided
-	if _, dropSingleKeyProvided := configMap["DropSingleKey"]; !dropSingleKeyProvided {
-		config.PluginConfig.DropSingleKey = true
-	}
-	if config.PluginConfig.DynamicHostRegex == "" {
-		config.PluginConfig.DynamicHostRegex = "*"
-	}
-	if config.PluginConfig.KubernetesMetadata.TagKey == "" {
-		config.PluginConfig.KubernetesMetadata.TagKey = DefaultKubernetesMetadataTagKey
-	}
-	if config.PluginConfig.KubernetesMetadata.TagPrefix == "" {
-		config.PluginConfig.KubernetesMetadata.TagPrefix = DefaultKubernetesMetadataTagPrefix
-	}
-	if config.PluginConfig.KubernetesMetadata.TagExpression == "" {
-		config.PluginConfig.KubernetesMetadata.TagExpression = DefaultKubernetesMetadataTagExpression
-	}
-	if config.PluginConfig.LabelSetInitCapacity == 0 {
-		config.PluginConfig.LabelSetInitCapacity = 12
-	}
-	if config.ClientConfig.NumberOfBatchIDs == 0 {
-		config.ClientConfig.NumberOfBatchIDs = 10
-	}
-	if config.ClientConfig.IDLabelName == "" {
-		config.ClientConfig.IDLabelName = model.LabelName("id")
-	}
-	if config.PluginConfig.PreservedLabels == nil {
-		config.PluginConfig.PreservedLabels = model.LabelSet{}
 	}
 
 	return nil
+}
+
+func defaultConfig() (*Config, error) {
+	// Set default client config
+	var defaultLevel logging.Level
+	_ = defaultLevel.Set("info")
+
+	defaultURL := flagext.URLValue{}
+
+	if err := defaultURL.Set("http://localhost:3100/vali/api/v1/push"); err != nil {
+		return nil, fmt.Errorf("failed to set default URL: %w", err)
+	}
+
+	config := &Config{
+		ControllerConfig: ControllerConfig{
+			ShootControllerClientConfig: ShootControllerClientConfig,
+			SeedControllerClientConfig:  SeedControllerClientConfig,
+			DeletedClientTimeExpiration: time.Hour,
+			CtlSyncTimeout:              60 * time.Second,
+		},
+		ClientConfig: ClientConfig{
+			URL: defaultURL,
+			CredativValiConfig: client.Config{
+				URL:       defaultURL,
+				BatchSize: 1024 * 1024,
+				BatchWait: 1 * time.Second,
+				Timeout:   10 * time.Second,
+				BackoffConfig: util.BackoffConfig{
+					MinBackoff: 500 * time.Millisecond,
+					MaxBackoff: 5 * time.Minute,
+					MaxRetries: 10,
+				},
+				ExternalLabels: valiflag.LabelSet{
+					LabelSet: model.LabelSet{"job": "fluent-bit"},
+				},
+			},
+			BufferConfig:     DefaultBufferConfig,
+			NumberOfBatchIDs: 10,
+			IDLabelName:      model.LabelName("id"),
+		},
+		PluginConfig: PluginConfig{
+			DropSingleKey:    true,
+			DynamicHostRegex: "*",
+			LineFormat:       JSONFormat,
+			KubernetesMetadata: KubernetesMetadataExtraction{
+				TagKey:        DefaultKubernetesMetadataTagKey,
+				TagPrefix:     DefaultKubernetesMetadataTagPrefix,
+				TagExpression: DefaultKubernetesMetadataTagExpression,
+			},
+			LabelSetInitCapacity: 12,
+			PreservedLabels:      model.LabelSet{},
+		},
+		LogLevel: defaultLevel,
+		Pprof:    false,
+	}
+
+	return config, nil
 }
