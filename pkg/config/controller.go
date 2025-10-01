@@ -24,24 +24,24 @@ type ControllerConfig struct {
 	DeletedClientTimeExpiration time.Duration `mapstructure:"DeletedClientTimeExpiration"`
 	// ShootControllerClientConfig configure to whether to send or not the log to the shoot
 	// Vali for a particular shoot state.
-	ShootControllerClientConfig ControllerClientConfiguration `mapstructure:",squash"`
+	ShootControllerClientConfig ControllerClientConfiguration `mapstructure:"-"`
 	// SeedControllerClientConfig configure to whether to send or not the log to the shoot
 	// Vali for a particular shoot state.
-	SeedControllerClientConfig ControllerClientConfiguration `mapstructure:",squash"`
+	SeedControllerClientConfig ControllerClientConfiguration `mapstructure:"-"`
 }
 
 // ControllerClientConfiguration contains flags which
 // mutes/unmutes Shoot's and Seed Vali for a given Shoot state.
 type ControllerClientConfiguration struct {
-	SendLogsWhenIsInCreationState    bool `mapstructure:"SendLogsToMainClusterWhenIsInCreationState"`
-	SendLogsWhenIsInReadyState       bool `mapstructure:"SendLogsToMainClusterWhenIsInReadyState"`
-	SendLogsWhenIsInHibernatingState bool `mapstructure:"SendLogsToMainClusterWhenIsInHibernatingState"`
-	SendLogsWhenIsInHibernatedState  bool `mapstructure:"SendLogsToMainClusterWhenIsInHibernatedState"`
-	SendLogsWhenIsInWakingState      bool `mapstructure:"SendLogsToMainClusterWhenIsInWakingState"`
-	SendLogsWhenIsInDeletionState    bool `mapstructure:"SendLogsToMainClusterWhenIsInDeletionState"`
-	SendLogsWhenIsInDeletedState     bool `mapstructure:"SendLogsToMainClusterWhenIsInDeletedState"`
-	SendLogsWhenIsInRestoreState     bool `mapstructure:"SendLogsToMainClusterWhenIsInRestoreState"`
-	SendLogsWhenIsInMigrationState   bool `mapstructure:"SendLogsToMainClusterWhenIsInMigrationState"`
+	SendLogsWhenIsInCreationState    bool
+	SendLogsWhenIsInReadyState       bool
+	SendLogsWhenIsInHibernatingState bool
+	SendLogsWhenIsInHibernatedState  bool
+	SendLogsWhenIsInWakingState      bool
+	SendLogsWhenIsInDeletionState    bool
+	SendLogsWhenIsInDeletedState     bool
+	SendLogsWhenIsInRestoreState     bool
+	SendLogsWhenIsInMigrationState   bool
 }
 
 // SeedControllerClientConfig is the default controller client configuration
