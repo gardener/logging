@@ -374,12 +374,13 @@ func processIDLabelName(configMap map[string]any, config *Config) error {
 func processDynamicTenant(configMap map[string]any, config *Config) error {
 	if dynamicTenant, ok := configMap["DynamicTenant"].(string); ok && dynamicTenant != "" {
 		parts := strings.Fields(dynamicTenant)
-		if len(parts) >= 3 {
-			config.PluginConfig.DynamicTenant.Tenant = parts[0]
-			config.PluginConfig.DynamicTenant.Field = parts[1]
-			config.PluginConfig.DynamicTenant.Regex = strings.Join(parts[2:], " ")
-			config.PluginConfig.DynamicTenant.RemoveTenantIDWhenSendingToDefaultURL = true
+		if len(parts) < 3 {
+			return fmt.Errorf("DynamicTenant must have at least 3 parts (tenant field regex), got %d parts: %s", len(parts), dynamicTenant)
 		}
+		config.PluginConfig.DynamicTenant.Tenant = parts[0]
+		config.PluginConfig.DynamicTenant.Field = parts[1]
+		config.PluginConfig.DynamicTenant.Regex = strings.Join(parts[2:], " ")
+		config.PluginConfig.DynamicTenant.RemoveTenantIDWhenSendingToDefaultURL = true
 	}
 
 	return nil
@@ -388,12 +389,13 @@ func processDynamicTenant(configMap map[string]any, config *Config) error {
 func processHostnameKeyValue(configMap map[string]any, config *Config) error {
 	if hostnameKeyValue, ok := configMap["HostnameKeyValue"].(string); ok && hostnameKeyValue != "" {
 		parts := strings.Fields(hostnameKeyValue)
-		if len(parts) >= 2 {
-			key := parts[0]
-			value := strings.Join(parts[1:], " ")
-			config.PluginConfig.HostnameKey = key
-			config.PluginConfig.HostnameValue = value
+		if len(parts) < 2 {
+			return fmt.Errorf("HostnameKeyValue must have at least 2 parts (key value), got %d parts: %s", len(parts), hostnameKeyValue)
 		}
+		key := parts[0]
+		value := strings.Join(parts[1:], " ")
+		config.PluginConfig.HostnameKey = key
+		config.PluginConfig.HostnameValue = value
 	}
 
 	return nil
