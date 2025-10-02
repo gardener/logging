@@ -491,7 +491,9 @@ func processControllerConfigBoolFields(configMap map[string]any, config *Config)
 func defaultConfig() (*Config, error) {
 	// Set default client config
 	var defaultLevel logging.Level
-	_ = defaultLevel.Set("info")
+	if err := defaultLevel.Set("info"); err != nil {
+		return nil, fmt.Errorf("failed to set default log level: %w", err)
+	}
 
 	defaultURL := flagext.URLValue{}
 
