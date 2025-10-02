@@ -43,6 +43,10 @@ const (
 
 	// DefaultKubernetesMetadataTagPrefix represents the prefix of the entry's tag
 	DefaultKubernetesMetadataTagPrefix = "kubernetes\\.var\\.log\\.containers"
+
+	// JSON parsing size limits to prevent memory exhaustion attacks
+	MaxJSONSize   = 1024 * 1024 // 1MB limit for JSON parsing operations
+	MaxConfigSize = 512 * 1024  // 512KB limit for configuration JSON files
 )
 
 // Config holds the needed properties of the vali output plugin
@@ -318,20 +322,33 @@ func processCommaSeparatedField(configMap map[string]any, key string, setter fun
 
 func processLabelMapPath(labelMapPath string, config *Config) error {
 	var labelMapData []byte
-	var err error
 
 	// Check if it's inline JSON (starts with '{') or a file path
 	if strings.HasPrefix(strings.TrimSpace(labelMapPath), "{") {
-		// It's inline JSON content
+		// It's inline JSON content - check size limit
+		if len(labelMapPath) > MaxConfigSize {
+			return fmt.Errorf("inline JSON content exceeds maximum size of %d bytes", MaxConfigSize)
+		}
 		labelMapData = []byte(labelMapPath)
 	} else {
 		// It's a file path - validate to prevent directory traversal attacks
 		cleanPath := filepath.Clean(labelMapPath)
+
+		// Check file size before reading to prevent memory exhaustion
+		fileInfo, err := os.Stat(cleanPath)
+		if err != nil {
+			return fmt.Errorf("failed to stat LabelMapPath file: %w", err)
+		}
+		if fileInfo.Size() > MaxConfigSize {
+			return fmt.Errorf("LabelMapPath file exceeds maximum size of %d bytes", MaxConfigSize)
+		}
+
 		labelMapData, err = os.ReadFile(cleanPath)
 		if err != nil {
 			return fmt.Errorf("failed to read LabelMapPath file: %w", err)
 		}
 	}
+
 	var labelMap map[string]any
 	if err := json.Unmarshal(labelMapData, &labelMap); err != nil {
 		return fmt.Errorf("failed to parse LabelMapPath JSON: %w", err)
@@ -403,6 +420,11 @@ func processHostnameKeyValue(configMap map[string]any, config *Config) error {
 
 func processDynamicHostPath(configMap map[string]any, config *Config) error {
 	if dynamicHostPath, ok := configMap["DynamicHostPath"].(string); ok && dynamicHostPath != "" {
+		// Check size limit before parsing to prevent memory exhaustion
+		if len(dynamicHostPath) > MaxJSONSize {
+			return fmt.Errorf("DynamicHostPath JSON exceeds maximum size of %d bytes", MaxJSONSize)
+		}
+
 		var parsedMap map[string]any
 		if err := json.Unmarshal([]byte(dynamicHostPath), &parsedMap); err != nil {
 			return fmt.Errorf("failed to parse DynamicHostPath JSON: %w", err)
