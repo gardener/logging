@@ -306,7 +306,11 @@ func processDurationField(configMap map[string]any, key string, setter func(time
 
 func processCommaSeparatedField(configMap map[string]any, key string, setter func([]string)) error {
 	if value, ok := configMap[key].(string); ok && value != "" {
-		setter(strings.Split(value, ","))
+		split := strings.Split(value, ",")
+		for i := range split {
+			split[i] = strings.TrimSpace(split[i])
+		}
+		setter(split)
 	}
 
 	return nil
