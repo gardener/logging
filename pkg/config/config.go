@@ -139,161 +139,6 @@ func logLevelHookFunc() mapstructure.DecodeHookFunc {
 	)
 }
 
-// postProcessConfig handles complex field processing that can't be done with simple mapping
-func postProcessConfig(config *Config, configMap map[string]any) error {
-	// Process URL field (needs special handling for flagext.URLValue)
-	// Handle both "URL" and "Url" for different format compatibility
-	var urlString string
-	if url, ok := configMap["URL"].(string); ok && url != "" {
-		urlString = url
-	} else if url, ok := configMap["Url"].(string); ok && url != "" {
-		urlString = url
-	}
-
-	if urlString != "" {
-		if err := config.ClientConfig.CredativValiConfig.URL.Set(urlString); err != nil {
-			return fmt.Errorf("failed to parse URL: %w", err)
-		}
-	}
-
-	// Copy simple fields from ClientConfig to CredativValiConfig (after mapstructure processing)
-	config.ClientConfig.CredativValiConfig.TenantID = config.ClientConfig.TenantID
-
-	// Copy BackoffConfig fields
-	if config.ClientConfig.MaxRetries > 0 {
-		config.ClientConfig.CredativValiConfig.BackoffConfig.MaxRetries = config.ClientConfig.MaxRetries
-	}
-
-	// Process timeout and backoff duration fields
-	if err := processDurationField(configMap, "Timeout", func(d time.Duration) {
-		config.ClientConfig.CredativValiConfig.Timeout = d
-	}); err != nil {
-		return err
-	}
-
-	if err := processDurationField(configMap, "MinBackoff", func(d time.Duration) {
-		config.ClientConfig.CredativValiConfig.BackoffConfig.MinBackoff = d
-	}); err != nil {
-		return err
-	}
-
-	if err := processDurationField(configMap, "MaxBackoff", func(d time.Duration) {
-		config.ClientConfig.CredativValiConfig.BackoffConfig.MaxBackoff = d
-	}); err != nil {
-		return err
-	}
-
-	// Process time duration fields that need to be copied to CredativValiConfig
-	if err := processDurationField(configMap, "BatchWait", func(d time.Duration) {
-		config.ClientConfig.CredativValiConfig.BatchWait = d
-	}); err != nil {
-		return err
-	}
-
-	// Process labels field (needs special parsing)
-	if labels, ok := configMap["Labels"].(string); ok && labels != "" {
-		matchers, err := logql.ParseMatchers(labels)
-		if err != nil {
-			return fmt.Errorf("failed to parse Labels: %w", err)
-		}
-		labelSet := make(model.LabelSet)
-		for _, m := range matchers {
-			labelSet[model.LabelName(m.Name)] = model.LabelValue(m.Value)
-		}
-		config.ClientConfig.CredativValiConfig.ExternalLabels = valiflag.LabelSet{LabelSet: labelSet}
-	}
-
-	// Process LineFormat enum field
-	if lineFormat, ok := configMap["LineFormat"].(string); ok {
-		switch lineFormat {
-		case "json", "":
-			config.PluginConfig.LineFormat = JSONFormat
-		case "key_value":
-			config.PluginConfig.LineFormat = KvPairFormat
-		default:
-			return fmt.Errorf("invalid format: %s", lineFormat)
-		}
-	}
-
-	// Process comma-separated string fields
-	if err := processCommaSeparatedField(configMap, "LabelKeys", func(values []string) {
-		config.PluginConfig.LabelKeys = values
-	}); err != nil {
-		return err
-	}
-
-	if err := processCommaSeparatedField(configMap, "RemoveKeys", func(values []string) {
-		config.PluginConfig.RemoveKeys = values
-	}); err != nil {
-		return err
-	}
-
-	// Process PreservedLabels - convert comma-separated string to LabelSet
-	if err := processCommaSeparatedField(configMap, "PreservedLabels", func(values []string) {
-		labelSet := make(model.LabelSet)
-		for _, value := range values {
-			// Trim whitespace and create label with empty value
-			labelName := model.LabelName(strings.TrimSpace(value))
-			if labelName != "" {
-				labelSet[labelName] = model.LabelValue("")
-			}
-		}
-		config.PluginConfig.PreservedLabels = labelSet
-	}); err != nil {
-		return err
-	}
-
-	// Handle LabelMapPath - if provided, load the label map and clear LabelKeys
-	if labelMapPath, ok := configMap["LabelMapPath"].(string); ok && labelMapPath != "" {
-		if err := processLabelMapPath(labelMapPath, config); err != nil {
-			return err
-		}
-	}
-
-	// Copy BatchSize to CredativValiConfig (mapstructure handles the main field)
-	if config.ClientConfig.BatchSize != 0 {
-		config.ClientConfig.CredativValiConfig.BatchSize = config.ClientConfig.BatchSize
-	}
-
-	// Process special validation fields
-	if err := processNumberOfBatchIDs(configMap, config); err != nil {
-		return err
-	}
-
-	if err := processIDLabelName(configMap, config); err != nil {
-		return err
-	}
-
-	// Process complex string parsing fields
-	if err := processDynamicTenant(configMap, config); err != nil {
-		return err
-	}
-
-	if err := processHostnameKeyValue(configMap, config); err != nil {
-		return err
-	}
-
-	// Handle DynamicHostPath - parse JSON string to map
-	if err := processDynamicHostPath(configMap, config); err != nil {
-		return err
-	}
-
-	// Handle QueueSync special conversion (normal/full -> bool)
-	if queueSync, ok := configMap["QueueSync"].(string); ok {
-		switch queueSync {
-		case "normal", "":
-			config.ClientConfig.BufferConfig.DqueConfig.QueueSync = false
-		case "full":
-			config.ClientConfig.BufferConfig.DqueConfig.QueueSync = true
-		default:
-			return fmt.Errorf("invalid string queueSync: %v", queueSync)
-		}
-	}
-
-	// Handle controller configuration boolean fields
-	return processControllerConfigBoolFields(configMap, config)
-}
-
 // Helper functions for common processing patterns
 
 func processDurationField(configMap map[string]any, key string, setter func(time.Duration)) error {
@@ -486,6 +331,235 @@ func processControllerConfigBoolFields(configMap map[string]any, config *Config)
 	}
 
 	return nil
+}
+
+// postProcessConfig handles complex field processing that can't be done with simple mapping
+func postProcessConfig(config *Config, configMap map[string]any) error {
+	processors := []func(*Config, map[string]any) error{
+		processURLConfig,
+		processClientConfig,
+		processDurationConfigs,
+		processLabelsConfig,
+		processLineFormatConfig,
+		processCommaSeparatedConfigs,
+		processLabelMapConfig,
+		processBatchSizeConfig,
+		processValidationConfigs,
+		processComplexStringConfigs,
+		processDynamicHostPathConfig,
+		processQueueSyncConfig,
+		processControllerBoolConfigs,
+	}
+
+	for _, processor := range processors {
+		if err := processor(config, configMap); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// processURLConfig handles URL field processing
+func processURLConfig(config *Config, configMap map[string]any) error {
+	// Process URL field (needs special handling for flagext.URLValue)
+	// Handle both "URL" and "Url" for different format compatibility
+	var urlString string
+	if url, ok := configMap["URL"].(string); ok && url != "" {
+		urlString = url
+	} else if url, ok := configMap["Url"].(string); ok && url != "" {
+		urlString = url
+	}
+
+	if urlString != "" {
+		if err := config.ClientConfig.CredativValiConfig.URL.Set(urlString); err != nil {
+			return fmt.Errorf("failed to parse URL: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// processClientConfig handles client configuration field copying
+func processClientConfig(config *Config, _ map[string]any) error {
+	// Copy simple fields from ClientConfig to CredativValiConfig (after mapstructure processing)
+	config.ClientConfig.CredativValiConfig.TenantID = config.ClientConfig.TenantID
+
+	// Copy BackoffConfig fields
+	if config.ClientConfig.MaxRetries > 0 {
+		config.ClientConfig.CredativValiConfig.BackoffConfig.MaxRetries = config.ClientConfig.MaxRetries
+	}
+
+	return nil
+}
+
+// processDurationConfigs handles all duration-related configuration fields
+func processDurationConfigs(config *Config, configMap map[string]any) error {
+	durationFields := []struct {
+		key    string
+		setter func(time.Duration)
+	}{
+		{"Timeout", func(d time.Duration) {
+			config.ClientConfig.CredativValiConfig.Timeout = d
+		}},
+		{"MinBackoff", func(d time.Duration) {
+			config.ClientConfig.CredativValiConfig.BackoffConfig.MinBackoff = d
+		}},
+		{"MaxBackoff", func(d time.Duration) {
+			config.ClientConfig.CredativValiConfig.BackoffConfig.MaxBackoff = d
+		}},
+		{"BatchWait", func(d time.Duration) {
+			config.ClientConfig.CredativValiConfig.BatchWait = d
+		}},
+	}
+
+	for _, field := range durationFields {
+		if err := processDurationField(configMap, field.key, field.setter); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// processLabelsConfig handles labels field processing
+func processLabelsConfig(config *Config, configMap map[string]any) error {
+	if labels, ok := configMap["Labels"].(string); ok && labels != "" {
+		matchers, err := logql.ParseMatchers(labels)
+		if err != nil {
+			return fmt.Errorf("failed to parse Labels: %w", err)
+		}
+		labelSet := make(model.LabelSet)
+		for _, m := range matchers {
+			labelSet[model.LabelName(m.Name)] = model.LabelValue(m.Value)
+		}
+		config.ClientConfig.CredativValiConfig.ExternalLabels = valiflag.LabelSet{LabelSet: labelSet}
+	}
+
+	return nil
+}
+
+// processLineFormatConfig handles LineFormat enum field processing
+func processLineFormatConfig(config *Config, configMap map[string]any) error {
+	if lineFormat, ok := configMap["LineFormat"].(string); ok {
+		switch lineFormat {
+		case "json", "":
+			config.PluginConfig.LineFormat = JSONFormat
+		case "key_value":
+			config.PluginConfig.LineFormat = KvPairFormat
+		default:
+			return fmt.Errorf("invalid format: %s", lineFormat)
+		}
+	}
+
+	return nil
+}
+
+// processCommaSeparatedConfigs handles all comma-separated string fields
+func processCommaSeparatedConfigs(config *Config, configMap map[string]any) error {
+	// Process LabelKeys
+	if err := processCommaSeparatedField(configMap, "LabelKeys", func(values []string) {
+		config.PluginConfig.LabelKeys = values
+	}); err != nil {
+		return err
+	}
+
+	// Process RemoveKeys
+	if err := processCommaSeparatedField(configMap, "RemoveKeys", func(values []string) {
+		config.PluginConfig.RemoveKeys = values
+	}); err != nil {
+		return err
+	}
+
+	// Process PreservedLabels - convert comma-separated string to LabelSet
+	if err := processCommaSeparatedField(configMap, "PreservedLabels", func(values []string) {
+		labelSet := make(model.LabelSet)
+		for _, value := range values {
+			// Trim whitespace and create label with empty value
+			labelName := model.LabelName(strings.TrimSpace(value))
+			if labelName != "" {
+				labelSet[labelName] = model.LabelValue("")
+			}
+		}
+		config.PluginConfig.PreservedLabels = labelSet
+	}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// processLabelMapConfig handles LabelMapPath processing
+func processLabelMapConfig(config *Config, configMap map[string]any) error {
+	if labelMapPath, ok := configMap["LabelMapPath"].(string); ok && labelMapPath != "" {
+		if err := processLabelMapPath(labelMapPath, config); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// processBatchSizeConfig handles BatchSize configuration
+func processBatchSizeConfig(config *Config, _ map[string]any) error {
+	// Copy BatchSize to CredativValiConfig (mapstructure handles the main field)
+	if config.ClientConfig.BatchSize != 0 {
+		config.ClientConfig.CredativValiConfig.BatchSize = config.ClientConfig.BatchSize
+	}
+
+	return nil
+}
+
+// processValidationConfigs handles special validation fields
+func processValidationConfigs(config *Config, configMap map[string]any) error {
+	if err := processNumberOfBatchIDs(configMap, config); err != nil {
+		return err
+	}
+
+	if err := processIDLabelName(configMap, config); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// processComplexStringConfigs handles complex string parsing fields
+func processComplexStringConfigs(config *Config, configMap map[string]any) error {
+	if err := processDynamicTenant(configMap, config); err != nil {
+		return err
+	}
+
+	if err := processHostnameKeyValue(configMap, config); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// processDynamicHostPathConfig handles DynamicHostPath processing
+func processDynamicHostPathConfig(config *Config, configMap map[string]any) error {
+	return processDynamicHostPath(configMap, config)
+}
+
+// processQueueSyncConfig handles QueueSync special conversion
+func processQueueSyncConfig(config *Config, configMap map[string]any) error {
+	if queueSync, ok := configMap["QueueSync"].(string); ok {
+		switch queueSync {
+		case "normal", "":
+			config.ClientConfig.BufferConfig.DqueConfig.QueueSync = false
+		case "full":
+			config.ClientConfig.BufferConfig.DqueConfig.QueueSync = true
+		default:
+			return fmt.Errorf("invalid string queueSync: %v", queueSync)
+		}
+	}
+
+	return nil
+}
+
+// processControllerBoolConfigs handles controller configuration boolean fields
+func processControllerBoolConfigs(config *Config, configMap map[string]any) error {
+	return processControllerConfigBoolFields(configMap, config)
 }
 
 func defaultConfig() (*Config, error) {
