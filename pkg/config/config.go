@@ -44,9 +44,10 @@ const (
 	// DefaultKubernetesMetadataTagPrefix represents the prefix of the entry's tag
 	DefaultKubernetesMetadataTagPrefix = "kubernetes\\.var\\.log\\.containers"
 
-	// JSON parsing size limits to prevent memory exhaustion attacks
-	MaxJSONSize   = 1024 * 1024 // 1MB limit for JSON parsing operations
-	MaxConfigSize = 512 * 1024  // 512KB limit for configuration JSON files
+	// MaxJSONSize parsing size limits
+	MaxJSONSize = 1024 * 1024 // 1MB limit for JSON parsing operations
+	// MaxConfigSize config size limits
+	MaxConfigSize = 512 * 1024 // 512KB limit for configuration JSON files
 )
 
 // Config holds the needed properties of the vali output plugin
@@ -516,11 +517,7 @@ func processValidationConfigs(config *Config, configMap map[string]any) error {
 		return err
 	}
 
-	if err := processIDLabelName(configMap, config); err != nil {
-		return err
-	}
-
-	return nil
+	return processIDLabelName(configMap, config)
 }
 
 // processComplexStringConfigs handles complex string parsing fields
@@ -529,11 +526,7 @@ func processComplexStringConfigs(config *Config, configMap map[string]any) error
 		return err
 	}
 
-	if err := processHostnameKeyValue(configMap, config); err != nil {
-		return err
-	}
-
-	return nil
+	return processHostnameKeyValue(configMap, config)
 }
 
 // processDynamicHostPathConfig handles DynamicHostPath processing
