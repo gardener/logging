@@ -2,6 +2,12 @@
 
 aliases:
   logging-reviewers:
-  - nickytd
+    - Bobi-Wann
+    - dnaeon
+    - nickytd
+    - rrhubenov
   logging-approvers:
-  - nickytd
+    - Bobi-Wann
+    - dnaeon
+    - nickytd
+    - rrhubenov
