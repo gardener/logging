@@ -1,0 +1,13 @@
+# See the OWNERS docs at https://go.k8s.io/owners
+
+aliases:
+  logging-reviewers:
+    - Bobi-Wann
+    - dnaeon
+    - nickytd
+    - rrhubenov
+  logging-approvers:
+    - Bobi-Wann
+    - dnaeon
+    - nickytd
+    - rrhubenov
