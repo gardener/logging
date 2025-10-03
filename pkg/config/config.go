@@ -45,7 +45,7 @@ const (
 	DefaultKubernetesMetadataTagPrefix = "kubernetes\\.var\\.log\\.containers"
 
 	// MaxJSONSize parsing size limits
-	MaxJSONSize = 1024 * 1024 // 1MB limit for JSON parsing operations
+	MaxJSONSize = 1 * 1024 * 1024 // 1MB limit for JSON parsing operations
 	// MaxConfigSize config size limits
 	MaxConfigSize = 512 * 1024 // 512KB limit for configuration JSON files
 )
