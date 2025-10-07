@@ -7,8 +7,8 @@ package e2e
 const (
 	shootNamespace             = "shoot--logging--test"
 	seedNamespace              = "seed--logging--test"
-	backendContainerImage      = "ghcr.io/credativ/vali:v2.2.18"
-	logGeneratorContainerImage = "nickytd/log-generator:0.1.0"
+	backendContainerImage      = "ghcr.io/credativ/vali:v2.2.27"
+	logGeneratorContainerImage = "nickytd/log-generator:latest"
 	daemonSetName              = "fluent-bit"
 	eventLoggerName            = "event-logger"
 	seedBackendName            = "seed"

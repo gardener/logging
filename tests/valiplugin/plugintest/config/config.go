@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/cortexproject/cortex/pkg/util/flagext"
+	"github.com/credativ/vali/pkg/valitail/client"
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
 	"github.com/prometheus/common/model"
@@ -32,7 +33,7 @@ func NewConfiguration() (config.Config, error) {
 
 	cfg := config.Config{
 		ClientConfig: config.ClientConfig{
-			CredativValiConfig: config.DefaultClientCfg,
+			CredativValiConfig: client.Config{},
 			BufferConfig: config.BufferConfig{
 				Buffer:     true,
 				BufferType: "dque",

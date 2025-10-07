@@ -31,7 +31,7 @@ spec:
     spec:
       containers:
       - name: vali
-        image: ghcr.io/credativ/vali:v2.2.21
+        image: ghcr.io/credativ/vali:v2.2.27
         ports:
         - containerPort: 3100
           name: vali

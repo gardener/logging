@@ -27,14 +27,6 @@ import (
 	"github.com/weaveworks/common/logging"
 )
 
-// DefaultClientCfg is the default gardener vali plugin client configuration.
-var DefaultClientCfg = client.Config{}
-
-func init() {
-	// Init everything with default values.
-	flagext.RegisterFlags(&DefaultClientCfg)
-}
-
 // Format is the log line format
 type Format int
 
@@ -51,6 +43,11 @@ const (
 
 	// DefaultKubernetesMetadataTagPrefix represents the prefix of the entry's tag
 	DefaultKubernetesMetadataTagPrefix = "kubernetes\\.var\\.log\\.containers"
+
+	// MaxJSONSize parsing size limits
+	MaxJSONSize = 1 * 1024 * 1024 // 1MB limit for JSON parsing operations
+	// MaxConfigSize config size limits
+	MaxConfigSize = 512 * 1024 // 512KB limit for configuration JSON files
 )
 
 // Config holds the needed properties of the vali output plugin
@@ -64,12 +61,12 @@ type Config struct {
 
 // ParseConfig parses a configuration from a map of string interfaces
 func ParseConfig(configMap map[string]any) (*Config, error) {
-	config := &Config{}
-
 	// Set default LogLevel
-	var defaultLevel logging.Level
-	_ = defaultLevel.Set("info")
-	config.LogLevel = defaultLevel
+
+	config, err := defaultConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create default config: %w", err)
+	}
 
 	// Create mapstructure decoder with custom decode hooks
 	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
@@ -91,18 +88,13 @@ func ParseConfig(configMap map[string]any) (*Config, error) {
 	}
 
 	// Decode the configuration
-	if err := decoder.Decode(configMap); err != nil {
+	if err = decoder.Decode(configMap); err != nil {
 		return nil, fmt.Errorf("failed to decode configuration: %w", err)
 	}
 
 	// Apply custom processing for complex fields that can't be handled by mapstructure
-	if err := postProcessConfig(config, configMap); err != nil {
+	if err = postProcessConfig(config, configMap); err != nil {
 		return nil, fmt.Errorf("failed to post-process config: %w", err)
-	}
-
-	// Apply default values after decoding
-	if err := applyDefaults(config, configMap); err != nil {
-		return nil, fmt.Errorf("failed to apply defaults: %w", err)
 	}
 
 	return config, nil
@@ -148,160 +140,6 @@ func logLevelHookFunc() mapstructure.DecodeHookFunc {
 	)
 }
 
-// postProcessConfig handles complex field processing that can't be done with simple mapping
-func postProcessConfig(config *Config, configMap map[string]any) error {
-	// Process URL field (needs special handling for flagext.URLValue)
-	// Handle both "URL" and "Url" for different format compatibility
-	var urlString string
-	if url, ok := configMap["URL"].(string); ok && url != "" {
-		urlString = url
-	} else if url, ok := configMap["Url"].(string); ok && url != "" {
-		urlString = url
-	}
-
-	if urlString != "" {
-		if err := config.ClientConfig.CredativValiConfig.URL.Set(urlString); err != nil {
-			return fmt.Errorf("failed to parse URL: %w", err)
-		}
-	}
-
-	// Copy simple fields from ClientConfig to CredativValiConfig (after mapstructure processing)
-	config.ClientConfig.CredativValiConfig.TenantID = config.ClientConfig.TenantID
-
-	// Copy BackoffConfig fields
-	if config.ClientConfig.MaxRetries > 0 {
-		config.ClientConfig.CredativValiConfig.BackoffConfig.MaxRetries = config.ClientConfig.MaxRetries
-	}
-
-	// Process timeout and backoff duration fields
-	if err := processDurationField(configMap, "Timeout", func(d time.Duration) {
-		config.ClientConfig.CredativValiConfig.Timeout = d
-	}); err != nil {
-		return err
-	}
-
-	if err := processDurationField(configMap, "MinBackoff", func(d time.Duration) {
-		config.ClientConfig.CredativValiConfig.BackoffConfig.MinBackoff = d
-	}); err != nil {
-		return err
-	}
-
-	if err := processDurationField(configMap, "MaxBackoff", func(d time.Duration) {
-		config.ClientConfig.CredativValiConfig.BackoffConfig.MaxBackoff = d
-	}); err != nil {
-		return err
-	}
-
-	// Process time duration fields that need to be copied to CredativValiConfig
-	if err := processDurationField(configMap, "BatchWait", func(d time.Duration) {
-		config.ClientConfig.CredativValiConfig.BatchWait = d
-	}); err != nil {
-		return err
-	}
-
-	// Process labels field (needs special parsing)
-	if labels, ok := configMap["Labels"].(string); ok && labels != "" {
-		matchers, err := logql.ParseMatchers(labels)
-		if err != nil {
-			return fmt.Errorf("failed to parse Labels: %w", err)
-		}
-		labelSet := make(model.LabelSet)
-		for _, m := range matchers {
-			labelSet[model.LabelName(m.Name)] = model.LabelValue(m.Value)
-		}
-		config.ClientConfig.CredativValiConfig.ExternalLabels = valiflag.LabelSet{LabelSet: labelSet}
-	}
-
-	// Process LineFormat enum field
-	if lineFormat, ok := configMap["LineFormat"].(string); ok {
-		switch lineFormat {
-		case "json", "":
-			config.PluginConfig.LineFormat = JSONFormat
-		case "key_value":
-			config.PluginConfig.LineFormat = KvPairFormat
-		default:
-			return fmt.Errorf("invalid format: %s", lineFormat)
-		}
-	}
-
-	// Process comma-separated string fields
-	if err := processCommaSeparatedField(configMap, "LabelKeys", func(values []string) {
-		config.PluginConfig.LabelKeys = values
-	}); err != nil {
-		return err
-	}
-
-	if err := processCommaSeparatedField(configMap, "RemoveKeys", func(values []string) {
-		config.PluginConfig.RemoveKeys = values
-	}); err != nil {
-		return err
-	}
-
-	// Process PreservedLabels - convert comma-separated string to LabelSet
-	if err := processCommaSeparatedField(configMap, "PreservedLabels", func(values []string) {
-		labelSet := make(model.LabelSet)
-		for _, value := range values {
-			// Trim whitespace and create label with empty value
-			labelName := model.LabelName(strings.TrimSpace(value))
-			if labelName != "" {
-				labelSet[labelName] = model.LabelValue("")
-			}
-		}
-		config.PluginConfig.PreservedLabels = labelSet
-	}); err != nil {
-		return err
-	}
-
-	// Handle LabelMapPath - if provided, load the label map and clear LabelKeys
-	if labelMapPath, ok := configMap["LabelMapPath"].(string); ok && labelMapPath != "" {
-		if err := processLabelMapPath(labelMapPath, config); err != nil {
-			return err
-		}
-	}
-
-	// Copy BatchSize to CredativValiConfig (mapstructure handles the main field)
-	if config.ClientConfig.BatchSize != 0 {
-		config.ClientConfig.CredativValiConfig.BatchSize = config.ClientConfig.BatchSize
-	}
-
-	// Process special validation fields
-	if err := processNumberOfBatchIDs(configMap, config); err != nil {
-		return err
-	}
-
-	if err := processIDLabelName(configMap, config); err != nil {
-		return err
-	}
-
-	// Process complex string parsing fields
-	if err := processDynamicTenant(configMap, config); err != nil {
-		return err
-	}
-
-	if err := processHostnameKeyValue(configMap, config); err != nil {
-		return err
-	}
-
-	// Handle DynamicHostPath - parse JSON string to map
-	if err := processDynamicHostPath(configMap, config); err != nil {
-		return err
-	}
-
-	// Handle QueueSync special conversion (normal/full -> bool)
-	if queueSync, ok := configMap["QueueSync"].(string); ok {
-		switch queueSync {
-		case "normal", "":
-			config.ClientConfig.BufferConfig.DqueConfig.QueueSync = false
-		case "full":
-			config.ClientConfig.BufferConfig.DqueConfig.QueueSync = true
-		default:
-			return fmt.Errorf("invalid string queueSync: %v", queueSync)
-		}
-	}
-
-	return nil
-}
-
 // Helper functions for common processing patterns
 
 func processDurationField(configMap map[string]any, key string, setter func(time.Duration)) error {
@@ -318,7 +156,11 @@ func processDurationField(configMap map[string]any, key string, setter func(time
 
 func processCommaSeparatedField(configMap map[string]any, key string, setter func([]string)) error {
 	if value, ok := configMap[key].(string); ok && value != "" {
-		setter(strings.Split(value, ","))
+		split := strings.Split(value, ",")
+		for i := range split {
+			split[i] = strings.TrimSpace(split[i])
+		}
+		setter(split)
 	}
 
 	return nil
@@ -326,20 +168,33 @@ func processCommaSeparatedField(configMap map[string]any, key string, setter fun
 
 func processLabelMapPath(labelMapPath string, config *Config) error {
 	var labelMapData []byte
-	var err error
 
 	// Check if it's inline JSON (starts with '{') or a file path
 	if strings.HasPrefix(strings.TrimSpace(labelMapPath), "{") {
-		// It's inline JSON content
+		// It's inline JSON content - check size limit
+		if len(labelMapPath) > MaxConfigSize {
+			return fmt.Errorf("inline JSON content exceeds maximum size of %d bytes", MaxConfigSize)
+		}
 		labelMapData = []byte(labelMapPath)
 	} else {
 		// It's a file path - validate to prevent directory traversal attacks
 		cleanPath := filepath.Clean(labelMapPath)
+
+		// Check file size before reading to prevent memory exhaustion
+		fileInfo, err := os.Stat(cleanPath)
+		if err != nil {
+			return fmt.Errorf("failed to stat LabelMapPath file: %w", err)
+		}
+		if fileInfo.Size() > MaxConfigSize {
+			return fmt.Errorf("LabelMapPath file exceeds maximum size of %d bytes", MaxConfigSize)
+		}
+
 		labelMapData, err = os.ReadFile(cleanPath)
 		if err != nil {
 			return fmt.Errorf("failed to read LabelMapPath file: %w", err)
 		}
 	}
+
 	var labelMap map[string]any
 	if err := json.Unmarshal(labelMapData, &labelMap); err != nil {
 		return fmt.Errorf("failed to parse LabelMapPath JSON: %w", err)
@@ -382,12 +237,13 @@ func processIDLabelName(configMap map[string]any, config *Config) error {
 func processDynamicTenant(configMap map[string]any, config *Config) error {
 	if dynamicTenant, ok := configMap["DynamicTenant"].(string); ok && dynamicTenant != "" {
 		parts := strings.Fields(dynamicTenant)
-		if len(parts) >= 3 {
-			config.PluginConfig.DynamicTenant.Tenant = parts[0]
-			config.PluginConfig.DynamicTenant.Field = parts[1]
-			config.PluginConfig.DynamicTenant.Regex = strings.Join(parts[2:], " ")
-			config.PluginConfig.DynamicTenant.RemoveTenantIDWhenSendingToDefaultURL = true
+		if len(parts) < 3 {
+			return fmt.Errorf("DynamicTenant must have at least 3 parts (tenant field regex), got %d parts: %s", len(parts), dynamicTenant)
 		}
+		config.PluginConfig.DynamicTenant.Tenant = parts[0]
+		config.PluginConfig.DynamicTenant.Field = parts[1]
+		config.PluginConfig.DynamicTenant.Regex = strings.Join(parts[2:], " ")
+		config.PluginConfig.DynamicTenant.RemoveTenantIDWhenSendingToDefaultURL = true
 	}
 
 	return nil
@@ -396,12 +252,13 @@ func processDynamicTenant(configMap map[string]any, config *Config) error {
 func processHostnameKeyValue(configMap map[string]any, config *Config) error {
 	if hostnameKeyValue, ok := configMap["HostnameKeyValue"].(string); ok && hostnameKeyValue != "" {
 		parts := strings.Fields(hostnameKeyValue)
-		if len(parts) >= 2 {
-			key := parts[0]
-			value := strings.Join(parts[1:], " ")
-			config.PluginConfig.HostnameKey = key
-			config.PluginConfig.HostnameValue = value
+		if len(parts) < 2 {
+			return fmt.Errorf("HostnameKeyValue must have at least 2 parts (key value), got %d parts: %s", len(parts), hostnameKeyValue)
 		}
+		key := parts[0]
+		value := strings.Join(parts[1:], " ")
+		config.PluginConfig.HostnameKey = key
+		config.PluginConfig.HostnameValue = value
 	}
 
 	return nil
@@ -409,6 +266,11 @@ func processHostnameKeyValue(configMap map[string]any, config *Config) error {
 
 func processDynamicHostPath(configMap map[string]any, config *Config) error {
 	if dynamicHostPath, ok := configMap["DynamicHostPath"].(string); ok && dynamicHostPath != "" {
+		// Check size limit before parsing to prevent memory exhaustion
+		if len(dynamicHostPath) > MaxJSONSize {
+			return fmt.Errorf("DynamicHostPath JSON exceeds maximum size of %d bytes", MaxJSONSize)
+		}
+
 		var parsedMap map[string]any
 		if err := json.Unmarshal([]byte(dynamicHostPath), &parsedMap); err != nil {
 			return fmt.Errorf("failed to parse DynamicHostPath JSON: %w", err)
@@ -419,94 +281,335 @@ func processDynamicHostPath(configMap map[string]any, config *Config) error {
 	return nil
 }
 
-func applyDefaults(config *Config, configMap map[string]any) error {
-	// Set default client config
-	if config.ClientConfig.CredativValiConfig.URL.URL == nil {
-		defaultURL := flagext.URLValue{}
-		if err := defaultURL.Set("http://localhost:3100/vali/api/v1/push"); err != nil {
-			return fmt.Errorf("failed to set default URL: %w", err)
+// processControllerConfigBoolFields handles boolean configuration fields for controller config
+func processControllerConfigBoolFields(configMap map[string]any, config *Config) error {
+	// Map of ConfigMap keys to their corresponding ShootControllerClientConfig fields
+	shootConfigMapping := map[string]*bool{
+		"SendLogsToMainClusterWhenIsInCreationState":    &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInCreationState,
+		"SendLogsToMainClusterWhenIsInReadyState":       &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInReadyState,
+		"SendLogsToMainClusterWhenIsInHibernatingState": &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInHibernatingState,
+		"SendLogsToMainClusterWhenIsInHibernatedState":  &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInHibernatedState,
+		"SendLogsToMainClusterWhenIsInWakingState":      &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInWakingState,
+		"SendLogsToMainClusterWhenIsInDeletionState":    &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInDeletionState,
+		"SendLogsToMainClusterWhenIsInDeletedState":     &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInDeletedState,
+		"SendLogsToMainClusterWhenIsInRestoreState":     &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInRestoreState,
+		"SendLogsToMainClusterWhenIsInMigrationState":   &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInMigrationState,
+	}
+
+	// Map of ConfigMap keys to their corresponding SeedControllerClientConfig fields
+	seedConfigMapping := map[string]*bool{
+		"SendLogsToDefaultClientWhenClusterIsInCreationState":    &config.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInCreationState,
+		"SendLogsToDefaultClientWhenClusterIsInReadyState":       &config.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInReadyState,
+		"SendLogsToDefaultClientWhenClusterIsInHibernatingState": &config.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInHibernatingState,
+		"SendLogsToDefaultClientWhenClusterIsInHibernatedState":  &config.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInHibernatedState,
+		"SendLogsToDefaultClientWhenClusterIsInWakingState":      &config.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInWakingState,
+		"SendLogsToDefaultClientWhenClusterIsInDeletionState":    &config.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInDeletionState,
+		"SendLogsToDefaultClientWhenClusterIsInDeletedState":     &config.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInDeletedState,
+		"SendLogsToDefaultClientWhenClusterIsInRestoreState":     &config.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInRestoreState,
+		"SendLogsToDefaultClientWhenClusterIsInMigrationState":   &config.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInMigrationState,
+	}
+
+	// Process ShootControllerClientConfig fields - only override if key exists in ConfigMap
+	for configKey, fieldPtr := range shootConfigMapping {
+		if value, ok := configMap[configKey].(string); ok && value != "" {
+			boolVal, err := strconv.ParseBool(value)
+			if err != nil {
+				return fmt.Errorf("failed to parse %s as boolean: %w", configKey, err)
+			}
+			*fieldPtr = boolVal
 		}
-		config.ClientConfig.CredativValiConfig.URL = defaultURL
 	}
 
-	// Set default labels if not provided
-	if config.ClientConfig.CredativValiConfig.ExternalLabels.LabelSet == nil {
-		config.ClientConfig.CredativValiConfig.ExternalLabels = valiflag.LabelSet{
-			LabelSet: model.LabelSet{"job": "fluent-bit"},
+	// Process SeedControllerClientConfig fields - only override if key exists in ConfigMap
+	for configKey, fieldPtr := range seedConfigMapping {
+		if value, ok := configMap[configKey].(string); ok && value != "" {
+			boolVal, err := strconv.ParseBool(value)
+			if err != nil {
+				return fmt.Errorf("failed to parse %s as boolean: %w", configKey, err)
+			}
+			*fieldPtr = boolVal
 		}
-	}
-
-	// Set default batch values
-	if config.ClientConfig.CredativValiConfig.BatchSize == 0 {
-		config.ClientConfig.CredativValiConfig.BatchSize = 1024 * 1024
-	}
-	if config.ClientConfig.CredativValiConfig.BatchWait == 0 {
-		config.ClientConfig.CredativValiConfig.BatchWait = time.Second
-	}
-	if config.ClientConfig.CredativValiConfig.Timeout == 0 {
-		config.ClientConfig.CredativValiConfig.Timeout = 10 * time.Second
-	}
-
-	// Set default backoff config
-	if config.ClientConfig.CredativValiConfig.BackoffConfig.MaxRetries == 0 {
-		config.ClientConfig.CredativValiConfig.BackoffConfig = util.BackoffConfig{
-			MinBackoff: 500 * time.Millisecond,
-			MaxBackoff: 5 * time.Minute,
-			MaxRetries: 10,
-		}
-	}
-
-	// Set default buffer config
-	if config.ClientConfig.BufferConfig.BufferType == "" {
-		config.ClientConfig.BufferConfig = DefaultBufferConfig
-	}
-
-	// Set default controller config
-	if config.ControllerConfig.CtlSyncTimeout == 0 {
-		config.ControllerConfig.CtlSyncTimeout = 60 * time.Second
-	}
-	if config.ControllerConfig.DeletedClientTimeExpiration == 0 {
-		config.ControllerConfig.DeletedClientTimeExpiration = time.Hour
-	}
-	if config.ControllerConfig.ShootControllerClientConfig == (ControllerClientConfiguration{}) {
-		config.ControllerConfig.ShootControllerClientConfig = ShootControllerClientConfig
-	}
-	if config.ControllerConfig.SeedControllerClientConfig == (ControllerClientConfiguration{}) {
-		config.ControllerConfig.SeedControllerClientConfig = SeedControllerClientConfig
-	}
-
-	// Set default plugin config
-	if config.PluginConfig.LineFormat == 0 {
-		config.PluginConfig.LineFormat = JSONFormat
-	}
-	// Set default DropSingleKey only if it wasn't explicitly provided
-	if _, dropSingleKeyProvided := configMap["DropSingleKey"]; !dropSingleKeyProvided {
-		config.PluginConfig.DropSingleKey = true
-	}
-	if config.PluginConfig.DynamicHostRegex == "" {
-		config.PluginConfig.DynamicHostRegex = "*"
-	}
-	if config.PluginConfig.KubernetesMetadata.TagKey == "" {
-		config.PluginConfig.KubernetesMetadata.TagKey = DefaultKubernetesMetadataTagKey
-	}
-	if config.PluginConfig.KubernetesMetadata.TagPrefix == "" {
-		config.PluginConfig.KubernetesMetadata.TagPrefix = DefaultKubernetesMetadataTagPrefix
-	}
-	if config.PluginConfig.KubernetesMetadata.TagExpression == "" {
-		config.PluginConfig.KubernetesMetadata.TagExpression = DefaultKubernetesMetadataTagExpression
-	}
-	if config.PluginConfig.LabelSetInitCapacity == 0 {
-		config.PluginConfig.LabelSetInitCapacity = 12
-	}
-	if config.ClientConfig.NumberOfBatchIDs == 0 {
-		config.ClientConfig.NumberOfBatchIDs = 10
-	}
-	if config.ClientConfig.IDLabelName == "" {
-		config.ClientConfig.IDLabelName = model.LabelName("id")
-	}
-	if config.PluginConfig.PreservedLabels == nil {
-		config.PluginConfig.PreservedLabels = model.LabelSet{}
 	}
 
 	return nil
+}
+
+// postProcessConfig handles complex field processing that can't be done with simple mapping
+func postProcessConfig(config *Config, configMap map[string]any) error {
+	processors := []func(*Config, map[string]any) error{
+		processURLConfig,
+		processClientConfig,
+		processDurationConfigs,
+		processLabelsConfig,
+		processLineFormatConfig,
+		processCommaSeparatedConfigs,
+		processLabelMapConfig,
+		processBatchSizeConfig,
+		processValidationConfigs,
+		processComplexStringConfigs,
+		processDynamicHostPathConfig,
+		processQueueSyncConfig,
+		processControllerBoolConfigs,
+	}
+
+	for _, processor := range processors {
+		if err := processor(config, configMap); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// processURLConfig handles URL field processing
+func processURLConfig(config *Config, configMap map[string]any) error {
+	// Process URL field (needs special handling for flagext.URLValue)
+	// Handle both "URL" and "Url" for different format compatibility
+	var urlString string
+	if url, ok := configMap["URL"].(string); ok && url != "" {
+		urlString = url
+	} else if url, ok := configMap["Url"].(string); ok && url != "" {
+		urlString = url
+	}
+
+	if urlString != "" {
+		if err := config.ClientConfig.CredativValiConfig.URL.Set(urlString); err != nil {
+			return fmt.Errorf("failed to parse URL: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// processClientConfig handles client configuration field copying
+func processClientConfig(config *Config, _ map[string]any) error {
+	// Copy simple fields from ClientConfig to CredativValiConfig (after mapstructure processing)
+	config.ClientConfig.CredativValiConfig.TenantID = config.ClientConfig.TenantID
+
+	// Copy BackoffConfig fields
+	if config.ClientConfig.MaxRetries > 0 {
+		config.ClientConfig.CredativValiConfig.BackoffConfig.MaxRetries = config.ClientConfig.MaxRetries
+	}
+
+	return nil
+}
+
+// processDurationConfigs handles all duration-related configuration fields
+func processDurationConfigs(config *Config, configMap map[string]any) error {
+	durationFields := []struct {
+		key    string
+		setter func(time.Duration)
+	}{
+		{"Timeout", func(d time.Duration) {
+			config.ClientConfig.CredativValiConfig.Timeout = d
+		}},
+		{"MinBackoff", func(d time.Duration) {
+			config.ClientConfig.CredativValiConfig.BackoffConfig.MinBackoff = d
+		}},
+		{"MaxBackoff", func(d time.Duration) {
+			config.ClientConfig.CredativValiConfig.BackoffConfig.MaxBackoff = d
+		}},
+		{"BatchWait", func(d time.Duration) {
+			config.ClientConfig.CredativValiConfig.BatchWait = d
+		}},
+	}
+
+	for _, field := range durationFields {
+		if err := processDurationField(configMap, field.key, field.setter); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// processLabelsConfig handles labels field processing
+func processLabelsConfig(config *Config, configMap map[string]any) error {
+	if labels, ok := configMap["Labels"].(string); ok && labels != "" {
+		matchers, err := logql.ParseMatchers(labels)
+		if err != nil {
+			return fmt.Errorf("failed to parse Labels: %w", err)
+		}
+		labelSet := make(model.LabelSet)
+		for _, m := range matchers {
+			labelSet[model.LabelName(m.Name)] = model.LabelValue(m.Value)
+		}
+		config.ClientConfig.CredativValiConfig.ExternalLabels = valiflag.LabelSet{LabelSet: labelSet}
+	}
+
+	return nil
+}
+
+// processLineFormatConfig handles LineFormat enum field processing
+func processLineFormatConfig(config *Config, configMap map[string]any) error {
+	if lineFormat, ok := configMap["LineFormat"].(string); ok {
+		switch lineFormat {
+		case "json", "":
+			config.PluginConfig.LineFormat = JSONFormat
+		case "key_value":
+			config.PluginConfig.LineFormat = KvPairFormat
+		default:
+			return fmt.Errorf("invalid format: %s", lineFormat)
+		}
+	}
+
+	return nil
+}
+
+// processCommaSeparatedConfigs handles all comma-separated string fields
+func processCommaSeparatedConfigs(config *Config, configMap map[string]any) error {
+	// Process LabelKeys
+	if err := processCommaSeparatedField(configMap, "LabelKeys", func(values []string) {
+		config.PluginConfig.LabelKeys = values
+	}); err != nil {
+		return err
+	}
+
+	// Process RemoveKeys
+	if err := processCommaSeparatedField(configMap, "RemoveKeys", func(values []string) {
+		config.PluginConfig.RemoveKeys = values
+	}); err != nil {
+		return err
+	}
+
+	// Process PreservedLabels - convert comma-separated string to LabelSet
+	if err := processCommaSeparatedField(configMap, "PreservedLabels", func(values []string) {
+		labelSet := make(model.LabelSet)
+		for _, value := range values {
+			// Trim whitespace and create label with empty value
+			labelName := model.LabelName(strings.TrimSpace(value))
+			if labelName != "" {
+				labelSet[labelName] = model.LabelValue("")
+			}
+		}
+		config.PluginConfig.PreservedLabels = labelSet
+	}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// processLabelMapConfig handles LabelMapPath processing
+func processLabelMapConfig(config *Config, configMap map[string]any) error {
+	if labelMapPath, ok := configMap["LabelMapPath"].(string); ok && labelMapPath != "" {
+		if err := processLabelMapPath(labelMapPath, config); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// processBatchSizeConfig handles BatchSize configuration
+func processBatchSizeConfig(config *Config, _ map[string]any) error {
+	// Copy BatchSize to CredativValiConfig (mapstructure handles the main field)
+	if config.ClientConfig.BatchSize != 0 {
+		config.ClientConfig.CredativValiConfig.BatchSize = config.ClientConfig.BatchSize
+	}
+
+	return nil
+}
+
+// processValidationConfigs handles special validation fields
+func processValidationConfigs(config *Config, configMap map[string]any) error {
+	if err := processNumberOfBatchIDs(configMap, config); err != nil {
+		return err
+	}
+
+	return processIDLabelName(configMap, config)
+}
+
+// processComplexStringConfigs handles complex string parsing fields
+func processComplexStringConfigs(config *Config, configMap map[string]any) error {
+	if err := processDynamicTenant(configMap, config); err != nil {
+		return err
+	}
+
+	return processHostnameKeyValue(configMap, config)
+}
+
+// processDynamicHostPathConfig handles DynamicHostPath processing
+func processDynamicHostPathConfig(config *Config, configMap map[string]any) error {
+	return processDynamicHostPath(configMap, config)
+}
+
+// processQueueSyncConfig handles QueueSync special conversion
+func processQueueSyncConfig(config *Config, configMap map[string]any) error {
+	if queueSync, ok := configMap["QueueSync"].(string); ok {
+		switch queueSync {
+		case "normal", "":
+			config.ClientConfig.BufferConfig.DqueConfig.QueueSync = false
+		case "full":
+			config.ClientConfig.BufferConfig.DqueConfig.QueueSync = true
+		default:
+			return fmt.Errorf("invalid string queueSync: %v", queueSync)
+		}
+	}
+
+	return nil
+}
+
+// processControllerBoolConfigs handles controller configuration boolean fields
+func processControllerBoolConfigs(config *Config, configMap map[string]any) error {
+	return processControllerConfigBoolFields(configMap, config)
+}
+
+func defaultConfig() (*Config, error) {
+	// Set default client config
+	var defaultLevel logging.Level
+	if err := defaultLevel.Set("info"); err != nil {
+		return nil, fmt.Errorf("failed to set default log level: %w", err)
+	}
+
+	defaultURL := flagext.URLValue{}
+
+	if err := defaultURL.Set("http://localhost:3100/vali/api/v1/push"); err != nil {
+		return nil, fmt.Errorf("failed to set default URL: %w", err)
+	}
+
+	config := &Config{
+		ControllerConfig: ControllerConfig{
+			ShootControllerClientConfig: ShootControllerClientConfig,
+			SeedControllerClientConfig:  SeedControllerClientConfig,
+			DeletedClientTimeExpiration: time.Hour,
+			CtlSyncTimeout:              60 * time.Second,
+		},
+		ClientConfig: ClientConfig{
+			URL: defaultURL,
+			CredativValiConfig: client.Config{
+				URL:       defaultURL,
+				BatchSize: 1024 * 1024,
+				BatchWait: 1 * time.Second,
+				Timeout:   10 * time.Second,
+				BackoffConfig: util.BackoffConfig{
+					MinBackoff: 500 * time.Millisecond,
+					MaxBackoff: 5 * time.Minute,
+					MaxRetries: 10,
+				},
+				ExternalLabels: valiflag.LabelSet{
+					LabelSet: model.LabelSet{"job": "fluent-bit"},
+				},
+			},
+			BufferConfig:     DefaultBufferConfig,
+			NumberOfBatchIDs: 10,
+			IDLabelName:      model.LabelName("id"),
+		},
+		PluginConfig: PluginConfig{
+			DropSingleKey:    true,
+			DynamicHostRegex: "*",
+			LineFormat:       JSONFormat,
+			KubernetesMetadata: KubernetesMetadataExtraction{
+				TagKey:        DefaultKubernetesMetadataTagKey,
+				TagPrefix:     DefaultKubernetesMetadataTagPrefix,
+				TagExpression: DefaultKubernetesMetadataTagExpression,
+			},
+			LabelSetInitCapacity: 12,
+			PreservedLabels:      model.LabelSet{},
+		},
+		LogLevel: defaultLevel,
+		Pprof:    false,
+	}
+
+	return config, nil
 }
