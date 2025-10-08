@@ -1,0 +1,15 @@
+nameOverride: "logging"
+fullnameOverride: "fluent-bit"
+
+image:
+  repository: europe-docker.pkg.dev/gardener-project/releases/gardener
+  tag: "v0.67.0"
+
+fluentBit:
+  resources:
+    limits:
+      memory: 350Mi
+    requests:
+      cpu: 100m
+      memory: 100Mi
+      ephemeral-storage: 1Gi

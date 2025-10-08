@@ -1,0 +1,132 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "fluent-bit-plugin.valiName" . }}-shoot
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "fluent-bit-plugin.valiLabels" . | nindent 4 }}
+spec:
+  replicas: 1
+  serviceName: {{ include "fluent-bit-plugin.valiName" . }}-shoot
+  selector:
+    matchLabels:
+      {{- include "fluent-bit-plugin.valiSelectorLabels" . | nindent 6 }}
+      app: {{ include "fluent-bit-plugin.valiName" . }}-shoot
+  template:
+    metadata:
+      labels:
+        {{- include "fluent-bit-plugin.valiSelectorLabels" . | nindent 8 }}
+        app: {{ include "fluent-bit-plugin.valiName" . }}-shoot
+    spec:
+      automountServiceAccountToken: false
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.vali.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      initContainers:
+        - name: init-large-dir
+          image: {{ include "fluent-bit-plugin.image.repository" (merge (dict "name" "tune2fs") .Values.image) }}
+          command:
+            - bash
+            - -c
+            - /vali-init.sh || true
+          {{- with .Values.vali.initContainerSecurityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - mountPath: /data
+              name: {{ include "fluent-bit-plugin.valiName" . }}-shoot
+            - mountPath: /vali-init.sh
+              name: config
+              subPath: vali-init.sh
+      containers:
+        - name: vali
+          image: {{ .Values.vali.image }}
+          args:
+            - -config.file=/etc/vali/vali.yaml
+          {{- with .Values.vali.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.vali.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.vali.ports }}
+          ports:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.vali.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.vali.containerSecurityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - mountPath: /etc/vali/vali.yaml
+              name: config
+              subPath: vali.yaml
+            - mountPath: /data
+              name: {{ include "fluent-bit-plugin.valiName" . }}-shoot
+          {{- with .Values.vali.volumeMounts }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      volumes:
+        - name: config
+          configMap:
+            defaultMode: 336
+            name: {{ include "fluent-bit-plugin.valiName" . }}
+      {{- with .Values.vali.volumes }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.vali.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+  volumeClaimTemplates:
+    - apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: {{ include "fluent-bit-plugin.valiName" . }}-shoot
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 50Gi
+        volumeMode: Filesystem
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "fluent-bit-plugin.valiName" . }}-shoot
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "fluent-bit-plugin.valiLabels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+    - name: http
+      port: 3100
+      protocol: TCP
+      targetPort: http
+  selector:
+    {{- include "fluent-bit-plugin.valiSelectorLabels" . | nindent 4 }}
+    app: {{ include "fluent-bit-plugin.valiName" . }}-shoot
