@@ -1,0 +1,119 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "fluent-bit-plugin.prometheusName" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "fluent-bit-plugin.prometheusLabels" . | nindent 4 }}
+automountServiceAccountToken: true
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "fluent-bit-plugin.prometheusName" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "fluent-bit-plugin.prometheusLabels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "fluent-bit-plugin.prometheusSelectorLabels" . | nindent 6 }}
+  serviceName: {{ include "fluent-bit-plugin.prometheusName" . }}
+  template:
+    metadata:
+      labels:
+        {{- include "fluent-bit-plugin.prometheusLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.prometheus.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "fluent-bit-plugin.prometheusName" . }}
+      containers:
+        - name: prometheus
+          image: {{ .Values.prometheus.image }}
+          args:
+            - --config.file=/etc/prometheus/prometheus.yml
+            - --web.enable-lifecycle
+            - --web.route-prefix=/
+          {{- with .Values.prometheus.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.prometheus.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.prometheus.ports }}
+          ports:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.prometheus.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.prometheus.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.prometheus.startupProbe }}
+          startupProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - mountPath: /etc/prometheus/prometheus.yml
+              name: config
+              readOnly: true
+              subPath: prometheus.yml
+            - mountPath: /prometheus
+              name: {{ include "fluent-bit-plugin.prometheusName" . }}
+          {{- with .Values.prometheus.volumeMounts }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.vali.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: config
+          configMap:
+            defaultMode: 420
+            name: {{ include "fluent-bit-plugin.prometheusName" . }}
+      {{- with .Values.prometheus.volumes }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+  volumeClaimTemplates:
+    - apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: {{ include "fluent-bit-plugin.prometheusName" . }}
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 50Gi
+        volumeMode: Filesystem
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "fluent-bit-plugin.prometheusName" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "fluent-bit-plugin.prometheusLabels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+    - name: http
+      port: 9090
+      protocol: TCP
+      targetPort: 9090
+  selector:
+    {{- include "fluent-bit-plugin.prometheusSelectorLabels" . | nindent 4 }}

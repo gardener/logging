@@ -1,0 +1,28 @@
+# fluent bit rbac
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: {{ include "fluent-bit-plugin.name" . }}
+  labels:
+     {{- include "fluent-bit-plugin.labels" . | nindent 4 }}
+rules:
+  - apiGroups: ["extensions.gardener.cloud"]
+    resources:
+      - clusters
+    verbs:
+      - get
+      - list
+      - watch
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: {{ include "fluent-bit-plugin.name" . }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "fluent-bit-plugin.name" . }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "fluent-bit-plugin.name" . }}
+    namespace: {{ .Release.Namespace }}
