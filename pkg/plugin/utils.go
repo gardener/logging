@@ -1,11 +1,8 @@
-/*
-This file was copied from the credativ/vali project
-https://github.com/credativ/vali/blob/v2.2.4/cmd/fluent-bit/vali.go
+// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
+//
+// SPDX-License-Identifier: Apache-2.0
 
-Modifications Copyright SAP SE or an SAP affiliate company and Gardener contributors
-*/
-
-package valiplugin
+package plugin
 
 import (
 	"bytes"

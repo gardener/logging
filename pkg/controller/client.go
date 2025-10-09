@@ -51,7 +51,7 @@ type controllerClient struct {
 
 var _ client.ValiClient = &controllerClient{}
 
-// Client is a Vali client for the valiplugin controller
+// Client is a Vali client for the plugin controller
 type Client interface {
 	client.ValiClient
 	GetState() clusterState

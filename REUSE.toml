@@ -16,7 +16,9 @@ SPDX-FileCopyrightText = "2017-2024 SAP SE or an SAP affiliate company and Garde
 SPDX-License-Identifier = "CC-BY-4.0"
 
 [[annotations]]
-path = ["cmd/fluent-bit-vali-plugin/out_vali.go", "pkg/config/config.go", "pkg/config/plugin_config.go", "pkg/config/client_config.go", "pkg/valiplugin/vali.go", "pkg/valiplugin/utils.go", "pkg/client/buffer_client.go", "pkg/client/dque.go", "pkg/client/buffer.go"]
+path = ["cmd/fluent-bit-output-plugin/output_plugin.go", "pkg/config/config.go", "pkg/config/plugin_config.go",
+"pkg/config/client_config.go", "pkg/plugin/vali.go", "pkg/plugin/utils.go", "pkg/client/buffer_client.go",
+"pkg/client/dque.go", "pkg/client/buffer.go"]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2017-2024 SAP SE or an SAP affiliate company and Gardener contributors"
 SPDX-License-Identifier = "Apache-2.0"

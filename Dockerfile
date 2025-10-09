@@ -13,21 +13,21 @@ FROM gcr.io/distroless/static-debian12:nonroot AS distroless-static
 #############  fluent-bit-plugin #############
 FROM distroless-static AS fluent-bit-plugin
 
-COPY --from=builder /go/src/github.com/gardener/logging/build/out_vali.so /source/plugins/out_vali.so
+COPY --from=builder /go/src/github.com/gardener/logging/build/output_plugin.so /source/plugins/output_plugin.so
 COPY --from=builder /go/src/github.com/gardener/logging/build/copy /bin/cp
 
 WORKDIR /
 
-CMD ["/bin/cp", "/source/plugins/out_vali.so", "/plugins"]
+CMD ["/bin/cp", "/source/plugins/output_plugin.so", "/plugins"]
 
-#############  fluent-bit-vali #############
-FROM ghcr.io/fluent/fluent-operator/fluent-bit:4.1.0 AS fluent-bit-vali
+#############  fluent-bit-output #############
+FROM ghcr.io/fluent/fluent-operator/fluent-bit:4.1.0 AS fluent-bit-output
 
-COPY --from=builder /go/src/github.com/gardener/logging/build/out_vali.so /fluent-bit/plugins/out_vali.so
+COPY --from=builder /go/src/github.com/gardener/logging/build/output_plugin.so /fluent-bit/plugins/output_plugin.so
 
 WORKDIR /
 
-CMD ["-e", "/fluent-bit/plugins/out_vali.so", "-c", "/fluent-bit/config/fluent-bit.conf"]
+CMD ["-e", "/fluent-bit/plugins/output_plugin.so", "-c", "/fluent-bit/config/fluent-bit.conf"]
 
 #############      curator       #############
 FROM distroless-static AS curator

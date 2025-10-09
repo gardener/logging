@@ -41,7 +41,7 @@ func TestMain(m *testing.M) {
 		envfuncs.CreateNamespace(shootNamespace),
 		envfuncs.CreateNamespace(seedNamespace),
 		envfuncs.SetupCRDs("./config", "*-crd.yaml"),
-		createContainerImage(pluginUnderTest, "fluent-bit-vali"),
+		createContainerImage(pluginUnderTest, "fluent-bit-output"),
 		createContainerImage(eventLoggerUnderTest, "event-logger"),
 		envfuncs.LoadImageToCluster(kindClusterName, pluginUnderTest),
 		envfuncs.LoadImageToCluster(kindClusterName, eventLoggerUnderTest),

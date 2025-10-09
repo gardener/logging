@@ -7,8 +7,8 @@ package matcher
 import (
 	"github.com/prometheus/common/model"
 
-	"github.com/gardener/logging/tests/valiplugin/plugintest/client"
-	"github.com/gardener/logging/tests/valiplugin/plugintest/input"
+	"github.com/gardener/logging/tests/plugin/plugintest/client"
+	"github.com/gardener/logging/tests/plugin/plugintest/input"
 )
 
 // Matcher is an interface that defines the method for matching logs.

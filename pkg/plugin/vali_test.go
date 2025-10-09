@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package valiplugin
+package plugin
 
 import (
 	"os"
@@ -91,7 +91,7 @@ var (
 	logger   = log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
 )
 
-var _ = ginkgov2.Describe("Vali plugin", func() {
+var _ = ginkgov2.Describe("OutputPlugin plugin", func() {
 	var (
 		simpleRecordFixture = map[any]any{
 			"foo":   "bar",

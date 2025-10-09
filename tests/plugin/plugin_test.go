@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package valiplugin
+package plugin
 
 import (
 	"time"
@@ -12,12 +12,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllertest"
 
 	"github.com/gardener/logging/pkg/config"
-	"github.com/gardener/logging/pkg/valiplugin"
-	plugintestclient "github.com/gardener/logging/tests/valiplugin/plugintest/client"
-	plugintestcluster "github.com/gardener/logging/tests/valiplugin/plugintest/cluster"
-	plugintestconfig "github.com/gardener/logging/tests/valiplugin/plugintest/config"
-	"github.com/gardener/logging/tests/valiplugin/plugintest/input"
-	"github.com/gardener/logging/tests/valiplugin/plugintest/matcher"
+	pkgplugin "github.com/gardener/logging/pkg/plugin"
+	plugintestclient "github.com/gardener/logging/tests/plugin/plugintest/client"
+	plugintestcluster "github.com/gardener/logging/tests/plugin/plugintest/cluster"
+	plugintestconfig "github.com/gardener/logging/tests/plugin/plugintest/config"
+	"github.com/gardener/logging/tests/plugin/plugintest/input"
+	"github.com/gardener/logging/tests/plugin/plugintest/matcher"
 )
 
 const (
@@ -31,7 +31,7 @@ var _ = ginkgov2.Describe("Plugin Test", ginkgov2.Ordered, func() {
 		valiPluginConfiguration config.Config
 		fakeInformer            *controllertest.FakeInformer
 		clusters                []plugintestcluster.Cluster
-		plugin                  valiplugin.Vali
+		plugin                  pkgplugin.OutputPlugin
 		loggerController        input.LoggerController
 		pods                    []input.Pod
 		err                     error
@@ -54,7 +54,7 @@ var _ = ginkgov2.Describe("Plugin Test", ginkgov2.Ordered, func() {
 
 		fakeInformer = &controllertest.FakeInformer{Synced: true}
 
-		plugin, err = valiplugin.NewPlugin(fakeInformer, &valiPluginConfiguration, plugintestconfig.NewLogger())
+		plugin, err = pkgplugin.NewPlugin(fakeInformer, &valiPluginConfiguration, plugintestconfig.NewLogger())
 		gomega.Expect(plugin).NotTo(gomega.BeNil())
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 	})

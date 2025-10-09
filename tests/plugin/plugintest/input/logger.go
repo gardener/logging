@@ -13,7 +13,7 @@ import (
 
 	"github.com/onsi/gomega"
 
-	"github.com/gardener/logging/pkg/valiplugin"
+	"github.com/gardener/logging/pkg/plugin"
 )
 
 // NamespacePrefix is the prefix used for the namespaces created by the logger controller.
@@ -28,16 +28,16 @@ type LoggerControllerConfig struct {
 // LoggerController is responsible for managing the logger pods and sending log records.
 type LoggerController struct {
 	config LoggerControllerConfig
-	plugin valiplugin.Vali
+	plugin plugin.OutputPlugin
 	pods   []Pod
 	wg     sync.WaitGroup
 }
 
 // NewLoggerController creates a new instance of LoggerController with the given plugin and configuration.
-func NewLoggerController(plugin valiplugin.Vali, cfg LoggerControllerConfig) LoggerController {
+func NewLoggerController(outputPlugin plugin.OutputPlugin, cfg LoggerControllerConfig) LoggerController {
 	return LoggerController{
 		config: cfg,
-		plugin: plugin,
+		plugin: outputPlugin,
 	}
 }
 

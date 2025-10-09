@@ -34,6 +34,3 @@ type Entry struct {
 
 // NewValiClientFunc returns a ValiClient on success.
 type NewValiClientFunc func(cfg config.Config, logger log.Logger) (ValiClient, error)
-
-// NewValiClientDecoratorFunc return ValiClient which wraps another ValiClient
-type NewValiClientDecoratorFunc func(cfg config.Config, client ValiClient, logger log.Logger) (ValiClient, error)
