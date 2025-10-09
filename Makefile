@@ -42,9 +42,9 @@ plugin: tidy
 	@GOOS=$(BUILD_PLATFORM) \
 		GOARCH=$(BUILD_ARCH) \
 		go build -buildmode=c-shared \
-		-o $(REPO_ROOT)/build/out_vali.so \
+		-o $(REPO_ROOT)/build/output_plugin.so \
 	  	-ldflags="$(LD_FLAGS)" \
-		./cmd/fluent-bit-vali-plugin
+		./cmd/fluent-bit-output-plugin
 
 .PHONY: curator
 curator: tidy
@@ -159,7 +159,7 @@ check: tidy
 .PHONY: test
 test: tidy
 	@go tool gotestsum $(REPO_ROOT)/pkg/... --v --ginkgo.v --ginkgo.no-color
-	@go tool gotestsum $(REPO_ROOT)/tests/valiplugin
+	@go tool gotestsum $(REPO_ROOT)/tests/plugin
 
 .PHONY: e2e-tests
 e2e-tests: tidy
