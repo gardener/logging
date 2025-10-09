@@ -90,7 +90,7 @@ docker-images:
 		$(FLUENT_BIT_TO_VALI_IMAGE_REPOSITORY) $(IMAGE_TAG)
 
 	@BUILD_ARCH=$(BUILD_ARCH) \
-		$(REPO_ROOT)/hack/docker-image-build.sh "fluent-bit-vali" \
+		$(REPO_ROOT)/hack/docker-image-build.sh "fluent-bit-output" \
 		$(FLUENT_BIT_VALI_IMAGE_REPOSITORY) $(IMAGE_TAG)
 
 	@BUILD_ARCH=$(BUILD_ARCH) \
