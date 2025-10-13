@@ -30,12 +30,12 @@ require (
 	github.com/vladimirvivien/gexe v0.5.0
 	github.com/weaveworks/common v0.0.0-20210419092856-009d1eebd624
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.34.0
-	k8s.io/apimachinery v0.34.0
+	k8s.io/api v0.34.1
+	k8s.io/apimachinery v0.34.1
 	k8s.io/client-go v12.0.0+incompatible
-	k8s.io/component-base v0.34.0
+	k8s.io/component-base v0.34.1
 	k8s.io/utils v0.0.0-20250604170112-4c0f3b243397
-	sigs.k8s.io/controller-runtime v0.22.1
+	sigs.k8s.io/controller-runtime v0.22.3
 	sigs.k8s.io/e2e-framework v0.6.0
 )
 
@@ -324,7 +324,7 @@ require (
 	honnef.co/go/tools v0.6.1 // indirect
 	istio.io/api v1.25.3 // indirect
 	istio.io/client-go v1.25.1 // indirect
-	k8s.io/apiextensions-apiserver v0.34.0 // indirect
+	k8s.io/apiextensions-apiserver v0.34.1 // indirect
 	k8s.io/autoscaler/vertical-pod-autoscaler v1.3.1 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-aggregator v0.32.4 // indirect
