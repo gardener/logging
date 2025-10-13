@@ -42,9 +42,9 @@ plugin: tidy
 	@GOOS=$(BUILD_PLATFORM) \
 		GOARCH=$(BUILD_ARCH) \
 		go build -buildmode=c-shared \
-		-o $(REPO_ROOT)/build/out_vali.so \
+		-o $(REPO_ROOT)/build/output_plugin.so \
 	  	-ldflags="$(LD_FLAGS)" \
-		./cmd/fluent-bit-vali-plugin
+		./cmd/fluent-bit-output-plugin
 
 .PHONY: curator
 curator: tidy
@@ -90,7 +90,7 @@ docker-images:
 		$(FLUENT_BIT_TO_VALI_IMAGE_REPOSITORY) $(IMAGE_TAG)
 
 	@BUILD_ARCH=$(BUILD_ARCH) \
-		$(REPO_ROOT)/hack/docker-image-build.sh "fluent-bit-vali" \
+		$(REPO_ROOT)/hack/docker-image-build.sh "fluent-bit-output" \
 		$(FLUENT_BIT_VALI_IMAGE_REPOSITORY) $(IMAGE_TAG)
 
 	@BUILD_ARCH=$(BUILD_ARCH) \
@@ -159,7 +159,7 @@ check: tidy
 .PHONY: test
 test: tidy
 	@go tool gotestsum $(REPO_ROOT)/pkg/... --v --ginkgo.v --ginkgo.no-color
-	@go tool gotestsum $(REPO_ROOT)/tests/valiplugin
+	@go tool gotestsum $(REPO_ROOT)/tests/plugin
 
 .PHONY: e2e-tests
 e2e-tests: tidy

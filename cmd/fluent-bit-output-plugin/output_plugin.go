@@ -38,12 +38,12 @@ import (
 	"github.com/gardener/logging/pkg/config"
 	"github.com/gardener/logging/pkg/healthz"
 	"github.com/gardener/logging/pkg/metrics"
-	"github.com/gardener/logging/pkg/valiplugin"
+	"github.com/gardener/logging/pkg/plugin"
 )
 
 var (
 	// registered vali plugin instances, required for disposal during shutdown
-	plugins          []valiplugin.Vali
+	plugins          []plugin.OutputPlugin
 	pluginsMutex     sync.RWMutex
 	logger           log.Logger
 	informer         cache.SharedIndexInformer
@@ -172,7 +172,7 @@ func (c *pluginConfig) toStringMap() map[string]string {
 //
 //export FLBPluginRegister
 func FLBPluginRegister(ctx unsafe.Pointer) int {
-	return output.FLBPluginRegister(ctx, "gardenervali", "Ship fluent-bit logs to Credativ Vali")
+	return output.FLBPluginRegister(ctx, "gardenervali", "Ship fluent-bit logs to Credativ OutputPlugin")
 }
 
 // FLBPluginInit is called for each vali plugin instance
@@ -183,8 +183,8 @@ func FLBPluginRegister(ctx unsafe.Pointer) int {
 //export FLBPluginInit
 func FLBPluginInit(ctx unsafe.Pointer) int {
 	// shall create only if not found in the context and in plugins slice
-	if present := output.FLBPluginGetContext(ctx); present != nil && pluginsContains(present.(valiplugin.Vali)) {
-		_ = level.Info(logger).Log("msg", "plugin already present")
+	if present := output.FLBPluginGetContext(ctx); present != nil && pluginsContains(present.(plugin.OutputPlugin)) {
+		_ = level.Info(logger).Log("msg", "outputPlugin already present")
 
 		return output.FLB_OK
 	}
@@ -211,23 +211,23 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 
 	dumpConfiguration(_logger, conf)
 
-	plugin, err := valiplugin.NewPlugin(informer, conf, _logger)
+	outputPlugin, err := plugin.NewPlugin(informer, conf, _logger)
 	if err != nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorNewPlugin).Inc()
-		_ = level.Error(_logger).Log("msg", "error creating plugin", "err", err)
+		_ = level.Error(_logger).Log("msg", "error creating outputPlugin", "err", err)
 
 		return output.FLB_ERROR
 	}
 
-	// register plugin instance, to be retrievable when sending logs
-	output.FLBPluginSetContext(ctx, plugin)
-	// remember plugin instance, required to cleanly dispose when fluent-bit is shutting down
+	// register outputPlugin instance, to be retrievable when sending logs
+	output.FLBPluginSetContext(ctx, outputPlugin)
+	// remember outputPlugin instance, required to cleanly dispose when fluent-bit is shutting down
 	pluginsMutex.Lock()
-	plugins = append(plugins, plugin)
+	plugins = append(plugins, outputPlugin)
 	pluginsMutex.Unlock()
 
 	_ = level.Info(_logger).Log(
-		"msg", "plugin initialized",
+		"msg", "outputPlugin initialized",
 		"length", len(plugins))
 
 	return output.FLB_OK
@@ -237,10 +237,10 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 //
 //export FLBPluginFlushCtx
 func FLBPluginFlushCtx(ctx, data unsafe.Pointer, length C.int, tag *C.char) int {
-	plugin, ok := output.FLBPluginGetContext(ctx).(valiplugin.Vali)
+	outputPlugin, ok := output.FLBPluginGetContext(ctx).(plugin.OutputPlugin)
 	if !ok {
 		metrics.Errors.WithLabelValues(metrics.ErrorFLBPluginFlushCtx).Inc()
-		_ = level.Error(logger).Log("[flb-go]", "plugin not initialized")
+		_ = level.Error(logger).Log("[flb-go]", "outputPlugin not initialized")
 
 		return output.FLB_ERROR
 	}
@@ -268,7 +268,7 @@ func FLBPluginFlushCtx(ctx, data unsafe.Pointer, length C.int, tag *C.char) int 
 			timestamp = time.Now()
 		}
 
-		err := plugin.SendRecord(record, timestamp)
+		err := outputPlugin.SendRecord(record, timestamp)
 		if err != nil {
 			_ = level.Error(logger).Log(
 				"msg", "error sending record, retrying...",
@@ -276,7 +276,7 @@ func FLBPluginFlushCtx(ctx, data unsafe.Pointer, length C.int, tag *C.char) int 
 				"err", err.Error(),
 			)
 
-			return output.FLB_RETRY // max retry of the plugin is set to 3, then it shall be discarded by fluent-bit
+			return output.FLB_RETRY // max retry of the outputPlugin is set to 3, then it shall be discarded by fluent-bit
 		}
 	}
 
@@ -292,16 +292,16 @@ func FLBPluginFlushCtx(ctx, data unsafe.Pointer, length C.int, tag *C.char) int 
 //
 //export FLBPluginExitCtx
 func FLBPluginExitCtx(ctx unsafe.Pointer) int {
-	plugin, ok := output.FLBPluginGetContext(ctx).(valiplugin.Vali)
+	outputPlugin, ok := output.FLBPluginGetContext(ctx).(plugin.OutputPlugin)
 	if !ok {
-		_ = level.Error(logger).Log("[flb-go]", "plugin not known")
+		_ = level.Error(logger).Log("[flb-go]", "outputPlugin not known")
 
 		return output.FLB_ERROR
 	}
-	plugin.Close()
-	pluginsRemove(plugin)
+	outputPlugin.Close()
+	pluginsRemove(outputPlugin)
 	_ = level.Info(logger).Log(
-		"msg", "plugin removed",
+		"msg", "outputPlugin removed",
 		"length", len(plugins),
 	)
 
@@ -312,8 +312,8 @@ func FLBPluginExitCtx(ctx unsafe.Pointer) int {
 //
 //export FLBPluginExit
 func FLBPluginExit() int {
-	for _, plugin := range plugins {
-		plugin.Close()
+	for _, outputPlugin := range plugins {
+		outputPlugin.Close()
 	}
 	if informerStopChan != nil {
 		close(informerStopChan)
@@ -417,11 +417,11 @@ func dumpConfiguration(_logger log.Logger, conf *config.Config) {
 	_ = level.Debug(paramLogger).Log("SendLogsToDefaultClientWhenClusterIsInMigrationState", fmt.Sprintf("%+v", conf.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInMigrationState))
 }
 
-func pluginsContains(present valiplugin.Vali) bool {
+func pluginsContains(present plugin.OutputPlugin) bool {
 	pluginsMutex.RLock()
 	defer pluginsMutex.Unlock()
-	for _, plugin := range plugins {
-		if present == plugin {
+	for _, outputPlugin := range plugins {
+		if present == outputPlugin {
 			return true
 		}
 	}
@@ -429,11 +429,11 @@ func pluginsContains(present valiplugin.Vali) bool {
 	return false
 }
 
-func pluginsRemove(plugin valiplugin.Vali) {
+func pluginsRemove(outputPlugin plugin.OutputPlugin) {
 	pluginsMutex.Lock()
 	defer pluginsMutex.Unlock()
 	for i, p := range plugins {
-		if plugin == p {
+		if outputPlugin == p {
 			plugins = append(plugins[:i], plugins[i+1:]...)
 
 			return

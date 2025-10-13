@@ -14,7 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
 
-	"github.com/gardener/logging/tests/valiplugin/plugintest/input"
+	"github.com/gardener/logging/tests/plugin/plugintest/input"
 )
 
 type cluster struct {

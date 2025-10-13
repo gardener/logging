@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package valiplugin
+package plugin
 
 import (
 	"errors"
@@ -68,7 +68,7 @@ type fallbackToTagWhenMetadataIsMissing struct {
 	err       error
 }
 
-var _ = ginkgov2.Describe("Vali plugin utils", func() {
+var _ = ginkgov2.Describe("OutputPlugin plugin utils", func() {
 	ginkgov2.DescribeTable("#createLine",
 		func(args createLineArgs) {
 			got, err := createLine(args.records, args.f)
