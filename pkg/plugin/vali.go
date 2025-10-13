@@ -1,11 +1,8 @@
-/*
-This file was copied from the credativ/vali project
-https://github.com/credativ/vali/blob/v2.2.4/cmd/fluent-bit/vali.go
+// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
+//
+// SPDX-License-Identifier: Apache-2.0
 
-Modifications Copyright SAP SE or an SAP affiliate company and Gardener contributors
-*/
-
-package valiplugin
+package plugin
 
 import (
 	"fmt"
@@ -25,8 +22,8 @@ import (
 	"github.com/gardener/logging/pkg/metrics"
 )
 
-// Vali plugin interface
-type Vali interface {
+// OutputPlugin plugin interface
+type OutputPlugin interface {
 	SendRecord(r map[any]any, ts time.Time) error
 	Close()
 }
@@ -43,8 +40,8 @@ type vali struct {
 	logger                          log.Logger
 }
 
-// NewPlugin returns Vali output plugin
-func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger log.Logger) (Vali, error) {
+// NewPlugin returns OutputPlugin output plugin
+func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger log.Logger) (OutputPlugin, error) {
 	var err error
 	v := &vali{cfg: cfg, logger: logger}
 
@@ -169,6 +166,11 @@ func (v *vali) SendRecord(r map[any]any, ts time.Time) error {
 		return nil
 	}
 
+	// client.ValiClient - actual client chain to send the log to
+	// valitail or otlp, dynamicHostName is extracted from DynamicHostPath field
+	// in the record and must match DynamicHostRegex
+	// example shoot--local--local
+	// DynamicHostPath is json form "{"kubernetes": {"namespace_name": "namespace"}}"
 	c := v.getClient(dynamicHostName)
 
 	if c == nil {
