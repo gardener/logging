@@ -99,12 +99,13 @@ spec:
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-
   volumeClaimTemplates:
     - apiVersion: v1
       kind: PersistentVolumeClaim
       metadata:
         name: {{ include "fluent-bit-plugin.valiName" . }}-seed
+        labels:
+          {{- include "fluent-bit-plugin.valiLabels" . | nindent 10 }}
       spec:
         accessModes:
           - ReadWriteOnce

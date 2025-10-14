@@ -104,6 +104,8 @@ spec:
       kind: PersistentVolumeClaim
       metadata:
         name: {{ include "fluent-bit-plugin.valiName" . }}-shoot
+        labels:
+          {{- include "fluent-bit-plugin.valiLabels" . | nindent 10 }}
       spec:
         accessModes:
           - ReadWriteOnce

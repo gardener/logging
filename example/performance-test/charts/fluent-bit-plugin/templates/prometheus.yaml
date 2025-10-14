@@ -92,6 +92,8 @@ spec:
       kind: PersistentVolumeClaim
       metadata:
         name: {{ include "fluent-bit-plugin.prometheusName" . }}
+        labels:
+          {{- include "fluent-bit-plugin.prometheusLabels" . | nindent 10 }}
       spec:
         accessModes:
           - ReadWriteOnce
