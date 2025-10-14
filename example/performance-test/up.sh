@@ -3,6 +3,9 @@
 set -eo pipefail
 dir=$(dirname "$0")
 
+namespace="fluent-bit"
+nameOverride="logging"
+
 
 function create_namespaces {
     local shoot_namespace="shoot--logging--dev-${1}"
@@ -61,6 +64,13 @@ spec:
 EOF
 }
 
+kubectl wait \
+  --for=jsonpath='{.status.readyReplicas}'=1 \
+  --timeout=300s \
+  --namespace ${namespace} \
+  statefulset/${nameOverride}-vali-shoot
+
+
 for ((i=1; i<=CLUSTERS; i++)); do
     create_namespaces "$i" &
 done
@@ -81,6 +91,5 @@ for ((i=1; i<=CLUSTERS; i++)); do
   create_jobs "$i" &
 done
 wait
-
 
 echo "Generated $CLUSTERS clusters"

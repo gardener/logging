@@ -15,10 +15,10 @@ run_log_query() {
   echo "Waiting ${QUERY_WAIT}s before querying Vali..."
   sleep "${QUERY_WAIT}"
 
-  local q='sum(count_over_time({container_name=~"logger.*"}[24h]))'
+  local q='sum(count_over_time({container_name="logger"}[24h]))'
   local attempt=0
   while (( attempt < QUERY_RETRIES )); do
-    if out=$(logcli query "$q" --quiet --output=jsonl 2>/dev/null); then
+    if out=$(${dir}/bin/logcli query "$q" --quiet --output=jsonl 2>/dev/null); then
       # Extract last pair [timestamp, value]
       if pair=$(printf '%s' "$out" | jq -r '.[0].values | last?'); then
         if [[ -n "$pair" && "$pair" != "null" ]]; then
