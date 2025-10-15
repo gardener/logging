@@ -35,7 +35,7 @@ const (
 )
 
 type target struct {
-	valiClient client.ValiClient
+	valiClient client.OutputClient
 	mute       bool
 	conf       *config.ControllerClientConfiguration
 }
@@ -49,18 +49,18 @@ type controllerClient struct {
 	name        string
 }
 
-var _ client.ValiClient = &controllerClient{}
+var _ client.OutputClient = &controllerClient{}
 
 // Client is a Vali client for the plugin controller
 type Client interface {
-	client.ValiClient
+	client.OutputClient
 	GetState() clusterState
 	SetState(state clusterState)
 }
 
 // GetClient search a client with <name> and returned if found.
 // In case the controller is closed it returns true as second return value.
-func (ctl *controller) GetClient(name string) (client.ValiClient, bool) {
+func (ctl *controller) GetClient(name string) (client.OutputClient, bool) {
 	ctl.lock.RLocker().Lock()
 	defer ctl.lock.RLocker().Unlock()
 
@@ -177,8 +177,13 @@ func (c *controllerClient) GetEndPoint() string {
 }
 
 // Handle processes and sends log to Vali.
-func (c *controllerClient) Handle(ls model.LabelSet, t time.Time, s string) error {
+func (c *controllerClient) Handle(ls any, t time.Time, s string) error {
 	var combineErr error
+	_ls, ok := ls.(model.LabelSet)
+	if !ok {
+		return client.ErrInvalidLabelType
+	}
+
 	// Because we do not use thread save methods here we just copy the variables
 	// in case they have changed during the two consequential calls to Handle.
 	sendToShoot, sendToSeed := !c.shootTarget.mute, !c.seedTarget.mute
@@ -189,12 +194,12 @@ func (c *controllerClient) Handle(ls model.LabelSet, t time.Time, s string) erro
 		// are sending the log record to both shoot and seed clients we have to pass a copy because
 		// we are not sure what kind of label set processing will be done in the corresponding
 		// client which can lead to "concurrent map iteration and map write error".
-		if err := c.shootTarget.valiClient.Handle(ls.Clone(), t, s); err != nil {
+		if err := c.shootTarget.valiClient.Handle(_ls.Clone(), t, s); err != nil {
 			combineErr = giterrors.Wrap(combineErr, err.Error())
 		}
 	}
 	if sendToSeed {
-		if err := c.seedTarget.valiClient.Handle(ls.Clone(), t, s); err != nil {
+		if err := c.seedTarget.valiClient.Handle(_ls.Clone(), t, s); err != nil {
 			combineErr = giterrors.Wrap(combineErr, err.Error())
 		}
 	}

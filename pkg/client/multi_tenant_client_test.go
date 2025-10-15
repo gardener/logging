@@ -23,7 +23,7 @@ import (
 var _ = ginkgov2.Describe("Multi Tenant Client", func() {
 	var (
 		fakeClient *client.FakeValiClient
-		mtc        client.ValiClient
+		mtc        client.OutputClient
 	)
 
 	ginkgov2.BeforeEach(func() {
@@ -33,7 +33,7 @@ var _ = ginkgov2.Describe("Multi Tenant Client", func() {
 		_ = infoLogLevel.Set("info")
 
 		mtc, err = client.NewMultiTenantClientDecorator(config.Config{},
-			func(_ config.Config, _ log.Logger) (client.ValiClient, error) {
+			func(_ config.Config, _ log.Logger) (client.OutputClient, error) {
 				return fakeClient, nil
 			},
 			level.NewFilter(log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr)), infoLogLevel.Gokit))
@@ -140,7 +140,7 @@ var _ = ginkgov2.Describe("Multi Tenant Client", func() {
 var _ = ginkgov2.Describe("Remove Multi Tenant Client", func() {
 	var (
 		fakeClient *client.FakeValiClient
-		mtc        client.ValiClient
+		mtc        client.OutputClient
 	)
 
 	ginkgov2.BeforeEach(func() {
@@ -150,7 +150,7 @@ var _ = ginkgov2.Describe("Remove Multi Tenant Client", func() {
 		_ = infoLogLevel.Set("info")
 
 		mtc, err = client.NewRemoveMultiTenantIDClientDecorator(config.Config{},
-			func(_ config.Config, _ log.Logger) (client.ValiClient, error) {
+			func(_ config.Config, _ log.Logger) (client.OutputClient, error) {
 				return fakeClient, nil
 			},
 			level.NewFilter(log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr)), infoLogLevel.Gokit))

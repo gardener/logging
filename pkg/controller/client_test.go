@@ -286,7 +286,7 @@ type fakeControllerClient struct {
 	name  string
 }
 
-func (c *fakeControllerClient) Handle(labels model.LabelSet, t time.Time, entry string) error {
+func (c *fakeControllerClient) Handle(labels any, t time.Time, entry string) error {
 	return c.FakeValiClient.Handle(labels, t, entry)
 }
 

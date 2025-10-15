@@ -26,7 +26,7 @@ type entry struct {
 	ts   time.Time
 }
 
-var _ client.ValiClient = &recorder{}
+var _ client.OutputClient = &recorder{}
 
 type recorder struct {
 	*entry
@@ -36,8 +36,12 @@ func (*recorder) GetEndPoint() string {
 	return "http://localhost"
 }
 
-func (r *recorder) Handle(labels model.LabelSet, t time.Time, e string) error {
-	r.entry = &entry{labels, e, t}
+func (r *recorder) Handle(ls any, t time.Time, e string) error {
+	_ls, ok := ls.(model.LabelSet)
+	if !ok {
+		return client.ErrInvalidLabelType
+	}
+	r.entry = &entry{_ls, e, t}
 
 	return nil
 }
@@ -60,9 +64,9 @@ func (*fakeValiClient) GetEndPoint() string {
 	return "http://localhost"
 }
 
-var _ client.ValiClient = &fakeValiClient{}
+var _ client.OutputClient = &fakeValiClient{}
 
-func (*fakeValiClient) Handle(_ model.LabelSet, _ time.Time, _ string) error {
+func (*fakeValiClient) Handle(_ any, _ time.Time, _ string) error {
 	return nil
 }
 
@@ -70,11 +74,11 @@ func (*fakeValiClient) Stop()     {}
 func (*fakeValiClient) StopWait() {}
 
 type fakeController struct {
-	clients map[string]client.ValiClient
+	clients map[string]client.OutputClient
 }
 
 // GetClient returns a client by name. If the client does not exist, it returns nil and false.
-func (ctl *fakeController) GetClient(name string) (client.ValiClient, bool) {
+func (ctl *fakeController) GetClient(name string) (client.OutputClient, bool) {
 	if c, ok := ctl.clients[name]; ok {
 		return c, false
 	}
@@ -259,7 +263,7 @@ var _ = ginkgov2.Describe("OutputPlugin plugin", func() {
 
 	ginkgov2.Describe("#getClient", func() {
 		fc := fakeController{
-			clients: map[string]client.ValiClient{
+			clients: map[string]client.OutputClient{
 				"shoot--dev--test1": &fakeValiClient{},
 				"shoot--dev--test2": &fakeValiClient{},
 			},

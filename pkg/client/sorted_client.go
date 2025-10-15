@@ -34,14 +34,14 @@ type sortedClient struct {
 	wg               sync.WaitGroup
 }
 
-var _ ValiClient = &sortedClient{}
+var _ OutputClient = &sortedClient{}
 
 func (c *sortedClient) GetEndPoint() string {
 	return c.valiclient.GetEndPoint()
 }
 
 // NewSortedClientDecorator returns client which sorts the logs based their timestamp.
-func NewSortedClientDecorator(cfg config.Config, newClient NewValiClientFunc, logger log.Logger) (ValiClient, error) {
+func NewSortedClientDecorator(cfg config.Config, newClient NewValiClientFunc, logger log.Logger) (OutputClient, error) {
 	var err error
 	batchWait := cfg.ClientConfig.CredativValiConfig.BatchWait
 	cfg.ClientConfig.CredativValiConfig.BatchWait = batchWait + (5 * time.Second)
@@ -186,8 +186,12 @@ func (c *sortedClient) StopWait() {
 }
 
 // Handle implement EntryHandler; adds a new line to the next batch; send is async.
-func (c *sortedClient) Handle(ls model.LabelSet, t time.Time, s string) error {
-	c.entries <- Entry{ls, logproto.Entry{
+func (c *sortedClient) Handle(ls any, t time.Time, s string) error {
+	_ls, ok := ls.(model.LabelSet)
+	if !ok {
+		return ErrInvalidLabelType
+	}
+	c.entries <- Entry{_ls, logproto.Entry{
 		Timestamp: t,
 		Line:      s,
 	}}

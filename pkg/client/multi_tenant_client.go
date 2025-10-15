@@ -18,7 +18,7 @@ import (
 )
 
 type multiTenantClient struct {
-	valiclient ValiClient
+	valiclient OutputClient
 }
 
 const (
@@ -28,11 +28,11 @@ const (
 	MultiTenantClientsSeparator = ";"
 )
 
-var _ ValiClient = &multiTenantClient{}
+var _ OutputClient = &multiTenantClient{}
 
 // NewMultiTenantClientDecorator returns Vali client which supports more than one tenant id specified
 // under `_gardener_multitenamt_id__` label. The tenants are separated by semicolon.
-func NewMultiTenantClientDecorator(cfg config.Config, newClient NewValiClientFunc, logger log.Logger) (ValiClient, error) {
+func NewMultiTenantClientDecorator(cfg config.Config, newClient NewValiClientFunc, logger log.Logger) (OutputClient, error) {
 	c, err := newValiClient(cfg, newClient, logger)
 	if err != nil {
 		return nil, err
@@ -43,21 +43,27 @@ func NewMultiTenantClientDecorator(cfg config.Config, newClient NewValiClientFun
 	}, nil
 }
 
-func (c *multiTenantClient) Handle(ls model.LabelSet, t time.Time, s string) error {
-	ids, ok := ls[MultiTenantClientLabel]
+func (c *multiTenantClient) Handle(ls any, t time.Time, s string) error {
+	_ls, ok := ls.(model.LabelSet)
+	if !ok {
+		return ErrInvalidLabelType
+	}
+
+	ids, ok := _ls[MultiTenantClientLabel]
+
 	if !ok {
 		return c.valiclient.Handle(ls, t, s)
 	}
 
 	tenants := getTenants(string(ids))
-	delete(ls, MultiTenantClientLabel)
+	delete(_ls, MultiTenantClientLabel)
 	if len(tenants) < 1 {
 		return c.valiclient.Handle(ls, t, s)
 	}
 
 	var errs []error
 	for _, tenant := range tenants {
-		tmpLs := ls.Clone()
+		tmpLs := _ls.Clone()
 		tmpLs[client.ReservedLabelTenantID] = model.LabelValue(tenant)
 
 		err := c.valiclient.Handle(tmpLs, t, s)
@@ -147,10 +153,10 @@ func (c *multiTenantClient) handleEntries(ls model.LabelSet, entries []batch.Ent
 	return combineErr
 }
 
-var _ ValiClient = &removeMultiTenantIDClient{}
+var _ OutputClient = &removeMultiTenantIDClient{}
 
 type removeMultiTenantIDClient struct {
-	valiclient ValiClient
+	valiclient OutputClient
 }
 
 func (c *removeMultiTenantIDClient) GetEndPoint() string {
@@ -158,7 +164,7 @@ func (c *removeMultiTenantIDClient) GetEndPoint() string {
 }
 
 // NewRemoveMultiTenantIDClientDecorator wraps vali client which removes the __gardener_multitenant_id__ label from the label set
-func NewRemoveMultiTenantIDClientDecorator(cfg config.Config, newClient NewValiClientFunc, logger log.Logger) (ValiClient, error) {
+func NewRemoveMultiTenantIDClientDecorator(cfg config.Config, newClient NewValiClientFunc, logger log.Logger) (OutputClient, error) {
 	c, err := newValiClient(cfg, newClient, logger)
 	if err != nil {
 		return nil, err
@@ -167,8 +173,12 @@ func NewRemoveMultiTenantIDClientDecorator(cfg config.Config, newClient NewValiC
 	return &removeMultiTenantIDClient{c}, nil
 }
 
-func (c *removeMultiTenantIDClient) Handle(ls model.LabelSet, t time.Time, s string) error {
-	delete(ls, MultiTenantClientLabel)
+func (c *removeMultiTenantIDClient) Handle(ls any, t time.Time, s string) error {
+	_ls, ok := ls.(model.LabelSet)
+	if !ok {
+		return ErrInvalidLabelType
+	}
+	delete(_ls, MultiTenantClientLabel)
 
 	return c.valiclient.Handle(ls, t, s)
 }

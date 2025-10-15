@@ -31,11 +31,11 @@ const (
 // Controller represent a k8s controller watching for resources and
 // create Vali clients base on them
 type Controller interface {
-	GetClient(name string) (client.ValiClient, bool)
+	GetClient(name string) (client.OutputClient, bool)
 	Stop()
 }
 type controller struct {
-	seedClient client.ValiClient
+	seedClient client.OutputClient
 	conf       *config.Config
 	lock       sync.RWMutex
 	clients    map[string]Client
@@ -45,7 +45,7 @@ type controller struct {
 }
 
 // NewController return Controller interface
-func NewController(informer cache.SharedIndexInformer, conf *config.Config, seedClient client.ValiClient, l log.Logger) (Controller, error) {
+func NewController(informer cache.SharedIndexInformer, conf *config.Config, seedClient client.OutputClient, l log.Logger) (Controller, error) {
 	var err error
 
 	ctl := &controller{

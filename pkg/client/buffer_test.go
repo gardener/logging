@@ -65,7 +65,7 @@ var _ = ginkgov2.Describe("Buffer", func() {
 	})
 
 	ginkgov2.Describe("newDque", func() {
-		var valiclient ValiClient
+		var valiclient OutputClient
 
 		ginkgov2.BeforeEach(func() {
 			var err error
@@ -150,16 +150,20 @@ func (*fakeValiclient) GetEndPoint() string {
 	return "http://localhost"
 }
 
-var _ ValiClient = &fakeValiclient{}
+var _ OutputClient = &fakeValiclient{}
 
-func newFakeValiClient(_ config.Config, _ log.Logger) (ValiClient, error) {
+func newFakeValiClient(_ config.Config, _ log.Logger) (OutputClient, error) {
 	return &fakeValiclient{}, nil
 }
 
-func (c *fakeValiclient) Handle(labels model.LabelSet, t time.Time, entry string) error {
+func (c *fakeValiclient) Handle(ls any, t time.Time, entry string) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.sentLogs = append(c.sentLogs, logEntry{t, labels, entry})
+	_ls, ok := ls.(model.LabelSet)
+	if !ok {
+		return ErrInvalidLabelType
+	}
+	c.sentLogs = append(c.sentLogs, logEntry{t, _ls, entry})
 
 	return nil
 }

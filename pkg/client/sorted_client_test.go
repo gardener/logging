@@ -31,7 +31,7 @@ var _ = ginkgov2.Describe("Sorted Client", func() {
 
 	var (
 		fakeClient           *client.FakeValiClient
-		sortedClient         client.ValiClient
+		sortedClient         client.OutputClient
 		timestampNow         = time.Now()
 		timestampNowPlus1Sec = timestampNow.Add(time.Second)
 		timestampNowPlus2Sec = timestampNowPlus1Sec.Add(time.Second)
@@ -66,7 +66,7 @@ var _ = ginkgov2.Describe("Sorted Client", func() {
 				IDLabelName:      model.LabelName("id"),
 			},
 		},
-			func(_ config.Config, _ log.Logger) (client.ValiClient, error) {
+			func(_ config.Config, _ log.Logger) (client.OutputClient, error) {
 				return fakeClient, nil
 			},
 			level.NewFilter(log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr)), infoLogLevel.Gokit))

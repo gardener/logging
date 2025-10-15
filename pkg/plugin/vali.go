@@ -30,7 +30,7 @@ type OutputPlugin interface {
 
 type vali struct {
 	cfg                             *config.Config
-	seedClient                      client.ValiClient
+	seedClient                      client.OutputClient
 	dynamicHostRegexp               *regexp.Regexp
 	dynamicTenantRegexp             *regexp.Regexp
 	dynamicTenant                   string
@@ -166,7 +166,7 @@ func (v *vali) SendRecord(r map[any]any, ts time.Time) error {
 		return nil
 	}
 
-	// client.ValiClient - actual client chain to send the log to
+	// client.OutputClient - actual client chain to send the log to
 	// valitail or otlp, dynamicHostName is extracted from DynamicHostPath field
 	// in the record and must match DynamicHostRegex
 	// example shoot--local--local
@@ -235,7 +235,7 @@ func (v *vali) Close() {
 	)
 }
 
-func (v *vali) getClient(dynamicHosName string) client.ValiClient {
+func (v *vali) getClient(dynamicHosName string) client.OutputClient {
 	if v.isDynamicHost(dynamicHosName) && v.controller != nil {
 		if c, isStopped := v.controller.GetClient(dynamicHosName); !isStopped {
 			return c
@@ -269,7 +269,7 @@ func (v *vali) setDynamicTenant(record map[string]any, lbs model.LabelSet) model
 	return lbs
 }
 
-func (*vali) send(c client.ValiClient, lbs model.LabelSet, ts time.Time, line string) error {
+func (*vali) send(c client.OutputClient, lbs model.LabelSet, ts time.Time, line string) error {
 	return c.Handle(lbs, ts, line)
 }
 
