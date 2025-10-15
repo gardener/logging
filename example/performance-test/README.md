@@ -27,7 +27,7 @@ This directory contains a lightweight harness for stress / performance validatio
 * Validation (`fetch.sh`) queries Vali per cluster/namespace using:
 
 ```promql
-sum(count_over_time({namespace_name=\"shoot--logging--dev-${i}\"}[24h]))
+sum(count_over_time({container_name=\"shoot--logging--dev-${i}\"}[24h]))
 ```
 
 The script polls aggregated logs count per namespace. (CLUSTERS)
@@ -58,9 +58,6 @@ Set as shell environment variables before running scripts:
 | `JOBS` | Pods per logger Job (`parallelism` & `completions`) | Multiplier per cluster | Increase to simulate intra‑cluster fan‑out |
 | `LOGS` | Lines emitted per pod | Direct volume per pod | Increase for higher per‑pod throughput test |
 | `LOGS_DELAY` | Seconds pods wait before emitting | Staggers start; warms pipeline | Increase if startup storms cause backpressure |
-| `QUERY_WAIT` | Initial delay before first query (default 1) | Affects earliest validation time | Increase if ingestion latency > 1s |
-| `QUERY_RETRIES` | Max polling attempts (default 10) | Longer patience for data arrival | Increase for slow or large clusters |
-| `QUERY_INTERVAL` | Seconds between retries (default 5) | Total wait window = `QUERY_WAIT + QUERY_RETRIES * QUERY_INTERVAL` | Tune for responsiveness vs API load |
 
 Derived expectation:
 
@@ -68,26 +65,35 @@ Derived expectation:
 EXPECTED_TOTAL = CLUSTERS * JOBS * LOGS
 ```
 
-## 5. Scripts
+## 5. Makefile targets
 
-### up.sh
+### make create
 
-Creates namespaces, services, cluster CRs, and logger Jobs in parallel for speed.
+Deploys test components with the helm chart in `charts/fluent-bit-plugin`.
 
-Order (each batched with background `&` + `wait` barrier):
+* Installs Fluent Bit with the output plugin.
+* Installs prometheus and plutono with fluent-bit dashboard for monitoring.
+* Installs logging backend Vali simulating a seed cluster and shared Vali for all simulated shoots.
 
-1. Namespaces
-2. ExternalName Services
-3. Cluster CRs
-4. Logger Jobs
+### make up
 
-### check.sh
+ Creates the test run workloads.
 
-Polls Vali using `logcli` and prints last cumulative count sample with timestamp. (Adjust date command for macOS: replace `date -d` with `date -r`.)
+* Creates shoot namespaces
+* Creates shoot services. (All pointing at the shared backend instance)
+* Creates cluster CRs and logger jobs.
 
-### fetch.sh
+### make fetch
 
 Fetches aggregated logs count per namespace from Vali.
+
+### make down
+
+Removes the test run workloads. (Shoot namespaces, services, cluster CRs, logger jobs)
+
+### make clean
+
+Cleans up deployed helm chart release and persistent volumes.
 
 ## 6. Observations & Troubleshooting
 
@@ -103,7 +109,7 @@ Usually signals for pressure on the receiving end (Vali). Consider reducing `LOG
 fluent-bit [2025/05/25 05:25:05.196916584] [ info] [input] tail.2 resume (mem buf overlimit - buf size 29693936B now below limit 30000000B) │ │ fluent-bit [2025/05/25 05:25:05.196916584] [ warn] [input] tail.2 paused (mem buf overlimit - event of size 327B exceeded limit 30000000 to 30000119B) │ │ fluent-bit [2025/10/08 08:45:12.330230461] [ info] [input] pausing tail.2
 ```
 
-Usual signals for input backpressure due to high memory buffer usage. Consider reducing `LOGS` or `JOBS`, or increasing Fluent Bit memory limits in tail plugin config.
+Usually signals for input backpressure due to high memory buffer usage. Consider reducing `LOGS` or `JOBS`, or increasing Fluent Bit memory limits in tail plugin config.
 
 Portforward plutono port and observe fluent-bit dashboard.
 `[Fluentbit] Output Records Per Second` reveals actual thrioughput:
@@ -120,23 +126,13 @@ During run after gradual rampup the throughput should stabilize around a certain
 
 For high load tests, ensure the Kubernetes cluster hosting Fluent Bit and Vali is appropriately sized. At least 6 nodes with 4CPU Cores and 16GB RAM each are recommended to handle the load without resource contention. Since all logs are sent to a single Vali instance, ensure it has sufficient resources to manage the ingestion rate.
 
-## 8. Cleanup
-
-To cleanup environment, run:
-
-```bash
-./down.sh
-helm delete logging -n fluent-bit
-kubectl delete pvc --all -n fluent-bit
-```
-
 ## 8. Quick Reference
 
 ```text
 TOTAL LOGS = CLUSTERS * JOBS * LOGS
 
-vali_query: sum(count_over_time({namespace_name="shoot--logging--dev-X"}[24h]))
-vali_config: [vali-config.yaml](charts/fluent-bit-plugin/templates/vali-config.yaml)
+vali_query: sum(count_over_time({container_name="logging"}[24h]))
 
+vali_config: [vali-config.yaml](charts/fluent-bit-plugin/templates/vali-config.yaml)
 fluent-bit_config: [fluent-bit-config.yaml](charts/fluent-bit-plugin/templates/fluent-bit-config.yaml)
 ```
