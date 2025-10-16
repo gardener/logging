@@ -93,6 +93,13 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+       {{- with .Values.plutono.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.plutono.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
       volumes:
         - configMap:
             defaultMode: 420
