@@ -62,7 +62,7 @@ check: check-kubeconfig
 	@$(DIR)/check.sh
 
 # Query Vali to validate log ingestion
-fetch:
+fetch: check-kubeconfig
 	@echo "Fetching and validating log ingestion results..."
 	@export CLUSTERS=$(CLUSTERS) JOBS=$(JOBS) LOGS=$(LOGS) && $(DIR)/fetch.sh
 
