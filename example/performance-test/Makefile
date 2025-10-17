@@ -2,11 +2,12 @@
 # This Makefile provides targets to run performance tests for the logging plugin.
 DIR                   := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
-# Default values - can be overridden via environment variables
-CLUSTERS              ?= 100 # Number of clusters to create
+# Default values - suitable for test environment verification
+# These can be overridden via environment variables for actual performance testing.
+CLUSTERS              ?= 20 # Number of clusters to create
 JOBS                  ?= 10 # Number of parallel jobs per cluster
 LOGS                  ?= 1000 # Number of log lines per job
-LOGS_DELAY            ?= 10s # Delay between log messages
+LOGS_DELAY            ?= 25s # Delay between log messages
 
 LOGCLI_BIN            := $(DIR)/bin/logcli
 
