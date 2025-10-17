@@ -10,7 +10,7 @@ NOCOLOR="\033[0m"
 # check to see if vali-shoot is port-forwarded
 if ! curl --silent --max-time 2 http://localhost:3100/metrics >/dev/null; then
     echo "Please port-forward vali-shoot to localhost:3100"
-    echo "kubectl port-forward -n logging svc/vali-shoot 3100:3100"
+    echo "kubectl port-forward -n fluent-bit pod/logging-vali-shoot-0 3100:3100"
     exit 1
 fi
 
