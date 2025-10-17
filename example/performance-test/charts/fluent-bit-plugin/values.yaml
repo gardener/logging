@@ -1,0 +1,211 @@
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+  repository: ""
+  tag: ""
+  pullPolicy: IfNotPresent
+  imagePullSecrets: []
+
+fluentBit:
+  image: ghcr.io/fluent/fluent-operator/fluent-bit:v4.1.0
+
+  livenessProbe:
+    failureThreshold: 3
+    httpGet:
+      path: /healthz
+      port: metrics-plugin
+      scheme: HTTP
+    initialDelaySeconds: 90
+    periodSeconds: 300
+    successThreshold: 1
+    timeoutSeconds: 1
+
+  readinessProbe:
+    failureThreshold: 3
+    httpGet:
+      path: /api/v1/metrics/prometheus
+      port: metrics
+      scheme: HTTP
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 1
+
+  resources: {}
+
+  ports:
+    - name: metrics
+      containerPort: 2020
+      protocol: TCP
+    - name: metrics-plugin
+      containerPort: 2021
+      protocol: TCP
+
+  tolerations:
+    - effect: NoSchedule
+      key: node-role.kubernetes.io/master
+    - effect: NoSchedule
+      key: node-role.kubernetes.io/control-plane
+
+  nodeSelector: {} # node selector for DaemonSet
+  affinity: {} # node affinity for DaemonSet
+
+  volumeMounts: [] # additional volume mounts to add to the DaemonSet
+  volumes: [] # additional volumes to add to the DaemonSet
+
+  service:
+    type: ClusterIP
+    ports: # default ports for fluent-bit service
+      - port: 2020
+        targetPort: metrics
+        protocol: TCP
+        name: metrics
+      - port: 2021
+        targetPort: metrics-plugin
+        protocol: TCP
+        name: metrics-plugin
+
+plutono:
+  image: ghcr.io/credativ/plutono:v7.5.42
+  ports:
+    - name: web
+      containerPort: 3000
+      protocol: TCP
+  resources:
+    requests:
+      cpu: 5m
+      memory: 64Mi
+  securityContext:
+    allowPrivilegeEscalation: false
+
+  nodeSelector: {} # node selector for Deployment
+  affinity: {} # node affinity for Deployment
+  tolerations: []
+  volumeMounts: [] # additional volume mounts to add to the Deployment
+  volumes: [] # additional volumes to add to the Deployment
+
+prometheus:
+  image: prom/prometheus:main
+
+  livenessProbe:
+    failureThreshold: 6
+    httpGet:
+      path: /-/healthy
+      port: web
+      scheme: HTTP
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 3
+
+  readinessProbe:
+    failureThreshold: 3
+    httpGet:
+      path: /-/ready
+      port: web
+      scheme: HTTP
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 3
+
+  startupProbe:
+    failureThreshold: 60
+    httpGet:
+      path: /-/ready
+      port: web
+      scheme: HTTP
+    periodSeconds: 15
+    successThreshold: 1
+    timeoutSeconds: 3
+
+  resources:
+    requests:
+      cpu: 300m
+      memory: 1000Mi
+
+  ports:
+    - name: web
+      containerPort: 9090
+      protocol: TCP
+
+  podSecurityContext:
+    runAsUser: 0
+
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: true
+
+  nodeSelector: {} # node selector for StatefulSet
+  affinity: {} # node affinity for StatefulSet
+  tolerations: []
+  volumeMounts: [] # additional volume mounts to add to the StatefulSet
+  volumes: [] # additional volumes to add to the StatefulSet
+
+  service: # headless service for Prometheus StatefulSet
+    type: ClusterIP
+    clusterIP: None
+    ports:
+      - name: http
+        port: 9090
+        protocol: TCP
+        targetPort: web
+
+vali:
+  image: ghcr.io/credativ/vali:v2.2.27
+
+  initContainer:
+    securityContext:
+      privileged: true
+      runAsGroup: 0
+      runAsNonRoot: false
+      runAsUser: 0
+
+  livenessProbe:
+    failureThreshold: 3
+    httpGet:
+      path: /ready
+      port: http
+      scheme: HTTP
+    initialDelaySeconds: 120
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 1
+
+  readinessProbe:
+    failureThreshold: 5
+    httpGet:
+      path: /ready
+      port: http
+      scheme: HTTP
+    periodSeconds: 30
+    successThreshold: 1
+    timeoutSeconds: 1
+
+  podSecurityContext:
+    fsGroup: 10001
+    fsGroupChangePolicy: OnRootMismatch
+
+  resources:
+    requests:
+      cpu: 10m
+      memory: 100M
+
+  ports:
+    - containerPort: 3100
+      name: http
+      protocol: TCP
+
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    runAsGroup: 10001
+    runAsNonRoot: true
+    runAsUser: 10001
+
+  nodeSelector: {} # node selector for StatefulSet
+  affinity: {} # node affinity for StatefulSet
+  tolerations: []
+  volumeMounts: [] # additional volume mounts to add to the StatefulSet
+  volumes: [] # additional volumes to add to the StatefulSet

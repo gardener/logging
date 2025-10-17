@@ -1,0 +1,1315 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": "-- Plutono --",
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "Fluent-bit metrics",
+  "editable": true,
+  "gnetId": 7752,
+  "graphTooltip": 1,
+  "iteration": 1759842513594,
+  "links": [],
+  "panels": [
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "prometheus",
+      "description": "Input bytes processing rate of all fluent-bits.",
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "fill": 0,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 5,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "hiddenSeries": false,
+      "id": 2,
+      "legend": {
+        "alignAsTable": false,
+        "avg": false,
+        "current": true,
+        "hideEmpty": true,
+        "hideZero": true,
+        "max": false,
+        "min": false,
+        "rightSide": true,
+        "show": true,
+        "sort": "current",
+        "sortDesc": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.5.42",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum(rate(fluentbit_input_bytes_total{pod=~\"$pod\"}[$__rate_interval])) by (pod, name)",
+          "format": "time_series",
+          "hide": false,
+          "interval": "",
+          "intervalFactor": 1,
+          "legendFormat": "{{ pod }}/{{name}}",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "[Fluentbit] Input Bytes Per Second",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:297",
+          "format": "Bps",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:298",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "prometheus",
+      "description": "Output bytes processing rate of all fluent-bits.",
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "fill": 0,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 5,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "hiddenSeries": false,
+      "id": 9,
+      "legend": {
+        "alignAsTable": false,
+        "avg": false,
+        "current": true,
+        "hideEmpty": true,
+        "hideZero": true,
+        "max": false,
+        "min": false,
+        "rightSide": true,
+        "show": true,
+        "sort": "current",
+        "sortDesc": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.5.42",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum(rate(fluentbit_output_proc_bytes_total{pod=~\"$pod\"}[$__rate_interval])) by (pod, name)",
+          "format": "time_series",
+          "hide": false,
+          "interval": "",
+          "intervalFactor": 1,
+          "legendFormat": "{{ pod }}/{{name}}",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "[Fluentbit] Output Bytes Per Second",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:222",
+          "format": "Bps",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "$$hashKey": "object:223",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "prometheus",
+      "description": "Input records processing rate of all fluent-bits.",
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "fill": 0,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 5,
+        "w": 12,
+        "x": 0,
+        "y": 5
+      },
+      "hiddenSeries": false,
+      "id": 40,
+      "legend": {
+        "alignAsTable": false,
+        "avg": false,
+        "current": true,
+        "hideEmpty": true,
+        "hideZero": true,
+        "max": false,
+        "min": false,
+        "rightSide": true,
+        "show": true,
+        "sort": "current",
+        "sortDesc": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.5.42",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum(rate(fluentbit_input_records_total{pod=~\"$pod\"}[$__rate_interval])) by (pod, name)",
+          "format": "time_series",
+          "hide": false,
+          "interval": "",
+          "intervalFactor": 1,
+          "legendFormat": "{{ pod }}/{{name}}",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "[Fluentbit] Input Records Per Second",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:1387",
+          "format": "rps",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:1388",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "prometheus",
+      "description": "Output records processing rate of all fluent-bits.",
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "fill": 0,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 5,
+        "w": 12,
+        "x": 12,
+        "y": 5
+      },
+      "hiddenSeries": false,
+      "id": 41,
+      "legend": {
+        "alignAsTable": false,
+        "avg": false,
+        "current": true,
+        "hideEmpty": true,
+        "hideZero": true,
+        "max": false,
+        "min": false,
+        "rightSide": true,
+        "show": true,
+        "sort": "current",
+        "sortDesc": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.5.42",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum(rate(fluentbit_output_proc_records_total{pod=~\"$pod\"}[$__rate_interval])) by (pod, name)",
+          "format": "time_series",
+          "hide": false,
+          "interval": "",
+          "intervalFactor": 1,
+          "legendFormat": "{{ pod }}/{{name}}",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "[Fluentbit] Output Records Per Second",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:324",
+          "format": "rps",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "$$hashKey": "object:325",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "prometheus",
+      "description": "Output plugin total logs",
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "fill": 0,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 0,
+        "y": 10
+      },
+      "hiddenSeries": false,
+      "id": 56,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "hideEmpty": true,
+        "hideZero": true,
+        "max": false,
+        "min": false,
+        "rightSide": true,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.5.42",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum(rate(fluentbit_vali_gardener_incoming_logs_total{pod=~\"$pod\"}[$__rate_interval])) by (pod)",
+          "instant": false,
+          "interval": "",
+          "legendFormat": "Incoming logs-{{pod}}",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(rate(fluentbit_vali_gardener_incoming_logs_with_endpoint_total{pod=~\"$pod\"}[$__rate_interval])) by (pod)",
+          "instant": false,
+          "interval": "",
+          "legendFormat": "Incoming logs with endpoint-{{pod}}",
+          "refId": "B"
+        },
+        {
+          "expr": "sum(rate(fluentbit_vali_gardener_forwarded_logs_total{pod=~\"$pod\"}[$__rate_interval])) by (pod)",
+          "interval": "",
+          "legendFormat": "Transferred to Valitail-{{pod}}",
+          "refId": "C"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "[Output Plugin] Processed Logs",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "transformations": [],
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:1440",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:1441",
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "prometheus",
+      "description": "Summary for the all custom fail metrics in the output plugin",
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "fill": 0,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 12,
+        "y": 10
+      },
+      "hiddenSeries": false,
+      "id": 59,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "hideEmpty": true,
+        "hideZero": true,
+        "max": false,
+        "min": false,
+        "rightSide": true,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.5.42",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum(rate(fluentbit_vali_gardener_dropped_logs_total{pod=~\"$pod\"}[$__rate_interval])) by (pod)",
+          "interval": "",
+          "legendFormat": "Dropped logs-{{pod}}",
+          "refId": "C"
+        },
+        {
+          "expr": "sum(rate(prometheus_target_scrapes_sample_out_of_order_total{pod=~\"$pod\"}[$__rate_interval])) by (pod)",
+          "interval": "",
+          "legendFormat": "OutOfOrder logs-{{pod}}",
+          "refId": "D"
+        },
+        {
+          "expr": "sum(rate(fluentbit_vali_gardener_logs_without_metadata_total{pod=~\"$pod\"}[$__rate_interval])) by (pod)",
+          "interval": "",
+          "legendFormat": "Missing metadata-{{pod}}",
+          "refId": "E"
+        },
+        {
+          "expr": "sum(rate(fluentbit_vali_gardener_errors_total{pod=~\"$pod\"}[$__rate_interval])) by (pod)",
+          "interval": "",
+          "legendFormat": "Errors-{{pod}}",
+          "refId": "F"
+        },
+        {
+          "expr": "sum(rate(valitail_dropped_entries_total{pod=~\"$pod\"}[$__rate_interval])) by (pod)",
+          "interval": "",
+          "legendFormat": "Valitail dropped-{{pod}}",
+          "refId": "G"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "[Output Plugin] Fails Summary",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:421",
+          "format": "short",
+          "label": "",
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "$$hashKey": "object:422",
+          "format": "short",
+          "label": "",
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "datasource": "prometheus",
+      "description": "Table which shows the total incoming logs from the Output plugin",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "center",
+            "filterable": true
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 8,
+        "x": 0,
+        "y": 16
+      },
+      "hideTimeOverride": true,
+      "id": 62,
+      "interval": "",
+      "options": {
+        "frameIndex": 0,
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "7.5.42",
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "sum(increase(fluentbit_vali_gardener_incoming_logs_total{pod=~\"$pod\"}[$__rate_interval]) != 0) by (host)",
+          "interval": "",
+          "legendFormat": "{{host}}",
+          "queryType": "randomWalk",
+          "refId": "A"
+        }
+      ],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "[Output Plugin] Incoming Logs",
+      "transformations": [
+        {
+          "id": "reduce",
+          "options": {
+            "reducers": [
+              "delta"
+            ]
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "indexByName": {},
+            "renameByName": {
+              "Delta": "Total number of logs",
+              "Field": "Namespace",
+              "Last": "Dropped logs from last 1h",
+              "Mean": "Average number of incoming logs per hour",
+              "Total": ""
+            }
+          }
+        },
+        {
+          "id": "groupBy",
+          "options": {
+            "fields": {
+              "Namespace": {
+                "aggregations": [],
+                "operation": "aggregate"
+              }
+            }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": "prometheus",
+      "description": "Table which shows the total incoming logs with attached endpoint and are ready to be forwarded to the Valitail client",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "center",
+            "filterable": true
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 8,
+        "x": 8,
+        "y": 16
+      },
+      "hideTimeOverride": true,
+      "id": 63,
+      "interval": "",
+      "options": {
+        "frameIndex": 0,
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "7.5.42",
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "sum(increase(fluentbit_vali_gardener_incoming_logs_with_endpoint_total{pod=~\"$pod\"}[$__rate_interval])  != 0) by (host)",
+          "interval": "",
+          "legendFormat": "{{host}}",
+          "queryType": "randomWalk",
+          "refId": "A"
+        }
+      ],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "[Output Plugin] Incoming Logs With Endpoint",
+      "transformations": [
+        {
+          "id": "reduce",
+          "options": {
+            "reducers": [
+              "delta"
+            ]
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "indexByName": {},
+            "renameByName": {
+              "Delta": "Total number of logs",
+              "Field": "Namespace",
+              "Last": "Dropped logs from last 1h",
+              "Mean": "Average number of incoming logs per hour",
+              "Total": ""
+            }
+          }
+        },
+        {
+          "id": "groupBy",
+          "options": {
+            "fields": {
+              "Namespace": {
+                "aggregations": [],
+                "operation": "aggregate"
+              }
+            }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": "prometheus",
+      "description": "Table which shows the transferred logs from Output plugin to the Valitail per hour.",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "center",
+            "filterable": true
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 8,
+        "x": 16,
+        "y": 16
+      },
+      "id": 49,
+      "options": {
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "7.5.42",
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "sum(increase(fluentbit_vali_gardener_forwarded_logs_total{pod=~\"$pod\"}[$__rate_interval]) != 0) by (host)",
+          "interval": "",
+          "legendFormat": "{{host}}",
+          "queryType": "randomWalk",
+          "refId": "A"
+        }
+      ],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "[Output Plugin] Transferred Logs to Valitail",
+      "transformations": [
+        {
+          "id": "reduce",
+          "options": {
+            "reducers": [
+              "delta"
+            ]
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "indexByName": {},
+            "renameByName": {
+              "Delta": "Total number of logs",
+              "Field": "Namespace",
+              "Last": "Logs from last 1h",
+              "Mean": "Average number of logs per hour"
+            }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": "prometheus",
+      "description": "Table which shows the total dropped entries by valitail per hour",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "center",
+            "filterable": true
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Total"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": null
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 0,
+        "y": 21
+      },
+      "hideTimeOverride": true,
+      "id": 58,
+      "options": {
+        "frameIndex": 0,
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "7.5.42",
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "sum(increase(valitail_dropped_entries_total{pod=~\"$pod\"}[$__rate_interval]) != 0) by (host)",
+          "interval": "",
+          "legendFormat": "{{host}}",
+          "queryType": "randomWalk",
+          "refId": "A"
+        }
+      ],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "[Valitail] Dropped Logs",
+      "transformations": [
+        {
+          "id": "reduce",
+          "options": {
+            "reducers": [
+              "delta"
+            ]
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "indexByName": {},
+            "renameByName": {
+              "Delta": "Total number of logs",
+              "Field": "Source",
+              "Last": "Dropped logs from last 1h",
+              "Mean": "Average number of dropped logs per hour",
+              "Total": ""
+            }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": "prometheus",
+      "description": "Table which shows dropped logs for all namespaces.",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "center",
+            "filterable": true
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 12,
+        "y": 21
+      },
+      "hideTimeOverride": true,
+      "id": 53,
+      "options": {
+        "frameIndex": 0,
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "7.5.42",
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "sum(increase(fluentbit_vali_gardener_dropped_logs_total{pod=~\"$pod\"}[$__rate_interval]) != 0) by (host)",
+          "interval": "",
+          "legendFormat": "{{host}}",
+          "queryType": "randomWalk",
+          "refId": "A"
+        }
+      ],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "[Output Plugin] Dropped Logs",
+      "transformations": [
+        {
+          "id": "reduce",
+          "options": {
+            "reducers": [
+              "delta"
+            ]
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "indexByName": {},
+            "renameByName": {
+              "Delta": "Total number of logs",
+              "Field": "Namespace"
+            }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": "prometheus",
+      "description": "Table which shows logs without metadata for all namespaces.",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "center",
+            "filterable": true
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 0,
+        "y": 27
+      },
+      "hideTimeOverride": true,
+      "id": 52,
+      "options": {
+        "frameIndex": 0,
+        "showHeader": true
+      },
+      "pluginVersion": "7.5.42",
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "sum(increase(fluentbit_vali_gardener_logs_without_metadata_total{pod=~\"$pod\"}[$__rate_interval]) != 0) by (host)",
+          "interval": "",
+          "legendFormat": "{{host}}",
+          "queryType": "randomWalk",
+          "refId": "A"
+        }
+      ],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "[Output Plugin] Missing Metadata Logs",
+      "transformations": [
+        {
+          "id": "reduce",
+          "options": {
+            "reducers": [
+              "delta"
+            ]
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": "prometheus",
+      "description": "Table which shows errors in the output plugin",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "center",
+            "filterable": true
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 12,
+        "y": 27
+      },
+      "hideTimeOverride": true,
+      "id": 54,
+      "options": {
+        "frameIndex": 0,
+        "showHeader": true
+      },
+      "pluginVersion": "7.5.42",
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "sum(increase(fluentbit_vali_gardener_errors_total{pod=~\"$pod\"}[$__rate_interval]) != 0) by (host)",
+          "interval": "",
+          "legendFormat": "{{host}}",
+          "queryType": "randomWalk",
+          "refId": "A"
+        }
+      ],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "[Output Plugin] Errors",
+      "transformations": [
+        {
+          "id": "reduce",
+          "options": {
+            "reducers": [
+              "delta"
+            ]
+          }
+        }
+      ],
+      "type": "table"
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 27,
+  "style": "dark",
+  "tags": [],
+  "templating": {
+    "list": [
+      {
+        "allValue": "fluent-bit.+",
+        "current": {
+          "selected": true,
+          "tags": [],
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": "prometheus",
+        "definition": "label_values(pod)",
+        "description": null,
+        "error": null,
+        "hide": 0,
+        "includeAll": true,
+        "label": "Pod",
+        "multi": true,
+        "name": "pod",
+        "options": [],
+        "query": {
+          "query": "label_values(pod)",
+          "refId": "prometheus-pod-Variable-Query"
+        },
+        "refresh": 1,
+        "regex": "fluent-bit.+",
+        "skipUrlSync": false,
+        "sort": 0,
+        "tagValuesQuery": "",
+        "tags": [],
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
+      }
+    ]
+  },
+  "time": {
+    "from": "now-5m",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": [
+      "5s",
+      "10s",
+      "30s",
+      "1m",
+      "5m",
+      "15m",
+      "30m",
+      "1h",
+      "2h",
+      "1d"
+    ],
+    "time_options": [
+      "5m",
+      "15m",
+      "1h",
+      "6h",
+      "12h",
+      "24h",
+      "2d",
+      "7d",
+      "30d"
+    ]
+  },
+  "timezone": "",
+  "title": "Fluent Bit",
+  "uid": "fluentbit",
+  "version": 1
+}

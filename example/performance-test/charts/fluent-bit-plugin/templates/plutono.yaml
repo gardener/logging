@@ -1,0 +1,115 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "fluent-bit-plugin.plutonoName" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "fluent-bit-plugin.plutonoLabels" . | nindent 4 }}
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "fluent-bit-plugin.plutonoName" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "fluent-bit-plugin.plutonoLabels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3000
+      targetPort: 3000
+      protocol: TCP
+      name: web
+  selector:
+    {{- include "fluent-bit-plugin.plutonoSelectorLabels" . | nindent 4 }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "fluent-bit-plugin.plutonoName" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "fluent-bit-plugin.plutonoLabels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "fluent-bit-plugin.plutonoLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "fluent-bit-plugin.plutonoLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "fluent-bit-plugin.plutonoName" . }}
+      containers:
+        - name: plutono
+          image: {{ .Values.plutono.image }}
+          env:
+            - name: PL_AUTH_ANONYMOUS_ENABLED
+              value: "true"
+            - name: PL_USERS_VIEWERS_CAN_EDIT
+              value: "true"
+            - name: PL_DATE_FORMATS_DEFAULT_TIMEZONE
+              value: UTC
+            - name: PL_AUTH_DISABLE_LOGIN_FORM
+              value: "true"
+            - name: PL_AUTH_DISABLE_SIGNOUT_MENU
+              value: "true"
+            - name: PL_ALERTING_ENABLED
+              value: "false"
+            - name: PL_SNAPSHOTS_EXTERNAL_ENABLED
+              value: "false"
+          {{- with .Values.plutono.ports }}
+          ports:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.plutono.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.plutono.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - mountPath: /etc/plutono/provisioning/datasources
+              name: datasources
+            - mountPath: /etc/plutono/provisioning/dashboards/default.yaml
+              name: dashboards
+              subPath: default.yaml
+            - mountPath: /var/lib/plutono/dashboards/plutono-fluent-bit-dashboard.json
+              name: dashboards
+              subPath: plutono-fluent-bit-dashboard.json
+          {{- with .Values.plutono.volumeMounts }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.plutono.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.plutono.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.plutono.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        - configMap:
+            defaultMode: 420
+            name: {{ include "fluent-bit-plugin.plutonoName" . }}-dashboards
+          name: dashboards
+        - configMap:
+            defaultMode: 420
+            name: {{ include "fluent-bit-plugin.plutonoName" . }}-datasources
+          name: datasources
+      {{- with .Values.plutono.volumes }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

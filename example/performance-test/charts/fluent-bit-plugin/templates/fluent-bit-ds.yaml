@@ -1,0 +1,159 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "fluent-bit-plugin.name" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "fluent-bit-plugin.labels" . | nindent 4 }}
+automountServiceAccountToken: true
+---
+# fluent-bit DaemonSet
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ include "fluent-bit-plugin.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "fluent-bit-plugin.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "fluent-bit-plugin.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "fluent-bit-plugin.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "fluent-bit-plugin.name" . }}
+      initContainers:
+        - name: install-plugin
+          image: {{ include "fluent-bit-plugin.image.repository" (merge (dict "name" "fluent-bit-to-vali") .Values.image) }}
+          command:
+            - cp
+            - /source/plugins/.
+            - /plugins
+          volumeMounts:
+            - mountPath: /plugins
+              name: plugins
+      containers:
+        - name: fluent-bit
+          image: {{ .Values.fluentBit.image }}
+          command:
+            - /fluent-bit/bin/fluent-bit-watcher
+            - -e
+            - /fluent-bit/plugins/output_plugin.so
+            - -c
+            - /fluent-bit/config/fluent-bit.conf
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: spec.nodeName
+            - name: HOST_IP
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: status.hostIP
+          {{- with .Values.fluentBit.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.fluentBit.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.fluentBit.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.fluentBit.ports }}
+          ports:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - mountPath: /fluent-bit/config
+              name: config
+              readOnly: true
+            - mountPath: /var/log/
+              mountPropagation: None
+              name: varlogs
+              readOnly: true
+            - mountPath: /var/log/journal
+              name: varlogjournal
+              readOnly: true
+            - mountPath: /run/log/journal
+              name: runlogjournal
+            - mountPath: /var/fluentbit
+              name: varfluent
+            - mountPath: /fluent-bit/plugins
+              name: plugins
+          {{- with .Values.fluentBit.volumeMounts }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      volumes:
+        - name: config
+          configMap:
+            defaultMode: 420
+            name: {{ include "fluent-bit-plugin.name" . }}-fluent-bit
+        - name: varlogs
+          hostPath:
+            path: /var/log
+            type: ""
+        - name: varlogjournal
+          hostPath:
+            path: /var/log/journal
+            type: ""
+        - name: runlogjournal
+          hostPath:
+            path: /run/log/journal
+            type: ""
+        - name: varfluent
+          hostPath:
+            path: /var/fluentbit
+            type: ""
+        - name: plugins
+          emptyDir: {}
+      {{- with .Values.fluentBit.volumes }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.fluentBit.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.fluentBit.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "fluent-bit-plugin.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "fluent-bit-plugin.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.fluentBit.service.type }}
+  {{- with .Values.fluentBit.service.ports }}
+  ports:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  selector:
+    {{- include "fluent-bit-plugin.selectorLabels" . | nindent 4 }}

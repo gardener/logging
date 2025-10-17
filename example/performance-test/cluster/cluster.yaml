@@ -1,0 +1,32 @@
+apiVersion: extensions.gardener.cloud/v1alpha1
+kind: Cluster
+metadata:
+  name: localhost # shall match the DynamicHostRegex in the output plugin configuration
+spec:
+  shoot:
+    apiVersion: core.gardener.cloud/v1beta1
+    kind: Shoot
+    metadata:
+      name: dev-01
+      namespace: project-01
+    spec:
+      purpose: development
+      hibernation:
+        enabled: false
+    status:
+      lastOperation:
+        description: Shoot cluster has been successfully reconciled.
+        lastUpdateTime: "2025-10-04T01:25:47Z"
+        progress: 100
+        state: Succeeded
+        type: Reconcile
+  cloudProfile:
+    apiVersion: core.gardener.cloud/v1beta1
+    kind: CloudProfile
+    metadata:
+      name: aws
+  seed:
+    apiVersion: core.gardener.cloud/v1beta1
+    kind: Seed
+    metadata:
+      name: testing
