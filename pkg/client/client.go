@@ -90,12 +90,16 @@ func NewClient(cfg config.Config, logger log.Logger, options Options) (OutputCli
 		}
 	}
 
+	outputClient, err := ncf(cfg, logger)
+	if err != nil {
+		return nil, err
+	}
 	_ = level.Debug(logger).Log(
-		"msg", "building a new client",
-		"queue_name", cfg.ClientConfig.BufferConfig.DqueConfig.QueueName,
+		"msg", "client created",
+		"url", outputClient.GetEndPoint(),
 	)
 
-	return ncf(cfg, logger)
+	return outputClient, nil
 }
 
 type removeTenantIDClient struct {
