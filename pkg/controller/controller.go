@@ -45,8 +45,20 @@ type controller struct {
 }
 
 // NewController return Controller interface
-func NewController(informer cache.SharedIndexInformer, conf *config.Config, seedClient client.OutputClient, l log.Logger) (Controller, error) {
+func NewController(informer cache.SharedIndexInformer, conf *config.Config, l log.Logger) (Controller, error) {
 	var err error
+	var seedClient client.OutputClient
+
+	cfgShallowCopy := *conf
+	cfgShallowCopy.ClientConfig.BufferConfig.DqueConfig.QueueName = conf.ClientConfig.BufferConfig.DqueConfig.
+		QueueName + "-controller"
+	if seedClient, err = client.NewClient(cfgShallowCopy, l, client.Options{
+		RemoveTenantID:    conf.PluginConfig.DynamicTenant.RemoveTenantIDWhenSendingToDefaultURL,
+		MultiTenantClient: false,
+		PreservedLabels:   conf.PluginConfig.PreservedLabels,
+	}); err != nil {
+		return nil, fmt.Errorf("failed to create seed client in controller: %w", err)
+	}
 
 	ctl := &controller{
 		clients:    make(map[string]Client, expectedActiveClusters),
