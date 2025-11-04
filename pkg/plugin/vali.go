@@ -66,10 +66,12 @@ func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger lo
 		v.dynamicTenantField = cfg.PluginConfig.DynamicTenant.Field
 	}
 
-	if v.seedClient, err = client.NewClient(*cfg, logger, client.Options{
-		RemoveTenantID:    cfg.PluginConfig.DynamicTenant.RemoveTenantIDWhenSendingToDefaultURL,
-		MultiTenantClient: false,
-	}); err != nil {
+	if v.seedClient, err = client.NewClient(*cfg, logger,
+		client.Options{
+			RemoveTenantID:    cfg.PluginConfig.DynamicTenant.RemoveTenantIDWhenSendingToDefaultURL,
+			MultiTenantClient: false,
+		},
+	); err != nil {
 		return nil, err
 	}
 

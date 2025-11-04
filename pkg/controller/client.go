@@ -81,7 +81,11 @@ func (ctl *controller) newControllerClient(clusterName string, clientConf *confi
 		"name", clusterName,
 	)
 
-	shootClient, err := client.NewClient(*clientConf, ctl.logger, client.Options{MultiTenantClient: clientConf.PluginConfig.EnableMultiTenancy})
+	shootClient, err := client.NewClient(*clientConf, ctl.logger,
+		client.Options{
+			MultiTenantClient: clientConf.PluginConfig.EnableMultiTenancy,
+		},
+	)
 	if err != nil {
 		return nil, err
 	}

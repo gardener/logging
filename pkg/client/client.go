@@ -32,9 +32,7 @@ type Options struct {
 
 // NewClient creates a new client based on the fluent-bit configuration.
 func NewClient(cfg config.Config, logger log.Logger, options Options) (OutputClient, error) {
-	var (
-		ncf NewValiClientFunc
-	)
+	var ncf NewValiClientFunc
 
 	if cfg.ClientConfig.TestingClient == nil {
 		ncf = func(c config.Config, _ log.Logger) (OutputClient, error) {
@@ -94,10 +92,7 @@ func NewClient(cfg config.Config, logger log.Logger, options Options) (OutputCli
 	if err != nil {
 		return nil, err
 	}
-	_ = level.Debug(logger).Log(
-		"msg", "client created",
-		"url", outputClient.GetEndPoint(),
-	)
+	_ = level.Debug(logger).Log("msg", "client created", "url", outputClient.GetEndPoint())
 
 	return outputClient, nil
 }
