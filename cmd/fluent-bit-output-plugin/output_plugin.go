@@ -139,9 +139,6 @@ func (c *pluginConfig) toStringMap() map[string]string {
 		"FallbackToTagWhenMetadataIsMissing", "DropLogEntryWithoutK8sMetadata",
 		"TagKey", "TagPrefix", "TagExpression",
 
-		// Dynamic tenant
-		"DynamicTenant", "RemoveTenantIDWhenSendingToDefaultURL",
-
 		// Buffer config
 		"Buffer", "BufferType", "QueueDir", "QueueSegmentSize", "QueueSync", "QueueName",
 
@@ -235,7 +232,13 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 //
 //export FLBPluginFlushCtx
 func FLBPluginFlushCtx(ctx, data unsafe.Pointer, length C.int, tag *C.char) int {
-	id := output.FLBPluginGetContext(ctx).(string)
+	var id string
+	var ok bool
+	if id, ok = output.FLBPluginGetContext(ctx).(string); !ok {
+		_ = level.Error(logger).Log("msg", "output plugin id not found in context")
+
+		return output.FLB_ERROR
+	}
 	outputPlugin, ok := pluginsMap[id]
 	if !ok {
 		metrics.Errors.WithLabelValues(metrics.ErrorFLBPluginFlushCtx).Inc()
@@ -263,14 +266,14 @@ func FLBPluginFlushCtx(ctx, data unsafe.Pointer, length C.int, tag *C.char) int 
 		case uint64:
 			timestamp = time.Unix(int64(t), 0)
 		default:
-			_ = level.Info(logger).Log("msg", fmt.Sprintf("unknown timestamp type: %T", ts))
+			_ = level.Info(logger).Log("[flb-go]", fmt.Sprintf("unknown timestamp type: %T", ts))
 			timestamp = time.Now()
 		}
 
 		err := outputPlugin.SendRecord(record, timestamp)
 		if err != nil {
 			_ = level.Error(logger).Log(
-				"msg", "error sending record, retrying...",
+				"[flb-go]", "error sending record, retrying...",
 				"tag", C.GoString(tag),
 				"err", err.Error(),
 			)
@@ -291,17 +294,23 @@ func FLBPluginFlushCtx(ctx, data unsafe.Pointer, length C.int, tag *C.char) int 
 //
 //export FLBPluginExitCtx
 func FLBPluginExitCtx(ctx unsafe.Pointer) int {
-	id := output.FLBPluginGetContext(ctx).(string)
+	var id string
+	var ok bool
+	if id, ok = output.FLBPluginGetContext(ctx).(string); !ok {
+		_ = level.Error(logger).Log("[flb-go]", "output plugin id not found in context")
+
+		return output.FLB_ERROR
+	}
 	outputPlugin, ok := pluginsMap[id]
 	if !ok {
-		_ = level.Error(logger).Log("msg", "output plugin not known", "id", id)
+		_ = level.Error(logger).Log("[flb-go]", "output plugin not known", "id", id)
 
 		return output.FLB_ERROR
 	}
 	outputPlugin.Close()
 	pluginsRemove(id)
 
-	_ = level.Info(logger).Log("msg", "output plugin removed", "id", id, "count", len(pluginsMap))
+	_ = level.Info(logger).Log("[flb-go]", "output plugin removed", "id", id, "count", len(pluginsMap))
 
 	return output.FLB_OK
 }
@@ -398,9 +407,6 @@ func dumpConfiguration(_logger log.Logger, conf *config.Config) {
 	_ = level.Debug(paramLogger).Log("NumberOfBatchIDs", fmt.Sprintf("%+v", conf.ClientConfig.NumberOfBatchIDs))
 	_ = level.Debug(paramLogger).Log("IdLabelName", fmt.Sprintf("%+v", conf.ClientConfig.IDLabelName))
 	_ = level.Debug(paramLogger).Log("DeletedClientTimeExpiration", fmt.Sprintf("%+v", conf.ControllerConfig.DeletedClientTimeExpiration))
-	_ = level.Debug(paramLogger).Log("DynamicTenant", fmt.Sprintf("%+v", conf.PluginConfig.DynamicTenant.Tenant))
-	_ = level.Debug(paramLogger).Log("DynamicField", fmt.Sprintf("%+v", conf.PluginConfig.DynamicTenant.Field))
-	_ = level.Debug(paramLogger).Log("DynamicRegex", fmt.Sprintf("%+v", conf.PluginConfig.DynamicTenant.Regex))
 	_ = level.Debug(paramLogger).Log("Pprof", fmt.Sprintf("%+v", conf.Pprof))
 	if len(conf.PluginConfig.HostnameKey) > 0 {
 		_ = level.Debug(paramLogger).Log("HostnameKey", conf.PluginConfig.HostnameKey)

@@ -234,21 +234,6 @@ func processIDLabelName(configMap map[string]any, config *Config) error {
 	return nil
 }
 
-func processDynamicTenant(configMap map[string]any, config *Config) error {
-	if dynamicTenant, ok := configMap["DynamicTenant"].(string); ok && dynamicTenant != "" {
-		parts := strings.Fields(dynamicTenant)
-		if len(parts) < 3 {
-			return fmt.Errorf("DynamicTenant must have at least 3 parts (tenant field regex), got %d parts: %s", len(parts), dynamicTenant)
-		}
-		config.PluginConfig.DynamicTenant.Tenant = parts[0]
-		config.PluginConfig.DynamicTenant.Field = parts[1]
-		config.PluginConfig.DynamicTenant.Regex = strings.Join(parts[2:], " ")
-		config.PluginConfig.DynamicTenant.RemoveTenantIDWhenSendingToDefaultURL = true
-	}
-
-	return nil
-}
-
 func processHostnameKeyValue(configMap map[string]any, config *Config) error {
 	if hostnameKeyValue, ok := configMap["HostnameKeyValue"].(string); ok && hostnameKeyValue != "" {
 		parts := strings.Fields(hostnameKeyValue)
@@ -522,10 +507,6 @@ func processValidationConfigs(config *Config, configMap map[string]any) error {
 
 // processComplexStringConfigs handles complex string parsing fields
 func processComplexStringConfigs(config *Config, configMap map[string]any) error {
-	if err := processDynamicTenant(configMap, config); err != nil {
-		return err
-	}
-
 	return processHostnameKeyValue(configMap, config)
 }
 

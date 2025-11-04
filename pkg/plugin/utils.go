@@ -16,7 +16,6 @@ import (
 	"github.com/go-logfmt/logfmt"
 	"github.com/prometheus/common/model"
 
-	"github.com/gardener/logging/pkg/client"
 	"github.com/gardener/logging/pkg/config"
 )
 
@@ -212,20 +211,6 @@ func removeKeys(records map[string]any, keys []string) {
 	for _, k := range keys {
 		delete(records, k)
 	}
-}
-
-func extractMultiTenantClientLabel(records map[string]any, res model.LabelSet) {
-	if value, ok := getRecordValue(client.MultiTenantClientLabel, records); ok {
-		lName := model.LabelName(client.MultiTenantClientLabel)
-		lValue := model.LabelValue(value)
-		if lValue.IsValid() && lName.IsValid() {
-			res[lName] = lValue
-		}
-	}
-}
-
-func removeMultiTenantClientLabel(records map[string]any) {
-	delete(records, client.MultiTenantClientLabel)
 }
 
 func createLine(records map[string]any, f config.Format) (string, error) {

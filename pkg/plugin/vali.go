@@ -59,19 +59,7 @@ func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger lo
 		v.extractKubernetesMetadataRegexp = regexp.MustCompile(cfg.PluginConfig.KubernetesMetadata.TagPrefix + cfg.PluginConfig.KubernetesMetadata.TagExpression)
 	}
 
-	// TODO(nickytd): Reconsider removing the multi tenancy in clients
-	if cfg.PluginConfig.DynamicTenant.Tenant != "" && cfg.PluginConfig.DynamicTenant.Field != "" && cfg.PluginConfig.DynamicTenant.Regex != "" {
-		v.dynamicTenantRegexp = regexp.MustCompile(cfg.PluginConfig.DynamicTenant.Regex)
-		v.dynamicTenant = cfg.PluginConfig.DynamicTenant.Tenant
-		v.dynamicTenantField = cfg.PluginConfig.DynamicTenant.Field
-	}
-
-	if v.seedClient, err = client.NewClient(*cfg, logger,
-		client.Options{
-			RemoveTenantID:    cfg.PluginConfig.DynamicTenant.RemoveTenantIDWhenSendingToDefaultURL,
-			MultiTenantClient: false,
-		},
-	); err != nil {
+	if v.seedClient, err = client.NewClient(*cfg, logger, client.Options{}); err != nil {
 		return nil, err
 	}
 
@@ -131,11 +119,6 @@ func (v *vali) SendRecord(r map[any]any, ts time.Time) error {
 	}
 
 	metrics.IncomingLogs.WithLabelValues(host).Inc()
-
-	// Extract __gardener_multitenant_id__ from the record into the labelSet.
-	// And then delete it from the record.
-	extractMultiTenantClientLabel(records, lbs)
-	removeMultiTenantClientLabel(records)
 
 	removeKeys(records, append(v.cfg.PluginConfig.LabelKeys, v.cfg.PluginConfig.RemoveKeys...))
 	if len(records) == 0 {
