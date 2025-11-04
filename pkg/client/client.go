@@ -22,10 +22,6 @@ const (
 
 // Options for creating a Vali client
 type Options struct {
-	// RemoveTenantID flag removes the "__tenant_id_" label
-	RemoveTenantID bool
-	// MultiTenantClient flag removes the "__gardener_multitenant_id__" label
-	MultiTenantClient bool
 	// PreservedLabels is the labels to preserve
 	PreservedLabels model.LabelSet
 }
@@ -59,25 +55,6 @@ func NewClient(cfg config.Config, logger log.Logger, options Options) (OutputCli
 		tempNCF := ncf
 		ncf = func(c config.Config, l log.Logger) (OutputClient, error) {
 			return NewPackClientDecorator(c, tempNCF, l)
-		}
-	}
-
-	if options.RemoveTenantID {
-		tempNCF := ncf
-		ncf = func(c config.Config, l log.Logger) (OutputClient, error) {
-			return NewRemoveTenantIDClientDecorator(c, tempNCF, l)
-		}
-	}
-
-	if options.MultiTenantClient {
-		tempNCF := ncf
-		ncf = func(c config.Config, l log.Logger) (OutputClient, error) {
-			return NewMultiTenantClientDecorator(c, tempNCF, l)
-		}
-	} else {
-		tempNCF := ncf
-		ncf = func(c config.Config, l log.Logger) (OutputClient, error) {
-			return NewRemoveMultiTenantIDClientDecorator(c, tempNCF, l)
 		}
 	}
 

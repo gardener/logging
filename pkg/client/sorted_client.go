@@ -11,6 +11,7 @@ import (
 	"github.com/credativ/vali/pkg/logproto"
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
+	giterrors "github.com/pkg/errors"
 	"github.com/prometheus/common/model"
 
 	"github.com/gardener/logging/pkg/batch"
@@ -21,7 +22,7 @@ const componentNameSort = "sort"
 
 type sortedClient struct {
 	logger           log.Logger
-	valiclient       multiTenantClient
+	valiclient       OutputClient
 	batch            *batch.Batch
 	batchWait        time.Duration
 	batchLock        sync.Mutex
@@ -57,7 +58,7 @@ func NewSortedClientDecorator(cfg config.Config, newClient NewValiClientFunc, lo
 
 	c := &sortedClient{
 		logger:           log.With(logger, "component", componentNameSort, "host", cfg.ClientConfig.CredativValiConfig.URL.Host),
-		valiclient:       multiTenantClient{valiclient: client},
+		valiclient:       client,
 		batchWait:        batchWait,
 		batchSize:        cfg.ClientConfig.CredativValiConfig.BatchSize,
 		batchID:          0,
@@ -144,11 +145,23 @@ func (c *sortedClient) sendBatch() {
 	c.batch.Sort()
 
 	for _, stream := range c.batch.GetStreams() {
-		if err := c.valiclient.handleStream(*stream); err != nil {
+		if err := c.handleEntries(stream.Labels, stream.Entries); err != nil {
 			_ = level.Error(c.logger).Log("msg", "error sending stream", "stream", stream.Labels.String(), "error", err.Error())
 		}
 	}
 	c.batch = nil
+}
+
+func (c *sortedClient) handleEntries(ls model.LabelSet, entries []batch.Entry) error {
+	var combineErr error
+	for _, entry := range entries {
+		err := c.valiclient.Handle(ls, entry.Timestamp, entry.Line)
+		if err != nil {
+			combineErr = giterrors.Wrap(combineErr, err.Error())
+		}
+	}
+
+	return combineErr
 }
 
 func (c *sortedClient) newBatch(e Entry) {

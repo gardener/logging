@@ -54,9 +54,7 @@ func NewController(informer cache.SharedIndexInformer, conf *config.Config, l lo
 		QueueName + "-controller"
 	if seedClient, err = client.NewClient(cfgShallowCopy, l,
 		client.Options{
-			RemoveTenantID:    conf.PluginConfig.DynamicTenant.RemoveTenantIDWhenSendingToDefaultURL,
-			MultiTenantClient: false,
-			PreservedLabels:   conf.PluginConfig.PreservedLabels,
+			PreservedLabels: conf.PluginConfig.PreservedLabels,
 		},
 	); err != nil {
 		return nil, fmt.Errorf("failed to create seed client in controller: %w", err)
