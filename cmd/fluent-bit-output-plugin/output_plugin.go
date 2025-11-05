@@ -303,7 +303,9 @@ func FLBPluginExitCtx(ctx unsafe.Pointer) int {
 
 		return output.FLB_ERROR
 	}
+	pluginsMutex.RLock()
 	outputPlugin, ok := pluginsMap[id]
+	pluginsMutex.RUnlock()
 	if !ok {
 		_ = level.Error(logger).Log("[flb-go]", "output plugin not known", "id", id)
 
