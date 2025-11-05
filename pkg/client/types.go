@@ -21,7 +21,7 @@ type OutputClient interface {
 	Handle(labels any, t time.Time, entry string) error
 	// Stop shut down the client immediately without waiting to send the saved logs
 	Stop()
-	// StopWait stops the client of receiving new logs and waits all saved logs to be sent until shuting down
+	// StopWait stops the client of receiving new logs and waits all saved logs to be sent until shutting down
 	StopWait()
 	// GetEndPoint returns the target logging backend endpoint
 	GetEndPoint() string
