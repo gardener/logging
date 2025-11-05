@@ -1,9 +1,9 @@
-nameOverride: ""
-fullnameOverride: ""
+nameOverride: "logging"
+fullnameOverride: "fluent-bit"
 
 image:
-  repository: ""
-  tag: ""
+  repository: europe-docker.pkg.dev/gardener-project/snapshots/gardener
+  tag: "latest"
   pullPolicy: IfNotPresent
   imagePullSecrets: []
 
@@ -31,7 +31,13 @@ fluentBit:
     successThreshold: 1
     timeoutSeconds: 1
 
-  resources: {}
+  resources:
+    limits:
+      memory: 350Mi
+      ephemeral-storage: 100Mi
+    requests:
+      cpu: 100m
+      memory: 100Mi
 
   ports:
     - name: metrics
@@ -50,8 +56,13 @@ fluentBit:
   nodeSelector: {} # node selector for DaemonSet
   affinity: {} # node affinity for DaemonSet
 
-  volumeMounts: [] # additional volume mounts to add to the DaemonSet
-  volumes: [] # additional volumes to add to the DaemonSet
+  volumeMounts:
+    - name: buffer
+      mountPath: /fluentbit/buffers
+  volumes:
+    - name: buffer
+      emptyDir:
+        sizeLimit: 10Mi
 
   service:
     type: ClusterIP
