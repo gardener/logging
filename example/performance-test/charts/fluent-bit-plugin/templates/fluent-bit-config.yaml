@@ -99,7 +99,7 @@ data:
         Ignore_Older    30m
         Skip_Long_Lines    true
         DB    /var/fluentbit/flb_kube.db
-        Mem_Buf_Limit    30MB
+        Mem_Buf_Limit    60MB
         Tag    kubernetes.*
 
     [Filter]
