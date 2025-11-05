@@ -239,7 +239,9 @@ func FLBPluginFlushCtx(ctx, data unsafe.Pointer, length C.int, tag *C.char) int 
 
 		return output.FLB_ERROR
 	}
+	pluginsMutex.RLock()
 	outputPlugin, ok := pluginsMap[id]
+	pluginsMutex.RUnlock()
 	if !ok {
 		metrics.Errors.WithLabelValues(metrics.ErrorFLBPluginFlushCtx).Inc()
 		_ = level.Error(logger).Log("[flb-go]", "outputPlugin not initialized")
