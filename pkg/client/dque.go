@@ -38,7 +38,7 @@ func dqueEntryBuilder() any {
 type dqueClient struct {
 	logger    log.Logger
 	queue     *dque.DQue
-	vali      ValiClient
+	vali      OutputClient
 	wg        sync.WaitGroup
 	url       string
 	isStooped bool
@@ -49,11 +49,11 @@ func (c *dqueClient) GetEndPoint() string {
 	return c.vali.GetEndPoint()
 }
 
-var _ ValiClient = &dqueClient{}
+var _ OutputClient = &dqueClient{}
 
 // NewDque makes a new dque vali client
 func NewDque(cfg config.Config, logger log.Logger, newClientFunc func(cfg config.Config,
-	logger log.Logger) (ValiClient, error)) (ValiClient, error) {
+	logger log.Logger) (OutputClient, error)) (OutputClient, error) {
 	var err error
 
 	if logger == nil {
@@ -159,14 +159,19 @@ func (c *dqueClient) StopWait() {
 }
 
 // Handle implement EntryHandler; adds a new line to the next batch; send is async.
-func (c *dqueClient) Handle(ls model.LabelSet, t time.Time, s string) error {
+func (c *dqueClient) Handle(ls any, t time.Time, s string) error {
 	// Here we don't need any synchronization because the worst thing is to
 	// receive some more logs which would be dropped anyway.
 	if c.isStooped {
 		return nil
 	}
 
-	record := &dqueEntry{LabelSet: ls, Entry: logproto.Entry{Timestamp: t, Line: s}}
+	_ls, ok := ls.(model.LabelSet)
+	if !ok {
+		return ErrInvalidLabelType
+	}
+
+	record := &dqueEntry{LabelSet: _ls, Entry: logproto.Entry{Timestamp: t, Line: s}}
 	if err := c.queue.Enqueue(record); err != nil {
 		return fmt.Errorf("cannot enqueue record %s: %v", record.String(), err)
 	}

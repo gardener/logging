@@ -31,8 +31,6 @@ type PluginConfig struct {
 	DynamicHostRegex string `mapstructure:"DynamicHostRegex"`
 	// KubernetesMetadata holds kubernetes metadata extraction configuration
 	KubernetesMetadata KubernetesMetadataExtraction `mapstructure:",squash"`
-	// DynamicTenant contains specs for the plugin dynamic functionality
-	DynamicTenant DynamicTenant `mapstructure:",squash"`
 	// LabelSetInitCapacity sets the initial capacity for label sets
 	LabelSetInitCapacity int `mapstructure:"LabelSetInitCapacity"`
 	// HostnameKey specifies the hostname key
@@ -55,12 +53,4 @@ type KubernetesMetadataExtraction struct {
 	TagKey                             string `mapstructure:"TagKey"`
 	TagPrefix                          string `mapstructure:"TagPrefix"`
 	TagExpression                      string `mapstructure:"TagExpression"`
-}
-
-// DynamicTenant contains specs for the plugin dynamic functionality
-type DynamicTenant struct {
-	Tenant                                string `mapstructure:"-"`
-	Field                                 string `mapstructure:"-"`
-	Regex                                 string `mapstructure:"-"`
-	RemoveTenantIDWhenSendingToDefaultURL bool   `mapstructure:"RemoveTenantIDWhenSendingToDefaultURL"`
 }

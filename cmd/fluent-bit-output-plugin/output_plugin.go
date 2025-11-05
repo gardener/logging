@@ -43,7 +43,7 @@ import (
 
 var (
 	// registered vali plugin instances, required for disposal during shutdown
-	plugins          []plugin.OutputPlugin
+	pluginsMap       map[string]plugin.OutputPlugin
 	pluginsMutex     sync.RWMutex
 	logger           log.Logger
 	informer         cache.SharedIndexInformer
@@ -55,13 +55,15 @@ func init() {
 	var logLevel logging.Level
 	_ = logLevel.Set("info")
 
-	logger = log.With(newLogger(logLevel), "ts", log.DefaultTimestampUTC, "caller", "main")
-	_ = level.Info(logger).Log(
-		"version", version.Get().GitVersion,
-		"revision", version.Get().GitCommit,
-		"gitTreeState", version.Get().GitTreeState,
-	)
+	logger = log.With(newLogger(logLevel), "ts", log.DefaultTimestampUTC)
+	_ = level.Info(logger).
+		Log(
+			"version", version.Get().GitVersion,
+			"revision", version.Get().GitCommit,
+			"gitTreeState", version.Get().GitTreeState,
+		)
 	pluginsMutex = sync.RWMutex{}
+	pluginsMap = make(map[string]plugin.OutputPlugin)
 
 	// metrics and healthz
 	go func() {
@@ -84,9 +86,7 @@ func initClusterInformer() {
 		kubernetesClient gardenerclientsetversioned.Interface
 	)
 	if kubernetesClient, _ = inClusterKubernetesClient(); kubernetesClient == nil {
-		_ = level.Debug(logger).Log(
-			"msg", "failed to get in-cluster kubernetes client, trying KUBECONFIG env variable",
-		)
+		_ = level.Debug(logger).Log("[flb-go]", "failed to get in-cluster kubernetes client, trying KUBECONFIG env variable")
 		kubernetesClient, err = envKubernetesClient()
 		if err != nil {
 			panic(fmt.Errorf("failed to get kubernetes client, give up: %v", err))
@@ -139,9 +139,6 @@ func (c *pluginConfig) toStringMap() map[string]string {
 		"FallbackToTagWhenMetadataIsMissing", "DropLogEntryWithoutK8sMetadata",
 		"TagKey", "TagPrefix", "TagExpression",
 
-		// Dynamic tenant
-		"DynamicTenant", "RemoveTenantIDWhenSendingToDefaultURL",
-
 		// Buffer config
 		"Buffer", "BufferType", "QueueDir", "QueueSegmentSize", "QueueSync", "QueueName",
 
@@ -172,7 +169,7 @@ func (c *pluginConfig) toStringMap() map[string]string {
 //
 //export FLBPluginRegister
 func FLBPluginRegister(ctx unsafe.Pointer) int {
-	return output.FLBPluginRegister(ctx, "gardenervali", "Ship fluent-bit logs to Credativ OutputPlugin")
+	return output.FLBPluginRegister(ctx, "gardenervali", "Ship fluent-bit logs to an Output")
 }
 
 // FLBPluginInit is called for each vali plugin instance
@@ -183,8 +180,8 @@ func FLBPluginRegister(ctx unsafe.Pointer) int {
 //export FLBPluginInit
 func FLBPluginInit(ctx unsafe.Pointer) int {
 	// shall create only if not found in the context and in plugins slice
-	if present := output.FLBPluginGetContext(ctx); present != nil && pluginsContains(present.(plugin.OutputPlugin)) {
-		_ = level.Info(logger).Log("msg", "outputPlugin already present")
+	if id := output.FLBPluginGetContext(ctx); id != nil && pluginsContains(id.(string)) {
+		_ = level.Info(logger).Log("[flb-go]", "outputPlugin already present")
 
 		return output.FLB_OK
 	}
@@ -214,21 +211,19 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 	outputPlugin, err := plugin.NewPlugin(informer, conf, _logger)
 	if err != nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorNewPlugin).Inc()
-		_ = level.Error(_logger).Log("msg", "error creating outputPlugin", "err", err)
+		_ = level.Error(_logger).Log("[flb-go]", "error creating outputPlugin", "err", err)
 
 		return output.FLB_ERROR
 	}
 
 	// register outputPlugin instance, to be retrievable when sending logs
-	output.FLBPluginSetContext(ctx, outputPlugin)
+	output.FLBPluginSetContext(ctx, id)
 	// remember outputPlugin instance, required to cleanly dispose when fluent-bit is shutting down
 	pluginsMutex.Lock()
-	plugins = append(plugins, outputPlugin)
+	pluginsMap[id] = outputPlugin
 	pluginsMutex.Unlock()
 
-	_ = level.Info(_logger).Log(
-		"msg", "outputPlugin initialized",
-		"length", len(plugins))
+	_ = level.Info(_logger).Log("[flb-go]", "output plugin initialized", "id", id, "count", len(pluginsMap))
 
 	return output.FLB_OK
 }
@@ -237,7 +232,16 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 //
 //export FLBPluginFlushCtx
 func FLBPluginFlushCtx(ctx, data unsafe.Pointer, length C.int, tag *C.char) int {
-	outputPlugin, ok := output.FLBPluginGetContext(ctx).(plugin.OutputPlugin)
+	var id string
+	var ok bool
+	if id, ok = output.FLBPluginGetContext(ctx).(string); !ok {
+		_ = level.Error(logger).Log("msg", "output plugin id not found in context")
+
+		return output.FLB_ERROR
+	}
+	pluginsMutex.RLock()
+	outputPlugin, ok := pluginsMap[id]
+	pluginsMutex.RUnlock()
 	if !ok {
 		metrics.Errors.WithLabelValues(metrics.ErrorFLBPluginFlushCtx).Inc()
 		_ = level.Error(logger).Log("[flb-go]", "outputPlugin not initialized")
@@ -264,14 +268,14 @@ func FLBPluginFlushCtx(ctx, data unsafe.Pointer, length C.int, tag *C.char) int 
 		case uint64:
 			timestamp = time.Unix(int64(t), 0)
 		default:
-			_ = level.Info(logger).Log("msg", fmt.Sprintf("unknown timestamp type: %T", ts))
+			_ = level.Info(logger).Log("[flb-go]", fmt.Sprintf("unknown timestamp type: %T", ts))
 			timestamp = time.Now()
 		}
 
 		err := outputPlugin.SendRecord(record, timestamp)
 		if err != nil {
 			_ = level.Error(logger).Log(
-				"msg", "error sending record, retrying...",
+				"[flb-go]", "error sending record, retrying...",
 				"tag", C.GoString(tag),
 				"err", err.Error(),
 			)
@@ -292,18 +296,25 @@ func FLBPluginFlushCtx(ctx, data unsafe.Pointer, length C.int, tag *C.char) int 
 //
 //export FLBPluginExitCtx
 func FLBPluginExitCtx(ctx unsafe.Pointer) int {
-	outputPlugin, ok := output.FLBPluginGetContext(ctx).(plugin.OutputPlugin)
+	var id string
+	var ok bool
+	if id, ok = output.FLBPluginGetContext(ctx).(string); !ok {
+		_ = level.Error(logger).Log("[flb-go]", "output plugin id not found in context")
+
+		return output.FLB_ERROR
+	}
+	pluginsMutex.RLock()
+	outputPlugin, ok := pluginsMap[id]
+	pluginsMutex.RUnlock()
 	if !ok {
-		_ = level.Error(logger).Log("[flb-go]", "outputPlugin not known")
+		_ = level.Error(logger).Log("[flb-go]", "output plugin not known", "id", id)
 
 		return output.FLB_ERROR
 	}
 	outputPlugin.Close()
-	pluginsRemove(outputPlugin)
-	_ = level.Info(logger).Log(
-		"msg", "outputPlugin removed",
-		"length", len(plugins),
-	)
+	pluginsRemove(id)
+
+	_ = level.Info(logger).Log("[flb-go]", "output plugin removed", "id", id, "count", len(pluginsMap))
 
 	return output.FLB_OK
 }
@@ -312,7 +323,7 @@ func FLBPluginExitCtx(ctx unsafe.Pointer) int {
 //
 //export FLBPluginExit
 func FLBPluginExit() int {
-	for _, outputPlugin := range plugins {
+	for _, outputPlugin := range pluginsMap {
 		outputPlugin.Close()
 	}
 	if informerStopChan != nil {
@@ -320,6 +331,19 @@ func FLBPluginExit() int {
 	}
 
 	return output.FLB_OK
+}
+
+func pluginsContains(id string) bool {
+	pluginsMutex.RLock()
+	defer pluginsMutex.Unlock()
+
+	return pluginsMap[id] != nil
+}
+
+func pluginsRemove(id string) {
+	pluginsMutex.Lock()
+	defer pluginsMutex.Unlock()
+	delete(pluginsMap, id)
 }
 
 func newLogger(logLevel logging.Level) log.Logger {
@@ -387,9 +411,6 @@ func dumpConfiguration(_logger log.Logger, conf *config.Config) {
 	_ = level.Debug(paramLogger).Log("NumberOfBatchIDs", fmt.Sprintf("%+v", conf.ClientConfig.NumberOfBatchIDs))
 	_ = level.Debug(paramLogger).Log("IdLabelName", fmt.Sprintf("%+v", conf.ClientConfig.IDLabelName))
 	_ = level.Debug(paramLogger).Log("DeletedClientTimeExpiration", fmt.Sprintf("%+v", conf.ControllerConfig.DeletedClientTimeExpiration))
-	_ = level.Debug(paramLogger).Log("DynamicTenant", fmt.Sprintf("%+v", conf.PluginConfig.DynamicTenant.Tenant))
-	_ = level.Debug(paramLogger).Log("DynamicField", fmt.Sprintf("%+v", conf.PluginConfig.DynamicTenant.Field))
-	_ = level.Debug(paramLogger).Log("DynamicRegex", fmt.Sprintf("%+v", conf.PluginConfig.DynamicTenant.Regex))
 	_ = level.Debug(paramLogger).Log("Pprof", fmt.Sprintf("%+v", conf.Pprof))
 	if len(conf.PluginConfig.HostnameKey) > 0 {
 		_ = level.Debug(paramLogger).Log("HostnameKey", conf.PluginConfig.HostnameKey)
@@ -415,28 +436,4 @@ func dumpConfiguration(_logger log.Logger, conf *config.Config) {
 	_ = level.Debug(paramLogger).Log("SendLogsToDefaultClientWhenClusterIsInDeletionState", fmt.Sprintf("%+v", conf.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInDeletionState))
 	_ = level.Debug(paramLogger).Log("SendLogsToDefaultClientWhenClusterIsInRestoreState", fmt.Sprintf("%+v", conf.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInRestoreState))
 	_ = level.Debug(paramLogger).Log("SendLogsToDefaultClientWhenClusterIsInMigrationState", fmt.Sprintf("%+v", conf.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInMigrationState))
-}
-
-func pluginsContains(present plugin.OutputPlugin) bool {
-	pluginsMutex.RLock()
-	defer pluginsMutex.Unlock()
-	for _, outputPlugin := range plugins {
-		if present == outputPlugin {
-			return true
-		}
-	}
-
-	return false
-}
-
-func pluginsRemove(outputPlugin plugin.OutputPlugin) {
-	pluginsMutex.Lock()
-	defer pluginsMutex.Unlock()
-	for i, p := range plugins {
-		if outputPlugin == p {
-			plugins = append(plugins[:i], plugins[i+1:]...)
-
-			return
-		}
-	}
 }

@@ -22,26 +22,20 @@ const (
 
 // Options for creating a Vali client
 type Options struct {
-	// RemoveTenantID flag removes the "__tenant_id_" label
-	RemoveTenantID bool
-	// MultiTenantClient flag removes the "__gardener_multitenant_id__" label
-	MultiTenantClient bool
 	// PreservedLabels is the labels to preserve
 	PreservedLabels model.LabelSet
 }
 
 // NewClient creates a new client based on the fluent-bit configuration.
-func NewClient(cfg config.Config, logger log.Logger, options Options) (ValiClient, error) {
-	var (
-		ncf NewValiClientFunc
-	)
+func NewClient(cfg config.Config, logger log.Logger, options Options) (OutputClient, error) {
+	var ncf NewValiClientFunc
 
 	if cfg.ClientConfig.TestingClient == nil {
-		ncf = func(c config.Config, _ log.Logger) (ValiClient, error) {
+		ncf = func(c config.Config, _ log.Logger) (OutputClient, error) {
 			return NewPromtailClient(c.ClientConfig.CredativValiConfig, logger)
 		}
 	} else {
-		ncf = func(c config.Config, _ log.Logger) (ValiClient, error) {
+		ncf = func(c config.Config, _ log.Logger) (OutputClient, error) {
 			return newTestingPromtailClient(cfg.ClientConfig.TestingClient, c.ClientConfig.CredativValiConfig)
 		}
 	}
@@ -49,7 +43,7 @@ func NewClient(cfg config.Config, logger log.Logger, options Options) (ValiClien
 	// When label processing is done the sorting client could be used.
 	if cfg.ClientConfig.SortByTimestamp {
 		tempNCF := ncf
-		ncf = func(c config.Config, l log.Logger) (ValiClient, error) {
+		ncf = func(c config.Config, l log.Logger) (OutputClient, error) {
 			return NewSortedClientDecorator(c, tempNCF, l)
 		}
 	}
@@ -59,57 +53,39 @@ func NewClient(cfg config.Config, logger log.Logger, options Options) (ValiClien
 	// cloud be packed and thus no long existing
 	if options.PreservedLabels != nil {
 		tempNCF := ncf
-		ncf = func(c config.Config, l log.Logger) (ValiClient, error) {
+		ncf = func(c config.Config, l log.Logger) (OutputClient, error) {
 			return NewPackClientDecorator(c, tempNCF, l)
-		}
-	}
-
-	if options.RemoveTenantID {
-		tempNCF := ncf
-		ncf = func(c config.Config, l log.Logger) (ValiClient, error) {
-			return NewRemoveTenantIDClientDecorator(c, tempNCF, l)
-		}
-	}
-
-	if options.MultiTenantClient {
-		tempNCF := ncf
-		ncf = func(c config.Config, l log.Logger) (ValiClient, error) {
-			return NewMultiTenantClientDecorator(c, tempNCF, l)
-		}
-	} else {
-		tempNCF := ncf
-		ncf = func(c config.Config, l log.Logger) (ValiClient, error) {
-			return NewRemoveMultiTenantIDClientDecorator(c, tempNCF, l)
 		}
 	}
 
 	if cfg.ClientConfig.BufferConfig.Buffer {
 		tempNCF := ncf
-		ncf = func(c config.Config, l log.Logger) (ValiClient, error) {
+		ncf = func(c config.Config, l log.Logger) (OutputClient, error) {
 			return NewBufferDecorator(c, tempNCF, l)
 		}
 	}
 
-	_ = level.Debug(logger).Log(
-		"msg", "building a new client",
-		"queue_name", cfg.ClientConfig.BufferConfig.DqueConfig.QueueName,
-	)
+	outputClient, err := ncf(cfg, logger)
+	if err != nil {
+		return nil, err
+	}
+	_ = level.Debug(logger).Log("msg", "client created", "url", outputClient.GetEndPoint())
 
-	return ncf(cfg, logger)
+	return outputClient, nil
 }
 
 type removeTenantIDClient struct {
-	valiclient ValiClient
+	valiclient OutputClient
 }
 
-var _ ValiClient = &removeTenantIDClient{}
+var _ OutputClient = &removeTenantIDClient{}
 
 func (c *removeTenantIDClient) GetEndPoint() string {
 	return c.valiclient.GetEndPoint()
 }
 
 // NewRemoveTenantIDClientDecorator return vali client which removes the __tenant_id__ value from the label set
-func NewRemoveTenantIDClientDecorator(cfg config.Config, newClient NewValiClientFunc, logger log.Logger) (ValiClient, error) {
+func NewRemoveTenantIDClientDecorator(cfg config.Config, newClient NewValiClientFunc, logger log.Logger) (OutputClient, error) {
 	c, err := newValiClient(cfg, newClient, logger)
 	if err != nil {
 		return nil, err
@@ -118,10 +94,15 @@ func NewRemoveTenantIDClientDecorator(cfg config.Config, newClient NewValiClient
 	return &removeTenantIDClient{c}, nil
 }
 
-func (c *removeTenantIDClient) Handle(ls model.LabelSet, t time.Time, s string) error {
-	delete(ls, client.ReservedLabelTenantID)
+func (c *removeTenantIDClient) Handle(ls any, t time.Time, s string) error {
+	_ls, ok := ls.(model.LabelSet)
+	if !ok {
+		return ErrInvalidLabelType
+	}
 
-	return c.valiclient.Handle(ls, t, s)
+	delete(_ls, client.ReservedLabelTenantID)
+
+	return c.valiclient.Handle(_ls, t, s)
 }
 
 // Stop the client.
@@ -134,7 +115,7 @@ func (c *removeTenantIDClient) StopWait() {
 	c.valiclient.StopWait()
 }
 
-func newValiClient(cfg config.Config, newClient NewValiClientFunc, logger log.Logger) (ValiClient, error) {
+func newValiClient(cfg config.Config, newClient NewValiClientFunc, logger log.Logger) (OutputClient, error) {
 	if newClient != nil {
 		return newClient(cfg, logger)
 	}

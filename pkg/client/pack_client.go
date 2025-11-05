@@ -19,7 +19,7 @@ import (
 const componentNamePack = "pack"
 
 type packClient struct {
-	valiClient     ValiClient
+	valiClient     OutputClient
 	excludedLabels model.LabelSet
 	logger         log.Logger
 }
@@ -28,10 +28,10 @@ func (c *packClient) GetEndPoint() string {
 	return c.valiClient.GetEndPoint()
 }
 
-var _ ValiClient = &packClient{}
+var _ OutputClient = &packClient{}
 
 // NewPackClientDecorator return vali client which pack all the labels except the explicitly excluded ones and forward them the the wrapped client.
-func NewPackClientDecorator(cfg config.Config, newClient NewValiClientFunc, logger log.Logger) (ValiClient, error) {
+func NewPackClientDecorator(cfg config.Config, newClient NewValiClientFunc, logger log.Logger) (OutputClient, error) {
 	client, err := newValiClient(cfg, newClient, logger)
 	if err != nil {
 		return nil, err
@@ -54,14 +54,19 @@ func NewPackClientDecorator(cfg config.Config, newClient NewValiClientFunc, logg
 
 // Handle processes and sends logs to Vali.
 // This function can modify the label set so avoid concurrent use of it.
-func (c *packClient) Handle(ls model.LabelSet, t time.Time, s string) error {
-	if c.checkIfLabelSetContainsExcludedLabels(ls) {
-		record := make(map[string]string, len(ls))
+func (c *packClient) Handle(ls any, t time.Time, s string) error {
+	_ls, ok := ls.(model.LabelSet)
+	if !ok {
+		return ErrInvalidLabelType
+	}
 
-		for key, value := range ls {
+	if c.checkIfLabelSetContainsExcludedLabels(_ls) {
+		record := make(map[string]string, len(_ls))
+
+		for key, value := range _ls {
 			if _, ok := c.excludedLabels[key]; !ok && !strings.HasPrefix(string(key), "__") {
 				record[string(key)] = string(value)
-				delete(ls, key)
+				delete(_ls, key)
 			}
 		}
 		record["_entry"] = s

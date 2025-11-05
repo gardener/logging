@@ -28,16 +28,16 @@ type valitailClientWithForwardedLogsMetricCounter struct {
 	logger     log.Logger
 }
 
-var _ ValiClient = &valitailClientWithForwardedLogsMetricCounter{}
+var _ OutputClient = &valitailClientWithForwardedLogsMetricCounter{}
 
 func (c *valitailClientWithForwardedLogsMetricCounter) GetEndPoint() string {
 	return c.endpoint
 }
 
-// NewPromtailClient return ValiClient which wraps the original Promtail client.
+// NewPromtailClient return OutputClient which wraps the original Promtail client.
 // It increments the ForwardedLogs counter on successful call of the Handle function.
 // !!!This must be the bottom wrapper!!!
-func NewPromtailClient(cfg client.Config, logger log.Logger) (ValiClient, error) {
+func NewPromtailClient(cfg client.Config, logger log.Logger) (OutputClient, error) {
 	c, err := client.New(prometheus.DefaultRegisterer, cfg, logger)
 	if err != nil {
 		return nil, err
@@ -59,7 +59,7 @@ func NewPromtailClient(cfg client.Config, logger log.Logger) (ValiClient, error)
 }
 
 // newTestingPromtailClient is wrapping fake credativ/vali client used for testing
-func newTestingPromtailClient(c client.Client, cfg client.Config) (ValiClient, error) {
+func newTestingPromtailClient(c client.Client, cfg client.Config) (OutputClient, error) {
 	return &valitailClientWithForwardedLogsMetricCounter{
 		valiclient: c,
 		host:       cfg.URL.Hostname(),
@@ -67,8 +67,12 @@ func newTestingPromtailClient(c client.Client, cfg client.Config) (ValiClient, e
 	}, nil
 }
 
-func (c *valitailClientWithForwardedLogsMetricCounter) Handle(ls model.LabelSet, t time.Time, s string) error {
-	c.valiclient.Chan() <- api.Entry{Labels: ls, Entry: logproto.Entry{Timestamp: t, Line: s}}
+func (c *valitailClientWithForwardedLogsMetricCounter) Handle(ls any, t time.Time, s string) error {
+	_ls, ok := ls.(model.LabelSet)
+	if !ok {
+		return ErrInvalidLabelType
+	}
+	c.valiclient.Chan() <- api.Entry{Labels: _ls, Entry: logproto.Entry{Timestamp: t, Line: s}}
 	metrics.ForwardedLogs.WithLabelValues(c.host).Inc()
 
 	return nil

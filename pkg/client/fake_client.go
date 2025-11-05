@@ -13,9 +13,9 @@ import (
 	"github.com/prometheus/common/model"
 )
 
-var _ ValiClient = &FakeValiClient{}
+var _ OutputClient = &FakeValiClient{}
 
-// FakeValiClient mocks ValiClient
+// FakeValiClient mocks OutputClient
 type FakeValiClient struct {
 	// IsStopped show whether the client is stopped or not
 	IsStopped bool
@@ -32,13 +32,19 @@ func (*FakeValiClient) GetEndPoint() string {
 }
 
 // Handle processes and stores the received entries.
-func (c *FakeValiClient) Handle(labels model.LabelSet, timestamp time.Time, line string) error {
+func (c *FakeValiClient) Handle(ls any, timestamp time.Time, line string) error {
 	if c.IsStopped || c.IsGracefullyStopped {
 		return errors.New("client has been stopped")
 	}
+
+	_ls, ok := ls.(model.LabelSet)
+	if !ok {
+		return ErrInvalidLabelType
+	}
+
 	c.Mu.Lock()
 	c.Entries = append(c.Entries, Entry{
-		Labels: labels.Clone(),
+		Labels: _ls.Clone(),
 		Entry:  logproto.Entry{Timestamp: timestamp, Line: line},
 	})
 	c.Mu.Unlock()

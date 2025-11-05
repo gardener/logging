@@ -29,8 +29,8 @@ type OutputPlugin interface {
 }
 
 type vali struct {
+	seedClient                      client.OutputClient
 	cfg                             *config.Config
-	seedClient                      client.ValiClient
 	dynamicHostRegexp               *regexp.Regexp
 	dynamicTenantRegexp             *regexp.Regexp
 	dynamicTenant                   string
@@ -45,44 +45,12 @@ func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger lo
 	var err error
 	v := &vali{cfg: cfg, logger: logger}
 
-	if v.seedClient, err = client.NewClient(*cfg, logger, client.Options{
-		RemoveTenantID:    cfg.PluginConfig.DynamicTenant.RemoveTenantIDWhenSendingToDefaultURL,
-		MultiTenantClient: false,
-	}); err != nil {
-		return nil, err
-	}
-
-	_ = level.Debug(logger).Log(
-		"msg", "seed client created at vali plugin",
-		"url", v.seedClient.GetEndPoint(),
-		"queue", cfg.ClientConfig.BufferConfig.DqueConfig.QueueName,
-	)
-
 	// TODO(nickytd): Remove this magic check and introduce an Id field in the plugin output configuration
 	// If the plugin ID is "shoot" then we shall have a dynamic host and a default "controller" client
 	if len(cfg.PluginConfig.DynamicHostPath) > 0 {
 		v.dynamicHostRegexp = regexp.MustCompile(cfg.PluginConfig.DynamicHostRegex)
 
-		cfgShallowCopy := *cfg
-		cfgShallowCopy.ClientConfig.BufferConfig.DqueConfig.QueueName = cfg.ClientConfig.BufferConfig.DqueConfig.QueueName + "-controller"
-		controllerSeedClient, err := client.NewClient(cfgShallowCopy, logger, client.Options{
-			RemoveTenantID:    cfg.PluginConfig.DynamicTenant.RemoveTenantIDWhenSendingToDefaultURL,
-			MultiTenantClient: false,
-			PreservedLabels:   cfg.PluginConfig.PreservedLabels,
-		})
-
-		_ = level.Debug(logger).Log(
-			"msg", "seed controller client created at vali plugin",
-			"url", controllerSeedClient.GetEndPoint(),
-			"queue", cfgShallowCopy.ClientConfig.BufferConfig.DqueConfig.QueueName,
-		)
-
-		if err != nil {
-			return nil, err
-		}
-
-		// Controller with default client set, is used when to send logs when shoots are not present.
-		if v.controller, err = controller.NewController(informer, cfg, controllerSeedClient, logger); err != nil {
+		if v.controller, err = controller.NewController(informer, cfg, logger); err != nil {
 			return nil, err
 		}
 	}
@@ -91,10 +59,8 @@ func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger lo
 		v.extractKubernetesMetadataRegexp = regexp.MustCompile(cfg.PluginConfig.KubernetesMetadata.TagPrefix + cfg.PluginConfig.KubernetesMetadata.TagExpression)
 	}
 
-	if cfg.PluginConfig.DynamicTenant.Tenant != "" && cfg.PluginConfig.DynamicTenant.Field != "" && cfg.PluginConfig.DynamicTenant.Regex != "" {
-		v.dynamicTenantRegexp = regexp.MustCompile(cfg.PluginConfig.DynamicTenant.Regex)
-		v.dynamicTenant = cfg.PluginConfig.DynamicTenant.Tenant
-		v.dynamicTenantField = cfg.PluginConfig.DynamicTenant.Field
+	if v.seedClient, err = client.NewClient(*cfg, logger, client.Options{}); err != nil {
+		return nil, err
 	}
 
 	_ = level.Info(logger).Log(
@@ -154,11 +120,6 @@ func (v *vali) SendRecord(r map[any]any, ts time.Time) error {
 
 	metrics.IncomingLogs.WithLabelValues(host).Inc()
 
-	// Extract __gardener_multitenant_id__ from the record into the labelSet.
-	// And then delete it from the record.
-	extractMultiTenantClientLabel(records, lbs)
-	removeMultiTenantClientLabel(records)
-
 	removeKeys(records, append(v.cfg.PluginConfig.LabelKeys, v.cfg.PluginConfig.RemoveKeys...))
 	if len(records) == 0 {
 		_ = level.Debug(v.logger).Log("msg", "no records left after removing keys", "host", dynamicHostName)
@@ -166,7 +127,7 @@ func (v *vali) SendRecord(r map[any]any, ts time.Time) error {
 		return nil
 	}
 
-	// client.ValiClient - actual client chain to send the log to
+	// client.OutputClient - actual client chain to send the log to
 	// valitail or otlp, dynamicHostName is extracted from DynamicHostPath field
 	// in the record and must match DynamicHostRegex
 	// example shoot--local--local
@@ -235,7 +196,7 @@ func (v *vali) Close() {
 	)
 }
 
-func (v *vali) getClient(dynamicHosName string) client.ValiClient {
+func (v *vali) getClient(dynamicHosName string) client.OutputClient {
 	if v.isDynamicHost(dynamicHosName) && v.controller != nil {
 		if c, isStopped := v.controller.GetClient(dynamicHosName); !isStopped {
 			return c
@@ -269,7 +230,7 @@ func (v *vali) setDynamicTenant(record map[string]any, lbs model.LabelSet) model
 	return lbs
 }
 
-func (*vali) send(c client.ValiClient, lbs model.LabelSet, ts time.Time, line string) error {
+func (*vali) send(c client.OutputClient, lbs model.LabelSet, ts time.Time, line string) error {
 	return c.Handle(lbs, ts, line)
 }
 

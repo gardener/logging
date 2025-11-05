@@ -18,7 +18,6 @@ import (
 	"github.com/go-kit/log/level"
 	ginkgov2 "github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
-	"github.com/prometheus/common/model"
 	"github.com/weaveworks/common/logging"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -28,7 +27,7 @@ import (
 	"github.com/gardener/logging/pkg/config"
 )
 
-var _ client.ValiClient = &fakeValiClient{}
+var _ client.OutputClient = &fakeValiClient{}
 
 type fakeValiClient struct {
 	isStopped bool
@@ -38,7 +37,7 @@ func (*fakeValiClient) GetEndPoint() string {
 	return "http://localhost"
 }
 
-func (c *fakeValiClient) Handle(_ model.LabelSet, _ time.Time, _ string) error {
+func (c *fakeValiClient) Handle(_ any, _ time.Time, _ string) error {
 	if c.isStopped {
 		return errors.New("client has been stopped")
 	}

@@ -16,7 +16,7 @@ import (
 )
 
 // NewBuffer makes a new buffered Client.
-func NewBuffer(cfg config.Config, logger log.Logger, newClientFunc func(cfg config.Config, logger log.Logger) (ValiClient, error)) (ValiClient, error) {
+func NewBuffer(cfg config.Config, logger log.Logger, newClientFunc func(cfg config.Config, logger log.Logger) (OutputClient, error)) (OutputClient, error) {
 	switch cfg.ClientConfig.BufferConfig.BufferType {
 	case "dque":
 		return NewDque(cfg, logger, newClientFunc)

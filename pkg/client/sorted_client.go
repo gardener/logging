@@ -11,6 +11,7 @@ import (
 	"github.com/credativ/vali/pkg/logproto"
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
+	giterrors "github.com/pkg/errors"
 	"github.com/prometheus/common/model"
 
 	"github.com/gardener/logging/pkg/batch"
@@ -21,7 +22,7 @@ const componentNameSort = "sort"
 
 type sortedClient struct {
 	logger           log.Logger
-	valiclient       multiTenantClient
+	valiclient       OutputClient
 	batch            *batch.Batch
 	batchWait        time.Duration
 	batchLock        sync.Mutex
@@ -34,14 +35,14 @@ type sortedClient struct {
 	wg               sync.WaitGroup
 }
 
-var _ ValiClient = &sortedClient{}
+var _ OutputClient = &sortedClient{}
 
 func (c *sortedClient) GetEndPoint() string {
 	return c.valiclient.GetEndPoint()
 }
 
 // NewSortedClientDecorator returns client which sorts the logs based their timestamp.
-func NewSortedClientDecorator(cfg config.Config, newClient NewValiClientFunc, logger log.Logger) (ValiClient, error) {
+func NewSortedClientDecorator(cfg config.Config, newClient NewValiClientFunc, logger log.Logger) (OutputClient, error) {
 	var err error
 	batchWait := cfg.ClientConfig.CredativValiConfig.BatchWait
 	cfg.ClientConfig.CredativValiConfig.BatchWait = batchWait + (5 * time.Second)
@@ -57,7 +58,7 @@ func NewSortedClientDecorator(cfg config.Config, newClient NewValiClientFunc, lo
 
 	c := &sortedClient{
 		logger:           log.With(logger, "component", componentNameSort, "host", cfg.ClientConfig.CredativValiConfig.URL.Host),
-		valiclient:       multiTenantClient{valiclient: client},
+		valiclient:       client,
 		batchWait:        batchWait,
 		batchSize:        cfg.ClientConfig.CredativValiConfig.BatchSize,
 		batchID:          0,
@@ -144,11 +145,23 @@ func (c *sortedClient) sendBatch() {
 	c.batch.Sort()
 
 	for _, stream := range c.batch.GetStreams() {
-		if err := c.valiclient.handleStream(*stream); err != nil {
+		if err := c.handleEntries(stream.Labels, stream.Entries); err != nil {
 			_ = level.Error(c.logger).Log("msg", "error sending stream", "stream", stream.Labels.String(), "error", err.Error())
 		}
 	}
 	c.batch = nil
+}
+
+func (c *sortedClient) handleEntries(ls model.LabelSet, entries []batch.Entry) error {
+	var combineErr error
+	for _, entry := range entries {
+		err := c.valiclient.Handle(ls, entry.Timestamp, entry.Line)
+		if err != nil {
+			combineErr = giterrors.Wrap(combineErr, err.Error())
+		}
+	}
+
+	return combineErr
 }
 
 func (c *sortedClient) newBatch(e Entry) {
@@ -186,8 +199,12 @@ func (c *sortedClient) StopWait() {
 }
 
 // Handle implement EntryHandler; adds a new line to the next batch; send is async.
-func (c *sortedClient) Handle(ls model.LabelSet, t time.Time, s string) error {
-	c.entries <- Entry{ls, logproto.Entry{
+func (c *sortedClient) Handle(ls any, t time.Time, s string) error {
+	_ls, ok := ls.(model.LabelSet)
+	if !ok {
+		return ErrInvalidLabelType
+	}
+	c.entries <- Entry{_ls, logproto.Entry{
 		Timestamp: t,
 		Line:      s,
 	}}

@@ -121,12 +121,6 @@ var _ = Describe("Config", func() {
 			Expect(cfg.PluginConfig.KubernetesMetadata.TagExpression).To(Equal("\\.([^_]+)_([^_]+)_(.+)-([a-z0-9]{64})\\.log$"))
 			Expect(cfg.PluginConfig.KubernetesMetadata.FallbackToTagWhenMetadataIsMissing).To(BeFalse())
 			Expect(cfg.PluginConfig.KubernetesMetadata.DropLogEntryWithoutK8sMetadata).To(BeFalse())
-
-			// Dynamic tenant defaults
-			Expect(cfg.PluginConfig.DynamicTenant.Tenant).To(BeEmpty())
-			Expect(cfg.PluginConfig.DynamicTenant.Field).To(BeEmpty())
-			Expect(cfg.PluginConfig.DynamicTenant.Regex).To(BeEmpty())
-			Expect(cfg.PluginConfig.DynamicTenant.RemoveTenantIDWhenSendingToDefaultURL).To(BeFalse())
 		})
 
 		It("should parse config with custom values", func() {
@@ -211,21 +205,6 @@ var _ = Describe("Config", func() {
 			Expect(cfg.ClientConfig.BufferConfig.DqueConfig.QueueSegmentSize).To(Equal(600))
 			Expect(cfg.ClientConfig.BufferConfig.DqueConfig.QueueSync).To(BeTrue())
 			Expect(cfg.ClientConfig.BufferConfig.DqueConfig.QueueName).To(Equal("buzz"))
-		})
-
-		It("should parse config with dynamic tenant", func() {
-			configMap := map[string]any{
-				"DynamicTenant": "user tag user-exposed.kubernetes.*",
-			}
-
-			cfg, err := config.ParseConfig(configMap)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(cfg).ToNot(BeNil())
-
-			Expect(cfg.PluginConfig.DynamicTenant.Tenant).To(Equal("user"))
-			Expect(cfg.PluginConfig.DynamicTenant.Field).To(Equal("tag"))
-			Expect(cfg.PluginConfig.DynamicTenant.Regex).To(Equal("user-exposed.kubernetes.*"))
-			Expect(cfg.PluginConfig.DynamicTenant.RemoveTenantIDWhenSendingToDefaultURL).To(BeTrue())
 		})
 
 		It("should parse config with hostname key value", func() {
