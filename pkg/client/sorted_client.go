@@ -51,7 +51,7 @@ func NewSortedClientDecorator(cfg config.Config, newClient NewValiClientFunc, lo
 		logger = log.NewNopLogger()
 	}
 
-	client, err := newValiClient(cfg, newClient, logger)
+	client, err := newValiTailClient(cfg, newClient, logger)
 	if err != nil {
 		return nil, err
 	}

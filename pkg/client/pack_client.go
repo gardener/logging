@@ -32,7 +32,7 @@ var _ OutputClient = &packClient{}
 
 // NewPackClientDecorator return vali client which pack all the labels except the explicitly excluded ones and forward them the the wrapped client.
 func NewPackClientDecorator(cfg config.Config, newClient NewValiClientFunc, logger log.Logger) (OutputClient, error) {
-	client, err := newValiClient(cfg, newClient, logger)
+	client, err := newValiTailClient(cfg, newClient, logger)
 	if err != nil {
 		return nil, err
 	}

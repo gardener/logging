@@ -77,7 +77,7 @@ var _ = ginkgov2.Describe("Client", func() {
 
 	ginkgov2.Describe("NewClient", func() {
 		ginkgov2.It("should create a client", func() {
-			c, err := NewClient(conf, logger, Options{})
+			c, err := NewClient(conf, WithLogger(logger))
 			gomega.Expect(err).ToNot(gomega.HaveOccurred())
 			gomega.Expect(c).ToNot(gomega.BeNil())
 		})

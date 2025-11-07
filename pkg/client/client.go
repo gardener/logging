@@ -5,120 +5,58 @@
 package client
 
 import (
-	"time"
+	"fmt"
 
-	"github.com/credativ/vali/pkg/valitail/client"
 	"github.com/go-kit/log"
-	"github.com/go-kit/log/level"
-	"github.com/prometheus/common/model"
 
 	"github.com/gardener/logging/pkg/config"
 )
 
-const (
-	minWaitCheckFrequency       = 10 * time.Millisecond
-	waitCheckFrequencyDelimiter = 10
-)
+type clientOptions struct {
+	vali   *valiOptions
+	logger log.Logger
+}
 
-// Options for creating a Vali client
-type Options struct {
-	// PreservedLabels is the labels to preserve
-	PreservedLabels model.LabelSet
+// Options defines functional options for creating clients
+type Options interface {
+	apply(opts *clientOptions) error
+}
+
+// loggerOption implements Options for setting the logger
+type loggerOption struct {
+	logger log.Logger
+}
+
+func (l loggerOption) apply(opts *clientOptions) error {
+	opts.logger = l.logger
+
+	return nil
+}
+
+// WithLogger creates a functional option for setting the logger
+func WithLogger(logger log.Logger) Options {
+	return loggerOption{logger: logger}
 }
 
 // NewClient creates a new client based on the fluent-bit configuration.
-func NewClient(cfg config.Config, logger log.Logger, options Options) (OutputClient, error) {
-	var ncf NewValiClientFunc
-
-	if cfg.ClientConfig.TestingClient == nil {
-		ncf = func(c config.Config, _ log.Logger) (OutputClient, error) {
-			return NewPromtailClient(c.ClientConfig.CredativValiConfig, logger)
-		}
-	} else {
-		ncf = func(c config.Config, _ log.Logger) (OutputClient, error) {
-			return newTestingPromtailClient(cfg.ClientConfig.TestingClient, c.ClientConfig.CredativValiConfig)
+func NewClient(cfg config.Config, opts ...Options) (OutputClient, error) {
+	options := &clientOptions{}
+	for _, opt := range opts {
+		if err := opt.apply(options); err != nil {
+			return nil, fmt.Errorf("failed to apply option %T: %w", opt, err)
 		}
 	}
 
-	// When label processing is done the sorting client could be used.
-	if cfg.ClientConfig.SortByTimestamp {
-		tempNCF := ncf
-		ncf = func(c config.Config, l log.Logger) (OutputClient, error) {
-			return NewSortedClientDecorator(c, tempNCF, l)
-		}
+	// Use the logger from options if provided, otherwise use a default
+	logger := options.logger
+	if logger == nil {
+		logger = log.NewNopLogger() // Default no-op logger
 	}
 
-	// The last wrapper which process labels should be the pack client.
-	// After the pack labels which are needed for the record processing
-	// cloud be packed and thus no long existing
-	if options.PreservedLabels != nil {
-		tempNCF := ncf
-		ncf = func(c config.Config, l log.Logger) (OutputClient, error) {
-			return NewPackClientDecorator(c, tempNCF, l)
-		}
+	valiOpts := valiOptions{}
+	if options.vali != nil { // Fixed: was options.otlp, should be options.vali
+		valiOpts = *options.vali
 	}
 
-	if cfg.ClientConfig.BufferConfig.Buffer {
-		tempNCF := ncf
-		ncf = func(c config.Config, l log.Logger) (OutputClient, error) {
-			return NewBufferDecorator(c, tempNCF, l)
-		}
-	}
-
-	outputClient, err := ncf(cfg, logger)
-	if err != nil {
-		return nil, err
-	}
-	_ = level.Debug(logger).Log("msg", "client created", "url", outputClient.GetEndPoint())
-
-	return outputClient, nil
-}
-
-type removeTenantIDClient struct {
-	valiclient OutputClient
-}
-
-var _ OutputClient = &removeTenantIDClient{}
-
-func (c *removeTenantIDClient) GetEndPoint() string {
-	return c.valiclient.GetEndPoint()
-}
-
-// NewRemoveTenantIDClientDecorator return vali client which removes the __tenant_id__ value from the label set
-func NewRemoveTenantIDClientDecorator(cfg config.Config, newClient NewValiClientFunc, logger log.Logger) (OutputClient, error) {
-	c, err := newValiClient(cfg, newClient, logger)
-	if err != nil {
-		return nil, err
-	}
-
-	return &removeTenantIDClient{c}, nil
-}
-
-func (c *removeTenantIDClient) Handle(ls any, t time.Time, s string) error {
-	_ls, ok := ls.(model.LabelSet)
-	if !ok {
-		return ErrInvalidLabelType
-	}
-
-	delete(_ls, client.ReservedLabelTenantID)
-
-	return c.valiclient.Handle(_ls, t, s)
-}
-
-// Stop the client.
-func (c *removeTenantIDClient) Stop() {
-	c.valiclient.Stop()
-}
-
-// StopWait stops the client waiting all saved logs to be sent.
-func (c *removeTenantIDClient) StopWait() {
-	c.valiclient.StopWait()
-}
-
-func newValiClient(cfg config.Config, newClient NewValiClientFunc, logger log.Logger) (OutputClient, error) {
-	if newClient != nil {
-		return newClient(cfg, logger)
-	}
-
-	return NewPromtailClient(cfg.ClientConfig.CredativValiConfig, logger)
+	return newValiClient(cfg, log.With(logger, "client_type"), valiOpts)
 }
