@@ -8,6 +8,9 @@ Modifications Copyright SAP SE or an SAP affiliate company and Gardener contribu
 package config
 
 import (
+	"crypto/tls"
+	"time"
+
 	"github.com/cortexproject/cortex/pkg/util/flagext"
 	"github.com/credativ/vali/pkg/valitail/client"
 	"github.com/prometheus/common/model"
@@ -79,4 +82,58 @@ var DefaultDqueConfig = DqueConfig{
 	QueueSegmentSize: 500,
 	QueueSync:        false,
 	QueueName:        "dque",
+}
+
+// OTLPConfig holds configuration for otlp endpoint
+type OTLPConfig struct {
+	EnabledForShoot bool              `mapstructure:"OTLPEnabledForShoot"`
+	Endpoint        string            `mapstructure:"OTLPEndpoint"`
+	Insecure        bool              `mapstructure:"OTLPInsecure"`
+	Compression     int               `mapstructure:"OTLPCompression"`
+	Timeout         time.Duration     `mapstructure:"OTLPTimeout"`
+	Headers         map[string]string `mapstructure:"-"` // Handled manually in processOTLPConfig
+
+	// Retry configuration fields
+	RetryEnabled         bool          `mapstructure:"OTLPRetryEnabled"`
+	RetryInitialInterval time.Duration `mapstructure:"OTLPRetryInitialInterval"`
+	RetryMaxInterval     time.Duration `mapstructure:"OTLPRetryMaxInterval"`
+	RetryMaxElapsedTime  time.Duration `mapstructure:"OTLPRetryMaxElapsedTime"`
+
+	// RetryConfig - processed from the above fields
+	RetryConfig *RetryConfig `mapstructure:"-"`
+
+	// TLS configuration fields
+	TLSCertFile           string `mapstructure:"OTLPTLSCertFile"`
+	TLSKeyFile            string `mapstructure:"OTLPTLSKeyFile"`
+	TLSCAFile             string `mapstructure:"OTLPTLSCAFile"`
+	TLSServerName         string `mapstructure:"OTLPTLSServerName"`
+	TLSInsecureSkipVerify bool   `mapstructure:"OTLPTLSInsecureSkipVerify"`
+	TLSMinVersion         string `mapstructure:"OTLPTLSMinVersion"`
+	TLSMaxVersion         string `mapstructure:"OTLPTLSMaxVersion"`
+
+	// TLS configuration - processed from the above fields
+	TLSConfig *tls.Config `mapstructure:"-"`
+}
+
+// DefaultOTLPConfig holds the default configuration for OTLP
+var DefaultOTLPConfig = OTLPConfig{
+	EnabledForShoot:       false,
+	Endpoint:              "localhost:4317",
+	Insecure:              false,
+	Compression:           0, // No compression by default
+	Timeout:               30 * time.Second,
+	Headers:               make(map[string]string),
+	RetryEnabled:          true,
+	RetryInitialInterval:  5 * time.Second,
+	RetryMaxInterval:      30 * time.Second,
+	RetryMaxElapsedTime:   time.Minute,
+	RetryConfig:           nil, // Will be built from other fields
+	TLSCertFile:           "",
+	TLSKeyFile:            "",
+	TLSCAFile:             "",
+	TLSServerName:         "",
+	TLSInsecureSkipVerify: false,
+	TLSMinVersion:         "1.2", // TLS 1.2 as default minimum
+	TLSMaxVersion:         "",    // Use Go's default maximum
+	TLSConfig:             nil,   // Will be built from other fields
 }

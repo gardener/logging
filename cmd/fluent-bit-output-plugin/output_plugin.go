@@ -152,6 +152,12 @@ func (c *pluginConfig) toStringMap() map[string]string {
 		"SendLogsToDefaultClientWhenClusterIsInCreationState", "SendLogsToDefaultClientWhenClusterIsInReadyState",
 		"SendLogsToDefaultClientWhenClusterIsInHibernatingState", "SendLogsToDefaultClientWhenClusterIsInHibernatedState",
 
+		// OTLP config
+		"OTLPEnabledForShoot", "OTLPEndpoint", "OTLPInsecure", "OTLPCompression", "OTLPTimeout", "OTLPHeaders",
+		"OTLPRetryEnabled", "OTLPRetryInitialInterval", "OTLPRetryMaxInterval", "OTLPRetryMaxElapsedTime",
+		"OTLPTLSCertFile", "OTLPTLSKeyFile", "OTLPTLSCAFile", "OTLPTLSServerName",
+		"OTLPTLSInsecureSkipVerify", "OTLPTLSMinVersion", "OTLPTLSMaxVersion",
+
 		// General config
 		"LogLevel", "Pprof",
 	}
@@ -438,4 +444,33 @@ func dumpConfiguration(_logger log.Logger, conf *config.Config) {
 	_ = level.Debug(paramLogger).Log("SendLogsToDefaultClientWhenClusterIsInDeletionState", fmt.Sprintf("%+v", conf.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInDeletionState))
 	_ = level.Debug(paramLogger).Log("SendLogsToDefaultClientWhenClusterIsInRestoreState", fmt.Sprintf("%+v", conf.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInRestoreState))
 	_ = level.Debug(paramLogger).Log("SendLogsToDefaultClientWhenClusterIsInMigrationState", fmt.Sprintf("%+v", conf.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInMigrationState))
+
+	// OTLP configuration
+	_ = level.Debug(paramLogger).Log("OTLPEnabledForShoot", fmt.Sprintf("%+v", conf.OTLPConfig.EnabledForShoot))
+	_ = level.Debug(paramLogger).Log("OTLPEndpoint", fmt.Sprintf("%+v", conf.OTLPConfig.Endpoint))
+	_ = level.Debug(paramLogger).Log("OTLPInsecure", fmt.Sprintf("%+v", conf.OTLPConfig.Insecure))
+	_ = level.Debug(paramLogger).Log("OTLPCompression", fmt.Sprintf("%+v", conf.OTLPConfig.Compression))
+	_ = level.Debug(paramLogger).Log("OTLPTimeout", fmt.Sprintf("%+v", conf.OTLPConfig.Timeout))
+	if len(conf.OTLPConfig.Headers) > 0 {
+		_ = level.Debug(paramLogger).Log("OTLPHeaders", fmt.Sprintf("%+v", conf.OTLPConfig.Headers))
+	}
+	_ = level.Debug(paramLogger).Log("OTLPRetryEnabled", fmt.Sprintf("%+v", conf.OTLPConfig.RetryEnabled))
+	_ = level.Debug(paramLogger).Log("OTLPRetryInitialInterval", fmt.Sprintf("%+v", conf.OTLPConfig.RetryInitialInterval))
+	_ = level.Debug(paramLogger).Log("OTLPRetryMaxInterval", fmt.Sprintf("%+v", conf.OTLPConfig.RetryMaxInterval))
+	_ = level.Debug(paramLogger).Log("OTLPRetryMaxElapsedTime", fmt.Sprintf("%+v", conf.OTLPConfig.RetryMaxElapsedTime))
+	if conf.OTLPConfig.RetryConfig != nil {
+		_ = level.Debug(paramLogger).Log("OTLPRetryConfig", "configured")
+	}
+
+	// OTLP TLS configuration
+	_ = level.Debug(paramLogger).Log("OTLPTLSCertFile", fmt.Sprintf("%+v", conf.OTLPConfig.TLSCertFile))
+	_ = level.Debug(paramLogger).Log("OTLPTLSKeyFile", fmt.Sprintf("%+v", conf.OTLPConfig.TLSKeyFile))
+	_ = level.Debug(paramLogger).Log("OTLPTLSCAFile", fmt.Sprintf("%+v", conf.OTLPConfig.TLSCAFile))
+	_ = level.Debug(paramLogger).Log("OTLPTLSServerName", fmt.Sprintf("%+v", conf.OTLPConfig.TLSServerName))
+	_ = level.Debug(paramLogger).Log("OTLPTLSInsecureSkipVerify", fmt.Sprintf("%+v", conf.OTLPConfig.TLSInsecureSkipVerify))
+	_ = level.Debug(paramLogger).Log("OTLPTLSMinVersion", fmt.Sprintf("%+v", conf.OTLPConfig.TLSMinVersion))
+	_ = level.Debug(paramLogger).Log("OTLPTLSMaxVersion", fmt.Sprintf("%+v", conf.OTLPConfig.TLSMaxVersion))
+	if conf.OTLPConfig.TLSConfig != nil {
+		_ = level.Debug(paramLogger).Log("OTLPTLSConfig", "configured")
+	}
 }
