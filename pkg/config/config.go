@@ -8,7 +8,10 @@ Modifications Copyright SAP SE or an SAP affiliate company and Gardener contribu
 package config
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
+	"errors"
 	"fmt"
 	stdurl "net/url"
 	"os"
@@ -56,6 +59,7 @@ type Config struct {
 	ClientConfig     ClientConfig     `mapstructure:",squash"`
 	ControllerConfig ControllerConfig `mapstructure:",squash"`
 	PluginConfig     PluginConfig     `mapstructure:",squash"`
+	OTLPConfig       OTLPConfig       `mapstructure:",squash"`
 	LogLevel         logging.Level    `mapstructure:"LogLevel"`
 	Pprof            bool             `mapstructure:"Pprof"`
 }
@@ -337,6 +341,7 @@ func postProcessConfig(config *Config, configMap map[string]any) error {
 		processDynamicHostPathConfig,
 		processQueueSyncConfig,
 		processControllerBoolConfigs,
+		processOTLPConfig,
 	}
 
 	for _, processor := range processors {
@@ -557,6 +562,272 @@ func processControllerBoolConfigs(config *Config, configMap map[string]any) erro
 	return processControllerConfigBoolFields(configMap, config)
 }
 
+// processOTLPConfig handles OTLP configuration field processing
+func processOTLPConfig(config *Config, configMap map[string]any) error {
+	// Process OTLPEnabledForShoot field
+	if enabled, ok := configMap["OTLPEnabledForShoot"].(string); ok && enabled != "" {
+		boolVal, err := strconv.ParseBool(enabled)
+		if err != nil {
+			return fmt.Errorf("failed to parse OTLPEnabledForShoot as boolean: %w", err)
+		}
+		config.OTLPConfig.EnabledForShoot = boolVal
+	}
+
+	// Process OTLPEndpoint
+	if endpoint, ok := configMap["OTLPEndpoint"].(string); ok && endpoint != "" {
+		config.OTLPConfig.Endpoint = endpoint
+	}
+
+	// Process OTLPInsecure
+	if insecure, ok := configMap["OTLPInsecure"].(string); ok && insecure != "" {
+		boolVal, err := strconv.ParseBool(insecure)
+		if err != nil {
+			return fmt.Errorf("failed to parse OTLPInsecure as boolean: %w", err)
+		}
+		config.OTLPConfig.Insecure = boolVal
+	}
+
+	// Process OTLPCompression
+	if compression, ok := configMap["OTLPCompression"].(string); ok && compression != "" {
+		compVal, err := strconv.Atoi(compression)
+		if err != nil {
+			return fmt.Errorf("failed to parse OTLPCompression as integer: %w", err)
+		}
+		if compVal < 0 || compVal > 2 { // 0=none, 1=gzip, 2=deflate typically
+			return fmt.Errorf("invalid OTLPCompression value %d: must be between 0 and 2", compVal)
+		}
+		config.OTLPConfig.Compression = compVal
+	}
+
+	// Process OTLPTimeout
+	if err := processDurationField(configMap, "OTLPTimeout", func(d time.Duration) {
+		config.OTLPConfig.Timeout = d
+	}); err != nil {
+		return err
+	}
+
+	// Process OTLPHeaders - parse JSON string into map
+	if headers, ok := configMap["OTLPHeaders"].(string); ok && headers != "" {
+		// Check size limit before parsing to prevent memory exhaustion
+		if len(headers) > MaxJSONSize {
+			return fmt.Errorf("OTLPHeaders JSON exceeds maximum size of %d bytes", MaxJSONSize)
+		}
+
+		var headerMap map[string]string
+		if err := json.Unmarshal([]byte(headers), &headerMap); err != nil {
+			return fmt.Errorf("failed to parse OTLPHeaders JSON: %w", err)
+		}
+		config.OTLPConfig.Headers = headerMap
+	}
+
+	// Process RetryConfig fields
+	if enabled, ok := configMap["OTLPRetryEnabled"].(string); ok && enabled != "" {
+		boolVal, err := strconv.ParseBool(enabled)
+		if err != nil {
+			return fmt.Errorf("failed to parse OTLPRetryEnabled as boolean: %w", err)
+		}
+		config.OTLPConfig.RetryEnabled = boolVal
+	}
+
+	if err := processDurationField(configMap, "OTLPRetryInitialInterval", func(d time.Duration) {
+		config.OTLPConfig.RetryInitialInterval = d
+	}); err != nil {
+		return err
+	}
+
+	if err := processDurationField(configMap, "OTLPRetryMaxInterval", func(d time.Duration) {
+		config.OTLPConfig.RetryMaxInterval = d
+	}); err != nil {
+		return err
+	}
+
+	if err := processDurationField(configMap, "OTLPRetryMaxElapsedTime", func(d time.Duration) {
+		config.OTLPConfig.RetryMaxElapsedTime = d
+	}); err != nil {
+		return err
+	}
+
+	// Process TLS configuration fields
+	if certFile, ok := configMap["OTLPTLSCertFile"].(string); ok && certFile != "" {
+		config.OTLPConfig.TLSCertFile = certFile
+	}
+
+	if keyFile, ok := configMap["OTLPTLSKeyFile"].(string); ok && keyFile != "" {
+		config.OTLPConfig.TLSKeyFile = keyFile
+	}
+
+	if caFile, ok := configMap["OTLPTLSCAFile"].(string); ok && caFile != "" {
+		config.OTLPConfig.TLSCAFile = caFile
+	}
+
+	if serverName, ok := configMap["OTLPTLSServerName"].(string); ok && serverName != "" {
+		config.OTLPConfig.TLSServerName = serverName
+	}
+
+	if insecureSkipVerify, ok := configMap["OTLPTLSInsecureSkipVerify"].(string); ok && insecureSkipVerify != "" {
+		boolVal, err := strconv.ParseBool(insecureSkipVerify)
+		if err != nil {
+			return fmt.Errorf("failed to parse OTLPTLSInsecureSkipVerify as boolean: %w", err)
+		}
+		config.OTLPConfig.TLSInsecureSkipVerify = boolVal
+	}
+
+	if minVersion, ok := configMap["OTLPTLSMinVersion"].(string); ok && minVersion != "" {
+		config.OTLPConfig.TLSMinVersion = minVersion
+	}
+
+	if maxVersion, ok := configMap["OTLPTLSMaxVersion"].(string); ok && maxVersion != "" {
+		config.OTLPConfig.TLSMaxVersion = maxVersion
+	}
+
+	// Build retry config from individual fields
+	if err := buildRetryConfig(config); err != nil {
+		return fmt.Errorf("failed to build retry config: %w", err)
+	}
+
+	// Build TLS config from individual fields
+	if err := buildTLSConfig(config); err != nil {
+		return fmt.Errorf("failed to build TLS config: %w", err)
+	}
+
+	return nil
+}
+
+// buildTLSConfig constructs a tls.Config from OTLP TLS configuration fields
+func buildTLSConfig(config *Config) error {
+	otlp := &config.OTLPConfig
+
+	// If no TLS configuration is specified (beyond defaults), leave TLSConfig as nil
+	if otlp.TLSCertFile == "" && otlp.TLSKeyFile == "" && otlp.TLSCAFile == "" &&
+		otlp.TLSServerName == "" && !otlp.TLSInsecureSkipVerify &&
+		(otlp.TLSMinVersion == "" || otlp.TLSMinVersion == "1.2") && otlp.TLSMaxVersion == "" {
+		return nil
+	}
+
+	tlsConfig := &tls.Config{
+		ServerName:         otlp.TLSServerName,
+		InsecureSkipVerify: otlp.TLSInsecureSkipVerify, //nolint:gosec // This is configured by the user
+	}
+
+	// Load client certificate if both cert and key files are specified
+	if otlp.TLSCertFile != "" && otlp.TLSKeyFile != "" {
+		cert, err := tls.LoadX509KeyPair(otlp.TLSCertFile, otlp.TLSKeyFile)
+		if err != nil {
+			return fmt.Errorf("failed to load client certificate: %w", err)
+		}
+		tlsConfig.Certificates = []tls.Certificate{cert}
+	} else if otlp.TLSCertFile != "" || otlp.TLSKeyFile != "" {
+		return errors.New("both OTLPTLSCertFile and OTLPTLSKeyFile must be specified together")
+	}
+
+	// Load CA certificate if specified
+	if otlp.TLSCAFile != "" {
+		caCert, err := os.ReadFile(otlp.TLSCAFile)
+		if err != nil {
+			return fmt.Errorf("failed to read CA certificate file: %w", err)
+		}
+
+		caCertPool := x509.NewCertPool()
+		if !caCertPool.AppendCertsFromPEM(caCert) {
+			return errors.New("failed to parse CA certificate")
+		}
+		tlsConfig.RootCAs = caCertPool
+	}
+
+	// Set TLS version constraints
+	if otlp.TLSMinVersion != "" {
+		minVersion, err := parseTLSVersion(otlp.TLSMinVersion)
+		if err != nil {
+			return fmt.Errorf("invalid OTLPTLSMinVersion: %w", err)
+		}
+		tlsConfig.MinVersion = minVersion
+	}
+
+	if otlp.TLSMaxVersion != "" {
+		maxVersion, err := parseTLSVersion(otlp.TLSMaxVersion)
+		if err != nil {
+			return fmt.Errorf("invalid OTLPTLSMaxVersion: %w", err)
+		}
+		tlsConfig.MaxVersion = maxVersion
+	}
+
+	// Validate that MinVersion <= MaxVersion if both are set
+	if tlsConfig.MinVersion != 0 && tlsConfig.MaxVersion != 0 && tlsConfig.MinVersion > tlsConfig.MaxVersion {
+		return errors.New("OTLPTLSMinVersion cannot be greater than OTLPTLSMaxVersion")
+	}
+
+	otlp.TLSConfig = tlsConfig
+
+	return nil
+}
+
+// parseTLSVersion converts a string TLS version to the corresponding constant
+func parseTLSVersion(version string) (uint16, error) {
+	switch version {
+	case "1.0":
+		return tls.VersionTLS10, nil
+	case "1.1":
+		return tls.VersionTLS11, nil
+	case "1.2":
+		return tls.VersionTLS12, nil
+	case "1.3":
+		return tls.VersionTLS13, nil
+	default:
+		return 0, fmt.Errorf("unsupported TLS version: %s (supported: 1.0, 1.1, 1.2, 1.3)", version)
+	}
+}
+
+// RetryConfig holds the retry configuration for OTLP exporter
+type RetryConfig struct {
+	Enabled         bool
+	InitialInterval time.Duration
+	MaxInterval     time.Duration
+	MaxElapsedTime  time.Duration
+}
+
+// buildRetryConfig constructs a RetryConfig from OTLP retry configuration fields
+func buildRetryConfig(config *Config) error {
+	otlp := &config.OTLPConfig
+
+	// If retry is not enabled, leave RetryConfig as nil
+	if !otlp.RetryEnabled {
+		otlp.RetryConfig = nil
+
+		return nil
+	}
+
+	// Validate retry intervals
+	if otlp.RetryInitialInterval <= 0 {
+		return fmt.Errorf("OTLPRetryInitialInterval must be positive, got %v", otlp.RetryInitialInterval)
+	}
+
+	if otlp.RetryMaxInterval <= 0 {
+		return fmt.Errorf("OTLPRetryMaxInterval must be positive, got %v", otlp.RetryMaxInterval)
+	}
+
+	if otlp.RetryMaxElapsedTime <= 0 {
+		return fmt.Errorf("OTLPRetryMaxElapsedTime must be positive, got %v", otlp.RetryMaxElapsedTime)
+	}
+
+	// Validate that InitialInterval <= MaxInterval
+	if otlp.RetryInitialInterval > otlp.RetryMaxInterval {
+		return fmt.Errorf("OTLPRetryInitialInterval (%v) cannot be greater than OTLPRetryMaxInterval (%v)",
+			otlp.RetryInitialInterval, otlp.RetryMaxInterval)
+	}
+
+	// Build the retry configuration
+	retryConfig := &RetryConfig{
+		Enabled:         otlp.RetryEnabled,
+		InitialInterval: otlp.RetryInitialInterval,
+		MaxInterval:     otlp.RetryMaxInterval,
+		MaxElapsedTime:  otlp.RetryMaxElapsedTime,
+	}
+
+	otlp.RetryConfig = retryConfig
+
+	return nil
+}
+
 func defaultConfig() (*Config, error) {
 	// Set default client config
 	var defaultLevel logging.Level
@@ -609,8 +880,9 @@ func defaultConfig() (*Config, error) {
 			LabelSetInitCapacity: 12,
 			PreservedLabels:      model.LabelSet{},
 		},
-		LogLevel: defaultLevel,
-		Pprof:    false,
+		OTLPConfig: DefaultOTLPConfig,
+		LogLevel:   defaultLevel,
+		Pprof:      false,
 	}
 
 	return config, nil

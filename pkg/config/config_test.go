@@ -121,6 +121,36 @@ var _ = Describe("Config", func() {
 			Expect(cfg.PluginConfig.KubernetesMetadata.TagExpression).To(Equal("\\.([^_]+)_([^_]+)_(.+)-([a-z0-9]{64})\\.log$"))
 			Expect(cfg.PluginConfig.KubernetesMetadata.FallbackToTagWhenMetadataIsMissing).To(BeFalse())
 			Expect(cfg.PluginConfig.KubernetesMetadata.DropLogEntryWithoutK8sMetadata).To(BeFalse())
+
+			// OTLP config defaults
+			Expect(cfg.OTLPConfig.EnabledForShoot).To(BeFalse())
+			Expect(cfg.OTLPConfig.Endpoint).To(Equal("localhost:4317"))
+			Expect(cfg.OTLPConfig.Insecure).To(BeFalse())
+			Expect(cfg.OTLPConfig.Compression).To(Equal(0))
+			Expect(cfg.OTLPConfig.Timeout).To(Equal(30 * time.Second))
+			Expect(cfg.OTLPConfig.Headers).ToNot(BeNil())
+			Expect(cfg.OTLPConfig.Headers).To(BeEmpty())
+			Expect(cfg.OTLPConfig.RetryEnabled).To(BeTrue())
+			Expect(cfg.OTLPConfig.RetryInitialInterval).To(Equal(5 * time.Second))
+			Expect(cfg.OTLPConfig.RetryMaxInterval).To(Equal(30 * time.Second))
+			Expect(cfg.OTLPConfig.RetryMaxElapsedTime).To(Equal(time.Minute))
+
+			// OTLP retry config defaults - should be built since retry is enabled
+			Expect(cfg.OTLPConfig.RetryConfig).ToNot(BeNil())
+			Expect(cfg.OTLPConfig.RetryConfig.Enabled).To(BeTrue())
+			Expect(cfg.OTLPConfig.RetryConfig.InitialInterval).To(Equal(5 * time.Second))
+			Expect(cfg.OTLPConfig.RetryConfig.MaxInterval).To(Equal(30 * time.Second))
+			Expect(cfg.OTLPConfig.RetryConfig.MaxElapsedTime).To(Equal(time.Minute))
+
+			// OTLP TLS config defaults
+			Expect(cfg.OTLPConfig.TLSCertFile).To(BeEmpty())
+			Expect(cfg.OTLPConfig.TLSKeyFile).To(BeEmpty())
+			Expect(cfg.OTLPConfig.TLSCAFile).To(BeEmpty())
+			Expect(cfg.OTLPConfig.TLSServerName).To(BeEmpty())
+			Expect(cfg.OTLPConfig.TLSInsecureSkipVerify).To(BeFalse())
+			Expect(cfg.OTLPConfig.TLSMinVersion).To(Equal("1.2"))
+			Expect(cfg.OTLPConfig.TLSMaxVersion).To(BeEmpty())
+			Expect(cfg.OTLPConfig.TLSConfig).To(BeNil())
 		})
 
 		It("should parse config with custom values", func() {
@@ -237,6 +267,108 @@ var _ = Describe("Config", func() {
 			Expect(kubernetesMap).To(HaveKeyWithValue("namespace_name", "namespace"))
 		})
 
+		It("should parse config with OTLP retry configuration", func() {
+			configMap := map[string]any{
+				"OTLPEndpoint":             "https://otel-collector.example.com:4317",
+				"OTLPRetryEnabled":         "true",
+				"OTLPRetryInitialInterval": "1s",
+				"OTLPRetryMaxInterval":     "10s",
+				"OTLPRetryMaxElapsedTime":  "2m",
+			}
+
+			cfg, err := config.ParseConfig(configMap)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(cfg).ToNot(BeNil())
+
+			// Verify retry configuration fields
+			Expect(cfg.OTLPConfig.RetryEnabled).To(BeTrue())
+			Expect(cfg.OTLPConfig.RetryInitialInterval).To(Equal(time.Second))
+			Expect(cfg.OTLPConfig.RetryMaxInterval).To(Equal(10 * time.Second))
+			Expect(cfg.OTLPConfig.RetryMaxElapsedTime).To(Equal(2 * time.Minute))
+
+			// Verify built retry configuration
+			Expect(cfg.OTLPConfig.RetryConfig).ToNot(BeNil())
+			Expect(cfg.OTLPConfig.RetryConfig.Enabled).To(BeTrue())
+			Expect(cfg.OTLPConfig.RetryConfig.InitialInterval).To(Equal(time.Second))
+			Expect(cfg.OTLPConfig.RetryConfig.MaxInterval).To(Equal(10 * time.Second))
+			Expect(cfg.OTLPConfig.RetryConfig.MaxElapsedTime).To(Equal(2 * time.Minute))
+		})
+
+		It("should disable retry configuration when RetryEnabled is false", func() {
+			configMap := map[string]any{
+				"OTLPEndpoint":     "https://otel-collector.example.com:4317",
+				"OTLPRetryEnabled": "false",
+			}
+
+			cfg, err := config.ParseConfig(configMap)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(cfg).ToNot(BeNil())
+
+			// Verify retry is disabled
+			Expect(cfg.OTLPConfig.RetryEnabled).To(BeFalse())
+			Expect(cfg.OTLPConfig.RetryConfig).To(BeNil())
+		})
+
+		It("should parse config with OTLP TLS configuration", func() {
+			configMap := map[string]any{
+				"OTLPEndpoint":              "https://otel-collector.example.com:4317",
+				"OTLPTLSServerName":         "otel.example.com",
+				"OTLPTLSInsecureSkipVerify": "false",
+				"OTLPTLSMinVersion":         "1.2",
+				"OTLPTLSMaxVersion":         "1.3",
+			}
+
+			cfg, err := config.ParseConfig(configMap)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(cfg).ToNot(BeNil())
+
+			// Verify TLS configuration
+			Expect(cfg.OTLPConfig.TLSServerName).To(Equal("otel.example.com"))
+			Expect(cfg.OTLPConfig.TLSInsecureSkipVerify).To(BeFalse())
+			Expect(cfg.OTLPConfig.TLSMinVersion).To(Equal("1.2"))
+			Expect(cfg.OTLPConfig.TLSMaxVersion).To(Equal("1.3"))
+
+			// TLS config should be built
+			Expect(cfg.OTLPConfig.TLSConfig).ToNot(BeNil())
+			Expect(cfg.OTLPConfig.TLSConfig.ServerName).To(Equal("otel.example.com"))
+			Expect(cfg.OTLPConfig.TLSConfig.InsecureSkipVerify).To(BeFalse())
+		})
+
+		It("should parse config with OTLP configuration", func() {
+			configMap := map[string]any{
+				"OTLPEndpoint":             "otel-collector.example.com:4317",
+				"OTLPInsecure":             "false",
+				"OTLPCompression":          "1",
+				"OTLPTimeout":              "45s",
+				"OTLPHeaders":              `{"authorization": "Bearer token123", "x-custom-header": "value"}`,
+				"OTLPRetryEnabled":         "true",
+				"OTLPRetryInitialInterval": "2s",
+				"OTLPRetryMaxInterval":     "60s",
+				"OTLPRetryMaxElapsedTime":  "5m",
+			}
+
+			cfg, err := config.ParseConfig(configMap)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(cfg).ToNot(BeNil())
+
+			// Verify OTLP configuration
+			Expect(cfg.OTLPConfig.Endpoint).To(Equal("otel-collector.example.com:4317"))
+			Expect(cfg.OTLPConfig.Insecure).To(BeFalse())
+			Expect(cfg.OTLPConfig.Compression).To(Equal(1))
+			Expect(cfg.OTLPConfig.Timeout).To(Equal(45 * time.Second))
+
+			// Verify headers parsing
+			Expect(cfg.OTLPConfig.Headers).ToNot(BeNil())
+			Expect(cfg.OTLPConfig.Headers).To(HaveKeyWithValue("authorization", "Bearer token123"))
+			Expect(cfg.OTLPConfig.Headers).To(HaveKeyWithValue("x-custom-header", "value"))
+
+			// Verify retry configuration
+			Expect(cfg.OTLPConfig.RetryEnabled).To(BeTrue())
+			Expect(cfg.OTLPConfig.RetryInitialInterval).To(Equal(2 * time.Second))
+			Expect(cfg.OTLPConfig.RetryMaxInterval).To(Equal(60 * time.Second))
+			Expect(cfg.OTLPConfig.RetryMaxElapsedTime).To(Equal(5 * time.Minute))
+		})
+
 		It("should handle errors for invalid configurations", func() {
 			// Test invalid URL
 			configMap := map[string]any{
@@ -265,6 +397,75 @@ var _ = Describe("Config", func() {
 			}
 			_, err = config.ParseConfig(configMap)
 			Expect(err).To(HaveOccurred())
+
+			// Test invalid OTLP configuration
+			// Invalid compression value
+			configMap = map[string]any{
+				"OTLPCompression": "5", // Out of valid range (0-2)
+			}
+			_, err = config.ParseConfig(configMap)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("invalid OTLPCompression value"))
+
+			// Invalid headers JSON
+			configMap = map[string]any{
+				"OTLPHeaders": "invalid{json",
+			}
+			_, err = config.ParseConfig(configMap)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("failed to parse OTLPHeaders JSON"))
+
+			// Invalid boolean for OTLPInsecure
+			configMap = map[string]any{
+				"OTLPInsecure": "not-a-boolean",
+			}
+			_, err = config.ParseConfig(configMap)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("strconv.ParseBool: invalid syntax"))
+
+			// Invalid duration for OTLPTimeout
+			configMap = map[string]any{
+				"OTLPTimeout": "invalid-duration",
+			}
+			_, err = config.ParseConfig(configMap)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("time: invalid duration"))
+
+			// Invalid TLS version
+			configMap = map[string]any{
+				"OTLPTLSMinVersion": "1.5", // Invalid TLS version
+			}
+			_, err = config.ParseConfig(configMap)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("unsupported TLS version"))
+
+			// Invalid TLS version order
+			configMap = map[string]any{
+				"OTLPTLSMinVersion": "1.3",
+				"OTLPTLSMaxVersion": "1.2", // Min > Max
+			}
+			_, err = config.ParseConfig(configMap)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("OTLPTLSMinVersion cannot be greater than OTLPTLSMaxVersion"))
+
+			// Cert file without key file
+			configMap = map[string]any{
+				"OTLPTLSCertFile": "/path/to/cert.pem",
+			}
+			_, err = config.ParseConfig(configMap)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("both OTLPTLSCertFile and OTLPTLSKeyFile must be specified together"))
+
+			// Invalid retry configuration - InitialInterval > MaxInterval
+			configMap = map[string]any{
+				"OTLPRetryEnabled":         "true",
+				"OTLPRetryInitialInterval": "10s",
+				"OTLPRetryMaxInterval":     "5s", // Initial > Max
+			}
+			_, err = config.ParseConfig(configMap)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("OTLPRetryInitialInterval"))
+			Expect(err.Error()).To(ContainSubstring("cannot be greater than OTLPRetryMaxInterval"))
 		})
 	})
 

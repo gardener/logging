@@ -233,6 +233,7 @@ func (ctl *controller) updateClientConfig(clusterName string) *config.Config {
 
 	conf := *ctl.conf
 	conf.ClientConfig.CredativValiConfig.URL = clientURL
+	conf.OTLPConfig.Endpoint = url
 	conf.ClientConfig.BufferConfig.DqueConfig.QueueName = clusterName
 
 	return &conf
