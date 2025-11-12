@@ -127,7 +127,8 @@ func (c *pluginConfig) toStringMap() map[string]string {
 	// Define all possible configuration keys based on the structs and documentation
 	configKeys := []string{
 		// Client config
-		"Url", "TenantID", "BatchWait", "BatchSize", "Labels", "Timeout", "MinBackoff", "MaxBackoff", "MaxRetries",
+		"Url", "ProxyUrl", "TenantID", "BatchWait", "BatchSize", "Labels", "Timeout", "MinBackoff", "MaxBackoff",
+		"MaxRetries",
 		"SortByTimestamp", "NumberOfBatchIDs", "IdLabelName",
 
 		// Plugin config
@@ -377,6 +378,7 @@ func main() {}
 func dumpConfiguration(_logger log.Logger, conf *config.Config) {
 	paramLogger := log.With(_logger, "[flb-go]", "provided parameter")
 	_ = level.Debug(paramLogger).Log("URL", conf.ClientConfig.CredativValiConfig.URL)
+	_ = level.Debug(paramLogger).Log("ProxyURL", conf.ClientConfig.CredativValiConfig.Client.ProxyURL.URL)
 	_ = level.Debug(paramLogger).Log("TenantID", conf.ClientConfig.CredativValiConfig.TenantID)
 	_ = level.Debug(paramLogger).Log("BatchWait", conf.ClientConfig.CredativValiConfig.BatchWait)
 	_ = level.Debug(paramLogger).Log("BatchSize", conf.ClientConfig.CredativValiConfig.BatchSize)

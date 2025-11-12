@@ -329,6 +329,7 @@ var _ = Describe("Config", func() {
 				// Logging configuration
 				"LogLevel": "info",
 				"Url":      "http://logging.garden.svc:3100/vali/api/v1/push",
+				"ProxyUrl": "http://proxy.local:8080",
 
 				// Batch configuration
 				"BatchWait":        "60s",
@@ -403,6 +404,8 @@ var _ = Describe("Config", func() {
 			Expect(cfg.LogLevel.String()).To(Equal("info"))
 			// "Url": "http://logging.garden.svc:3100/vali/api/v1/push"
 			Expect(cfg.ClientConfig.CredativValiConfig.URL.String()).To(Equal("http://logging.garden.svc:3100/vali/api/v1/push"))
+			// "ProxyUrl": "http://proxy.local:8080"
+			Expect(cfg.ClientConfig.CredativValiConfig.Client.ProxyURL.URL.String()).To(Equal("http://proxy.local:8080"))
 
 			// Batch configuration
 			// "BatchWait": "60s"
