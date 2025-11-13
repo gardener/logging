@@ -10,6 +10,7 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	stdurl "net/url"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -323,6 +324,7 @@ func processControllerConfigBoolFields(configMap map[string]any, config *Config)
 func postProcessConfig(config *Config, configMap map[string]any) error {
 	processors := []func(*Config, map[string]any) error{
 		processURLConfig,
+		processProxyURLConfig,
 		processClientConfig,
 		processDurationConfigs,
 		processLabelsConfig,
@@ -361,6 +363,25 @@ func processURLConfig(config *Config, configMap map[string]any) error {
 		if err := config.ClientConfig.CredativValiConfig.URL.Set(urlString); err != nil {
 			return fmt.Errorf("failed to parse URL: %w", err)
 		}
+	}
+
+	return nil
+}
+
+func processProxyURLConfig(config *Config, configMap map[string]any) error {
+	var proxyURLString string
+	if url, ok := configMap["ProxyURL"].(string); ok && url != "" {
+		proxyURLString = url
+	} else if url, ok = configMap["ProxyUrl"].(string); ok && url != "" {
+		proxyURLString = url
+	}
+
+	if proxyURLString != "" {
+		url, err := stdurl.Parse(proxyURLString)
+		if err != nil {
+			return fmt.Errorf("failed to parse proxy URL: %w", err)
+		}
+		config.ClientConfig.CredativValiConfig.Client.ProxyURL.URL = url
 	}
 
 	return nil
