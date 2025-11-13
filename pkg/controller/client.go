@@ -81,7 +81,7 @@ func (ctl *controller) newControllerClient(clusterName string, clientConf *confi
 		"name", clusterName,
 	)
 
-	shootClient, err := client.NewClient(*clientConf, ctl.logger, client.Options{})
+	shootClient, err := client.NewClient(*clientConf, client.WithLogger(ctl.logger))
 	if err != nil {
 		return nil, err
 	}
