@@ -77,9 +77,9 @@ func newValiClient(cfg config.Config, logger log.Logger, options valiOptions) (O
 		}
 	}
 
-	// The last wrapper which process labels should be the pack client.
+	// The last wrapper which processes labels should be the pack client.
 	// After the pack labels which are needed for the record processing
-	// cloud be packed and thus no long existing
+	// could be packed and thus no longer existing
 	if options.PreservedLabels != nil {
 		tempNCF := ncf
 		ncf = func(c config.Config, l log.Logger) (OutputClient, error) {
