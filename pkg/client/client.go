@@ -54,9 +54,9 @@ func NewClient(cfg config.Config, opts ...Options) (OutputClient, error) {
 	}
 
 	valiOpts := valiOptions{}
-	if options.vali != nil { // Fixed: was options.otlp, should be options.vali
+	if options.vali != nil {
 		valiOpts = *options.vali
 	}
 
-	return newValiClient(cfg, log.With(logger, "client_type"), valiOpts)
+	return newValiClient(cfg, log.With(logger), valiOpts)
 }
