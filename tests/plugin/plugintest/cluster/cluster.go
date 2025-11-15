@@ -7,66 +7,86 @@ package cluster
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
+	"github.com/google/uuid"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
 
-	"github.com/gardener/logging/tests/plugin/plugintest/input"
+	"github.com/gardener/logging/tests/plugin/plugintest/producer"
 )
 
+// READY represents the ready state of the shoot
+const READY = "ready"
+
 type cluster struct {
-	cluster *extensionsv1alpha1.Cluster
-	number  int
+	*extensionsv1alpha1.Cluster
 }
 
-func newCluster(number int) Cluster {
-	return &cluster{
-		cluster: getCluster(number, "create"),
-		number:  number,
-	}
-}
-
-// CreateNClusters creates a slice of Cluster instances
-func CreateNClusters(numberOfClusters int) []Cluster {
+// NClusters creates a slice of Cluster instances
+func NClusters(numberOfClusters int) []Cluster {
 	result := make([]Cluster, numberOfClusters)
 	for i := 0; i < numberOfClusters; i++ {
-		result[i] = newCluster(i)
+		result[i] = &cluster{
+			Cluster: create(),
+		}
 	}
 
 	return result
 }
 
-// GetCluster returns the Cluster instance
-func (c *cluster) GetCluster() *extensionsv1alpha1.Cluster {
-	return c.cluster
+// Get returns the Cluster instance
+func (c *cluster) Get() *extensionsv1alpha1.Cluster {
+	return c.Cluster
 }
 
-// revive:disable
-
 // ChangeStateToHibernating changes the state of the cluster to deletion
-func (c *cluster) ChangeStateToDeletion() (*extensionsv1alpha1.Cluster, *extensionsv1alpha1.Cluster) {
-	return c.changeState("deletion")
+func (c *cluster) ChangeStateToDeletion() {
+	shoot := fetchShootInHibernationState("deletion")
+	c.Spec.Shoot = runtime.RawExtension{
+		Raw: encode(&shoot),
+	}
 }
 
 // ChangeStateToHibernating changes the state of the cluster to ready
-func (c *cluster) ChangeStateToReady() (*extensionsv1alpha1.Cluster, *extensionsv1alpha1.Cluster) {
-	return c.changeState("ready")
+func (c *cluster) ChangeStateToReady() {
+	shoot := fetchShootInHibernationState("ready")
+	c.Spec.Shoot = runtime.RawExtension{
+		Raw: encode(&shoot),
+	}
 }
 
-// revive:enable
+func create() *extensionsv1alpha1.Cluster {
+	shoot := fetchShootInHibernationState(READY)
+	index := strings.Split(uuid.New().String(), "-")[0]
 
-func (c *cluster) changeState(newState string) (newCluster, oldCluster *extensionsv1alpha1.Cluster) {
-	oldCluster = c.cluster
-	c.cluster = getCluster(c.number, newState)
-
-	return oldCluster, c.cluster
+	return &extensionsv1alpha1.Cluster{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Cluster",
+			APIVersion: "extensions.gardener.cloud/v1alpha1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: fmt.Sprintf("%s-%s", producer.NamespacePrefix, index),
+		},
+		Spec: extensionsv1alpha1.ClusterSpec{
+			Shoot: runtime.RawExtension{
+				Raw: encode(&shoot),
+			},
+			CloudProfile: runtime.RawExtension{
+				Raw: encode(&gardencorev1beta1.CloudProfile{}),
+			},
+			Seed: runtime.RawExtension{
+				Raw: encode(&gardencorev1beta1.Seed{}),
+			},
+		},
+	}
 }
 
-func getCluster(number int, state string) *extensionsv1alpha1.Cluster {
-	shoot := &gardencorev1beta1.Shoot{
+func fetchShootInHibernationState(state string) gardencorev1beta1.Shoot {
+	shoot := gardencorev1beta1.Shoot{
 		Spec: gardencorev1beta1.ShootSpec{
 			Hibernation: &gardencorev1beta1.Hibernation{
 				Enabled: ptr.To(false),
@@ -100,26 +120,7 @@ func getCluster(number int, state string) *extensionsv1alpha1.Cluster {
 	default:
 	}
 
-	return &extensionsv1alpha1.Cluster{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Cluster",
-			APIVersion: "extensions.gardener.cloud/v1alpha1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: fmt.Sprintf("%s-%v", input.NamespacePrefix, number),
-		},
-		Spec: extensionsv1alpha1.ClusterSpec{
-			Shoot: runtime.RawExtension{
-				Raw: encode(shoot),
-			},
-			CloudProfile: runtime.RawExtension{
-				Raw: encode(&gardencorev1beta1.CloudProfile{}),
-			},
-			Seed: runtime.RawExtension{
-				Raw: encode(&gardencorev1beta1.Seed{}),
-			},
-		},
-	}
+	return shoot
 }
 
 func encode(obj runtime.Object) []byte {
