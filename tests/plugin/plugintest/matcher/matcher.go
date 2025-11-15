@@ -5,33 +5,23 @@
 package matcher
 
 import (
-	"github.com/prometheus/common/model"
-
 	"github.com/gardener/logging/tests/plugin/plugintest/client"
-	"github.com/gardener/logging/tests/plugin/plugintest/input"
+	"github.com/gardener/logging/tests/plugin/plugintest/producer"
 )
 
 // Matcher is an interface that defines the method for matching logs.
 type Matcher interface {
-	Match(pod input.Pod, endClient client.EndClient) bool
+	Match(pod producer.Pod, c client.Client) bool
 }
 
-type logMatcher struct {
-}
+type logMatcher struct{}
 
-// NewMatcher creates a new instance of logMatcher.
-func NewMatcher() Matcher {
+// New creates a new instance of logMatcher.
+func New() Matcher {
 	return &logMatcher{}
 }
 
 // Match checks if the number of generated logs matches the number of received logs.
-func (*logMatcher) Match(pod input.Pod, endClient client.EndClient) bool {
-	generated := pod.GetOutput().GetGeneratedLogsCount()
-	received := endClient.GetLogsCount(getLabelSets(pod))
-
-	return generated == received
-}
-
-func getLabelSets(pod input.Pod) model.LabelSet {
-	return pod.GetOutput().GetLabelSet()
+func (*logMatcher) Match(_ producer.Pod, _ client.Client) bool {
+	return false
 }

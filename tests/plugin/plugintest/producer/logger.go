@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package input
+package producer
 
 import (
 	"fmt"
@@ -17,7 +17,7 @@ import (
 )
 
 // NamespacePrefix is the prefix used for the namespaces created by the logger controller.
-const NamespacePrefix = "shoot--logging--test-"
+const NamespacePrefix = "shoot--logging--test"
 
 // LoggerControllerConfig holds the configuration for the LoggerController.
 type LoggerControllerConfig struct {

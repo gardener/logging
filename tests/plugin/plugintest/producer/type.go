@@ -2,13 +2,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package input
-
-import "github.com/prometheus/common/model"
+package producer
 
 // PodOutput is an interface that defines the methods for getting label set and generated logs count.
 type PodOutput interface {
-	GetLabelSet() model.LabelSet
 	GetGeneratedLogsCount() int
 }
 

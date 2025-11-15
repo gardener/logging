@@ -8,11 +8,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/cortexproject/cortex/pkg/util/flagext"
-	"github.com/credativ/vali/pkg/valitail/client"
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
-	"github.com/prometheus/common/model"
 	"github.com/weaveworks/common/logging"
 
 	"github.com/gardener/logging/pkg/config"
@@ -25,15 +22,8 @@ func NewConfiguration() (config.Config, error) {
 		return config.Config{}, err
 	}
 
-	clientURL := flagext.URLValue{}
-	err = clientURL.Set("http://localhost:3100/vali/api/v1/push")
-	if err != nil {
-		return config.Config{}, err
-	}
-
 	cfg := config.Config{
 		ClientConfig: config.ClientConfig{
-			CredativValiConfig: client.Config{},
 			BufferConfig: config.BufferConfig{
 				Buffer:     true,
 				BufferType: "dque",
@@ -44,21 +34,18 @@ func NewConfiguration() (config.Config, error) {
 					QueueName:        "dque",
 				},
 			},
-			SortByTimestamp:  true,
-			NumberOfBatchIDs: uint64(5),
-			IDLabelName:      model.LabelName("id"),
+			SortByTimestamp: true,
 		},
 		ControllerConfig: config.ControllerConfig{
 			CtlSyncTimeout:              60 * time.Minute,
-			DynamicHostPrefix:           "http://vali.",
-			DynamicHostSuffix:           ".svc:3100/vali/api/v1/push",
+			DynamicHostPrefix:           "",
+			DynamicHostSuffix:           "",
 			DeletedClientTimeExpiration: time.Hour,
 			ShootControllerClientConfig: config.ShootControllerClientConfig,
 			SeedControllerClientConfig:  config.SeedControllerClientConfig,
 		},
 		PluginConfig: config.PluginConfig{
 			AutoKubernetesLabels: false,
-			EnableMultiTenancy:   false,
 			RemoveKeys:           []string{"kubernetes", "stream", "time", "tag", "job"},
 			LabelKeys:            nil,
 			LabelMap: map[string]any{
@@ -89,16 +76,10 @@ func NewConfiguration() (config.Config, error) {
 			LabelSetInitCapacity: 12,
 			HostnameKey:          "nodename",
 			HostnameValue:        "local-testing-machine",
-			PreservedLabels: model.LabelSet{
-				"origin":         "",
-				"namespace_name": "",
-				"pod_name":       "",
-			},
 		},
 		LogLevel: getLogLevel(),
 		Pprof:    false,
 	}
-	cfg.ClientConfig.CredativValiConfig.URL = clientURL
 
 	return cfg, nil
 }
