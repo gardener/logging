@@ -17,32 +17,23 @@ type clientOptions struct {
 	logger log.Logger
 }
 
-// Options defines functional options for creating clients
-type Options interface {
-	apply(opts *clientOptions) error
-}
-
-// loggerOption implements Options for setting the logger
-type loggerOption struct {
-	logger log.Logger
-}
-
-func (l loggerOption) apply(opts *clientOptions) error {
-	opts.logger = l.logger
-
-	return nil
-}
+// Option defines a functional option for configuring the client
+type Option func(opts *clientOptions) error
 
 // WithLogger creates a functional option for setting the logger
-func WithLogger(logger log.Logger) Options {
-	return loggerOption{logger: logger}
+func WithLogger(logger log.Logger) Option {
+	return func(opts *clientOptions) error {
+		opts.logger = logger
+
+		return nil
+	}
 }
 
 // NewClient creates a new client based on the fluent-bit configuration.
-func NewClient(cfg config.Config, opts ...Options) (OutputClient, error) {
+func NewClient(cfg config.Config, opts ...Option) (OutputClient, error) {
 	options := &clientOptions{}
 	for _, opt := range opts {
-		if err := opt.apply(options); err != nil {
+		if err := opt(options); err != nil {
 			return nil, fmt.Errorf("failed to apply option %T: %w", opt, err)
 		}
 	}
