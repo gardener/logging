@@ -33,42 +33,50 @@ type NewValiClientFunc func(cfg config.Config, logger log.Logger) (OutputClient,
 // ErrInvalidLabelType is returned when the provided labels are not of type model.LabelSet
 var ErrInvalidLabelType = errors.New("labels are not a valid model.LabelSet")
 
-// Options for creating a Vali client
+// Option for creating a Vali client
 type valiOptions struct {
 	// PreservedLabels is the labels to preserve
 	PreservedLabels model.LabelSet
-}
-
-// valiPreservedLabels implements Options for Vali preserved labels
-type valiPreservedLabels model.LabelSet
-
-func (v valiPreservedLabels) apply(opts *clientOptions) error {
-	if opts.vali == nil {
-		opts.vali = &valiOptions{}
-	}
-	opts.vali.PreservedLabels = model.LabelSet(v)
-
-	return nil
+	newClientFunc   NewValiClientFunc
 }
 
 // WithPreservedLabels creates a functional option for preserved labels (Vali only)
-func WithPreservedLabels(labels model.LabelSet) Options {
-	return valiPreservedLabels(labels)
+func WithPreservedLabels(labels model.LabelSet) Option {
+	return func(opts *clientOptions) error {
+		if opts.vali == nil {
+			opts.vali = &valiOptions{}
+		}
+		opts.vali.PreservedLabels = labels
+
+		return nil
+	}
+}
+
+// WithNewClientFunc creates a functional option for setting a custom NewValiClientFunc
+func WithNewClientFunc(ncf NewValiClientFunc) Option {
+	return func(opts *clientOptions) error {
+		if opts.vali == nil {
+			opts.vali = &valiOptions{}
+		}
+		opts.vali.newClientFunc = ncf
+
+		return nil
+	}
 }
 
 func newValiClient(cfg config.Config, logger log.Logger, options valiOptions) (OutputClient, error) {
 	var ncf NewValiClientFunc
 
-	if cfg.ClientConfig.TestingClient == nil {
-		ncf = func(c config.Config, l log.Logger) (OutputClient, error) {
-			return NewPromtailClient(c.ClientConfig.CredativValiConfig, l)
-		}
-	} else {
+	switch {
+	case cfg.ClientConfig.TestingClient != nil:
 		ncf = func(c config.Config, _ log.Logger) (OutputClient, error) {
 			return newTestingPromtailClient(cfg.ClientConfig.TestingClient, c.ClientConfig.CredativValiConfig)
 		}
+	default:
+		ncf = func(c config.Config, l log.Logger) (OutputClient, error) {
+			return NewPromtailClient(c.ClientConfig.CredativValiConfig, l)
+		}
 	}
-
 	// When label processing is done the sorting client could be used.
 	if cfg.ClientConfig.SortByTimestamp {
 		tempNCF := ncf
