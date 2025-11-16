@@ -14,7 +14,7 @@ import (
 	ginkgov2 "github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	"github.com/prometheus/common/model"
-	"github.com/weaveworks/common/logging"
+	commonlogging "github.com/weaveworks/common/logging"
 
 	"github.com/gardener/logging/pkg/client"
 	"github.com/gardener/logging/pkg/config"
@@ -58,20 +58,20 @@ type sendRecordArgs struct {
 	wantErr bool
 }
 
-type fakeValiClient struct{}
+type fakeClient struct{}
 
-func (*fakeValiClient) GetEndPoint() string {
+func (*fakeClient) GetEndPoint() string {
 	return "http://localhost"
 }
 
-var _ client.OutputClient = &fakeValiClient{}
+var _ client.OutputClient = &fakeClient{}
 
-func (*fakeValiClient) Handle(_ any, _ time.Time, _ string) error {
+func (*fakeClient) Handle(_ any, _ time.Time, _ string) error {
 	return nil
 }
 
-func (*fakeValiClient) Stop()     {}
-func (*fakeValiClient) StopWait() {}
+func (*fakeClient) Stop()     {}
+func (*fakeClient) StopWait() {}
 
 type fakeController struct {
 	clients map[string]client.OutputClient
@@ -91,7 +91,7 @@ func (*fakeController) Stop() {}
 
 var (
 	now      = time.Now()
-	logLevel logging.Level
+	logLevel commonlogging.Level
 	logger   = log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
 )
 
@@ -143,7 +143,7 @@ var _ = ginkgov2.Describe("OutputPlugin plugin", func() {
 	ginkgov2.DescribeTable("#SendRecord",
 		func(args sendRecordArgs) {
 			rec := &recorder{}
-			l := &vali{
+			l := &logging{
 				cfg:        args.cfg,
 				seedClient: rec,
 				logger:     logger,
@@ -264,13 +264,13 @@ var _ = ginkgov2.Describe("OutputPlugin plugin", func() {
 	ginkgov2.Describe("#getClient", func() {
 		fc := fakeController{
 			clients: map[string]client.OutputClient{
-				"shoot--dev--test1": &fakeValiClient{},
-				"shoot--dev--test2": &fakeValiClient{},
+				"shoot--dev--test1": &fakeClient{},
+				"shoot--dev--test2": &fakeClient{},
 			},
 		}
-		valiplug := vali{
+		p := logging{
 			dynamicHostRegexp: regexp.MustCompile("shoot--.*"),
-			seedClient:        &fakeValiClient{},
+			seedClient:        &fakeClient{},
 			controller:        &fc,
 		}
 
@@ -281,7 +281,7 @@ var _ = ginkgov2.Describe("OutputPlugin plugin", func() {
 
 		ginkgov2.DescribeTable("#getClient",
 			func(args getClientArgs) {
-				c := valiplug.getClient(args.dynamicHostName)
+				c := p.getClient(args.dynamicHostName)
 				if args.expectToExists {
 					gomega.Expect(c).ToNot(gomega.BeNil())
 				} else {
@@ -313,7 +313,7 @@ var _ = ginkgov2.Describe("OutputPlugin plugin", func() {
 
 	ginkgov2.Describe("#setDynamicTenant", func() {
 		type setDynamicTenantArgs struct {
-			valiplugin vali
+			valiplugin logging
 			labelSet   model.LabelSet
 			records    map[string]any
 			want       struct { // revive:disable-line:nested-structs
@@ -330,11 +330,11 @@ var _ = ginkgov2.Describe("OutputPlugin plugin", func() {
 			},
 			ginkgov2.Entry("Existing field with maching regex",
 				setDynamicTenantArgs{
-					valiplugin: vali{
+					valiplugin: logging{
 						dynamicTenantRegexp: regexp.MustCompile("user-exposed.kubernetes"),
 						dynamicTenant:       "test-user",
 						dynamicTenantField:  "tag",
-						seedClient:          &fakeValiClient{},
+						seedClient:          &fakeClient{},
 					},
 					labelSet: model.LabelSet{
 						"foo": "bar",
@@ -359,11 +359,11 @@ var _ = ginkgov2.Describe("OutputPlugin plugin", func() {
 				}),
 			ginkgov2.Entry("Existing field with no maching regex",
 				setDynamicTenantArgs{
-					valiplugin: vali{
+					valiplugin: logging{
 						dynamicTenantRegexp: regexp.MustCompile("user-exposed.kubernetes"),
 						dynamicTenant:       "test-user",
 						dynamicTenantField:  "tag",
-						seedClient:          &fakeValiClient{},
+						seedClient:          &fakeClient{},
 					},
 					labelSet: model.LabelSet{
 						"foo": "bar",
@@ -387,11 +387,11 @@ var _ = ginkgov2.Describe("OutputPlugin plugin", func() {
 				}),
 			ginkgov2.Entry("Not Existing field with maching regex",
 				setDynamicTenantArgs{
-					valiplugin: vali{
+					valiplugin: logging{
 						dynamicTenantRegexp: regexp.MustCompile("user-exposed.kubernetes"),
 						dynamicTenant:       "test-user",
 						dynamicTenantField:  "tag",
-						seedClient:          &fakeValiClient{},
+						seedClient:          &fakeClient{},
 					},
 					labelSet: model.LabelSet{
 						"foo": "bar",
@@ -418,7 +418,7 @@ var _ = ginkgov2.Describe("OutputPlugin plugin", func() {
 
 	ginkgov2.Describe("#addHostnameAsLabel", func() {
 		type addHostnameAsLabelArgs struct {
-			valiplugin vali
+			valiplugin logging
 			labelSet   model.LabelSet
 			want       struct { // revive:disable-line:nested-structs
 				labelSet model.LabelSet
@@ -435,7 +435,7 @@ var _ = ginkgov2.Describe("OutputPlugin plugin", func() {
 			},
 			ginkgov2.Entry("HostnameKey and HostnameValue are nil",
 				addHostnameAsLabelArgs{
-					valiplugin: vali{
+					valiplugin: logging{
 						cfg: &config.Config{
 							PluginConfig: config.PluginConfig{
 								HostnameKey:   "",
@@ -456,7 +456,7 @@ var _ = ginkgov2.Describe("OutputPlugin plugin", func() {
 				}),
 			ginkgov2.Entry("HostnameKey is not nil and HostnameValue is nil",
 				addHostnameAsLabelArgs{
-					valiplugin: vali{
+					valiplugin: logging{
 						cfg: &config.Config{
 							PluginConfig: config.PluginConfig{
 								HostnameKey:   "hostname",
@@ -478,7 +478,7 @@ var _ = ginkgov2.Describe("OutputPlugin plugin", func() {
 				}),
 			ginkgov2.Entry("HostnameKey and HostnameValue are not nil",
 				addHostnameAsLabelArgs{
-					valiplugin: vali{
+					valiplugin: logging{
 						cfg: &config.Config{
 							PluginConfig: config.PluginConfig{
 								HostnameKey:   "hostname",
