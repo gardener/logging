@@ -28,7 +28,7 @@ type OutputPlugin interface {
 	Close()
 }
 
-type vali struct {
+type logging struct {
 	seedClient                      client.OutputClient
 	cfg                             *config.Config
 	dynamicHostRegexp               *regexp.Regexp
@@ -43,53 +43,53 @@ type vali struct {
 // NewPlugin returns OutputPlugin output plugin
 func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger log.Logger) (OutputPlugin, error) {
 	var err error
-	v := &vali{cfg: cfg, logger: logger}
+	l := &logging{cfg: cfg, logger: logger}
 
 	// TODO(nickytd): Remove this magic check and introduce an Id field in the plugin output configuration
 	// If the plugin ID is "shoot" then we shall have a dynamic host and a default "controller" client
 	if len(cfg.PluginConfig.DynamicHostPath) > 0 {
-		v.dynamicHostRegexp = regexp.MustCompile(cfg.PluginConfig.DynamicHostRegex)
+		l.dynamicHostRegexp = regexp.MustCompile(cfg.PluginConfig.DynamicHostRegex)
 
-		if v.controller, err = controller.NewController(informer, cfg, logger); err != nil {
+		if l.controller, err = controller.NewController(informer, cfg, logger); err != nil {
 			return nil, err
 		}
 	}
 
 	if cfg.PluginConfig.KubernetesMetadata.FallbackToTagWhenMetadataIsMissing {
-		v.extractKubernetesMetadataRegexp = regexp.MustCompile(cfg.PluginConfig.KubernetesMetadata.TagPrefix + cfg.PluginConfig.KubernetesMetadata.TagExpression)
+		l.extractKubernetesMetadataRegexp = regexp.MustCompile(cfg.PluginConfig.KubernetesMetadata.TagPrefix + cfg.PluginConfig.KubernetesMetadata.TagExpression)
 	}
 
-	if v.seedClient, err = client.NewClient(*cfg, client.WithLogger(logger)); err != nil {
+	if l.seedClient, err = client.NewClient(*cfg, client.WithLogger(logger)); err != nil {
 		return nil, err
 	}
 
 	_ = level.Info(logger).Log(
-		"msg", "vali plugin created",
-		"seed_client_url", v.seedClient.GetEndPoint(),
+		"msg", "logging plugin created",
+		"seed_client_url", l.seedClient.GetEndPoint(),
 		"seed_queue_name", cfg.ClientConfig.BufferConfig.DqueConfig.QueueName,
 	)
 
-	return v, nil
+	return l, nil
 }
 
-// SendRecord sends fluent-bit records to vali as an entry.
-func (v *vali) SendRecord(r map[any]any, ts time.Time) error {
+// SendRecord sends fluent-bit records to logging as an entry.
+func (l *logging) SendRecord(r map[any]any, ts time.Time) error {
 	records := toStringMap(r)
-	// _ = level.Debug(v.logger).Log("msg", "processing records", "records", fluentBitRecords(records))
-	lbs := make(model.LabelSet, v.cfg.PluginConfig.LabelSetInitCapacity)
+	// _ = level.Debug(l.logger).Log("msg", "processing records", "records", fluentBitRecords(records))
+	lbs := make(model.LabelSet, l.cfg.PluginConfig.LabelSetInitCapacity)
 
 	// Check if metadata is missing
 	_, ok := records["kubernetes"]
-	if !ok && v.cfg.PluginConfig.KubernetesMetadata.FallbackToTagWhenMetadataIsMissing {
+	if !ok && l.cfg.PluginConfig.KubernetesMetadata.FallbackToTagWhenMetadataIsMissing {
 		// Attempt to extract Kubernetes metadata from the tag
 		if err := extractKubernetesMetadataFromTag(records,
-			v.cfg.PluginConfig.KubernetesMetadata.TagKey,
-			v.extractKubernetesMetadataRegexp,
+			l.cfg.PluginConfig.KubernetesMetadata.TagKey,
+			l.extractKubernetesMetadataRegexp,
 		); err != nil {
 			// Increment error metric if metadata extraction fails
 			metrics.Errors.WithLabelValues(metrics.ErrorCanNotExtractMetadataFromTag).Inc()
 			// Drop log entry if configured to do so when metadata is missing
-			if v.cfg.PluginConfig.KubernetesMetadata.DropLogEntryWithoutK8sMetadata {
+			if l.cfg.PluginConfig.KubernetesMetadata.DropLogEntryWithoutK8sMetadata {
 				metrics.LogsWithoutMetadata.WithLabelValues(metrics.MissingMetadataType).Inc()
 
 				return nil
@@ -97,32 +97,32 @@ func (v *vali) SendRecord(r map[any]any, ts time.Time) error {
 		}
 	}
 
-	if v.cfg.PluginConfig.AutoKubernetesLabels {
+	if l.cfg.PluginConfig.AutoKubernetesLabels {
 		if err := autoLabels(records, lbs); err != nil {
 			metrics.Errors.WithLabelValues(metrics.ErrorK8sLabelsNotFound).Inc()
-			_ = level.Error(v.logger).Log("msg", err.Error(), "records", fluentBitRecords(records))
+			_ = level.Error(l.logger).Log("msg", err.Error(), "records", fluentBitRecords(records))
 		}
 	}
 
-	if v.cfg.PluginConfig.LabelMap != nil {
-		mapLabels(records, v.cfg.PluginConfig.LabelMap, lbs)
+	if l.cfg.PluginConfig.LabelMap != nil {
+		mapLabels(records, l.cfg.PluginConfig.LabelMap, lbs)
 	} else {
-		lbs = extractLabels(records, v.cfg.PluginConfig.LabelKeys)
+		lbs = extractLabels(records, l.cfg.PluginConfig.LabelKeys)
 	}
 
-	dynamicHostName := getDynamicHostName(records, v.cfg.PluginConfig.DynamicHostPath)
+	dynamicHostName := getDynamicHostName(records, l.cfg.PluginConfig.DynamicHostPath)
 	host := dynamicHostName
-	if !v.isDynamicHost(host) {
+	if !l.isDynamicHost(host) {
 		host = "garden"
 	} else {
-		lbs = v.setDynamicTenant(records, lbs)
+		lbs = l.setDynamicTenant(records, lbs)
 	}
 
 	metrics.IncomingLogs.WithLabelValues(host).Inc()
 
-	removeKeys(records, append(v.cfg.PluginConfig.LabelKeys, v.cfg.PluginConfig.RemoveKeys...))
+	removeKeys(records, append(l.cfg.PluginConfig.LabelKeys, l.cfg.PluginConfig.RemoveKeys...))
 	if len(records) == 0 {
-		_ = level.Debug(v.logger).Log("msg", "no records left after removing keys", "host", dynamicHostName)
+		_ = level.Debug(l.logger).Log("msg", "no records left after removing keys", "host", dynamicHostName)
 
 		return nil
 	}
@@ -132,7 +132,7 @@ func (v *vali) SendRecord(r map[any]any, ts time.Time) error {
 	// in the record and must match DynamicHostRegex
 	// example shoot--local--local
 	// DynamicHostPath is json form "{"kubernetes": {"namespace_name": "namespace"}}"
-	c := v.getClient(dynamicHostName)
+	c := l.getClient(dynamicHostName)
 
 	if c == nil {
 		metrics.DroppedLogs.WithLabelValues(host).Inc()
@@ -142,16 +142,16 @@ func (v *vali) SendRecord(r map[any]any, ts time.Time) error {
 
 	metrics.IncomingLogsWithEndpoint.WithLabelValues(host).Inc()
 
-	if err := v.addHostnameAsLabel(lbs); err != nil {
-		_ = level.Warn(v.logger).Log("err", err)
+	if err := l.addHostnameAsLabel(lbs); err != nil {
+		_ = level.Warn(l.logger).Log("err", err)
 	}
 
-	if v.cfg.PluginConfig.DropSingleKey && len(records) == 1 {
+	if l.cfg.PluginConfig.DropSingleKey && len(records) == 1 {
 		for _, record := range records {
-			err := v.send(c, lbs, ts, fmt.Sprintf("%v", record))
+			err := l.send(c, lbs, ts, fmt.Sprintf("%v", record))
 			if err != nil {
-				_ = level.Error(v.logger).Log(
-					"msg", "error sending record to vali",
+				_ = level.Error(l.logger).Log(
+					"msg", "error sending record to logging",
 					"err", err,
 					"host", dynamicHostName,
 				)
@@ -162,17 +162,17 @@ func (v *vali) SendRecord(r map[any]any, ts time.Time) error {
 		}
 	}
 
-	line, err := createLine(records, v.cfg.PluginConfig.LineFormat)
+	line, err := createLine(records, l.cfg.PluginConfig.LineFormat)
 	if err != nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorCreateLine).Inc()
 
-		return fmt.Errorf("error creating line: %v", err)
+		return fmt.Errorf("error creating line: %l", err)
 	}
 
-	err = v.send(c, lbs, ts, line)
+	err = l.send(c, lbs, ts, line)
 	if err != nil {
-		_ = level.Error(v.logger).Log(
-			"msg", "error sending record to vali",
+		_ = level.Error(l.logger).Log(
+			"msg", "error sending record to logging",
 			"err", err,
 			"host", dynamicHostName,
 		)
@@ -184,68 +184,68 @@ func (v *vali) SendRecord(r map[any]any, ts time.Time) error {
 	return nil
 }
 
-func (v *vali) Close() {
-	v.seedClient.Stop()
-	if v.controller != nil {
-		v.controller.Stop()
+func (l *logging) Close() {
+	l.seedClient.Stop()
+	if l.controller != nil {
+		l.controller.Stop()
 	}
-	_ = level.Info(v.logger).Log(
-		"msg", "vali plugin stopped",
-		"seed_client_url", v.seedClient.GetEndPoint(),
-		"seed_queue_name", v.cfg.ClientConfig.BufferConfig.DqueConfig.QueueName,
+	_ = level.Info(l.logger).Log(
+		"msg", "logging plugin stopped",
+		"seed_client_url", l.seedClient.GetEndPoint(),
+		"seed_queue_name", l.cfg.ClientConfig.BufferConfig.DqueConfig.QueueName,
 	)
 }
 
-func (v *vali) getClient(dynamicHosName string) client.OutputClient {
-	if v.isDynamicHost(dynamicHosName) && v.controller != nil {
-		if c, isStopped := v.controller.GetClient(dynamicHosName); !isStopped {
+func (l *logging) getClient(dynamicHosName string) client.OutputClient {
+	if l.isDynamicHost(dynamicHosName) && l.controller != nil {
+		if c, isStopped := l.controller.GetClient(dynamicHosName); !isStopped {
 			return c
 		}
 
 		return nil
 	}
 
-	return v.seedClient
+	return l.seedClient
 }
 
-func (v *vali) isDynamicHost(dynamicHostName string) bool {
+func (l *logging) isDynamicHost(dynamicHostName string) bool {
 	return dynamicHostName != "" &&
-		v.dynamicHostRegexp != nil &&
-		v.dynamicHostRegexp.MatchString(dynamicHostName)
+		l.dynamicHostRegexp != nil &&
+		l.dynamicHostRegexp.MatchString(dynamicHostName)
 }
 
-func (v *vali) setDynamicTenant(record map[string]any, lbs model.LabelSet) model.LabelSet {
-	if v.dynamicTenantRegexp == nil {
+func (l *logging) setDynamicTenant(record map[string]any, lbs model.LabelSet) model.LabelSet {
+	if l.dynamicTenantRegexp == nil {
 		return lbs
 	}
-	dynamicTenantFieldValue, ok := record[v.dynamicTenantField]
+	dynamicTenantFieldValue, ok := record[l.dynamicTenantField]
 	if !ok {
 		return lbs
 	}
 	s, ok := dynamicTenantFieldValue.(string)
-	if ok && v.dynamicTenantRegexp.MatchString(s) {
-		lbs[grafanavaliclient.ReservedLabelTenantID] = model.LabelValue(v.dynamicTenant)
+	if ok && l.dynamicTenantRegexp.MatchString(s) {
+		lbs[grafanavaliclient.ReservedLabelTenantID] = model.LabelValue(l.dynamicTenant)
 	}
 
 	return lbs
 }
 
-func (*vali) send(c client.OutputClient, lbs model.LabelSet, ts time.Time, line string) error {
+func (*logging) send(c client.OutputClient, lbs model.LabelSet, ts time.Time, line string) error {
 	return c.Handle(lbs, ts, line)
 }
 
-func (v *vali) addHostnameAsLabel(res model.LabelSet) error {
-	if v.cfg.PluginConfig.HostnameKey == "" {
+func (l *logging) addHostnameAsLabel(res model.LabelSet) error {
+	if l.cfg.PluginConfig.HostnameKey == "" {
 		return nil
 	}
-	if len(v.cfg.PluginConfig.HostnameValue) > 0 {
-		res[model.LabelName(v.cfg.PluginConfig.HostnameKey)] = model.LabelValue(v.cfg.PluginConfig.HostnameValue)
+	if len(l.cfg.PluginConfig.HostnameValue) > 0 {
+		res[model.LabelName(l.cfg.PluginConfig.HostnameKey)] = model.LabelValue(l.cfg.PluginConfig.HostnameValue)
 	} else {
 		hostname, err := os.Hostname()
 		if err != nil {
 			return err
 		}
-		res[model.LabelName(v.cfg.PluginConfig.HostnameKey)] = model.LabelValue(hostname)
+		res[model.LabelName(l.cfg.PluginConfig.HostnameKey)] = model.LabelValue(hostname)
 	}
 
 	return nil
