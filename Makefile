@@ -80,10 +80,6 @@ docker-images:
 		$(FLUENT_BIT_VALI_IMAGE_REPOSITORY) $(IMAGE_TAG)
 
 	@BUILD_ARCH=$(BUILD_ARCH) \
-		$(REPO_ROOT)/hack/docker-image-build.sh "telegraf" \
-		$(TELEGRAF_IMAGE_REPOSITORY) $(IMAGE_TAG)
-
-	@BUILD_ARCH=$(BUILD_ARCH) \
 		$(REPO_ROOT)/hack/docker-image-build.sh "event-logger" \
 		$(EVENT_LOGGER_IMAGE_REPOSITORY) $(IMAGE_TAG) $(EFFECTIVE_VERSION)
 
@@ -95,9 +91,6 @@ docker-images:
 docker-push:
 	@$(REPO_ROOT)/hack/docker-image-push.sh "fluent-bit-plugin" \
 	$(FLUENT_BIT_TO_VALI_IMAGE_REPOSITORY) $(IMAGE_TAG)
-
-	@$(REPO_ROOT)/hack/docker-image-push.sh "telegraf" \
-	$(TELEGRAF_IMAGE_REPOSITORY) $(IMAGE_TAG)
 
 	@$(REPO_ROOT)/hack/docker-image-push.sh "event-logger" \
 	$(EVENT_LOGGER_IMAGE_REPOSITORY) $(IMAGE_TAG) $(EFFECTIVE_VERSION)
