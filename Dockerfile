@@ -5,7 +5,7 @@ WORKDIR /go/src/github.com/gardener/logging
 
 COPY . .
 RUN go mod download
-RUN make plugin copy curator event-logger
+RUN make plugin copy event-logger
 
 ############# distroless-static
 FROM gcr.io/distroless/static-debian12:nonroot AS distroless-static
@@ -28,16 +28,6 @@ COPY --from=builder /go/src/github.com/gardener/logging/build/output_plugin.so /
 WORKDIR /
 
 CMD ["-e", "/fluent-bit/plugins/output_plugin.so", "-c", "/fluent-bit/config/fluent-bit.conf"]
-
-#############      curator       #############
-FROM distroless-static AS curator
-
-COPY --from=builder /go/src/github.com/gardener/logging/build/curator /curator
-
-WORKDIR /
-EXPOSE 2718
-
-ENTRYPOINT [ "/curator" ]
 
 #############      eventlogger       #############
 FROM distroless-static AS event-logger
