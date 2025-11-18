@@ -5,18 +5,8 @@
 package plugin
 
 import (
-	"bytes"
-	"encoding/json"
-	"errors"
 	"fmt"
 	"regexp"
-	"sort"
-	"strings"
-
-	"github.com/go-logfmt/logfmt"
-	"github.com/prometheus/common/model"
-
-	"github.com/gardener/logging/pkg/config"
 )
 
 const (
@@ -71,38 +61,6 @@ func toStringMap(record map[any]any) map[string]any {
 	return m
 }
 
-func autoLabels(records map[string]any, kuberneteslbs model.LabelSet) error {
-	kube, ok := records["kubernetes"]
-	if !ok {
-		return errors.New("kubernetes labels not found, no labels will be added")
-	}
-
-	replacer := strings.NewReplacer("/", "_", ".", "_", "-", "_")
-	received, ok := kube.(map[string]any)
-	if !ok {
-		return errors.New("kubernetes labels not found, no labels will be added")
-	}
-	for k, v := range received {
-		switch k {
-		case "labels":
-			labels, ok := v.(map[string]any)
-			if !ok {
-				return errors.New("no labels found in records")
-			}
-			for m, n := range labels {
-				kuberneteslbs[model.LabelName(replacer.Replace(m))] = model.LabelValue(fmt.Sprintf("%v", n))
-			}
-		case "pod_id", "annotations":
-			// do nothing
-			continue
-		default:
-			kuberneteslbs[model.LabelName(k)] = model.LabelValue(fmt.Sprintf("%v", v))
-		}
-	}
-
-	return nil
-}
-
 // extractKubernetesMetadataFromTag extracts kubernetes metadata from a tag and adds it to the records map.
 // The tag should be in the format: pod_name.namespace_name.container_name.container_id
 // This is required since the fluent-bit does not use the kubernetes filter plugin, reason for it is to avoid querying
@@ -126,51 +84,6 @@ func extractKubernetesMetadataFromTag(records map[string]any, tagKey string, re 
 	}
 
 	return nil
-}
-
-func extractLabels(records map[string]any, keys []string) model.LabelSet {
-	res := model.LabelSet{}
-	for _, k := range keys {
-		v, ok := records[k]
-		if !ok {
-			continue
-		}
-		ln := model.LabelName(k)
-		// skips invalid name and values
-		if !ln.IsValid() {
-			continue
-		}
-		lv := model.LabelValue(fmt.Sprintf("%v", v))
-		if !lv.IsValid() {
-			continue
-		}
-		res[ln] = lv
-	}
-
-	return res
-}
-
-// mapLabels convert records into labels using a json map[string]any mapping
-func mapLabels(records map[string]any, mapping map[string]any, res model.LabelSet) {
-	for k, v := range mapping {
-		switch nextKey := v.(type) {
-		// if the next level is a map we are expecting we need to move deeper in the tree
-		case map[string]any:
-			if nextValue, ok := records[k].(map[string]any); ok {
-				// recursively search through the next level map.
-				mapLabels(nextValue, nextKey, res)
-			}
-		// we found a value in the mapping meaning we need to save the corresponding record value for the given key.
-		case string:
-			if value, ok := getRecordValue(k, records); ok {
-				lName := model.LabelName(nextKey)
-				lValue := model.LabelValue(value)
-				if lValue.IsValid() && lName.IsValid() {
-					res[lName] = lValue
-				}
-			}
-		}
-	}
 }
 
 func getDynamicHostName(records map[string]any, mapping map[string]any) string {
@@ -205,54 +118,4 @@ func getRecordValue(key string, records map[string]any) (string, bool) {
 	}
 
 	return "", false
-}
-
-func removeKeys(records map[string]any, keys []string) {
-	for _, k := range keys {
-		delete(records, k)
-	}
-}
-
-func createLine(records map[string]any, f config.Format) (string, error) {
-	switch f {
-	case config.JSONFormat:
-		js, err := json.Marshal(records)
-		if err != nil {
-			return "", err
-		}
-
-		return string(js), nil
-	case config.KvPairFormat:
-		buf := &bytes.Buffer{}
-		enc := logfmt.NewEncoder(buf)
-		keys := make([]string, 0, len(records))
-		for k := range records {
-			keys = append(keys, k)
-		}
-		sort.Strings(keys)
-		for _, k := range keys {
-			err := enc.EncodeKeyval(k, records[k])
-			if err == logfmt.ErrUnsupportedValueType {
-				err := enc.EncodeKeyval(k, fmt.Sprintf("%+v", records[k]))
-				if err != nil {
-					return "", nil
-				}
-
-				continue
-			}
-			if err != nil {
-				return "", nil
-			}
-		}
-
-		return buf.String(), nil
-	default:
-		return "", fmt.Errorf("invalid line format: %v", f)
-	}
-}
-
-type fluentBitRecords map[string]any
-
-func (r fluentBitRecords) String() string {
-	return fmt.Sprintf("%+v", map[string]any(r))
 }

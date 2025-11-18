@@ -5,12 +5,12 @@
 package plugin
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"regexp"
 	"time"
 
-	grafanavaliclient "github.com/credativ/vali/pkg/valitail/client"
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
 	"github.com/prometheus/common/model"
@@ -32,9 +32,6 @@ type logging struct {
 	seedClient                      client.OutputClient
 	cfg                             *config.Config
 	dynamicHostRegexp               *regexp.Regexp
-	dynamicTenantRegexp             *regexp.Regexp
-	dynamicTenant                   string
-	dynamicTenantField              string
 	extractKubernetesMetadataRegexp *regexp.Regexp
 	controller                      controller.Controller
 	logger                          log.Logger
@@ -59,7 +56,11 @@ func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger lo
 		l.extractKubernetesMetadataRegexp = regexp.MustCompile(cfg.PluginConfig.KubernetesMetadata.TagPrefix + cfg.PluginConfig.KubernetesMetadata.TagExpression)
 	}
 
-	if l.seedClient, err = client.NewClient(*cfg, client.WithLogger(logger)); err != nil {
+	if l.seedClient, err = client.NewClient(
+		*cfg,
+		client.WithTarget(client.Seed),
+		client.WithLogger(logger),
+	); err != nil {
 		return nil, err
 	}
 
@@ -76,7 +77,6 @@ func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger lo
 func (l *logging) SendRecord(r map[any]any, ts time.Time) error {
 	records := toStringMap(r)
 	// _ = level.Debug(l.logger).Log("msg", "processing records", "records", fluentBitRecords(records))
-	lbs := make(model.LabelSet, l.cfg.PluginConfig.LabelSetInitCapacity)
 
 	// Check if metadata is missing
 	_, ok := records["kubernetes"]
@@ -97,30 +97,14 @@ func (l *logging) SendRecord(r map[any]any, ts time.Time) error {
 		}
 	}
 
-	if l.cfg.PluginConfig.AutoKubernetesLabels {
-		if err := autoLabels(records, lbs); err != nil {
-			metrics.Errors.WithLabelValues(metrics.ErrorK8sLabelsNotFound).Inc()
-			_ = level.Error(l.logger).Log("msg", err.Error(), "records", fluentBitRecords(records))
-		}
-	}
-
-	if l.cfg.PluginConfig.LabelMap != nil {
-		mapLabels(records, l.cfg.PluginConfig.LabelMap, lbs)
-	} else {
-		lbs = extractLabels(records, l.cfg.PluginConfig.LabelKeys)
-	}
-
 	dynamicHostName := getDynamicHostName(records, l.cfg.PluginConfig.DynamicHostPath)
 	host := dynamicHostName
 	if !l.isDynamicHost(host) {
 		host = "garden"
-	} else {
-		lbs = l.setDynamicTenant(records, lbs)
 	}
 
 	metrics.IncomingLogs.WithLabelValues(host).Inc()
 
-	removeKeys(records, append(l.cfg.PluginConfig.LabelKeys, l.cfg.PluginConfig.RemoveKeys...))
 	if len(records) == 0 {
 		_ = level.Debug(l.logger).Log("msg", "no records left after removing keys", "host", dynamicHostName)
 
@@ -142,34 +126,13 @@ func (l *logging) SendRecord(r map[any]any, ts time.Time) error {
 
 	metrics.IncomingLogsWithEndpoint.WithLabelValues(host).Inc()
 
-	if err := l.addHostnameAsLabel(lbs); err != nil {
-		_ = level.Warn(l.logger).Log("err", err)
-	}
-
-	if l.cfg.PluginConfig.DropSingleKey && len(records) == 1 {
-		for _, record := range records {
-			err := l.send(c, lbs, ts, fmt.Sprintf("%v", record))
-			if err != nil {
-				_ = level.Error(l.logger).Log(
-					"msg", "error sending record to logging",
-					"err", err,
-					"host", dynamicHostName,
-				)
-				metrics.Errors.WithLabelValues(metrics.ErrorSendRecordToVali).Inc()
-			}
-
-			return err
-		}
-	}
-
-	line, err := createLine(records, l.cfg.PluginConfig.LineFormat)
+	// TODO: line shall be extracted from the record send from fluent-bit
+	js, err := json.Marshal(records)
 	if err != nil {
-		metrics.Errors.WithLabelValues(metrics.ErrorCreateLine).Inc()
-
-		return fmt.Errorf("error creating line: %l", err)
+		return err
 	}
 
-	err = l.send(c, lbs, ts, line)
+	err = l.send(c, ts, string(js))
 	if err != nil {
 		_ = level.Error(l.logger).Log(
 			"msg", "error sending record to logging",
@@ -214,24 +177,8 @@ func (l *logging) isDynamicHost(dynamicHostName string) bool {
 		l.dynamicHostRegexp.MatchString(dynamicHostName)
 }
 
-func (l *logging) setDynamicTenant(record map[string]any, lbs model.LabelSet) model.LabelSet {
-	if l.dynamicTenantRegexp == nil {
-		return lbs
-	}
-	dynamicTenantFieldValue, ok := record[l.dynamicTenantField]
-	if !ok {
-		return lbs
-	}
-	s, ok := dynamicTenantFieldValue.(string)
-	if ok && l.dynamicTenantRegexp.MatchString(s) {
-		lbs[grafanavaliclient.ReservedLabelTenantID] = model.LabelValue(l.dynamicTenant)
-	}
-
-	return lbs
-}
-
-func (*logging) send(c client.OutputClient, lbs model.LabelSet, ts time.Time, line string) error {
-	return c.Handle(lbs, ts, line)
+func (*logging) send(c client.OutputClient, ts time.Time, line string) error {
+	return c.Handle(ts, line)
 }
 
 func (l *logging) addHostnameAsLabel(res model.LabelSet) error {

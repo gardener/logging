@@ -126,17 +126,17 @@ func (c *pluginConfig) toStringMap() map[string]string {
 
 	// Define all possible configuration keys based on the structs and documentation
 	configKeys := []string{
-		// Client config
-		"Url", "ProxyUrl", "TenantID", "BatchWait", "BatchSize", "Labels", "Timeout", "MinBackoff", "MaxBackoff",
-		"MaxRetries",
-		"SortByTimestamp", "NumberOfBatchIDs", "IdLabelName",
+		// Client types
+		"SeedType",
+		"ShootType",
 
 		// Plugin config
-		"AutoKubernetesLabels", "LineFormat", "DropSingleKey", "LabelKeys", "RemoveKeys", "LabelMapPath",
 		"DynamicHostPath", "DynamicHostPrefix", "DynamicHostSuffix", "DynamicHostRegex",
-		"LabelSetInitCapacity", "HostnameKey", "HostnameValue", "PreservedLabels", "EnableMultiTenancy",
 
-		// Kubernetes metadata
+		// Hostname config
+		"HostnameKey", "HostnameValue",
+
+		// Kubernetes metadata - TODO: revisit how to handle kubernetes metadata. Simplify?
 		"FallbackToTagWhenMetadataIsMissing", "DropLogEntryWithoutK8sMetadata",
 		"TagKey", "TagPrefix", "TagExpression",
 
@@ -145,6 +145,9 @@ func (c *pluginConfig) toStringMap() map[string]string {
 
 		// Controller config
 		"DeletedClientTimeExpiration", "ControllerSyncTimeout",
+
+		// Log flows depending on cluster state
+		// TODO: rename the flags for clarity. MainCluster is Shoot DefaultClient is seed
 		"SendLogsToMainClusterWhenIsInCreationState", "SendLogsToMainClusterWhenIsInReadyState",
 		"SendLogsToMainClusterWhenIsInHibernatingState", "SendLogsToMainClusterWhenIsInHibernatedState",
 		"SendLogsToMainClusterWhenIsInDeletionState", "SendLogsToMainClusterWhenIsInRestoreState",
@@ -152,11 +155,18 @@ func (c *pluginConfig) toStringMap() map[string]string {
 		"SendLogsToDefaultClientWhenClusterIsInCreationState", "SendLogsToDefaultClientWhenClusterIsInReadyState",
 		"SendLogsToDefaultClientWhenClusterIsInHibernatingState", "SendLogsToDefaultClientWhenClusterIsInHibernatedState",
 
-		// OTLP config
-		"OTLPEnabledForShoot", "OTLPEndpoint", "OTLPInsecure", "OTLPCompression", "OTLPTimeout", "OTLPHeaders",
-		"OTLPRetryEnabled", "OTLPRetryInitialInterval", "OTLPRetryMaxInterval", "OTLPRetryMaxElapsedTime",
-		"OTLPTLSCertFile", "OTLPTLSKeyFile", "OTLPTLSCAFile", "OTLPTLSServerName",
-		"OTLPTLSInsecureSkipVerify", "OTLPTLSMinVersion", "OTLPTLSMaxVersion",
+		// Common OTLP configs
+		"Endpoint", "Insecure", "Compression", "Timeout", "Headers",
+
+		// OTLP Retry configs
+		"RetryEnabled", "RetryInitialInterval", "RetryMaxInterval", "RetryMaxElapsedTime",
+
+		// OTLP HTTP specific configs
+		"HTTPPath", "HTTPProxy",
+
+		// OTLP TLS configs
+		"TLSCertFile", "TLSKeyFile", "TLSCAFile", "TLSServerName",
+		"TLSInsecureSkipVerify", "LSMinVersion", "TLSMaxVersion",
 
 		// General config
 		"LogLevel", "Pprof",
@@ -176,7 +186,7 @@ func (c *pluginConfig) toStringMap() map[string]string {
 //
 //export FLBPluginRegister
 func FLBPluginRegister(ctx unsafe.Pointer) int {
-	return output.FLBPluginRegister(ctx, "gardenervali", "Ship fluent-bit logs to an Output")
+	return output.FLBPluginRegister(ctx, "gardener", "Ship fluent-bit logs to an Output")
 }
 
 // FLBPluginInit is called for each vali plugin instance
@@ -383,28 +393,11 @@ func main() {}
 
 func dumpConfiguration(_logger log.Logger, conf *config.Config) {
 	paramLogger := log.With(_logger, "[flb-go]", "provided parameter")
-	_ = level.Debug(paramLogger).Log("URL", conf.ClientConfig.CredativValiConfig.URL)
-	_ = level.Debug(paramLogger).Log("ProxyURL", conf.ClientConfig.CredativValiConfig.Client.ProxyURL.URL)
-	_ = level.Debug(paramLogger).Log("TenantID", conf.ClientConfig.CredativValiConfig.TenantID)
-	_ = level.Debug(paramLogger).Log("BatchWait", conf.ClientConfig.CredativValiConfig.BatchWait)
-	_ = level.Debug(paramLogger).Log("BatchSize", conf.ClientConfig.CredativValiConfig.BatchSize)
-	_ = level.Debug(paramLogger).Log("Labels", conf.ClientConfig.CredativValiConfig.ExternalLabels)
 	_ = level.Debug(paramLogger).Log("LogLevel", conf.LogLevel.String())
-	_ = level.Debug(paramLogger).Log("AutoKubernetesLabels", conf.PluginConfig.AutoKubernetesLabels)
-	_ = level.Debug(paramLogger).Log("RemoveKeys", fmt.Sprintf("%+v", conf.PluginConfig.RemoveKeys))
-	_ = level.Debug(paramLogger).Log("LabelKeys", fmt.Sprintf("%+v", conf.PluginConfig.LabelKeys))
-	_ = level.Debug(paramLogger).Log("LineFormat", conf.PluginConfig.LineFormat)
-	_ = level.Debug(paramLogger).Log("DropSingleKey", conf.PluginConfig.DropSingleKey)
-	_ = level.Debug(paramLogger).Log("LabelMapPath", fmt.Sprintf("%+v", conf.PluginConfig.LabelMap))
-	_ = level.Debug(paramLogger).Log("SortByTimestamp", fmt.Sprintf("%+v", conf.ClientConfig.SortByTimestamp))
 	_ = level.Debug(paramLogger).Log("DynamicHostPath", fmt.Sprintf("%+v", conf.PluginConfig.DynamicHostPath))
 	_ = level.Debug(paramLogger).Log("DynamicHostPrefix", fmt.Sprintf("%+v", conf.ControllerConfig.DynamicHostPrefix))
 	_ = level.Debug(paramLogger).Log("DynamicHostSuffix", fmt.Sprintf("%+v", conf.ControllerConfig.DynamicHostSuffix))
 	_ = level.Debug(paramLogger).Log("DynamicHostRegex", fmt.Sprintf("%+v", conf.PluginConfig.DynamicHostRegex))
-	_ = level.Debug(paramLogger).Log("Timeout", fmt.Sprintf("%+v", conf.ClientConfig.CredativValiConfig.Timeout))
-	_ = level.Debug(paramLogger).Log("MinBackoff", fmt.Sprintf("%+v", conf.ClientConfig.CredativValiConfig.BackoffConfig.MinBackoff))
-	_ = level.Debug(paramLogger).Log("MaxBackoff", fmt.Sprintf("%+v", conf.ClientConfig.CredativValiConfig.BackoffConfig.MaxBackoff))
-	_ = level.Debug(paramLogger).Log("MaxRetries", fmt.Sprintf("%+v", conf.ClientConfig.CredativValiConfig.BackoffConfig.MaxRetries))
 	_ = level.Debug(paramLogger).Log("Buffer", fmt.Sprintf("%+v", conf.ClientConfig.BufferConfig.Buffer))
 	_ = level.Debug(paramLogger).Log("BufferType", fmt.Sprintf("%+v", conf.ClientConfig.BufferConfig.BufferType))
 	_ = level.Debug(paramLogger).Log("QueueDir", fmt.Sprintf("%+v", conf.ClientConfig.BufferConfig.DqueConfig.QueueDir))
@@ -416,8 +409,6 @@ func dumpConfiguration(_logger log.Logger, conf *config.Config) {
 	_ = level.Debug(paramLogger).Log("TagPrefix", fmt.Sprintf("%+v", conf.PluginConfig.KubernetesMetadata.TagPrefix))
 	_ = level.Debug(paramLogger).Log("TagExpression", fmt.Sprintf("%+v", conf.PluginConfig.KubernetesMetadata.TagExpression))
 	_ = level.Debug(paramLogger).Log("DropLogEntryWithoutK8sMetadata", fmt.Sprintf("%+v", conf.PluginConfig.KubernetesMetadata.DropLogEntryWithoutK8sMetadata))
-	_ = level.Debug(paramLogger).Log("NumberOfBatchIDs", fmt.Sprintf("%+v", conf.ClientConfig.NumberOfBatchIDs))
-	_ = level.Debug(paramLogger).Log("IdLabelName", fmt.Sprintf("%+v", conf.ClientConfig.IDLabelName))
 	_ = level.Debug(paramLogger).Log("DeletedClientTimeExpiration", fmt.Sprintf("%+v", conf.ControllerConfig.DeletedClientTimeExpiration))
 	_ = level.Debug(paramLogger).Log("Pprof", fmt.Sprintf("%+v", conf.Pprof))
 	if len(conf.PluginConfig.HostnameKey) > 0 {
@@ -426,10 +417,6 @@ func dumpConfiguration(_logger log.Logger, conf *config.Config) {
 	if len(conf.PluginConfig.HostnameValue) > 0 {
 		_ = level.Debug(paramLogger).Log("HostnameValue", conf.PluginConfig.HostnameValue)
 	}
-	if conf.PluginConfig.PreservedLabels != nil {
-		_ = level.Debug(paramLogger).Log("PreservedLabels", fmt.Sprintf("%+v", conf.PluginConfig.PreservedLabels))
-	}
-	_ = level.Debug(paramLogger).Log("LabelSetInitCapacity", fmt.Sprintf("%+v", conf.PluginConfig.LabelSetInitCapacity))
 	_ = level.Debug(paramLogger).Log("SendLogsToMainClusterWhenIsInCreationState", fmt.Sprintf("%+v", conf.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInCreationState))
 	_ = level.Debug(paramLogger).Log("SendLogsToMainClusterWhenIsInReadyState", fmt.Sprintf("%+v", conf.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInReadyState))
 	_ = level.Debug(paramLogger).Log("SendLogsToMainClusterWhenIsInHibernatingState", fmt.Sprintf("%+v", conf.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInHibernatingState))
@@ -446,31 +433,30 @@ func dumpConfiguration(_logger log.Logger, conf *config.Config) {
 	_ = level.Debug(paramLogger).Log("SendLogsToDefaultClientWhenClusterIsInMigrationState", fmt.Sprintf("%+v", conf.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInMigrationState))
 
 	// OTLP configuration
-	_ = level.Debug(paramLogger).Log("OTLPEnabledForShoot", fmt.Sprintf("%+v", conf.OTLPConfig.EnabledForShoot))
-	_ = level.Debug(paramLogger).Log("OTLPEndpoint", fmt.Sprintf("%+v", conf.OTLPConfig.Endpoint))
-	_ = level.Debug(paramLogger).Log("OTLPInsecure", fmt.Sprintf("%+v", conf.OTLPConfig.Insecure))
-	_ = level.Debug(paramLogger).Log("OTLPCompression", fmt.Sprintf("%+v", conf.OTLPConfig.Compression))
-	_ = level.Debug(paramLogger).Log("OTLPTimeout", fmt.Sprintf("%+v", conf.OTLPConfig.Timeout))
+	_ = level.Debug(paramLogger).Log("Endpoint", fmt.Sprintf("%+v", conf.OTLPConfig.Endpoint))
+	_ = level.Debug(paramLogger).Log("Insecure", fmt.Sprintf("%+v", conf.OTLPConfig.Insecure))
+	_ = level.Debug(paramLogger).Log("Compression", fmt.Sprintf("%+v", conf.OTLPConfig.Compression))
+	_ = level.Debug(paramLogger).Log("Timeout", fmt.Sprintf("%+v", conf.OTLPConfig.Timeout))
 	if len(conf.OTLPConfig.Headers) > 0 {
-		_ = level.Debug(paramLogger).Log("OTLPHeaders", fmt.Sprintf("%+v", conf.OTLPConfig.Headers))
+		_ = level.Debug(paramLogger).Log("Headers", fmt.Sprintf("%+v", conf.OTLPConfig.Headers))
 	}
-	_ = level.Debug(paramLogger).Log("OTLPRetryEnabled", fmt.Sprintf("%+v", conf.OTLPConfig.RetryEnabled))
-	_ = level.Debug(paramLogger).Log("OTLPRetryInitialInterval", fmt.Sprintf("%+v", conf.OTLPConfig.RetryInitialInterval))
-	_ = level.Debug(paramLogger).Log("OTLPRetryMaxInterval", fmt.Sprintf("%+v", conf.OTLPConfig.RetryMaxInterval))
-	_ = level.Debug(paramLogger).Log("OTLPRetryMaxElapsedTime", fmt.Sprintf("%+v", conf.OTLPConfig.RetryMaxElapsedTime))
+	_ = level.Debug(paramLogger).Log("RetryEnabled", fmt.Sprintf("%+v", conf.OTLPConfig.RetryEnabled))
+	_ = level.Debug(paramLogger).Log("RetryInitialInterval", fmt.Sprintf("%+v", conf.OTLPConfig.RetryInitialInterval))
+	_ = level.Debug(paramLogger).Log("RetryMaxInterval", fmt.Sprintf("%+v", conf.OTLPConfig.RetryMaxInterval))
+	_ = level.Debug(paramLogger).Log("RetryMaxElapsedTime", fmt.Sprintf("%+v", conf.OTLPConfig.RetryMaxElapsedTime))
 	if conf.OTLPConfig.RetryConfig != nil {
-		_ = level.Debug(paramLogger).Log("OTLPRetryConfig", "configured")
+		_ = level.Debug(paramLogger).Log("RetryConfig", "configured")
 	}
 
 	// OTLP TLS configuration
-	_ = level.Debug(paramLogger).Log("OTLPTLSCertFile", fmt.Sprintf("%+v", conf.OTLPConfig.TLSCertFile))
-	_ = level.Debug(paramLogger).Log("OTLPTLSKeyFile", fmt.Sprintf("%+v", conf.OTLPConfig.TLSKeyFile))
-	_ = level.Debug(paramLogger).Log("OTLPTLSCAFile", fmt.Sprintf("%+v", conf.OTLPConfig.TLSCAFile))
-	_ = level.Debug(paramLogger).Log("OTLPTLSServerName", fmt.Sprintf("%+v", conf.OTLPConfig.TLSServerName))
-	_ = level.Debug(paramLogger).Log("OTLPTLSInsecureSkipVerify", fmt.Sprintf("%+v", conf.OTLPConfig.TLSInsecureSkipVerify))
-	_ = level.Debug(paramLogger).Log("OTLPTLSMinVersion", fmt.Sprintf("%+v", conf.OTLPConfig.TLSMinVersion))
-	_ = level.Debug(paramLogger).Log("OTLPTLSMaxVersion", fmt.Sprintf("%+v", conf.OTLPConfig.TLSMaxVersion))
+	_ = level.Debug(paramLogger).Log("TLSCertFile", fmt.Sprintf("%+v", conf.OTLPConfig.TLSCertFile))
+	_ = level.Debug(paramLogger).Log("TLSKeyFile", fmt.Sprintf("%+v", conf.OTLPConfig.TLSKeyFile))
+	_ = level.Debug(paramLogger).Log("TLSCAFile", fmt.Sprintf("%+v", conf.OTLPConfig.TLSCAFile))
+	_ = level.Debug(paramLogger).Log("TLSServerName", fmt.Sprintf("%+v", conf.OTLPConfig.TLSServerName))
+	_ = level.Debug(paramLogger).Log("TLSInsecureSkipVerify", fmt.Sprintf("%+v", conf.OTLPConfig.TLSInsecureSkipVerify))
+	_ = level.Debug(paramLogger).Log("TLSMinVersion", fmt.Sprintf("%+v", conf.OTLPConfig.TLSMinVersion))
+	_ = level.Debug(paramLogger).Log("TLSMaxVersion", fmt.Sprintf("%+v", conf.OTLPConfig.TLSMaxVersion))
 	if conf.OTLPConfig.TLSConfig != nil {
-		_ = level.Debug(paramLogger).Log("OTLPTLSConfig", "configured")
+		_ = level.Debug(paramLogger).Log("TLSConfig", "configured")
 	}
 }

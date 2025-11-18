@@ -1,6 +1,4 @@
 /*
-This file was copied from the credativ/vali project
-https://github.com/credativ/vali/blob/v2.2.4/cmd/fluent-bit/config.go
 
 Modifications Copyright SAP SE or an SAP affiliate company and Gardener contributors
 */
@@ -11,53 +9,22 @@ import (
 	"crypto/tls"
 	"time"
 
-	"github.com/cortexproject/cortex/pkg/util/flagext"
-	"github.com/credativ/vali/pkg/valitail/client"
-	"github.com/prometheus/common/model"
+	"github.com/gardener/logging/pkg/types"
 )
 
 // ClientConfig holds configuration for the chain of clients.
 type ClientConfig struct {
-	// URL for the Vali instance
-	URL flagext.URLValue `mapstructure:"-"`
-	// ProxyURL for proxy configuration
-	ProxyURL string `mapstructure:"ProxyURL"`
-	// TenantID for multi-tenant setups
-	TenantID string `mapstructure:"TenantID"`
-	// BatchWait time before sending a batch
-	BatchWait string `mapstructure:"BatchWait"`
-	// BatchSize maximum size of a batch
-	BatchSize int `mapstructure:"BatchSize"`
-	// Labels to attach to logs
-	Labels string `mapstructure:"-"`
-	// MaxRetries for failed requests
-	MaxRetries int `mapstructure:"MaxRetries"`
-	// Timeout for requests
-	Timeout string `mapstructure:"Timeout"`
-	// MinBackoff time for retries
-	MinBackoff string `mapstructure:"MinBackoff"`
-	// MaxBackoff time for retries
-	MaxBackoff string `mapstructure:"MaxBackoff"`
+	SeedType  types.Type `mapstructure:"SeedType"`  // e.g., "OTLPGRPC"
+	ShootType types.Type `mapstructure:"ShootType"` // e.g., "STDOUT"
 
-	// CredativValiConfig holds the configuration for the credativ/vali client
-	CredativValiConfig client.Config `mapstructure:"-"`
 	// BufferConfig holds the configuration for the buffered client
 	BufferConfig BufferConfig `mapstructure:",squash"`
-	// SortByTimestamp indicates whether the logs should be sorted ot not
-	SortByTimestamp bool `mapstructure:"SortByTimestamp"`
-	// NumberOfBatchIDs is number of id per batch.
-	// This increase the number of vali label streams
-	NumberOfBatchIDs uint64 `mapstructure:"NumberOfBatchIDs"`
-	// IDLabelName is the name of the batch id label key.
-	IDLabelName model.LabelName `mapstructure:"IdLabelName"`
-	// TestingClient is mocked credativ/vali client used for testing purposes
-	TestingClient client.Client `mapstructure:"-"`
 }
 
 // BufferConfig contains the buffer settings
 type BufferConfig struct {
 	Buffer     bool       `mapstructure:"Buffer"`
-	BufferType string     `mapstructure:"BufferType"`
+	BufferType string     `mapstructure:"BufferType"` // TODO: remove the type, dque is the only supported one
 	DqueConfig DqueConfig `mapstructure:",squash"`
 }
 
@@ -86,30 +53,29 @@ var DefaultDqueConfig = DqueConfig{
 
 // OTLPConfig holds configuration for otlp endpoint
 type OTLPConfig struct {
-	EnabledForShoot bool              `mapstructure:"OTLPEnabledForShoot"`
-	Endpoint        string            `mapstructure:"OTLPEndpoint"`
-	Insecure        bool              `mapstructure:"OTLPInsecure"`
-	Compression     int               `mapstructure:"OTLPCompression"`
-	Timeout         time.Duration     `mapstructure:"OTLPTimeout"`
-	Headers         map[string]string `mapstructure:"-"` // Handled manually in processOTLPConfig
+	Endpoint    string            `mapstructure:"Endpoint"`
+	Insecure    bool              `mapstructure:"Insecure"`
+	Compression int               `mapstructure:"Compression"`
+	Timeout     time.Duration     `mapstructure:"Timeout"`
+	Headers     map[string]string `mapstructure:"-"` // Handled manually in processOTLPConfig
 
 	// Retry configuration fields
-	RetryEnabled         bool          `mapstructure:"OTLPRetryEnabled"`
-	RetryInitialInterval time.Duration `mapstructure:"OTLPRetryInitialInterval"`
-	RetryMaxInterval     time.Duration `mapstructure:"OTLPRetryMaxInterval"`
-	RetryMaxElapsedTime  time.Duration `mapstructure:"OTLPRetryMaxElapsedTime"`
+	RetryEnabled         bool          `mapstructure:"RetryEnabled"`
+	RetryInitialInterval time.Duration `mapstructure:"RetryInitialInterval"`
+	RetryMaxInterval     time.Duration `mapstructure:"RetryMaxInterval"`
+	RetryMaxElapsedTime  time.Duration `mapstructure:"RetryMaxElapsedTime"`
 
 	// RetryConfig - processed from the above fields
 	RetryConfig *RetryConfig `mapstructure:"-"`
 
 	// TLS configuration fields
-	TLSCertFile           string `mapstructure:"OTLPTLSCertFile"`
-	TLSKeyFile            string `mapstructure:"OTLPTLSKeyFile"`
-	TLSCAFile             string `mapstructure:"OTLPTLSCAFile"`
-	TLSServerName         string `mapstructure:"OTLPTLSServerName"`
-	TLSInsecureSkipVerify bool   `mapstructure:"OTLPTLSInsecureSkipVerify"`
-	TLSMinVersion         string `mapstructure:"OTLPTLSMinVersion"`
-	TLSMaxVersion         string `mapstructure:"OTLPTLSMaxVersion"`
+	TLSCertFile           string `mapstructure:"TLSCertFile"`
+	TLSKeyFile            string `mapstructure:"TLSKeyFile"`
+	TLSCAFile             string `mapstructure:"TLSCAFile"`
+	TLSServerName         string `mapstructure:"TLSServerName"`
+	TLSInsecureSkipVerify bool   `mapstructure:"TLSInsecureSkipVerify"`
+	TLSMinVersion         string `mapstructure:"TLSMinVersion"`
+	TLSMaxVersion         string `mapstructure:"TLSMaxVersion"`
 
 	// TLS configuration - processed from the above fields
 	TLSConfig *tls.Config `mapstructure:"-"`
@@ -117,7 +83,6 @@ type OTLPConfig struct {
 
 // DefaultOTLPConfig holds the default configuration for OTLP
 var DefaultOTLPConfig = OTLPConfig{
-	EnabledForShoot:       false,
 	Endpoint:              "localhost:4317",
 	Insecure:              false,
 	Compression:           0, // No compression by default

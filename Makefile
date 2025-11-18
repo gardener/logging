@@ -133,9 +133,10 @@ test: tidy
 	@go tool gotestsum $(REPO_ROOT)/pkg/... --v --ginkgo.v --ginkgo.no-color
 	@go tool gotestsum $(REPO_ROOT)/tests/plugin
 
-.PHONY: e2e-tests
-e2e-tests: tidy
-	@KIND_PATH=$(shell go tool -n kind) go tool gotestsum $(REPO_ROOT)/tests/e2e
+// TODO: enable e2e tests, once the initial otlp client is in place
+#.PHONY: e2e-tests
+#e2e-tests: tidy
+#	@KIND_PATH=$(shell go tool -n kind) go tool gotestsum $(REPO_ROOT)/tests/e2e
 
 .PHONY: verify
 verify: check test

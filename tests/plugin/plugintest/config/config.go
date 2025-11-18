@@ -34,7 +34,6 @@ func NewConfiguration() (config.Config, error) {
 					QueueName:        "dque",
 				},
 			},
-			SortByTimestamp: true,
 		},
 		ControllerConfig: config.ControllerConfig{
 			CtlSyncTimeout:              60 * time.Minute,
@@ -45,21 +44,6 @@ func NewConfiguration() (config.Config, error) {
 			SeedControllerClientConfig:  config.SeedControllerClientConfig,
 		},
 		PluginConfig: config.PluginConfig{
-			AutoKubernetesLabels: false,
-			RemoveKeys:           []string{"kubernetes", "stream", "time", "tag", "job"},
-			LabelKeys:            nil,
-			LabelMap: map[string]any{
-				"kubernetes": map[string]any{
-					"container_id":   "container_id",
-					"container_name": "container_name",
-					"namespace_name": "namespace_name",
-					"pod_name":       "pod_name",
-				},
-				"severity": "severity",
-				"job":      "job",
-			},
-			LineFormat:    config.KvPairFormat,
-			DropSingleKey: false,
 			DynamicHostPath: map[string]any{
 				"kubernetes": map[string]any{
 					"namespace_name": "namespace",
@@ -73,9 +57,8 @@ func NewConfiguration() (config.Config, error) {
 				TagPrefix:                          "kubernetes\\.var\\.log\\.containers",
 				TagExpression:                      "\\.([^_]+)_([^_]+)_(.+)-([a-z0-9]{64})\\.log$",
 			},
-			LabelSetInitCapacity: 12,
-			HostnameKey:          "nodename",
-			HostnameValue:        "local-testing-machine",
+			HostnameKey:   "nodename",
+			HostnameValue: "local-testing-machine",
 		},
 		LogLevel: getLogLevel(),
 		Pprof:    false,

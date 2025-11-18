@@ -12,7 +12,6 @@ import (
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
 	giterrors "github.com/pkg/errors"
-	"github.com/prometheus/common/model"
 
 	"github.com/gardener/logging/pkg/client"
 	"github.com/gardener/logging/pkg/config"
@@ -35,9 +34,9 @@ const (
 )
 
 type target struct {
-	valiClient client.OutputClient
-	mute       bool
-	conf       *config.ControllerClientConfiguration
+	client client.OutputClient
+	mute   bool
+	conf   *config.ControllerClientConfiguration
 }
 
 // Because loosing some logs when switching on and off client is not important we are omitting the synchronization.
@@ -81,25 +80,25 @@ func (ctl *controller) newControllerClient(clusterName string, clientConf *confi
 		"name", clusterName,
 	)
 
-	shootClient, err := client.NewClient(*clientConf, client.WithLogger(ctl.logger))
+	shootClient, err := client.NewClient(*clientConf, client.WithTarget(client.Shoot), client.WithLogger(ctl.logger))
 	if err != nil {
 		return nil, err
 	}
 
 	c := &controllerClient{
 		shootTarget: target{
-			valiClient: shootClient,
-			mute:       !ctl.conf.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInCreationState,
-			conf:       &ctl.conf.ControllerConfig.ShootControllerClientConfig,
+			client: shootClient,
+			mute:   !ctl.conf.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInCreationState,
+			conf:   &ctl.conf.ControllerConfig.ShootControllerClientConfig,
 		},
 		seedTarget: target{
-			valiClient: ctl.seedClient,
-			mute:       !ctl.conf.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInCreationState,
-			conf:       &ctl.conf.ControllerConfig.SeedControllerClientConfig,
+			client: ctl.seedClient,
+			mute:   !ctl.conf.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInCreationState,
+			conf:   &ctl.conf.ControllerConfig.SeedControllerClientConfig,
 		},
 		state:  clusterStateCreation, // check here the actual cluster state
 		logger: ctl.logger,
-		name:   clientConf.ClientConfig.CredativValiConfig.URL.Host,
+		name:   ctl.conf.OTLPConfig.Endpoint, // TODO: set proper name from clusterName
 	}
 
 	return c, nil
@@ -173,16 +172,12 @@ func (*controller) updateControllerClientState(c Client, shoot *gardenercorev1be
 }
 
 func (c *controllerClient) GetEndPoint() string {
-	return c.shootTarget.valiClient.GetEndPoint()
+	return c.shootTarget.client.GetEndPoint()
 }
 
 // Handle processes and sends log to Vali.
-func (c *controllerClient) Handle(ls any, t time.Time, s string) error {
+func (c *controllerClient) Handle(t time.Time, s string) error {
 	var combineErr error
-	_ls, ok := ls.(model.LabelSet)
-	if !ok {
-		return client.ErrInvalidLabelType
-	}
 
 	// Because we do not use thread save methods here we just copy the variables
 	// in case they have changed during the two consequential calls to Handle.
@@ -194,12 +189,12 @@ func (c *controllerClient) Handle(ls any, t time.Time, s string) error {
 		// are sending the log record to both shoot and seed clients we have to pass a copy because
 		// we are not sure what kind of label set processing will be done in the corresponding
 		// client which can lead to "concurrent map iteration and map write error".
-		if err := c.shootTarget.valiClient.Handle(_ls.Clone(), t, s); err != nil {
+		if err := c.shootTarget.client.Handle(t, s); err != nil {
 			combineErr = giterrors.Wrap(combineErr, err.Error())
 		}
 	}
 	if sendToSeed {
-		if err := c.seedTarget.valiClient.Handle(_ls.Clone(), t, s); err != nil {
+		if err := c.seedTarget.client.Handle(t, s); err != nil {
 			combineErr = giterrors.Wrap(combineErr, err.Error())
 		}
 	}
@@ -209,16 +204,16 @@ func (c *controllerClient) Handle(ls any, t time.Time, s string) error {
 
 // Stop the client.
 func (c *controllerClient) Stop() {
-	c.shootTarget.valiClient.Stop()
+	c.shootTarget.client.Stop()
 }
 
 // StopWait stops the client waiting all saved logs to be sent.
 func (c *controllerClient) StopWait() {
-	c.shootTarget.valiClient.StopWait()
+	c.shootTarget.client.StopWait()
 }
 
 // SetState manages the MuteMainClient and MuteDefaultClient flags.
-// These flags govern the valiClient to which the logs are send.
+// These flags govern the client to which the logs are send.
 // When MuteMainClient is true the logs are sent to the Default which is the gardener vali instance.
 // When MuteDefaultClient is true the logs are sent to the Main which is the shoot vali instance.
 func (c *controllerClient) SetState(state clusterState) {

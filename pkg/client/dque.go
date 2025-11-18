@@ -1,5 +1,5 @@
 /*
-This file was copied from the credativ/vali project
+This file was copied from the credativ/client project
 https://github.com/credativ/vali/blob/v2.2.4/cmd/fluent-bit/dque.go
 
 Modifications Copyright SAP SE or an SAP affiliate company and Gardener contributors
@@ -14,11 +14,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/credativ/vali/pkg/logproto"
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
 	"github.com/joncrlsn/dque"
-	"github.com/prometheus/common/model"
 
 	"github.com/gardener/logging/pkg/config"
 	"github.com/gardener/logging/pkg/metrics"
@@ -26,9 +24,15 @@ import (
 
 const componentNameDque = "dque"
 
+// OutputEntry is a single log entry with timestamp
+type OutputEntry struct {
+	Timestamp time.Time
+	Line      string
+}
+
 type dqueEntry struct {
-	LabelSet model.LabelSet
-	logproto.Entry
+	LabelSet map[string]string
+	OutputEntry
 }
 
 func dqueEntryBuilder() any {
@@ -38,22 +42,20 @@ func dqueEntryBuilder() any {
 type dqueClient struct {
 	logger    log.Logger
 	queue     *dque.DQue
-	vali      OutputClient
+	client    OutputClient
 	wg        sync.WaitGroup
-	url       string
 	isStooped bool
 	lock      sync.Mutex
 }
 
 func (c *dqueClient) GetEndPoint() string {
-	return c.vali.GetEndPoint()
+	return c.client.GetEndPoint()
 }
 
 var _ OutputClient = &dqueClient{}
 
-// NewDque makes a new dque vali client
-func NewDque(cfg config.Config, logger log.Logger, newClientFunc func(cfg config.Config,
-	logger log.Logger) (OutputClient, error)) (OutputClient, error) {
+// NewDque makes a new dque client
+func NewDque(cfg config.Config, logger log.Logger, newClientFunc NewClientFunc) (OutputClient, error) {
 	var err error
 
 	if logger == nil {
@@ -73,15 +75,13 @@ func NewDque(cfg config.Config, logger log.Logger, newClientFunc func(cfg config
 		return nil, fmt.Errorf("cannot create queue %s: %v", cfg.ClientConfig.BufferConfig.DqueConfig.QueueName, err)
 	}
 
-	q.url = cfg.ClientConfig.CredativValiConfig.URL.String()
-
 	if !cfg.ClientConfig.BufferConfig.DqueConfig.QueueSync {
 		if err = q.queue.TurboOn(); err != nil {
 			_ = level.Error(q.logger).Log("msg", "cannot enable turbo mode for queue", "err", err)
 		}
 	}
 
-	q.vali, err = newClientFunc(cfg, logger)
+	q.client, err = newClientFunc(cfg, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +89,7 @@ func NewDque(cfg config.Config, logger log.Logger, newClientFunc func(cfg config
 	q.wg.Add(1)
 	go q.dequeuer()
 
-	_ = level.Debug(q.logger).Log("msg", "client created", "url", q.url)
+	_ = level.Debug(q.logger).Log("msg", "client created")
 
 	return q, nil
 }
@@ -121,9 +121,9 @@ func (c *dqueClient) dequeuer() {
 			continue
 		}
 
-		if err := c.vali.Handle(record.LabelSet, record.Timestamp, record.Line); err != nil {
+		if err := c.client.Handle(record.Timestamp, record.Line); err != nil {
 			metrics.Errors.WithLabelValues(metrics.ErrorDequeuerSendRecord).Inc()
-			_ = level.Error(c.logger).Log("msg", "error sending record to Vali", "err", err, "url", c.url)
+			_ = level.Error(c.logger).Log("msg", "error sending record to Vali", "err", err)
 		}
 
 		c.lock.Lock()
@@ -141,7 +141,7 @@ func (c *dqueClient) Stop() {
 	if err := c.closeQue(); err != nil {
 		_ = level.Error(c.logger).Log("msg", "error closing buffered client", "err", err.Error())
 	}
-	c.vali.Stop()
+	c.client.Stop()
 	_ = level.Debug(c.logger).Log("msg", "client stopped, without waiting")
 }
 
@@ -153,30 +153,19 @@ func (c *dqueClient) StopWait() {
 	if err := c.closeQueWithClean(); err != nil {
 		_ = level.Error(c.logger).Log("msg", "error closing buffered client", "err", err.Error())
 	}
-	c.vali.StopWait()
+	c.client.StopWait()
 
 	_ = level.Debug(c.logger).Log("msg", "client stopped")
 }
 
 // Handle implement EntryHandler; adds a new line to the next batch; send is async.
-func (c *dqueClient) Handle(ls any, t time.Time, s string) error {
+func (c *dqueClient) Handle(_ time.Time, _ string) error {
 	// Here we don't need any synchronization because the worst thing is to
 	// receive some more logs which would be dropped anyway.
 	if c.isStooped {
 		return nil
 	}
-
-	_ls, ok := ls.(model.LabelSet)
-	if !ok {
-		return ErrInvalidLabelType
-	}
-
-	record := &dqueEntry{LabelSet: _ls, Entry: logproto.Entry{Timestamp: t, Line: s}}
-	if err := c.queue.Enqueue(record); err != nil {
-		return fmt.Errorf("cannot enqueue record %s: %v", record.String(), err)
-	}
-
-	return nil
+	panic("TODO: re-implement dque enqueue")
 }
 
 func (e *dqueEntry) String() string {
