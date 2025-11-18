@@ -11,7 +11,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cortexproject/cortex/pkg/util/flagext"
 	extensioncontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	gardenercorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
@@ -54,8 +53,8 @@ func NewController(informer cache.SharedIndexInformer, conf *config.Config, l lo
 		QueueName + "-controller"
 	if seedClient, err = client.NewClient(
 		cfgShallowCopy,
+		client.WithTarget(client.Seed),
 		client.WithLogger(l),
-		client.WithPreservedLabels(conf.PluginConfig.PreservedLabels),
 	); err != nil {
 		return nil, fmt.Errorf("failed to create seed client in controller: %w", err)
 	}
@@ -212,28 +211,24 @@ func (ctl *controller) delFunc(obj any) {
 // updateClientConfig constructs the target URL and sets it in the client configuration
 // together with the queue name
 func (ctl *controller) updateClientConfig(clusterName string) *config.Config {
-	var clientURL flagext.URLValue
-
 	suffix := ctl.conf.ControllerConfig.DynamicHostSuffix
 
-	// Construct the valiClient URL: DynamicHostPrefix + clusterName + DynamicHostSuffix
-	url := fmt.Sprintf("%s%s%s", ctl.conf.ControllerConfig.DynamicHostPrefix, clusterName, suffix)
-	_ = level.Debug(ctl.logger).Log("msg", "set url", "url", url, "cluster", clusterName)
+	// Construct the client URL: DynamicHostPrefix + clusterName + DynamicHostSuffix
+	urlstr := fmt.Sprintf("%s%s%s", ctl.conf.ControllerConfig.DynamicHostPrefix, clusterName, suffix)
+	_ = level.Debug(ctl.logger).Log("msg", "set endpoint", "endpoint", urlstr, "cluster", clusterName)
 
-	err := clientURL.Set(url)
-	if err != nil {
+	if len(urlstr) == 0 {
 		metrics.Errors.WithLabelValues(metrics.ErrorFailedToParseURL).Inc()
 		_ = level.Error(ctl.logger).Log(
 			"msg",
-			fmt.Sprintf("failed to parse client URL  for %v: %v", clusterName, err.Error()),
+			fmt.Sprintf("incorect endpoint: %v", clusterName),
 		)
 
 		return nil
 	}
 
 	conf := *ctl.conf
-	conf.ClientConfig.CredativValiConfig.URL = clientURL
-	conf.OTLPConfig.Endpoint = url
+	conf.OTLPConfig.Endpoint = urlstr
 	conf.ClientConfig.BufferConfig.DqueConfig.QueueName = clusterName
 
 	return &conf

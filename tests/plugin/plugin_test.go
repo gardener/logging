@@ -14,25 +14,9 @@ const (
 )
 
 var _ = Describe("Plugin Test", Ordered, func() {
-	var ()
-
-	It("set up a blackbox plugin client", func() {
-
-	})
-
-	It(" set up the plugin", func() {
-
-	})
-
-	It("create clusters and generate logs", func() {
-
-	})
-
-	It("validate logs", func() {
-
-	})
-
-	AfterAll(func() {
-
-	})
+	It("set up a blackbox plugin client", func() {})
+	It(" set up the plugin", func() {})
+	It("create clusters and generate logs", func() {})
+	It("validate logs", func() {})
+	AfterAll(func() {})
 })

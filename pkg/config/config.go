@@ -1,9 +1,6 @@
-/*
-This file was copied from the credativ/vali project
-https://github.com/credativ/vali/blob/v2.2.4/cmd/fluent-bit/config.go
-
-Modifications Copyright SAP SE or an SAP affiliate company and Gardener contributors
-*/
+// SPDX-FileCopyrightText: 2025 SAP SE or an SAP affiliate company and Gardener contributors
+//
+// SPDX-License-Identifier: Apache-2.0
 
 package config
 
@@ -13,32 +10,19 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	stdurl "net/url"
 	"os"
-	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/cortexproject/cortex/pkg/util"
-	"github.com/cortexproject/cortex/pkg/util/flagext"
-	"github.com/credativ/vali/pkg/logql"
-	valiflag "github.com/credativ/vali/pkg/util/flagext"
-	"github.com/credativ/vali/pkg/valitail/client"
 	"github.com/go-viper/mapstructure/v2"
-	"github.com/prometheus/common/model"
 	"github.com/weaveworks/common/logging"
+
+	"github.com/gardener/logging/pkg/types"
 )
 
-// Format is the log line format
-type Format int
-
 const (
-	// JSONFormat represents json format for log line
-	JSONFormat Format = iota
-	// KvPairFormat represents key-value format for log line
-	KvPairFormat
 	// DefaultKubernetesMetadataTagExpression for extracting the kubernetes metadata from tag
 	DefaultKubernetesMetadataTagExpression = "\\.([^_]+)_([^_]+)_(.+)-([a-z0-9]{64})\\.log$"
 
@@ -159,86 +143,6 @@ func processDurationField(configMap map[string]any, key string, setter func(time
 	return nil
 }
 
-func processCommaSeparatedField(configMap map[string]any, key string, setter func([]string)) error {
-	if value, ok := configMap[key].(string); ok && value != "" {
-		split := strings.Split(value, ",")
-		for i := range split {
-			split[i] = strings.TrimSpace(split[i])
-		}
-		setter(split)
-	}
-
-	return nil
-}
-
-func processLabelMapPath(labelMapPath string, config *Config) error {
-	var labelMapData []byte
-
-	// Check if it's inline JSON (starts with '{') or a file path
-	if strings.HasPrefix(strings.TrimSpace(labelMapPath), "{") {
-		// It's inline JSON content - check size limit
-		if len(labelMapPath) > MaxConfigSize {
-			return fmt.Errorf("inline JSON content exceeds maximum size of %d bytes", MaxConfigSize)
-		}
-		labelMapData = []byte(labelMapPath)
-	} else {
-		// It's a file path - validate to prevent directory traversal attacks
-		cleanPath := filepath.Clean(labelMapPath)
-
-		// Check file size before reading to prevent memory exhaustion
-		fileInfo, err := os.Stat(cleanPath)
-		if err != nil {
-			return fmt.Errorf("failed to stat LabelMapPath file: %w", err)
-		}
-		if fileInfo.Size() > MaxConfigSize {
-			return fmt.Errorf("LabelMapPath file exceeds maximum size of %d bytes", MaxConfigSize)
-		}
-
-		labelMapData, err = os.ReadFile(cleanPath)
-		if err != nil {
-			return fmt.Errorf("failed to read LabelMapPath file: %w", err)
-		}
-	}
-
-	var labelMap map[string]any
-	if err := json.Unmarshal(labelMapData, &labelMap); err != nil {
-		return fmt.Errorf("failed to parse LabelMapPath JSON: %w", err)
-	}
-
-	config.PluginConfig.LabelMap = labelMap
-	// Clear LabelKeys when LabelMapPath is used
-	config.PluginConfig.LabelKeys = nil
-
-	return nil
-}
-
-func processNumberOfBatchIDs(configMap map[string]any, config *Config) error {
-	if numberOfBatchIDs, ok := configMap["NumberOfBatchIDs"].(string); ok && numberOfBatchIDs != "" {
-		val, err := strconv.ParseUint(numberOfBatchIDs, 10, 64)
-		if err != nil {
-			return fmt.Errorf("failed to parse NumberOfBatchIDs: %w", err)
-		}
-		if val <= 0 {
-			return fmt.Errorf("NumberOfBatchIDs can't be zero or negative value: %s", numberOfBatchIDs)
-		}
-		config.ClientConfig.NumberOfBatchIDs = val
-	}
-
-	return nil
-}
-
-func processIDLabelName(configMap map[string]any, config *Config) error {
-	if idLabelName, ok := configMap["IdLabelName"].(string); ok && idLabelName != "" {
-		labelName := model.LabelName(idLabelName)
-		if !labelName.IsValid() {
-			return fmt.Errorf("invalid IdLabelName: %s", idLabelName)
-		}
-		config.ClientConfig.IDLabelName = labelName
-	}
-
-	return nil
-}
-
 func processHostnameKeyValue(configMap map[string]any, config *Config) error {
 	if hostnameKeyValue, ok := configMap["HostnameKeyValue"].(string); ok && hostnameKeyValue != "" {
 		parts := strings.Fields(hostnameKeyValue)
@@ -327,16 +231,7 @@ func processControllerConfigBoolFields(configMap map[string]any, config *Config)
 // postProcessConfig handles complex field processing that can't be done with simple mapping
 func postProcessConfig(config *Config, configMap map[string]any) error {
 	processors := []func(*Config, map[string]any) error{
-		processURLConfig,
-		processProxyURLConfig,
-		processClientConfig,
-		processDurationConfigs,
-		processLabelsConfig,
-		processLineFormatConfig,
-		processCommaSeparatedConfigs,
-		processLabelMapConfig,
-		processBatchSizeConfig,
-		processValidationConfigs,
+		processClientTypes,
 		processComplexStringConfigs,
 		processDynamicHostPathConfig,
 		processQueueSyncConfig,
@@ -353,182 +248,24 @@ func postProcessConfig(config *Config, configMap map[string]any) error {
 	return nil
 }
 
-// processURLConfig handles URL field processing
-func processURLConfig(config *Config, configMap map[string]any) error {
-	// Process URL field (needs special handling for flagext.URLValue)
-	// Handle both "URL" and "Url" for different format compatibility
-	var urlString string
-	if url, ok := configMap["URL"].(string); ok && url != "" {
-		urlString = url
-	} else if url, ok := configMap["Url"].(string); ok && url != "" {
-		urlString = url
-	}
-
-	if urlString != "" {
-		if err := config.ClientConfig.CredativValiConfig.URL.Set(urlString); err != nil {
-			return fmt.Errorf("failed to parse URL: %w", err)
+func processClientTypes(config *Config, configMap map[string]any) error {
+	if seedType, ok := configMap["SeedType"].(string); ok && seedType != "" {
+		t := types.GetClientTypeFromString(seedType)
+		if t == types.UNKNOWN {
+			return fmt.Errorf("invalid SeedType: %s", seedType)
 		}
+		config.ClientConfig.SeedType = t
 	}
 
-	return nil
-}
-
-func processProxyURLConfig(config *Config, configMap map[string]any) error {
-	var proxyURLString string
-	if url, ok := configMap["ProxyURL"].(string); ok && url != "" {
-		proxyURLString = url
-	} else if url, ok = configMap["ProxyUrl"].(string); ok && url != "" {
-		proxyURLString = url
-	}
-
-	if proxyURLString != "" {
-		url, err := stdurl.Parse(proxyURLString)
-		if err != nil {
-			return fmt.Errorf("failed to parse proxy URL: %w", err)
+	if shootType, ok := configMap["ShootType"].(string); ok && shootType != "" {
+		t := types.GetClientTypeFromString(shootType)
+		if t == types.UNKNOWN {
+			return fmt.Errorf("invalid ShootType: %s", shootType)
 		}
-		config.ClientConfig.CredativValiConfig.Client.ProxyURL.URL = url
+		config.ClientConfig.ShootType = t
 	}
 
 	return nil
-}
-
-// processClientConfig handles client configuration field copying
-func processClientConfig(config *Config, _ map[string]any) error {
-	// Copy simple fields from ClientConfig to CredativValiConfig (after mapstructure processing)
-	config.ClientConfig.CredativValiConfig.TenantID = config.ClientConfig.TenantID
-
-	// Copy BackoffConfig fields
-	if config.ClientConfig.MaxRetries > 0 {
-		config.ClientConfig.CredativValiConfig.BackoffConfig.MaxRetries = config.ClientConfig.MaxRetries
-	}
-
-	return nil
-}
-
-// processDurationConfigs handles all duration-related configuration fields
-func processDurationConfigs(config *Config, configMap map[string]any) error {
-	durationFields := []struct {
-		key    string
-		setter func(time.Duration)
-	}{
-		{"Timeout", func(d time.Duration) {
-			config.ClientConfig.CredativValiConfig.Timeout = d
-		}},
-		{"MinBackoff", func(d time.Duration) {
-			config.ClientConfig.CredativValiConfig.BackoffConfig.MinBackoff = d
-		}},
-		{"MaxBackoff", func(d time.Duration) {
-			config.ClientConfig.CredativValiConfig.BackoffConfig.MaxBackoff = d
-		}},
-		{"BatchWait", func(d time.Duration) {
-			config.ClientConfig.CredativValiConfig.BatchWait = d
-		}},
-	}
-
-	for _, field := range durationFields {
-		if err := processDurationField(configMap, field.key, field.setter); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// processLabelsConfig handles labels field processing
-func processLabelsConfig(config *Config, configMap map[string]any) error {
-	if labels, ok := configMap["Labels"].(string); ok && labels != "" {
-		matchers, err := logql.ParseMatchers(labels)
-		if err != nil {
-			return fmt.Errorf("failed to parse Labels: %w", err)
-		}
-		labelSet := make(model.LabelSet)
-		for _, m := range matchers {
-			labelSet[model.LabelName(m.Name)] = model.LabelValue(m.Value)
-		}
-		config.ClientConfig.CredativValiConfig.ExternalLabels = valiflag.LabelSet{LabelSet: labelSet}
-	}
-
-	return nil
-}
-
-// processLineFormatConfig handles LineFormat enum field processing
-func processLineFormatConfig(config *Config, configMap map[string]any) error {
-	if lineFormat, ok := configMap["LineFormat"].(string); ok {
-		switch lineFormat {
-		case "json", "":
-			config.PluginConfig.LineFormat = JSONFormat
-		case "key_value":
-			config.PluginConfig.LineFormat = KvPairFormat
-		default:
-			return fmt.Errorf("invalid format: %s", lineFormat)
-		}
-	}
-
-	return nil
-}
-
-// processCommaSeparatedConfigs handles all comma-separated string fields
-func processCommaSeparatedConfigs(config *Config, configMap map[string]any) error {
-	// Process LabelKeys
-	if err := processCommaSeparatedField(configMap, "LabelKeys", func(values []string) {
-		config.PluginConfig.LabelKeys = values
-	}); err != nil {
-		return err
-	}
-
-	// Process RemoveKeys
-	if err := processCommaSeparatedField(configMap, "RemoveKeys", func(values []string) {
-		config.PluginConfig.RemoveKeys = values
-	}); err != nil {
-		return err
-	}
-
-	// Process PreservedLabels - convert comma-separated string to LabelSet
-	if err := processCommaSeparatedField(configMap, "PreservedLabels", func(values []string) {
-		labelSet := make(model.LabelSet)
-		for _, value := range values {
-			// Trim whitespace and create label with empty value
-			labelName := model.LabelName(strings.TrimSpace(value))
-			if labelName != "" {
-				labelSet[labelName] = model.LabelValue("")
-			}
-		}
-		config.PluginConfig.PreservedLabels = labelSet
-	}); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// processLabelMapConfig handles LabelMapPath processing
-func processLabelMapConfig(config *Config, configMap map[string]any) error {
-	if labelMapPath, ok := configMap["LabelMapPath"].(string); ok && labelMapPath != "" {
-		if err := processLabelMapPath(labelMapPath, config); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// processBatchSizeConfig handles BatchSize configuration
-func processBatchSizeConfig(config *Config, _ map[string]any) error {
-	// Copy BatchSize to CredativValiConfig (mapstructure handles the main field)
-	if config.ClientConfig.BatchSize != 0 {
-		config.ClientConfig.CredativValiConfig.BatchSize = config.ClientConfig.BatchSize
-	}
-
-	return nil
-}
-
-// processValidationConfigs handles special validation fields
-func processValidationConfigs(config *Config, configMap map[string]any) error {
-	if err := processNumberOfBatchIDs(configMap, config); err != nil {
-		return err
-	}
-
-	return processIDLabelName(configMap, config)
 }
 
 // processComplexStringConfigs handles complex string parsing fields
@@ -564,22 +301,13 @@ func processControllerBoolConfigs(config *Config, configMap map[string]any) erro
 
 // processOTLPConfig handles OTLP configuration field processing
 func processOTLPConfig(config *Config, configMap map[string]any) error {
-	// Process OTLPEnabledForShoot field
-	if enabled, ok := configMap["OTLPEnabledForShoot"].(string); ok && enabled != "" {
-		boolVal, err := strconv.ParseBool(enabled)
-		if err != nil {
-			return fmt.Errorf("failed to parse OTLPEnabledForShoot as boolean: %w", err)
-		}
-		config.OTLPConfig.EnabledForShoot = boolVal
-	}
-
 	// Process OTLPEndpoint
-	if endpoint, ok := configMap["OTLPEndpoint"].(string); ok && endpoint != "" {
+	if endpoint, ok := configMap["Endpoint"].(string); ok && endpoint != "" {
 		config.OTLPConfig.Endpoint = endpoint
 	}
 
 	// Process OTLPInsecure
-	if insecure, ok := configMap["OTLPInsecure"].(string); ok && insecure != "" {
+	if insecure, ok := configMap["Insecure"].(string); ok && insecure != "" {
 		boolVal, err := strconv.ParseBool(insecure)
 		if err != nil {
 			return fmt.Errorf("failed to parse OTLPInsecure as boolean: %w", err)
@@ -588,95 +316,95 @@ func processOTLPConfig(config *Config, configMap map[string]any) error {
 	}
 
 	// Process OTLPCompression
-	if compression, ok := configMap["OTLPCompression"].(string); ok && compression != "" {
+	if compression, ok := configMap["Compression"].(string); ok && compression != "" {
 		compVal, err := strconv.Atoi(compression)
 		if err != nil {
-			return fmt.Errorf("failed to parse OTLPCompression as integer: %w", err)
+			return fmt.Errorf("failed to parse Compression as integer: %w", err)
 		}
 		if compVal < 0 || compVal > 2 { // 0=none, 1=gzip, 2=deflate typically
-			return fmt.Errorf("invalid OTLPCompression value %d: must be between 0 and 2", compVal)
+			return fmt.Errorf("invalid Compression value %d: must be between 0 and 2", compVal)
 		}
 		config.OTLPConfig.Compression = compVal
 	}
 
 	// Process OTLPTimeout
-	if err := processDurationField(configMap, "OTLPTimeout", func(d time.Duration) {
+	if err := processDurationField(configMap, "Timeout", func(d time.Duration) {
 		config.OTLPConfig.Timeout = d
 	}); err != nil {
 		return err
 	}
 
 	// Process OTLPHeaders - parse JSON string into map
-	if headers, ok := configMap["OTLPHeaders"].(string); ok && headers != "" {
+	if headers, ok := configMap["Headers"].(string); ok && headers != "" {
 		// Check size limit before parsing to prevent memory exhaustion
 		if len(headers) > MaxJSONSize {
-			return fmt.Errorf("OTLPHeaders JSON exceeds maximum size of %d bytes", MaxJSONSize)
+			return fmt.Errorf("field Headers JSON exceeds maximum size of %d bytes", MaxJSONSize)
 		}
 
 		var headerMap map[string]string
 		if err := json.Unmarshal([]byte(headers), &headerMap); err != nil {
-			return fmt.Errorf("failed to parse OTLPHeaders JSON: %w", err)
+			return fmt.Errorf("failed to parse Headers JSON: %w", err)
 		}
 		config.OTLPConfig.Headers = headerMap
 	}
 
 	// Process RetryConfig fields
-	if enabled, ok := configMap["OTLPRetryEnabled"].(string); ok && enabled != "" {
+	if enabled, ok := configMap["RetryEnabled"].(string); ok && enabled != "" {
 		boolVal, err := strconv.ParseBool(enabled)
 		if err != nil {
-			return fmt.Errorf("failed to parse OTLPRetryEnabled as boolean: %w", err)
+			return fmt.Errorf("failed to parse RetryEnabled as boolean: %w", err)
 		}
 		config.OTLPConfig.RetryEnabled = boolVal
 	}
 
-	if err := processDurationField(configMap, "OTLPRetryInitialInterval", func(d time.Duration) {
+	if err := processDurationField(configMap, "RetryInitialInterval", func(d time.Duration) {
 		config.OTLPConfig.RetryInitialInterval = d
 	}); err != nil {
 		return err
 	}
 
-	if err := processDurationField(configMap, "OTLPRetryMaxInterval", func(d time.Duration) {
+	if err := processDurationField(configMap, "RetryMaxInterval", func(d time.Duration) {
 		config.OTLPConfig.RetryMaxInterval = d
 	}); err != nil {
 		return err
 	}
 
-	if err := processDurationField(configMap, "OTLPRetryMaxElapsedTime", func(d time.Duration) {
+	if err := processDurationField(configMap, "RetryMaxElapsedTime", func(d time.Duration) {
 		config.OTLPConfig.RetryMaxElapsedTime = d
 	}); err != nil {
 		return err
 	}
 
 	// Process TLS configuration fields
-	if certFile, ok := configMap["OTLPTLSCertFile"].(string); ok && certFile != "" {
+	if certFile, ok := configMap["TLSCertFile"].(string); ok && certFile != "" {
 		config.OTLPConfig.TLSCertFile = certFile
 	}
 
-	if keyFile, ok := configMap["OTLPTLSKeyFile"].(string); ok && keyFile != "" {
+	if keyFile, ok := configMap["TLSKeyFile"].(string); ok && keyFile != "" {
 		config.OTLPConfig.TLSKeyFile = keyFile
 	}
 
-	if caFile, ok := configMap["OTLPTLSCAFile"].(string); ok && caFile != "" {
+	if caFile, ok := configMap["TLSCAFile"].(string); ok && caFile != "" {
 		config.OTLPConfig.TLSCAFile = caFile
 	}
 
-	if serverName, ok := configMap["OTLPTLSServerName"].(string); ok && serverName != "" {
+	if serverName, ok := configMap["TLSServerName"].(string); ok && serverName != "" {
 		config.OTLPConfig.TLSServerName = serverName
 	}
 
-	if insecureSkipVerify, ok := configMap["OTLPTLSInsecureSkipVerify"].(string); ok && insecureSkipVerify != "" {
+	if insecureSkipVerify, ok := configMap["TLSInsecureSkipVerify"].(string); ok && insecureSkipVerify != "" {
 		boolVal, err := strconv.ParseBool(insecureSkipVerify)
 		if err != nil {
-			return fmt.Errorf("failed to parse OTLPTLSInsecureSkipVerify as boolean: %w", err)
+			return fmt.Errorf("failed to parse LSInsecureSkipVerify as boolean: %w", err)
 		}
 		config.OTLPConfig.TLSInsecureSkipVerify = boolVal
 	}
 
-	if minVersion, ok := configMap["OTLPTLSMinVersion"].(string); ok && minVersion != "" {
+	if minVersion, ok := configMap["TLSMinVersion"].(string); ok && minVersion != "" {
 		config.OTLPConfig.TLSMinVersion = minVersion
 	}
 
-	if maxVersion, ok := configMap["OTLPTLSMaxVersion"].(string); ok && maxVersion != "" {
+	if maxVersion, ok := configMap["TLSMaxVersion"].(string); ok && maxVersion != "" {
 		config.OTLPConfig.TLSMaxVersion = maxVersion
 	}
 
@@ -717,7 +445,7 @@ func buildTLSConfig(config *Config) error {
 		}
 		tlsConfig.Certificates = []tls.Certificate{cert}
 	} else if otlp.TLSCertFile != "" || otlp.TLSKeyFile != "" {
-		return errors.New("both OTLPTLSCertFile and OTLPTLSKeyFile must be specified together")
+		return errors.New("both TLSCertFile and TLSKeyFile must be specified together")
 	}
 
 	// Load CA certificate if specified
@@ -738,7 +466,7 @@ func buildTLSConfig(config *Config) error {
 	if otlp.TLSMinVersion != "" {
 		minVersion, err := parseTLSVersion(otlp.TLSMinVersion)
 		if err != nil {
-			return fmt.Errorf("invalid OTLPTLSMinVersion: %w", err)
+			return fmt.Errorf("invalid TLSMinVersion: %w", err)
 		}
 		tlsConfig.MinVersion = minVersion
 	}
@@ -746,14 +474,14 @@ func buildTLSConfig(config *Config) error {
 	if otlp.TLSMaxVersion != "" {
 		maxVersion, err := parseTLSVersion(otlp.TLSMaxVersion)
 		if err != nil {
-			return fmt.Errorf("invalid OTLPTLSMaxVersion: %w", err)
+			return fmt.Errorf("invalid TLSMaxVersion: %w", err)
 		}
 		tlsConfig.MaxVersion = maxVersion
 	}
 
 	// Validate that MinVersion <= MaxVersion if both are set
 	if tlsConfig.MinVersion != 0 && tlsConfig.MaxVersion != 0 && tlsConfig.MinVersion > tlsConfig.MaxVersion {
-		return errors.New("OTLPTLSMinVersion cannot be greater than OTLPTLSMaxVersion")
+		return errors.New("TLSMinVersion cannot be greater than TLSMaxVersion")
 	}
 
 	otlp.TLSConfig = tlsConfig
@@ -798,20 +526,20 @@ func buildRetryConfig(config *Config) error {
 
 	// Validate retry intervals
 	if otlp.RetryInitialInterval <= 0 {
-		return fmt.Errorf("OTLPRetryInitialInterval must be positive, got %v", otlp.RetryInitialInterval)
+		return fmt.Errorf("RetryInitialInterval must be positive, got %v", otlp.RetryInitialInterval)
 	}
 
 	if otlp.RetryMaxInterval <= 0 {
-		return fmt.Errorf("OTLPRetryMaxInterval must be positive, got %v", otlp.RetryMaxInterval)
+		return fmt.Errorf("RetryMaxInterval must be positive, got %v", otlp.RetryMaxInterval)
 	}
 
 	if otlp.RetryMaxElapsedTime <= 0 {
-		return fmt.Errorf("OTLPRetryMaxElapsedTime must be positive, got %v", otlp.RetryMaxElapsedTime)
+		return fmt.Errorf("RetryMaxElapsedTime must be positive, got %v", otlp.RetryMaxElapsedTime)
 	}
 
 	// Validate that InitialInterval <= MaxInterval
 	if otlp.RetryInitialInterval > otlp.RetryMaxInterval {
-		return fmt.Errorf("OTLPRetryInitialInterval (%v) cannot be greater than OTLPRetryMaxInterval (%v)",
+		return fmt.Errorf("RetryInitialInterval (%v) cannot be greater than RetryMaxInterval (%v)",
 			otlp.RetryInitialInterval, otlp.RetryMaxInterval)
 	}
 
@@ -835,12 +563,6 @@ func defaultConfig() (*Config, error) {
 		return nil, fmt.Errorf("failed to set default log level: %w", err)
 	}
 
-	defaultURL := flagext.URLValue{}
-
-	if err := defaultURL.Set("http://localhost:3100/vali/api/v1/push"); err != nil {
-		return nil, fmt.Errorf("failed to set default URL: %w", err)
-	}
-
 	config := &Config{
 		ControllerConfig: ControllerConfig{
 			ShootControllerClientConfig: ShootControllerClientConfig,
@@ -849,36 +571,17 @@ func defaultConfig() (*Config, error) {
 			CtlSyncTimeout:              60 * time.Second,
 		},
 		ClientConfig: ClientConfig{
-			URL: defaultURL,
-			CredativValiConfig: client.Config{
-				URL:       defaultURL,
-				BatchSize: 1024 * 1024,
-				BatchWait: 1 * time.Second,
-				Timeout:   10 * time.Second,
-				BackoffConfig: util.BackoffConfig{
-					MinBackoff: 500 * time.Millisecond,
-					MaxBackoff: 5 * time.Minute,
-					MaxRetries: 10,
-				},
-				ExternalLabels: valiflag.LabelSet{
-					LabelSet: model.LabelSet{"job": "fluent-bit"},
-				},
-			},
-			BufferConfig:     DefaultBufferConfig,
-			NumberOfBatchIDs: 10,
-			IDLabelName:      model.LabelName("id"),
+			SeedType:     types.NOOP,
+			ShootType:    types.NOOP,
+			BufferConfig: DefaultBufferConfig,
 		},
 		PluginConfig: PluginConfig{
-			DropSingleKey:    true,
 			DynamicHostRegex: "*",
-			LineFormat:       JSONFormat,
 			KubernetesMetadata: KubernetesMetadataExtraction{
 				TagKey:        DefaultKubernetesMetadataTagKey,
 				TagPrefix:     DefaultKubernetesMetadataTagPrefix,
 				TagExpression: DefaultKubernetesMetadataTagExpression,
 			},
-			LabelSetInitCapacity: 12,
-			PreservedLabels:      model.LabelSet{},
 		},
 		OTLPConfig: DefaultOTLPConfig,
 		LogLevel:   defaultLevel,

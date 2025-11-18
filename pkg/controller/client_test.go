@@ -8,12 +8,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/credativ/vali/pkg/logproto"
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
 	ginkgov2 "github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
-	"github.com/prometheus/common/model"
 	"github.com/weaveworks/common/logging"
 
 	"github.com/gardener/logging/pkg/client"
@@ -26,27 +24,25 @@ var _ = ginkgov2.Describe("Controller Client", func() {
 		logLevel   logging.Level
 		_          = logLevel.Set("error")
 		logger     = level.NewFilter(log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr)), logLevel.Gokit)
-		labels1    = model.LabelSet{model.LabelName("KeyTest1"): model.LabelValue("ValueTest1")}
-		labels2    = model.LabelSet{model.LabelName("KeyTest2"): model.LabelValue("ValueTest2")}
 		timestamp1 = time.Now()
 		timestamp2 = time.Now().Add(time.Second)
 		line1      = "testline1"
 		line2      = "testline2"
-		entry1     = client.Entry{Labels: labels1, Entry: logproto.Entry{Timestamp: timestamp1, Line: line1}}
-		entry2     = client.Entry{Labels: labels2, Entry: logproto.Entry{Timestamp: timestamp2, Line: line2}}
+		entry1     = client.OutputEntry{Timestamp: timestamp1, Line: line1}
+		entry2     = client.OutputEntry{Timestamp: timestamp2, Line: line2}
 	)
 
 	ginkgov2.BeforeEach(func() {
 		ctlClient = controllerClient{
 			shootTarget: target{
-				valiClient: &client.FakeValiClient{},
-				mute:       false,
-				conf:       nil,
+				client: &client.FakeValiClient{},
+				mute:   false,
+				conf:   nil,
 			},
 			seedTarget: target{
-				valiClient: &client.FakeValiClient{},
-				mute:       false,
-				conf:       nil,
+				client: &client.FakeValiClient{},
+				mute:   false,
+				conf:   nil,
 			},
 			logger: logger,
 			name:   "test",
@@ -59,10 +55,10 @@ var _ = ginkgov2.Describe("Controller Client", func() {
 			muteSeedClient  bool
 			muteShootClient bool
 		}
-		input []client.Entry
+		input []client.OutputEntry
 		want  struct {
-			seedEntries  []client.Entry
-			shootEntries []client.Entry
+			seedEntries  []client.OutputEntry
+			shootEntries []client.OutputEntry
 		}
 	}
 	// revive:enable:nested-structs
@@ -71,54 +67,54 @@ var _ = ginkgov2.Describe("Controller Client", func() {
 		ctlClient.seedTarget.mute = args.config.muteSeedClient
 		ctlClient.shootTarget.mute = args.config.muteShootClient
 		for _, entry := range args.input {
-			err := ctlClient.Handle(entry.Labels, entry.Timestamp, entry.Line)
+			err := ctlClient.Handle(entry.Timestamp, entry.Line)
 			gomega.Expect(err).ToNot(gomega.HaveOccurred())
 		}
-		gomega.Expect(ctlClient.shootTarget.valiClient.(*client.FakeValiClient).Entries).To(gomega.Equal(args.want.shootEntries))
-		gomega.Expect(ctlClient.seedTarget.valiClient.(*client.FakeValiClient).Entries).To(gomega.Equal(args.want.seedEntries))
+		gomega.Expect(ctlClient.shootTarget.client.(*client.FakeValiClient).Entries).To(gomega.Equal(args.want.shootEntries))
+		gomega.Expect(ctlClient.seedTarget.client.(*client.FakeValiClient).Entries).To(gomega.Equal(args.want.seedEntries))
 	},
 		ginkgov2.Entry("Should send only to the main client", handleArgs{
 			config: struct {
 				muteSeedClient  bool
 				muteShootClient bool
 			}{true, false},
-			input: []client.Entry{entry1, entry2},
+			input: []client.OutputEntry{entry1, entry2},
 			want: struct {
-				seedEntries  []client.Entry
-				shootEntries []client.Entry
-			}{nil, []client.Entry{entry1, entry2}},
+				seedEntries  []client.OutputEntry
+				shootEntries []client.OutputEntry
+			}{nil, []client.OutputEntry{entry1, entry2}},
 		}),
 		ginkgov2.Entry("Should send only to the default client", handleArgs{
 			config: struct {
 				muteSeedClient  bool
 				muteShootClient bool
 			}{false, true},
-			input: []client.Entry{entry1, entry2},
+			input: []client.OutputEntry{entry1, entry2},
 			want: struct {
-				seedEntries  []client.Entry
-				shootEntries []client.Entry
-			}{[]client.Entry{entry1, entry2}, nil},
+				seedEntries  []client.OutputEntry
+				shootEntries []client.OutputEntry
+			}{[]client.OutputEntry{entry1, entry2}, nil},
 		}),
 		ginkgov2.Entry("Should send to both clients", handleArgs{
 			config: struct {
 				muteSeedClient  bool
 				muteShootClient bool
 			}{false, false},
-			input: []client.Entry{entry1, entry2},
+			input: []client.OutputEntry{entry1, entry2},
 			want: struct {
-				seedEntries  []client.Entry
-				shootEntries []client.Entry
-			}{[]client.Entry{entry1, entry2}, []client.Entry{entry1, entry2}},
+				seedEntries  []client.OutputEntry
+				shootEntries []client.OutputEntry
+			}{[]client.OutputEntry{entry1, entry2}, []client.OutputEntry{entry1, entry2}},
 		}),
 		ginkgov2.Entry("Shouldn't send to both clients", handleArgs{
 			config: struct {
 				muteSeedClient  bool
 				muteShootClient bool
 			}{true, true},
-			input: []client.Entry{entry1, entry2},
+			input: []client.OutputEntry{entry1, entry2},
 			want: struct {
-				seedEntries  []client.Entry
-				shootEntries []client.Entry
+				seedEntries  []client.OutputEntry
+				shootEntries []client.OutputEntry
 			}{nil, nil},
 		}),
 	)
@@ -218,14 +214,14 @@ var _ = ginkgov2.Describe("Controller Client", func() {
 	ginkgov2.Describe("#Stop", func() {
 		ginkgov2.It("Should stop immediately", func() {
 			ctlClient.Stop()
-			gomega.Expect(ctlClient.shootTarget.valiClient.(*client.FakeValiClient).IsStopped).To(gomega.BeTrue())
-			gomega.Expect(ctlClient.seedTarget.valiClient.(*client.FakeValiClient).IsStopped).To(gomega.BeFalse())
+			gomega.Expect(ctlClient.shootTarget.client.(*client.FakeValiClient).IsStopped).To(gomega.BeTrue())
+			gomega.Expect(ctlClient.seedTarget.client.(*client.FakeValiClient).IsStopped).To(gomega.BeFalse())
 		})
 
 		ginkgov2.It("Should stop gracefully", func() {
 			ctlClient.StopWait()
-			gomega.Expect(ctlClient.shootTarget.valiClient.(*client.FakeValiClient).IsGracefullyStopped).To(gomega.BeTrue())
-			gomega.Expect(ctlClient.seedTarget.valiClient.(*client.FakeValiClient).IsGracefullyStopped).To(gomega.BeFalse())
+			gomega.Expect(ctlClient.shootTarget.client.(*client.FakeValiClient).IsGracefullyStopped).To(gomega.BeTrue())
+			gomega.Expect(ctlClient.seedTarget.client.(*client.FakeValiClient).IsGracefullyStopped).To(gomega.BeFalse())
 		})
 	})
 
@@ -286,8 +282,8 @@ type fakeControllerClient struct {
 	name  string
 }
 
-func (c *fakeControllerClient) Handle(labels any, t time.Time, entry string) error {
-	return c.FakeValiClient.Handle(labels, t, entry)
+func (c *fakeControllerClient) Handle(t time.Time, entry string) error {
+	return c.FakeValiClient.Handle(t, entry)
 }
 
 func (c *fakeControllerClient) SetState(state clusterState) {

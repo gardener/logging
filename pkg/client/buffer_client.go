@@ -1,9 +1,3 @@
-/*
-This file was copied from the credativ/vali project
-https://github.com/credativ/vali/blob/v2.2.4/cmd/fluent-bit/buffer.go
-
-Modifications Copyright SAP SE or an SAP affiliate company and Gardener contributors
-*/
 package client
 
 import (
@@ -15,7 +9,7 @@ import (
 )
 
 // NewBufferDecorator makes a new buffered Client.
-func NewBufferDecorator(cfg config.Config, newClientFunc NewValiClientFunc, logger log.Logger) (OutputClient, error) {
+func NewBufferDecorator(cfg config.Config, logger log.Logger, newClientFunc NewClientFunc) (OutputClient, error) {
 	switch cfg.ClientConfig.BufferConfig.BufferType {
 	case "dque":
 		return NewDque(cfg, logger, newClientFunc)

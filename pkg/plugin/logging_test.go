@@ -20,43 +20,21 @@ import (
 	"github.com/gardener/logging/pkg/config"
 )
 
-type entry struct {
-	lbs  model.LabelSet
-	line string
-	ts   time.Time
-}
-
 var _ client.OutputClient = &recorder{}
 
 type recorder struct {
-	*entry
 }
 
 func (*recorder) GetEndPoint() string {
 	return "http://localhost"
 }
 
-func (r *recorder) Handle(ls any, t time.Time, e string) error {
-	_ls, ok := ls.(model.LabelSet)
-	if !ok {
-		return client.ErrInvalidLabelType
-	}
-	r.entry = &entry{_ls, e, t}
-
+func (*recorder) Handle(_ time.Time, _ string) error {
 	return nil
 }
 
-func (r *recorder) toEntry() *entry { return r.entry }
-
 func (*recorder) Stop()     {}
 func (*recorder) StopWait() {}
-
-type sendRecordArgs struct {
-	cfg     *config.Config
-	record  map[any]any
-	want    *entry
-	wantErr bool
-}
 
 type fakeClient struct{}
 
@@ -66,7 +44,7 @@ func (*fakeClient) GetEndPoint() string {
 
 var _ client.OutputClient = &fakeClient{}
 
-func (*fakeClient) Handle(_ any, _ time.Time, _ string) error {
+func (*fakeClient) Handle(_ time.Time, _ string) error {
 	return nil
 }
 
@@ -90,176 +68,16 @@ func (ctl *fakeController) GetClient(name string) (client.OutputClient, bool) {
 func (*fakeController) Stop() {}
 
 var (
-	now      = time.Now()
 	logLevel commonlogging.Level
 	logger   = log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
 )
 
 var _ = ginkgov2.Describe("OutputPlugin plugin", func() {
-	var (
-		simpleRecordFixture = map[any]any{
-			"foo":   "bar",
-			"bar":   500,
-			"error": make(chan struct{}),
-		}
-		mapRecordFixture = map[any]any{
-			// lots of key/value pairs in map to increase chances of test hitting in case of unsorted map marshalling
-			"A": "A",
-			"B": "B",
-			"C": "C",
-			"D": "D",
-			"E": "E",
-			"F": "F",
-			"G": "G",
-			"H": "H",
-		}
-
-		byteArrayRecordFixture = map[any]any{
-			"label": "label",
-			"outer": []byte("foo"),
-			"map": map[any]any{
-				"inner": []byte("bar"),
-			},
-		}
-
-		mixedTypesRecordFixture = map[any]any{
-			"label": "label",
-			"int":   42,
-			"float": 42.42,
-			"array": []any{42, 42.42, "foo"},
-			"map": map[any]any{
-				"nested": map[any]any{
-					"foo":     "bar",
-					"invalid": []byte("a\xc5z"),
-				},
-			},
-		}
-	)
-
 	_ = logLevel.Set("info")
 	logger = level.NewFilter(logger, logLevel.Gokit)
 	logger = log.With(logger, "caller", log.Caller(3))
 
-	ginkgov2.DescribeTable("#SendRecord",
-		func(args sendRecordArgs) {
-			rec := &recorder{}
-			l := &logging{
-				cfg:        args.cfg,
-				seedClient: rec,
-				logger:     logger,
-			}
-			err := l.SendRecord(args.record, now)
-			if args.wantErr {
-				gomega.Expect(err).To(gomega.HaveOccurred())
-
-				return
-			}
-			gomega.Expect(err).ToNot(gomega.HaveOccurred())
-			got := rec.toEntry()
-			gomega.Expect(got).To(gomega.Equal(args.want))
-		},
-		ginkgov2.Entry("map to JSON",
-			sendRecordArgs{
-				cfg: &config.Config{
-					PluginConfig: config.PluginConfig{LabelKeys: []string{"A"}, LineFormat: config.JSONFormat},
-				},
-				record:  mapRecordFixture,
-				want:    &entry{model.LabelSet{"A": "A"}, `{"B":"B","C":"C","D":"D","E":"E","F":"F","G":"G","H":"H"}`, now},
-				wantErr: false,
-			}),
-		ginkgov2.Entry("map to kvPairFormat",
-			sendRecordArgs{
-				cfg: &config.Config{
-					PluginConfig: config.PluginConfig{LabelKeys: []string{"A"}, LineFormat: config.KvPairFormat},
-				},
-				record:  mapRecordFixture,
-				want:    &entry{model.LabelSet{"A": "A"}, `B=B C=C D=D E=E F=F G=G H=H`, now},
-				wantErr: false,
-			}),
-		ginkgov2.Entry(
-			"not enough records",
-			sendRecordArgs{
-				cfg: &config.Config{
-					PluginConfig: config.PluginConfig{LabelKeys: []string{"foo"}, LineFormat: config.JSONFormat, RemoveKeys: []string{"bar", "error"}},
-				},
-				record:  simpleRecordFixture,
-				want:    nil,
-				wantErr: false,
-			}),
-		ginkgov2.Entry("labels",
-			sendRecordArgs{
-				cfg: &config.Config{
-					PluginConfig: config.PluginConfig{LabelKeys: []string{"bar", "fake"}, LineFormat: config.JSONFormat, RemoveKeys: []string{"fuzz", "error"}},
-				},
-				record:  simpleRecordFixture,
-				want:    &entry{model.LabelSet{"bar": "500"}, `{"foo":"bar"}`, now},
-				wantErr: false,
-			}),
-		ginkgov2.Entry("remove key",
-			sendRecordArgs{
-				cfg: &config.Config{
-					PluginConfig: config.PluginConfig{LabelKeys: []string{"fake"}, LineFormat: config.JSONFormat, RemoveKeys: []string{"foo", "error", "fake"}},
-				},
-				record:  simpleRecordFixture,
-				want:    &entry{model.LabelSet{}, `{"bar":500}`, now},
-				wantErr: false,
-			}),
-		ginkgov2.Entry("error",
-			sendRecordArgs{
-				cfg: &config.Config{
-					PluginConfig: config.PluginConfig{LabelKeys: []string{"fake"}, LineFormat: config.JSONFormat, RemoveKeys: []string{"foo"}},
-				},
-				record:  simpleRecordFixture,
-				want:    nil,
-				wantErr: true,
-			}),
-		ginkgov2.Entry("key value",
-			sendRecordArgs{
-				cfg: &config.Config{
-					PluginConfig: config.PluginConfig{LabelKeys: []string{"fake"}, LineFormat: config.KvPairFormat, RemoveKeys: []string{"foo", "error", "fake"}},
-				},
-				record:  simpleRecordFixture,
-				want:    &entry{model.LabelSet{}, `bar=500`, now},
-				wantErr: false,
-			}),
-		ginkgov2.Entry("single",
-			sendRecordArgs{
-				cfg: &config.Config{
-					PluginConfig: config.PluginConfig{LabelKeys: []string{"fake"}, DropSingleKey: true, LineFormat: config.KvPairFormat, RemoveKeys: []string{"foo", "error", "fake"}},
-				},
-				record:  simpleRecordFixture,
-				want:    &entry{model.LabelSet{}, `500`, now},
-				wantErr: false,
-			}),
-		ginkgov2.Entry("labelmap",
-			sendRecordArgs{
-				cfg: &config.Config{
-					PluginConfig: config.PluginConfig{LabelMap: map[string]any{"bar": "other"}, LineFormat: config.JSONFormat, RemoveKeys: []string{"bar", "error"}},
-				},
-				record:  simpleRecordFixture,
-				want:    &entry{model.LabelSet{"other": "500"}, `{"foo":"bar"}`, now},
-				wantErr: false,
-			}),
-		ginkgov2.Entry("byte array",
-			sendRecordArgs{
-				cfg: &config.Config{
-					PluginConfig: config.PluginConfig{LabelKeys: []string{"label"}, LineFormat: config.JSONFormat},
-				},
-				record:  byteArrayRecordFixture,
-				want:    &entry{model.LabelSet{"label": "label"}, `{"map":{"inner":"bar"},"outer":"foo"}`, now},
-				wantErr: false,
-			}),
-		ginkgov2.Entry("mixed types",
-			sendRecordArgs{
-				cfg: &config.Config{
-					PluginConfig: config.PluginConfig{LabelKeys: []string{"label"}, LineFormat: config.JSONFormat},
-				},
-				record:  mixedTypesRecordFixture,
-				want:    &entry{model.LabelSet{"label": "label"}, `{"array":[42,42.42,"foo"],"float":42.42,"int":42,"map":{"nested":{"foo":"bar","invalid":"a\ufffdz"}}}`, now},
-				wantErr: false,
-			},
-		),
-	)
+	ginkgov2.DescribeTable("#SendRecord")
 
 	ginkgov2.Describe("#getClient", func() {
 		fc := fakeController{
@@ -307,111 +125,6 @@ var _ = ginkgov2.Describe("OutputPlugin plugin", func() {
 				getClientArgs{
 					dynamicHostName: "kube-system",
 					expectToExists:  true,
-				}),
-		)
-	})
-
-	ginkgov2.Describe("#setDynamicTenant", func() {
-		type setDynamicTenantArgs struct {
-			valiplugin logging
-			labelSet   model.LabelSet
-			records    map[string]any
-			want       struct { // revive:disable-line:nested-structs
-				labelSet model.LabelSet
-				records  map[string]any
-			}
-		}
-
-		ginkgov2.DescribeTable("#setDynamicTenant",
-			func(args setDynamicTenantArgs) {
-				args.valiplugin.setDynamicTenant(args.records, args.labelSet)
-				gomega.Expect(args.want.records).To(gomega.Equal(args.records))
-				gomega.Expect(args.want.labelSet).To(gomega.Equal(args.labelSet))
-			},
-			ginkgov2.Entry("Existing field with maching regex",
-				setDynamicTenantArgs{
-					valiplugin: logging{
-						dynamicTenantRegexp: regexp.MustCompile("user-exposed.kubernetes"),
-						dynamicTenant:       "test-user",
-						dynamicTenantField:  "tag",
-						seedClient:          &fakeClient{},
-					},
-					labelSet: model.LabelSet{
-						"foo": "bar",
-					},
-					records: map[string]any{
-						"log": "The most important log in the world",
-						"tag": "user-exposed.kubernetes.var.log.containers.super-secret-pod_super-secret-namespace_ultra-sicret-container_1234567890.log",
-					},
-					want: struct {
-						labelSet model.LabelSet
-						records  map[string]any
-					}{
-						labelSet: model.LabelSet{
-							"foo":           "bar",
-							"__tenant_id__": "test-user",
-						},
-						records: map[string]any{
-							"log": "The most important log in the world",
-							"tag": "user-exposed.kubernetes.var.log.containers.super-secret-pod_super-secret-namespace_ultra-sicret-container_1234567890.log",
-						},
-					},
-				}),
-			ginkgov2.Entry("Existing field with no maching regex",
-				setDynamicTenantArgs{
-					valiplugin: logging{
-						dynamicTenantRegexp: regexp.MustCompile("user-exposed.kubernetes"),
-						dynamicTenant:       "test-user",
-						dynamicTenantField:  "tag",
-						seedClient:          &fakeClient{},
-					},
-					labelSet: model.LabelSet{
-						"foo": "bar",
-					},
-					records: map[string]any{
-						"log": "The most important log in the world",
-						"tag": "operator-exposed.kubernetes.var.log.containers.super-secret-pod_super-secret-namespace_ultra-sicret-container_1234567890.log",
-					},
-					want: struct {
-						labelSet model.LabelSet
-						records  map[string]any
-					}{
-						labelSet: model.LabelSet{
-							"foo": "bar",
-						},
-						records: map[string]any{
-							"log": "The most important log in the world",
-							"tag": "operator-exposed.kubernetes.var.log.containers.super-secret-pod_super-secret-namespace_ultra-sicret-container_1234567890.log",
-						},
-					},
-				}),
-			ginkgov2.Entry("Not Existing field with maching regex",
-				setDynamicTenantArgs{
-					valiplugin: logging{
-						dynamicTenantRegexp: regexp.MustCompile("user-exposed.kubernetes"),
-						dynamicTenant:       "test-user",
-						dynamicTenantField:  "tag",
-						seedClient:          &fakeClient{},
-					},
-					labelSet: model.LabelSet{
-						"foo": "bar",
-					},
-					records: map[string]any{
-						"log":     "The most important log in the world",
-						"not-tag": "user-exposed.kubernetes.var.log.containers.super-secret-pod_super-secret-namespace_ultra-sicret-container_1234567890.log",
-					},
-					want: struct {
-						labelSet model.LabelSet
-						records  map[string]any
-					}{
-						labelSet: model.LabelSet{
-							"foo": "bar",
-						},
-						records: map[string]any{
-							"log":     "The most important log in the world",
-							"not-tag": "user-exposed.kubernetes.var.log.containers.super-secret-pod_super-secret-namespace_ultra-sicret-container_1234567890.log",
-						},
-					},
 				}),
 		)
 	})

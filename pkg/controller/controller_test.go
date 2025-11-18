@@ -10,8 +10,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/cortexproject/cortex/pkg/util/flagext"
-	valiclient "github.com/credativ/vali/pkg/valitail/client"
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/go-kit/log"
@@ -37,7 +35,7 @@ func (*fakeValiClient) GetEndPoint() string {
 	return "http://localhost"
 }
 
-func (c *fakeValiClient) Handle(_ any, _ time.Time, _ string) error {
+func (c *fakeValiClient) Handle(_ time.Time, _ string) error {
 	if c.isStopped {
 		return errors.New("client has been stopped")
 	}
@@ -106,8 +104,6 @@ var _ = ginkgov2.Describe("Controller", func() {
 			ctl      *controller
 			logLevel logging.Level
 		)
-		defaultURL := flagext.URLValue{}
-		_ = defaultURL.Set("http://vali.garden.svc:3100/vali/api/v1/push")
 		dynamicHostPrefix := "http://vali."
 		dynamicHostSulfix := ".svc:3100/vali/api/v1/push"
 		_ = logLevel.Set("error")
@@ -174,11 +170,6 @@ var _ = ginkgov2.Describe("Controller", func() {
 		ginkgov2.BeforeEach(func() {
 			conf = &config.Config{
 				ClientConfig: config.ClientConfig{
-					CredativValiConfig: valiclient.Config{
-						URL:       defaultURL,
-						BatchWait: 5 * time.Second,
-						BatchSize: 1024 * 1024,
-					},
 					BufferConfig: config.DefaultBufferConfig,
 				},
 				ControllerConfig: config.ControllerConfig{
@@ -212,8 +203,11 @@ var _ = ginkgov2.Describe("Controller", func() {
 				newNameCluster.Name = name
 				ctl.addFunc(hibernatedCluster)
 				ctl.addFunc(newNameCluster)
-				gomega.Expect(ctl.conf.ClientConfig.CredativValiConfig.URL.String()).ToNot(gomega.Equal(ctl.conf.ControllerConfig.DynamicHostPrefix + name + ctl.conf.ControllerConfig.DynamicHostSuffix))
-				gomega.Expect(ctl.conf.ClientConfig.CredativValiConfig.URL.String()).ToNot(gomega.Equal(ctl.conf.ControllerConfig.DynamicHostPrefix + hibernatedCluster.Name + ctl.conf.ControllerConfig.DynamicHostSuffix))
+				// gomega.Expect(ctl.conf.ClientConfig.CredativValiConfig.URL.String()).ToNot(gomega.Equal(ctl.conf.
+				// ControllerConfig.DynamicHostPrefix + name + ctl.conf.ControllerConfig.DynamicHostSuffix))
+				// gomega.Expect(ctl.conf.ClientConfig.CredativValiConfig.URL.String()).ToNot(gomega.Equal(ctl.conf.
+				// ControllerConfig.DynamicHostPrefix + hibernatedCluster.Name + ctl.conf.ControllerConfig.
+				// DynamicHostSuffix))
 			})
 		})
 

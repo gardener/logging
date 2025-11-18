@@ -1,5 +1,5 @@
 /*
-This file was copied from the credativ/vali project
+This file was copied from the credativ/client project
 https://github.com/credativ/vali/blob/v2.2.4/cmd/fluent-bit/buffer.go
 
 Modifications Copyright SAP SE or an SAP affiliate company and Gardener contributors
