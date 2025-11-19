@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"regexp"
 
-	ginkgov2 "github.com/onsi/ginkgo/v2"
-	"github.com/onsi/gomega"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 
 	"github.com/gardener/logging/pkg/config"
 )
@@ -29,13 +29,13 @@ type fallbackToTagWhenMetadataIsMissing struct {
 	err       error
 }
 
-var _ = ginkgov2.Describe("OutputPlugin plugin utils", func() {
-	ginkgov2.DescribeTable("#getDynamicHostName",
+var _ = Describe("OutputPlugin plugin utils", func() {
+	DescribeTable("#getDynamicHostName",
 		func(args getDynamicHostNameArgs) {
 			got := getDynamicHostName(args.records, args.mapping)
-			gomega.Expect(got).To(gomega.Equal(args.want))
+			Expect(got).To(Equal(args.want))
 		},
-		ginkgov2.Entry("empty record",
+		Entry("empty record",
 			getDynamicHostNameArgs{
 				records: map[string]any{},
 				mapping: map[string]any{
@@ -46,7 +46,7 @@ var _ = ginkgov2.Describe("OutputPlugin plugin utils", func() {
 				want: "",
 			},
 		),
-		ginkgov2.Entry("empty mapping",
+		Entry("empty mapping",
 			getDynamicHostNameArgs{
 				records: map[string]any{
 					"kubernetes": map[string]any{
@@ -58,7 +58,7 @@ var _ = ginkgov2.Describe("OutputPlugin plugin utils", func() {
 				want:    "",
 			},
 		),
-		ginkgov2.Entry("empty subrecord",
+		Entry("empty subrecord",
 			getDynamicHostNameArgs{
 				records: map[string]any{
 					"kubernetes": map[string]any{
@@ -73,7 +73,7 @@ var _ = ginkgov2.Describe("OutputPlugin plugin utils", func() {
 				want: "",
 			},
 		),
-		ginkgov2.Entry("subrecord",
+		Entry("subrecord",
 			getDynamicHostNameArgs{
 				records: map[string]any{
 					"kubernetes": map[string]any{
@@ -89,7 +89,7 @@ var _ = ginkgov2.Describe("OutputPlugin plugin utils", func() {
 				want: "garden",
 			},
 		),
-		ginkgov2.Entry("deep string",
+		Entry("deep string",
 			getDynamicHostNameArgs{
 				records: map[string]any{
 					"int":   "42",
@@ -116,19 +116,19 @@ var _ = ginkgov2.Describe("OutputPlugin plugin utils", func() {
 			}),
 	)
 
-	ginkgov2.DescribeTable("#fallbackToTagWhenMetadataIsMissing",
+	DescribeTable("#fallbackToTagWhenMetadataIsMissing",
 		func(args fallbackToTagWhenMetadataIsMissing) {
 			re := regexp.MustCompile(args.tagPrefix + args.tagRegexp)
 			err := extractKubernetesMetadataFromTag(args.records, args.tagKey, re)
 			if args.err != nil {
-				gomega.Expect(err.Error()).To(gomega.Equal(args.err.Error()))
+				Expect(err.Error()).To(Equal(args.err.Error()))
 
 				return
 			}
-			gomega.Expect(err).ToNot(gomega.HaveOccurred())
-			gomega.Expect(args.records).To(gomega.Equal(args.want))
+			Expect(err).ToNot(HaveOccurred())
+			Expect(args.records).To(Equal(args.want))
 		},
-		ginkgov2.Entry("records with correct tag",
+		Entry("records with correct tag",
 			fallbackToTagWhenMetadataIsMissing{
 				records: map[string]any{
 					config.DefaultKubernetesMetadataTagKey: "kubernetes.var.log.containers.cluster-autoscaler-65d4ccbb7d-w5kd2_shoot--i355448--local-shoot_cluster-autoscaler-a8bba03512b5dd378c620ab3707aec013f83bdb9abae08d347e1644b064ed35f.log",
@@ -148,7 +148,7 @@ var _ = ginkgov2.Describe("OutputPlugin plugin utils", func() {
 				err: nil,
 			},
 		),
-		ginkgov2.Entry("records with incorrect tag",
+		Entry("records with incorrect tag",
 			fallbackToTagWhenMetadataIsMissing{
 				records: map[string]any{
 					config.DefaultKubernetesMetadataTagKey: "kubernetes.var.log.containers.cluster-autoscaler-65d4ccbb7d-w5kd2_shoot--i355448--local-shoot-cluster-autoscaler-a8bba03512b5dd378c620ab3707aec013f83bdb9abae08d347e1644b064ed35f.log",
@@ -159,7 +159,7 @@ var _ = ginkgov2.Describe("OutputPlugin plugin utils", func() {
 				err:       fmt.Errorf("invalid format for tag %v. The tag should be in format: %s", "kubernetes.var.log.containers.cluster-autoscaler-65d4ccbb7d-w5kd2_shoot--i355448--local-shoot-cluster-autoscaler-a8bba03512b5dd378c620ab3707aec013f83bdb9abae08d347e1644b064ed35f.log", "kubernetes\\.var\\.log\\.containers"+config.DefaultKubernetesMetadataTagExpression),
 			},
 		),
-		ginkgov2.Entry("records with missing tag",
+		Entry("records with missing tag",
 			fallbackToTagWhenMetadataIsMissing{
 				records: map[string]any{
 					"missing_tag": "kubernetes.var.log.containers.cluster-autoscaler-65d4ccbb7d-w5kd2_shoot--i355448--local-shoot-cluster-autoscaler-a8bba03512b5dd378c620ab3707aec013f83bdb9abae08d347e1644b064ed35f.log",

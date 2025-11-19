@@ -14,7 +14,7 @@ const (
 	namespaceName                     = "namespace_name"
 	containerName                     = "container_name"
 	containerID                       = "container_id"
-	subExpresionNumber                = 5
+	subExpressionNumber               = 5
 	inCaseKubernetesMetadataIsMissing = 1
 )
 
@@ -72,7 +72,7 @@ func extractKubernetesMetadataFromTag(records map[string]any, tagKey string, re 
 	}
 
 	kubernetesMetaData := re.FindStringSubmatch(tag)
-	if len(kubernetesMetaData) != subExpresionNumber {
+	if len(kubernetesMetaData) != subExpressionNumber {
 		return fmt.Errorf("invalid format for tag %v. The tag should be in format: %s", tag, re.String())
 	}
 
