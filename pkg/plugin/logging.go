@@ -7,13 +7,11 @@ package plugin
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"regexp"
 	"time"
 
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
-	"github.com/prometheus/common/model"
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/gardener/logging/pkg/client"
@@ -74,6 +72,10 @@ func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger lo
 }
 
 // SendRecord sends fluent-bit records to logging as an entry.
+//
+// TODO: we receive map[any]any from fluent-bit,
+// we should convert it to corresponding otlp log record
+// with resource attributes reflecting k8s metadata and origin info
 func (l *logging) SendRecord(r map[any]any, ts time.Time) error {
 	records := toStringMap(r)
 	// _ = level.Debug(l.logger).Log("msg", "processing records", "records", fluentBitRecords(records))
@@ -178,21 +180,4 @@ func (l *logging) isDynamicHost(dynamicHostName string) bool {
 
 func (*logging) send(c client.OutputClient, ts time.Time, line string) error {
 	return c.Handle(ts, line)
-}
-
-func (l *logging) addHostnameAsLabel(res model.LabelSet) error {
-	if l.cfg.PluginConfig.HostnameKey == "" {
-		return nil
-	}
-	if len(l.cfg.PluginConfig.HostnameValue) > 0 {
-		res[model.LabelName(l.cfg.PluginConfig.HostnameKey)] = model.LabelValue(l.cfg.PluginConfig.HostnameValue)
-	} else {
-		hostname, err := os.Hostname()
-		if err != nil {
-			return err
-		}
-		res[model.LabelName(l.cfg.PluginConfig.HostnameKey)] = model.LabelValue(hostname)
-	}
-
-	return nil
 }
