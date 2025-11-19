@@ -4,7 +4,7 @@
 
 package metrics
 
-// Contants which hold metric types
+// Constants which hold metric types
 const (
 	ErrorFLBPluginInit                = "FLBPluginInit"
 	ErrorNewPlugin                    = "NewPlugin"
@@ -12,18 +12,10 @@ const (
 	ErrorDequeuer                     = "Dequeuer"
 	ErrorDequeuerNotValidType         = "DequeuerNotValidType"
 	ErrorDequeuerSendRecord           = "DequeuerSendRecord"
-	ErrorCreateDecoder                = "CreateDecoder"
-	ErrorAddFuncNotACluster           = "AddFuncNotACluster"
-	ErrorUpdateFuncOldNotACluster     = "UpdateFuncOldNotACluster"
-	ErrorUpdateFuncNewNotACluster     = "AddFuncNewNotACluster"
-	ErrorDeleteFuncNotAcluster        = "DeleteFuncNotAcluster"
-	ErrorFailedToParseURL             = "FailedToParseUrl"
-	ErrorCanNotExtractShoot           = "CanNotExtractShoot"
-	ErrorFailedToMakeValiClient       = "FailedToMakeValiClient"
+	ErrorFailedToMakeOutputClient     = "FailedToMakeOutputClient"
 	ErrorCanNotExtractMetadataFromTag = "CanNotExtractMetadataFromTag"
 	ErrorK8sLabelsNotFound            = "K8sLabelsNotFound"
 	ErrorCreateLine                   = "CreateLine"
-	ErrorSendRecordToVali             = "SendRecordToVali"
-
-	MissingMetadataType = "Kubernetes"
+	ErrorSendRecord                   = "SendRecord"
+	MissingMetadataType               = "Kubernetes"
 )

@@ -100,7 +100,7 @@ func (l *logging) SendRecord(r map[any]any, ts time.Time) error {
 	dynamicHostName := getDynamicHostName(records, l.cfg.PluginConfig.DynamicHostPath)
 	host := dynamicHostName
 	if !l.isDynamicHost(host) {
-		host = "garden"
+		host = "garden" // the record needs to go to the seed client (in garden namespace)
 	}
 
 	metrics.IncomingLogs.WithLabelValues(host).Inc()
@@ -111,11 +111,12 @@ func (l *logging) SendRecord(r map[any]any, ts time.Time) error {
 		return nil
 	}
 
-	// client.OutputClient - actual client chain to send the log to
-	// valitail or otlp, dynamicHostName is extracted from DynamicHostPath field
+	// client.OutputClient - actual client chain to send the log to.
+	// The dynamicHostName is extracted from DynamicHostPath field
 	// in the record and must match DynamicHostRegex
 	// example shoot--local--local
-	// DynamicHostPath is json form "{"kubernetes": {"namespace_name": "namespace"}}"
+	// DynamicHostPath is in json format "{"kubernetes": {"namespace_name": "namespace"}}"
+	// and must match the record structure `[kubernetes][namespace_name]`
 	c := l.getClient(dynamicHostName)
 
 	if c == nil {
@@ -123,8 +124,6 @@ func (l *logging) SendRecord(r map[any]any, ts time.Time) error {
 
 		return fmt.Errorf("no client found in controller for host: %v", dynamicHostName)
 	}
-
-	metrics.IncomingLogsWithEndpoint.WithLabelValues(host).Inc()
 
 	// TODO: line shall be extracted from the record send from fluent-bit
 	js, err := json.Marshal(records)
@@ -139,7 +138,7 @@ func (l *logging) SendRecord(r map[any]any, ts time.Time) error {
 			"err", err,
 			"host", dynamicHostName,
 		)
-		metrics.Errors.WithLabelValues(metrics.ErrorSendRecordToVali).Inc()
+		metrics.Errors.WithLabelValues(metrics.ErrorSendRecord).Inc()
 
 		return err
 	}

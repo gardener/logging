@@ -20,7 +20,6 @@ import (
 
 	"github.com/gardener/logging/pkg/client"
 	"github.com/gardener/logging/pkg/config"
-	"github.com/gardener/logging/pkg/metrics"
 )
 
 const (
@@ -111,7 +110,6 @@ func (ctl *controller) Stop() {
 func (ctl *controller) addFunc(obj any) {
 	cluster, ok := obj.(*extensionsv1alpha1.Cluster)
 	if !ok {
-		metrics.Errors.WithLabelValues(metrics.ErrorAddFuncNotACluster).Inc()
 		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("%v is not a cluster", obj))
 
 		return
@@ -119,7 +117,6 @@ func (ctl *controller) addFunc(obj any) {
 
 	shoot, err := extensioncontroller.ShootFromCluster(cluster)
 	if err != nil {
-		metrics.Errors.WithLabelValues(metrics.ErrorCanNotExtractShoot).Inc()
 		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("can't extract shoot from cluster %v", cluster.Name))
 
 		return
@@ -137,7 +134,6 @@ func (ctl *controller) addFunc(obj any) {
 func (ctl *controller) updateFunc(oldObj any, newObj any) {
 	oldCluster, ok := oldObj.(*extensionsv1alpha1.Cluster)
 	if !ok {
-		metrics.Errors.WithLabelValues(metrics.ErrorUpdateFuncOldNotACluster).Inc()
 		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("%v is not a cluster", oldCluster))
 
 		return
@@ -145,7 +141,6 @@ func (ctl *controller) updateFunc(oldObj any, newObj any) {
 
 	newCluster, ok := newObj.(*extensionsv1alpha1.Cluster)
 	if !ok {
-		metrics.Errors.WithLabelValues(metrics.ErrorUpdateFuncNewNotACluster).Inc()
 		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("%v is not a cluster", newCluster))
 
 		return
@@ -159,7 +154,6 @@ func (ctl *controller) updateFunc(oldObj any, newObj any) {
 
 	shoot, err := extensioncontroller.ShootFromCluster(newCluster)
 	if err != nil {
-		metrics.Errors.WithLabelValues(metrics.ErrorCanNotExtractShoot).Inc()
 		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("can't extract shoot from cluster %v", newCluster.Name))
 
 		return
@@ -199,7 +193,6 @@ func (ctl *controller) updateFunc(oldObj any, newObj any) {
 func (ctl *controller) delFunc(obj any) {
 	cluster, ok := obj.(*extensionsv1alpha1.Cluster)
 	if !ok {
-		metrics.Errors.WithLabelValues(metrics.ErrorDeleteFuncNotAcluster).Inc()
 		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("%v is not a cluster", obj))
 
 		return
@@ -218,7 +211,6 @@ func (ctl *controller) updateClientConfig(clusterName string) *config.Config {
 	_ = level.Debug(ctl.logger).Log("msg", "set endpoint", "endpoint", urlstr, "cluster", clusterName)
 
 	if len(urlstr) == 0 {
-		metrics.Errors.WithLabelValues(metrics.ErrorFailedToParseURL).Inc()
 		_ = level.Error(ctl.logger).Log(
 			"msg",
 			fmt.Sprintf("incorect endpoint: %v", clusterName),
