@@ -119,7 +119,7 @@ func (ctl *controller) createControllerClient(clusterName string, shoot *gardene
 
 	c, err := ctl.newControllerClient(clusterName, clientConf)
 	if err != nil {
-		metrics.Errors.WithLabelValues(metrics.ErrorFailedToMakeValiClient).Inc()
+		metrics.Errors.WithLabelValues(metrics.ErrorFailedToMakeOutputClient).Inc()
 		_ = level.Error(ctl.logger).Log(
 			"msg", fmt.Sprintf("failed to make new vali client for cluster %v", clusterName),
 			"error", err.Error(),
