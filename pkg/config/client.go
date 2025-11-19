@@ -24,7 +24,6 @@ type ClientConfig struct {
 // BufferConfig contains the buffer settings
 type BufferConfig struct {
 	Buffer     bool       `mapstructure:"Buffer"`
-	BufferType string     `mapstructure:"BufferType"` // TODO: remove the type, dque is the only supported one
 	DqueConfig DqueConfig `mapstructure:",squash"`
 }
 
@@ -39,7 +38,6 @@ type DqueConfig struct {
 // DefaultBufferConfig holds the configurations for using output buffer
 var DefaultBufferConfig = BufferConfig{
 	Buffer:     false,
-	BufferType: "dque",
 	DqueConfig: DefaultDqueConfig,
 }
 

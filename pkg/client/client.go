@@ -86,7 +86,7 @@ func NewClient(cfg config.Config, opts ...Option) (OutputClient, error) {
 	}
 
 	if options.dque {
-		return NewBuffer(cfg, logger, nfc)
+		return NewDque(cfg, logger, nfc)
 	}
 
 	return nfc(cfg, logger)

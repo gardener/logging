@@ -22,8 +22,7 @@ var _ = ginkgov2.Describe("Client", func() {
 	conf := config.Config{
 		ClientConfig: config.ClientConfig{
 			BufferConfig: config.BufferConfig{
-				Buffer:     false,
-				BufferType: config.DefaultBufferConfig.BufferType,
+				Buffer: false,
 				DqueConfig: config.DqueConfig{
 					QueueDir:         config.DefaultDqueConfig.QueueDir,
 					QueueSegmentSize: config.DefaultDqueConfig.QueueSegmentSize,

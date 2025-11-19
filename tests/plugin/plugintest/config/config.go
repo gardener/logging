@@ -25,8 +25,7 @@ func NewConfiguration() (config.Config, error) {
 	cfg := config.Config{
 		ClientConfig: config.ClientConfig{
 			BufferConfig: config.BufferConfig{
-				Buffer:     true,
-				BufferType: "dque",
+				Buffer: true,
 				DqueConfig: config.DqueConfig{
 					QueueDir:         dir,
 					QueueSegmentSize: 500,

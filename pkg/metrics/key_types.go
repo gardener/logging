@@ -9,6 +9,7 @@ const (
 	ErrorFLBPluginInit                = "FLBPluginInit"
 	ErrorNewPlugin                    = "NewPlugin"
 	ErrorFLBPluginFlushCtx            = "FLBPluginFlushCtx"
+	ErrorEnqueuer                     = "Enqueuer"
 	ErrorDequeuer                     = "Dequeuer"
 	ErrorDequeuerNotValidType         = "DequeuerNotValidType"
 	ErrorDequeuerSendRecord           = "DequeuerSendRecord"

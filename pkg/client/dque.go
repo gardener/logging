@@ -159,13 +159,27 @@ func (c *dqueClient) StopWait() {
 }
 
 // Handle implement EntryHandler; adds a new line to the next batch; send is async.
-func (c *dqueClient) Handle(_ time.Time, _ string) error {
+func (c *dqueClient) Handle(t time.Time, line string) error {
 	// Here we don't need any synchronization because the worst thing is to
 	// receive some more logs which would be dropped anyway.
 	if c.isStooped {
 		return nil
 	}
-	panic("TODO: re-implement dque enqueue")
+
+	entry := &dqueEntry{
+		OutputEntry: OutputEntry{
+			Timestamp: t,
+			Line:      line,
+		},
+	}
+
+	if err := c.queue.Enqueue(entry); err != nil {
+		metrics.Errors.WithLabelValues(metrics.ErrorEnqueuer).Inc()
+
+		return fmt.Errorf("failed to enqueue log entry: %w", err)
+	}
+
+	return nil
 }
 
 func (e *dqueEntry) String() string {
