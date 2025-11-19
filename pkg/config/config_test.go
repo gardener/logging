@@ -30,7 +30,6 @@ var _ = Describe("Config", func() {
 
 			// Buffer config defaults
 			Expect(cfg.ClientConfig.BufferConfig.Buffer).To(BeFalse())
-			Expect(cfg.ClientConfig.BufferConfig.BufferType).To(Equal("dque"))
 			Expect(cfg.ClientConfig.BufferConfig.DqueConfig.QueueDir).To(Equal("/tmp/flb-storage/vali"))
 			Expect(cfg.ClientConfig.BufferConfig.DqueConfig.QueueSegmentSize).To(Equal(500))
 			Expect(cfg.ClientConfig.BufferConfig.DqueConfig.QueueSync).To(BeFalse())
@@ -121,7 +120,6 @@ var _ = Describe("Config", func() {
 			Expect(cfg).ToNot(BeNil())
 
 			Expect(cfg.ClientConfig.BufferConfig.Buffer).To(BeTrue())
-			Expect(cfg.ClientConfig.BufferConfig.BufferType).To(Equal("dque"))
 			Expect(cfg.ClientConfig.BufferConfig.DqueConfig.QueueDir).To(Equal("/foo/bar"))
 			Expect(cfg.ClientConfig.BufferConfig.DqueConfig.QueueSegmentSize).To(Equal(600))
 			Expect(cfg.ClientConfig.BufferConfig.DqueConfig.QueueSync).To(BeTrue())
@@ -415,8 +413,6 @@ var _ = Describe("Config", func() {
 			Expect(cfg.ClientConfig.BufferConfig.DqueConfig.QueueSync).To(BeFalse())
 			// "Buffer": "true"
 			Expect(cfg.ClientConfig.BufferConfig.Buffer).To(BeTrue())
-			// "BufferType": "dque"
-			Expect(cfg.ClientConfig.BufferConfig.BufferType).To(Equal("dque"))
 
 			// Controller configuration
 			// "ControllerSyncTimeout": "120s"

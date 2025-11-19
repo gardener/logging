@@ -141,7 +141,7 @@ func (c *pluginConfig) toStringMap() map[string]string {
 		"TagKey", "TagPrefix", "TagExpression",
 
 		// Buffer config
-		"Buffer", "BufferType", "QueueDir", "QueueSegmentSize", "QueueSync", "QueueName",
+		"Buffer", "QueueDir", "QueueSegmentSize", "QueueSync", "QueueName",
 
 		// Controller config
 		"DeletedClientTimeExpiration", "ControllerSyncTimeout",
@@ -399,7 +399,6 @@ func dumpConfiguration(_logger log.Logger, conf *config.Config) {
 	_ = level.Debug(paramLogger).Log("DynamicHostSuffix", fmt.Sprintf("%+v", conf.ControllerConfig.DynamicHostSuffix))
 	_ = level.Debug(paramLogger).Log("DynamicHostRegex", fmt.Sprintf("%+v", conf.PluginConfig.DynamicHostRegex))
 	_ = level.Debug(paramLogger).Log("Buffer", fmt.Sprintf("%+v", conf.ClientConfig.BufferConfig.Buffer))
-	_ = level.Debug(paramLogger).Log("BufferType", fmt.Sprintf("%+v", conf.ClientConfig.BufferConfig.BufferType))
 	_ = level.Debug(paramLogger).Log("QueueDir", fmt.Sprintf("%+v", conf.ClientConfig.BufferConfig.DqueConfig.QueueDir))
 	_ = level.Debug(paramLogger).Log("QueueSegmentSize", fmt.Sprintf("%+v", conf.ClientConfig.BufferConfig.DqueConfig.QueueSegmentSize))
 	_ = level.Debug(paramLogger).Log("QueueSync", fmt.Sprintf("%+v", conf.ClientConfig.BufferConfig.DqueConfig.QueueSync))
