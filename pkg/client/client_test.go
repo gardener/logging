@@ -41,8 +41,8 @@ var _ = ginkgov2.Describe("Client", func() {
 		},
 		LogLevel: infoLogLevel,
 		ControllerConfig: config.ControllerConfig{
-			DynamicHostPrefix: "http://vali.",
-			DynamicHostSuffix: ".svc:3100/client/api/v1/push",
+			DynamicHostPrefix: "localhost",
+			DynamicHostSuffix: ":4317",
 		},
 	}
 

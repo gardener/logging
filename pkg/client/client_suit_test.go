@@ -13,5 +13,5 @@ import (
 
 func TestVali(t *testing.T) {
 	gomega.RegisterFailHandler(ginkgov2.Fail)
-	ginkgov2.RunSpecs(t, "Vali Client Suite")
+	ginkgov2.RunSpecs(t, "Output Client Suite")
 }
