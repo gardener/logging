@@ -39,7 +39,7 @@ func (c *NoopClient) Handle(t time.Time, _ string) error {
 	// Increment the dropped logs counter since we're discarding the record
 	metrics.DroppedLogs.WithLabelValues(c.endpoint).Inc()
 
-	c.logger.V(2).Info("log entry discarded", "timestamp", t.String())
+	//c.logger.V(4).Info("log entry discarded", "timestamp", t.String())
 
 	// Simply discard the record - no-op
 	return nil

@@ -53,11 +53,12 @@ func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger lo
 		l.extractKubernetesMetadataRegexp = regexp.MustCompile(cfg.PluginConfig.KubernetesMetadata.TagPrefix + cfg.PluginConfig.KubernetesMetadata.TagExpression)
 	}
 
-	if l.seedClient, err = client.NewClient(
-		*cfg,
-		client.WithTarget(client.Seed),
-		client.WithLogger(logger),
-	); err != nil {
+	opt := []client.Option{client.WithTarget(client.Seed), client.WithLogger(logger)}
+	if cfg.ClientConfig.BufferConfig.Buffer {
+		opt = append(opt, client.WithDque(true))
+	}
+
+	if l.seedClient, err = client.NewClient(*cfg, opt...); err != nil {
 		return nil, err
 	}
 

@@ -93,6 +93,7 @@ func NewDque(cfg config.Config, logger logr.Logger, newClientFunc NewClientFunc)
 
 func (c *dqueClient) dequeuer() {
 	defer c.wg.Done()
+	c.logger.V(2).Info("dequeuer started")
 
 	timer := time.NewTicker(30 * time.Second)
 	defer timer.Stop()
