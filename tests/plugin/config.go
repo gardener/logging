@@ -2,14 +2,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package config
+package plugin
 
 import (
 	"os"
 	"time"
 
-	"github.com/go-kit/log"
-	"github.com/go-kit/log/level"
 	"github.com/weaveworks/common/logging"
 
 	"github.com/gardener/logging/pkg/config"
@@ -36,8 +34,8 @@ func NewConfiguration() (config.Config, error) {
 		},
 		ControllerConfig: config.ControllerConfig{
 			CtlSyncTimeout:              60 * time.Minute,
-			DynamicHostPrefix:           "",
-			DynamicHostSuffix:           "",
+			DynamicHostPrefix:           "logging",
+			DynamicHostSuffix:           ":4317",
 			DeletedClientTimeExpiration: time.Hour,
 			ShootControllerClientConfig: config.ShootControllerClientConfig,
 			SeedControllerClientConfig:  config.SeedControllerClientConfig,
@@ -57,7 +55,7 @@ func NewConfiguration() (config.Config, error) {
 				TagExpression:                      "\\.([^_]+)_([^_]+)_(.+)-([a-z0-9]{64})\\.log$",
 			},
 			HostnameKey:   "nodename",
-			HostnameValue: "local-testing-machine",
+			HostnameValue: "local-test",
 		},
 		LogLevel: getLogLevel(),
 		Pprof:    false,
@@ -70,14 +68,4 @@ func getLogLevel() (logLevel logging.Level) {
 	_ = logLevel.Set("info")
 
 	return logLevel
-}
-
-// NewLogger creates a new logger for the Vali plugin.
-func NewLogger() log.Logger {
-	return log.With(
-		level.NewFilter(
-			log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr)),
-			getLogLevel().Gokit),
-		"ts", log.DefaultTimestampUTC,
-	)
 }
