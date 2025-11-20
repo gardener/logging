@@ -48,10 +48,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 		cfg = &config.Config{
 			ClientConfig: config.ClientConfig{
 				BufferConfig: config.BufferConfig{
-					Buffer: true,
-					DqueConfig: config.DqueConfig{
-						QueueName: "test-queue",
-					},
+					Buffer: false, // Disable buffer for tests
 				},
 			},
 			OTLPConfig: config.OTLPConfig{

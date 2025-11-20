@@ -244,9 +244,6 @@ func createPluginConfig() *config.Config {
 			ShootType: types.NOOP.String(),
 			BufferConfig: config.BufferConfig{
 				Buffer: false, // Direct mode, no buffering
-				DqueConfig: config.DqueConfig{
-					QueueName: "test-queue",
-				},
 			},
 		},
 		OTLPConfig: config.OTLPConfig{
