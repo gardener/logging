@@ -7,16 +7,13 @@ package controller
 import (
 	"encoding/json"
 	"errors"
-	"os"
 	"time"
 
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
-	"github.com/go-kit/log"
-	"github.com/go-kit/log/level"
+	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/weaveworks/common/logging"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
@@ -100,15 +97,12 @@ var _ = Describe("Controller", func() {
 	})
 	Describe("Event functions", func() {
 		var (
-			conf     *config.Config
-			ctl      *controller
-			logLevel logging.Level
+			conf *config.Config
+			ctl  *controller
 		)
 		dynamicHostPrefix := "http://logging."
 		dynamicHostSuffix := ".svc:4318/v1/logs"
-		_ = logLevel.Set("error")
-		logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
-		logger = level.NewFilter(logger, logLevel.Gokit)
+		logger := logr.Discard() // Use nop logger for tests
 		shootName := "shoot--dev--logging"
 
 		testingPurpuse := gardencorev1beta1.ShootPurpose("testing")

@@ -8,7 +8,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/go-kit/log"
+	"github.com/go-logr/logr"
 
 	"github.com/gardener/logging/pkg/config"
 	"github.com/gardener/logging/pkg/types"
@@ -16,7 +16,7 @@ import (
 
 type clientOptions struct {
 	target Target
-	logger log.Logger
+	logger logr.Logger
 	dque   bool
 }
 
@@ -24,7 +24,7 @@ type clientOptions struct {
 type Option func(opts *clientOptions) error
 
 // WithLogger creates a functional option for setting the logger
-func WithLogger(logger log.Logger) Option {
+func WithLogger(logger logr.Logger) Option {
 	return func(opts *clientOptions) error {
 		opts.logger = logger
 
@@ -62,8 +62,8 @@ func NewClient(cfg config.Config, opts ...Option) (OutputClient, error) {
 
 	// Use the logger from options if provided, otherwise use a default
 	logger := options.logger
-	if logger == nil {
-		logger = log.NewNopLogger() // Default no-op logger
+	if logger.GetSink() == nil {
+		logger = logr.Discard() // Default no-op logger
 	}
 
 	var nfc NewClientFunc

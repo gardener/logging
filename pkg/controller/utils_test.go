@@ -10,15 +10,12 @@ import (
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/weaveworks/common/logging"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 )
 
 var _ = Describe("Utils", func() {
 	var (
-		logLevel           logging.Level
-		_                  = logLevel.Set("error")
 		testingPurpuse     = gardencorev1beta1.ShootPurpose("testing")
 		developmentPurpuse = gardencorev1beta1.ShootPurpose("development")
 		notHibernation     = gardencorev1beta1.Hibernation{Enabled: ptr.To(false)}

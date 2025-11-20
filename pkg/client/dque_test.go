@@ -9,25 +9,19 @@ import (
 	"os"
 	"time"
 
-	"github.com/go-kit/log"
-	"github.com/go-kit/log/level"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/prometheus/client_golang/prometheus/testutil"
-	"github.com/weaveworks/common/logging"
 
 	"github.com/gardener/logging/pkg/config"
+	"github.com/gardener/logging/pkg/log"
 	"github.com/gardener/logging/pkg/metrics"
 )
 
 var _ = Describe("Buffer", func() {
-	var infoLogLevel logging.Level
-	_ = infoLogLevel.Set("info")
 	var conf config.Config
 
-	logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
-	logger = level.NewFilter(logger, infoLogLevel.Gokit)
-
+	logger := log.NewLogger("info")
 	Describe("NewBuffer", func() {
 		BeforeEach(func() {
 			conf = config.Config{

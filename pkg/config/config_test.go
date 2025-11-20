@@ -25,7 +25,7 @@ var _ = Describe("Config", func() {
 			Expect(cfg).ToNot(BeNil())
 
 			// Basic config defaults
-			Expect(cfg.LogLevel.String()).To(Equal("info"))
+			Expect(cfg.LogLevel).To(Equal("info"))
 			Expect(cfg.Pprof).To(BeFalse())
 
 			// Buffer config defaults
@@ -420,7 +420,7 @@ var _ = Describe("Config", func() {
 
 			// Logging configuration
 			// "LogLevel": "info"
-			Expect(cfg.LogLevel.String()).To(Equal("info"))
+			Expect(cfg.LogLevel).To(Equal("info"))
 
 			// "HostnameKeyValue": "nodename ${NODE_NAME}"
 			Expect(cfg.PluginConfig.HostnameKey).To(Equal("nodename"))

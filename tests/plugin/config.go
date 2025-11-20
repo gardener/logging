@@ -8,8 +8,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/weaveworks/common/logging"
-
 	"github.com/gardener/logging/pkg/config"
 )
 
@@ -57,15 +55,9 @@ func NewConfiguration() (config.Config, error) {
 			HostnameKey:   "nodename",
 			HostnameValue: "local-test",
 		},
-		LogLevel: getLogLevel(),
+		LogLevel: "info",
 		Pprof:    false,
 	}
 
 	return cfg, nil
-}
-
-func getLogLevel() (logLevel logging.Level) {
-	_ = logLevel.Set("info")
-
-	return logLevel
 }

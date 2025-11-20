@@ -39,7 +39,7 @@ import (
 
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
-	"github.com/go-kit/log"
+	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	promtest "github.com/prometheus/client_golang/prometheus/testutil"
@@ -51,6 +51,7 @@ import (
 	fakeclientset "github.com/gardener/logging/pkg/cluster/clientset/versioned/fake"
 	"github.com/gardener/logging/pkg/cluster/informers/externalversions"
 	"github.com/gardener/logging/pkg/config"
+	pkglog "github.com/gardener/logging/pkg/log"
 	"github.com/gardener/logging/pkg/metrics"
 	"github.com/gardener/logging/pkg/plugin"
 	"github.com/gardener/logging/pkg/types"
@@ -68,7 +69,7 @@ type testContext struct {
 	informer        cache.SharedIndexInformer
 	plugin          plugin.OutputPlugin
 	cfg             *config.Config
-	logger          log.Logger
+	logger          logr.Logger
 	clusters        []*extensionsv1alpha1.Cluster
 	stopCh          chan struct{}
 }
@@ -186,7 +187,7 @@ var _ = Describe("Plugin Integration Test", Ordered, func() {
 // setupTestContext initializes the test context with all required components
 func setupTestContext() *testContext {
 	ctx := &testContext{
-		logger:   log.NewNopLogger(),
+		logger:   pkglog.NewNopLogger(),
 		clusters: make([]*extensionsv1alpha1.Cluster, 0, numberOfClusters),
 		stopCh:   make(chan struct{}),
 	}
@@ -237,6 +238,7 @@ func cleanup(ctx *testContext) {
 // createPluginConfig creates a test configuration for the plugin
 func createPluginConfig() *config.Config {
 	return &config.Config{
+		LogLevel: "info", // Can be changed to "debug" for verbose testing
 		ClientConfig: config.ClientConfig{
 			SeedType:  types.NOOP,
 			ShootType: types.NOOP,

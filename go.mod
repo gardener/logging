@@ -13,7 +13,7 @@ tool (
 require (
 	github.com/fluent/fluent-bit-go v0.0.0-20230731091245-a7a013e2473c
 	github.com/gardener/gardener v1.132.1
-	github.com/go-kit/log v0.2.1
+	github.com/go-logr/logr v1.4.3
 	github.com/go-viper/mapstructure/v2 v2.4.0
 	github.com/joncrlsn/dque v0.0.0-20241024143830-7723fd131a64
 	github.com/onsi/ginkgo/v2 v2.27.1
@@ -23,7 +23,6 @@ require (
 	github.com/spf13/cobra v1.10.1
 	github.com/spf13/pflag v1.0.10
 	github.com/vladimirvivien/gexe v0.5.0
-	github.com/weaveworks/common v0.0.0-20230728070032-dd9e68f319d5
 	k8s.io/api v0.34.2
 	k8s.io/apimachinery v0.34.2
 	k8s.io/client-go v0.34.2
@@ -117,8 +116,6 @@ require (
 	github.com/ghostiam/protogetter v0.3.17 // indirect
 	github.com/go-critic/go-critic v0.14.2 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.3 // indirect
-	github.com/go-logfmt/logfmt v0.6.0 // indirect
-	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-logr/zapr v1.3.0 // indirect
 	github.com/go-openapi/errors v0.22.3 // indirect
@@ -293,7 +290,6 @@ require (
 	github.com/uudashr/iface v1.4.1 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
-	github.com/weaveworks/promrus v1.2.0 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/xen0n/gosmopolitan v1.3.0 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect

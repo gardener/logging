@@ -7,12 +7,13 @@ package client
 import (
 	"time"
 
-	"github.com/go-kit/log"
+	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 
 	"github.com/gardener/logging/pkg/config"
+	"github.com/gardener/logging/pkg/log"
 	"github.com/gardener/logging/pkg/metrics"
 )
 
@@ -20,7 +21,7 @@ var _ = Describe("NoopClient", func() {
 	var (
 		outputClient OutputClient
 		cfg          config.Config
-		logger       log.Logger
+		logger       logr.Logger
 	)
 
 	BeforeEach(func() {
@@ -54,7 +55,7 @@ var _ = Describe("NoopClient", func() {
 		})
 
 		It("should work with nil logger", func() {
-			testClient, err := NewNoopClient(cfg, nil)
+			testClient, err := NewNoopClient(cfg, logger)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(testClient).NotTo(BeNil())
 		})
