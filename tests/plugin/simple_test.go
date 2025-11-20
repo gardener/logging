@@ -21,7 +21,7 @@ var _ = Describe("Simple Plugin Test", func() {
 		logger := log.NewNopLogger()
 		cfg := config.Config{
 			ClientConfig: config.ClientConfig{
-				SeedType: types.NOOP,
+				SeedType: types.NOOP.String(),
 			},
 			OTLPConfig: config.OTLPConfig{
 				Endpoint: "http://test:4318",

@@ -222,7 +222,7 @@ func processClientTypes(config *Config, configMap map[string]any) error {
 		if t == types.UNKNOWN {
 			return fmt.Errorf("invalid SeedType: %s", seedType)
 		}
-		config.ClientConfig.SeedType = t
+		config.ClientConfig.SeedType = t.String()
 	}
 
 	if shootType, ok := configMap["ShootType"].(string); ok && shootType != "" {
@@ -230,7 +230,7 @@ func processClientTypes(config *Config, configMap map[string]any) error {
 		if t == types.UNKNOWN {
 			return fmt.Errorf("invalid ShootType: %s", shootType)
 		}
-		config.ClientConfig.ShootType = t
+		config.ClientConfig.ShootType = t.String()
 	}
 
 	return nil
@@ -536,8 +536,8 @@ func defaultConfig() (*Config, error) {
 			CtlSyncTimeout:              60 * time.Second,
 		},
 		ClientConfig: ClientConfig{
-			SeedType:     types.NOOP,
-			ShootType:    types.NOOP,
+			SeedType:     types.NOOP.String(),
+			ShootType:    types.NOOP.String(),
 			BufferConfig: DefaultBufferConfig,
 		},
 		PluginConfig: PluginConfig{
