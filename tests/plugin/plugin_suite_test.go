@@ -7,11 +7,11 @@ package plugin_test
 import (
 	"testing"
 
-	ginkgov2 "github.com/onsi/ginkgo/v2"
-	"github.com/onsi/gomega"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 func TestOutputPlugin(t *testing.T) {
-	gomega.RegisterFailHandler(ginkgov2.Fail)
-	ginkgov2.RunSpecs(t, "Plugin Test")
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Plugin Test")
 }
