@@ -78,7 +78,11 @@ func (ctl *controller) newControllerClient(clusterName string, clientConf *confi
 		"name", clusterName,
 	)
 
-	shootClient, err := client.NewClient(*clientConf, client.WithTarget(client.Shoot), client.WithLogger(ctl.logger))
+	opt := []client.Option{client.WithTarget(client.Shoot), client.WithLogger(ctl.logger)}
+	if clientConf.ClientConfig.BufferConfig.Buffer {
+		opt = append(opt, client.WithDque(true))
+	}
+	shootClient, err := client.NewClient(*clientConf, opt...)
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +136,7 @@ func (ctl *controller) createControllerClient(clusterName string, shoot *gardene
 		return
 	}
 	ctl.clients[clusterName] = c
-	ctl.logger.Info("added controller client", "cluster",
+	ctl.logger.Info("added controller client",
 		"cluster", clusterName,
 		"mute_shoot_client", c.shootTarget.mute,
 		"mute_seed_client", c.seedTarget.mute,
