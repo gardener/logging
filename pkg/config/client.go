@@ -8,14 +8,12 @@ package config
 import (
 	"crypto/tls"
 	"time"
-
-	"github.com/gardener/logging/pkg/types"
 )
 
 // ClientConfig holds configuration for the chain of clients.
 type ClientConfig struct {
-	SeedType  types.Type `mapstructure:"SeedType"`  // e.g., "OTLPGRPC"
-	ShootType types.Type `mapstructure:"ShootType"` // e.g., "STDOUT"
+	SeedType  string `mapstructure:"SeedType"`  // e.g., "OTLPGRPC"
+	ShootType string `mapstructure:"ShootType"` // e.g., "STDOUT"
 
 	// BufferConfig holds the configuration for the buffered client
 	BufferConfig BufferConfig `mapstructure:",squash"`

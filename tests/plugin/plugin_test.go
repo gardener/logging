@@ -240,8 +240,8 @@ func createPluginConfig() *config.Config {
 	return &config.Config{
 		LogLevel: "info", // Can be changed to "debug" for verbose testing
 		ClientConfig: config.ClientConfig{
-			SeedType:  types.NOOP,
-			ShootType: types.NOOP,
+			SeedType:  types.NOOP.String(),
+			ShootType: types.NOOP.String(),
 			BufferConfig: config.BufferConfig{
 				Buffer: false, // Direct mode, no buffering
 				DqueConfig: config.DqueConfig{

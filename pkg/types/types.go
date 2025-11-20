@@ -35,7 +35,7 @@ func GetClientTypeFromString(clientType string) Type {
 	case "OTLPHTTP":
 		return OTLPHTTP
 	default:
-		return UNKNOWN
+		return NOOP
 	}
 }
 
