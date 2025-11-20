@@ -11,13 +11,11 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"reflect"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/go-viper/mapstructure/v2"
-	"github.com/weaveworks/common/logging"
 
 	"github.com/gardener/logging/pkg/types"
 )
@@ -44,7 +42,7 @@ type Config struct {
 	ControllerConfig ControllerConfig `mapstructure:",squash"`
 	PluginConfig     PluginConfig     `mapstructure:",squash"`
 	OTLPConfig       OTLPConfig       `mapstructure:",squash"`
-	LogLevel         logging.Level    `mapstructure:"LogLevel"`
+	LogLevel         string           `mapstructure:"LogLevel"` // "debug", "info", "warn", "error"
 	Pprof            bool             `mapstructure:"Pprof"`
 }
 
@@ -64,7 +62,6 @@ func ParseConfig(configMap map[string]any) (*Config, error) {
 			mapstructure.StringToSliceHookFunc(","),
 			mapstructure.StringToBoolHookFunc(),
 			mapstructure.StringToIntHookFunc(),
-			logLevelHookFunc(),
 		),
 		WeaklyTypedInput: true,
 		Result:           config,
@@ -98,35 +95,6 @@ func ParseConfigFromStringMap(configMap map[string]string) (*Config, error) {
 	}
 
 	return ParseConfig(interfaceMap)
-}
-
-// Custom decode hook functions for mapstructure
-
-// logLevelHookFunc converts string to logging.Level
-func logLevelHookFunc() mapstructure.DecodeHookFunc {
-	return mapstructure.DecodeHookFuncType(
-		func(f reflect.Type, t reflect.Type, data any) (any, error) {
-			if f.Kind() != reflect.String || t != reflect.TypeOf(logging.Level{}) {
-				return data, nil
-			}
-
-			str, ok := data.(string)
-			if !ok {
-				return data, nil
-			}
-
-			if str == "" {
-				return data, nil
-			}
-
-			var level logging.Level
-			if err := level.Set(str); err != nil {
-				return nil, fmt.Errorf("invalid LogLevel: %w", err)
-			}
-
-			return level, nil
-		},
-	)
 }
 
 // Helper functions for common processing patterns
@@ -558,10 +526,7 @@ func buildRetryConfig(config *Config) error {
 
 func defaultConfig() (*Config, error) {
 	// Set default client config
-	var defaultLevel logging.Level
-	if err := defaultLevel.Set("info"); err != nil {
-		return nil, fmt.Errorf("failed to set default log level: %w", err)
-	}
+	defaultLevel := "info"
 
 	config := &Config{
 		ControllerConfig: ControllerConfig{

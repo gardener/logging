@@ -5,12 +5,10 @@
 package controller
 
 import (
-	"fmt"
 	"time"
 
 	gardenercorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
-	"github.com/go-kit/log"
-	"github.com/go-kit/log/level"
+	"github.com/go-logr/logr"
 	giterrors "github.com/pkg/errors"
 
 	"github.com/gardener/logging/pkg/client"
@@ -44,7 +42,7 @@ type controllerClient struct {
 	shootTarget target
 	seedTarget  target
 	state       clusterState
-	logger      log.Logger
+	logger      logr.Logger
 	name        string
 }
 
@@ -75,8 +73,8 @@ func (ctl *controller) GetClient(name string) (client.OutputClient, bool) {
 }
 
 func (ctl *controller) newControllerClient(clusterName string, clientConf *config.Config) (*controllerClient, error) {
-	_ = level.Debug(ctl.logger).Log(
-		"msg", "creating new controller client",
+	ctl.logger.V(1).Info(
+		"creating new controller client",
 		"name", clusterName,
 	)
 
@@ -112,7 +110,7 @@ func (ctl *controller) createControllerClient(clusterName string, shoot *gardene
 
 	if c, ok := ctl.clients[clusterName]; ok {
 		ctl.updateControllerClientState(c, shoot)
-		_ = level.Info(ctl.logger).Log("msg", fmt.Sprintf("controller client for cluster %v already exists", clusterName))
+		ctl.logger.Info("controller client already exists", "cluster", clusterName)
 
 		return
 	}
@@ -120,10 +118,7 @@ func (ctl *controller) createControllerClient(clusterName string, shoot *gardene
 	c, err := ctl.newControllerClient(clusterName, clientConf)
 	if err != nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorFailedToMakeOutputClient).Inc()
-		_ = level.Error(ctl.logger).Log(
-			"msg", fmt.Sprintf("failed to make new vali client for cluster %v", clusterName),
-			"error", err.Error(),
-		)
+		ctl.logger.Error(err, "failed to create controller client", "cluster", clusterName)
 
 		return
 	}
@@ -137,8 +132,7 @@ func (ctl *controller) createControllerClient(clusterName string, shoot *gardene
 		return
 	}
 	ctl.clients[clusterName] = c
-	_ = level.Info(ctl.logger).Log(
-		"msg", "added controller client",
+	ctl.logger.Info("added controller client", "cluster",
 		"cluster", clusterName,
 		"mute_shoot_client", c.shootTarget.mute,
 		"mute_seed_client", c.seedTarget.mute,
@@ -161,10 +155,7 @@ func (ctl *controller) deleteControllerClient(clusterName string) {
 	if ok && c != nil {
 		go c.Stop()
 	}
-	_ = level.Info(ctl.logger).Log(
-		"msg", "deleted controller client",
-		"cluster", clusterName,
-	)
+	ctl.logger.Info("client deleted", "cluster", clusterName)
 }
 
 func (*controller) updateControllerClientState(c Client, shoot *gardenercorev1beta1.Shoot) {
@@ -250,15 +241,15 @@ func (c *controllerClient) SetState(state clusterState) {
 		c.shootTarget.mute = !c.shootTarget.conf.SendLogsWhenIsInCreationState
 		c.seedTarget.mute = !c.seedTarget.conf.SendLogsWhenIsInCreationState
 	default:
-		_ = level.Error(c.logger).Log(
-			"msg", fmt.Sprintf("Unknown state %v for cluster %v. The client state will not be changed", state, c.name),
+		c.logger.Error(nil, "unknown state for cluster, client state will not be changed",
+			"state", state,
+			"cluster", c.name,
 		)
 
 		return
 	}
 
-	_ = level.Debug(c.logger).Log(
-		"msg", "cluster state changed",
+	c.logger.V(1).Info("cluster state changed",
 		"cluster", c.name,
 		"oldState", c.state,
 		"newState", state,

@@ -5,20 +5,14 @@
 package client
 
 import (
-	"os"
-
-	"github.com/go-kit/log"
-	"github.com/go-kit/log/level"
+	"github.com/go-logr/logr"
 	ginkgov2 "github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
-	"github.com/weaveworks/common/logging"
 
 	"github.com/gardener/logging/pkg/config"
 )
 
 var _ = ginkgov2.Describe("Client", func() {
-	var infoLogLevel logging.Level
-	_ = infoLogLevel.Set("info")
 	conf := config.Config{
 		ClientConfig: config.ClientConfig{
 			BufferConfig: config.BufferConfig{
@@ -39,15 +33,14 @@ var _ = ginkgov2.Describe("Client", func() {
 			},
 			DynamicHostRegex: "shoot--",
 		},
-		LogLevel: infoLogLevel,
+		LogLevel: "info",
 		ControllerConfig: config.ControllerConfig{
 			DynamicHostPrefix: "localhost",
 			DynamicHostSuffix: ":4317",
 		},
 	}
 
-	logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
-	logger = level.NewFilter(logger, infoLogLevel.Gokit)
+	logger := logr.Discard()
 
 	ginkgov2.Describe("NewClient", func() {
 		ginkgov2.It("should create a client", func() {

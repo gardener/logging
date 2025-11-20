@@ -14,7 +14,7 @@ import (
 
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
-	"github.com/go-kit/log"
+	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	promtest "github.com/prometheus/client_golang/prometheus/testutil"
@@ -26,13 +26,14 @@ import (
 	fakeclientset "github.com/gardener/logging/pkg/cluster/clientset/versioned/fake"
 	"github.com/gardener/logging/pkg/cluster/informers/externalversions"
 	"github.com/gardener/logging/pkg/config"
+	"github.com/gardener/logging/pkg/log"
 	"github.com/gardener/logging/pkg/metrics"
 )
 
 var _ = Describe("OutputPlugin plugin", func() {
 	var (
 		cfg    *config.Config
-		logger log.Logger
+		logger logr.Logger
 	)
 
 	BeforeEach(func() {

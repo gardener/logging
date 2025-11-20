@@ -6,28 +6,23 @@ package controller
 
 import (
 	"fmt"
-	"os"
 	"sync"
 	"time"
 
-	"github.com/go-kit/log"
-	"github.com/go-kit/log/level"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/prometheus/client_golang/prometheus/testutil"
-	"github.com/weaveworks/common/logging"
 
 	"github.com/gardener/logging/pkg/client"
 	"github.com/gardener/logging/pkg/config"
+	"github.com/gardener/logging/pkg/log"
 	"github.com/gardener/logging/pkg/metrics"
 )
 
 var _ = Describe("Controller Client", func() {
 	var (
 		ctlClient  controllerClient
-		logLevel   logging.Level
-		_          = logLevel.Set("error")
-		logger     = level.NewFilter(log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr)), logLevel.Gokit)
+		logger     = log.NewLogger("info")
 		timestamp1 = time.Now()
 		timestamp2 = time.Now().Add(time.Second)
 		line1      = "testline1"

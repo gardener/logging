@@ -10,8 +10,7 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/go-kit/log"
-	"github.com/go-kit/log/level"
+	"github.com/go-logr/logr"
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/gardener/logging/pkg/client"
@@ -32,11 +31,11 @@ type logging struct {
 	dynamicHostRegexp               *regexp.Regexp
 	extractKubernetesMetadataRegexp *regexp.Regexp
 	controller                      controller.Controller
-	logger                          log.Logger
+	logger                          logr.Logger
 }
 
 // NewPlugin returns OutputPlugin output plugin
-func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger log.Logger) (OutputPlugin, error) {
+func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger logr.Logger) (OutputPlugin, error) {
 	var err error
 	l := &logging{cfg: cfg, logger: logger}
 
@@ -62,8 +61,7 @@ func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger lo
 		return nil, err
 	}
 
-	_ = level.Info(logger).Log(
-		"msg", "logging plugin created",
+	logger.Info("logging plugin created",
 		"seed_client_url", l.seedClient.GetEndPoint(),
 		"seed_queue_name", cfg.ClientConfig.BufferConfig.DqueConfig.QueueName,
 	)
@@ -108,7 +106,7 @@ func (l *logging) SendRecord(r map[any]any, ts time.Time) error {
 	metrics.IncomingLogs.WithLabelValues(host).Inc()
 
 	if len(records) == 0 {
-		_ = level.Debug(l.logger).Log("msg", "no records left after removing keys", "host", dynamicHostName)
+		l.logger.Info("no records left after removing keys", "host", dynamicHostName)
 
 		return nil
 	}
@@ -135,11 +133,7 @@ func (l *logging) SendRecord(r map[any]any, ts time.Time) error {
 
 	err = l.send(c, ts, string(js))
 	if err != nil {
-		_ = level.Error(l.logger).Log(
-			"msg", "error sending record to logging",
-			"err", err,
-			"host", dynamicHostName,
-		)
+		l.logger.Error(err, "error sending record to logging", "host", dynamicHostName)
 		metrics.Errors.WithLabelValues(metrics.ErrorSendRecord).Inc()
 
 		return err
@@ -153,8 +147,7 @@ func (l *logging) Close() {
 	if l.controller != nil {
 		l.controller.Stop()
 	}
-	_ = level.Info(l.logger).Log(
-		"msg", "logging plugin stopped",
+	l.logger.Info("logging plugin stopped",
 		"seed_client_url", l.seedClient.GetEndPoint(),
 		"seed_queue_name", l.cfg.ClientConfig.BufferConfig.DqueConfig.QueueName,
 	)

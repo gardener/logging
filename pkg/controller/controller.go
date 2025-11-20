@@ -14,8 +14,7 @@ import (
 	extensioncontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	gardenercorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
-	"github.com/go-kit/log"
-	"github.com/go-kit/log/level"
+	"github.com/go-logr/logr"
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/gardener/logging/pkg/client"
@@ -37,13 +36,13 @@ type controller struct {
 	conf       *config.Config
 	lock       sync.RWMutex
 	clients    map[string]Client
-	logger     log.Logger
+	logger     logr.Logger
 	informer   cache.SharedIndexInformer
 	r          cache.ResourceEventHandlerRegistration
 }
 
 // NewController return Controller interface
-func NewController(informer cache.SharedIndexInformer, conf *config.Config, l log.Logger) (Controller, error) {
+func NewController(informer cache.SharedIndexInformer, conf *config.Config, l logr.Logger) (Controller, error) {
 	var err error
 	var seedClient client.OutputClient
 
@@ -102,7 +101,7 @@ func (ctl *controller) Stop() {
 	}
 
 	if err := ctl.informer.RemoveEventHandler(ctl.r); err != nil {
-		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("failed to remove event handler: %v", err))
+		ctl.logger.Error(err, "failed to remove event handler")
 	}
 }
 
@@ -110,23 +109,20 @@ func (ctl *controller) Stop() {
 func (ctl *controller) addFunc(obj any) {
 	cluster, ok := obj.(*extensionsv1alpha1.Cluster)
 	if !ok {
-		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("%v is not a cluster", obj))
+		ctl.logger.Error(nil, "object is not a cluster", "obj", obj)
 
 		return
 	}
 
 	shoot, err := extensioncontroller.ShootFromCluster(cluster)
 	if err != nil {
-		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("can't extract shoot from cluster %v", cluster.Name))
+		ctl.logger.Error(err, "can't extract shoot from cluster", "cluster", cluster.Name)
 
 		return
 	}
 
 	if ctl.isAllowedShoot(shoot) && !ctl.isDeletedShoot(shoot) {
-		_ = level.Debug(ctl.logger).Log(
-			"msg", "adding cluster",
-			"cluster", cluster.Name,
-		)
+		ctl.logger.V(1).Info("adding cluster", "cluster", cluster.Name)
 		ctl.createControllerClient(cluster.Name, shoot)
 	}
 }
@@ -134,32 +130,32 @@ func (ctl *controller) addFunc(obj any) {
 func (ctl *controller) updateFunc(oldObj any, newObj any) {
 	oldCluster, ok := oldObj.(*extensionsv1alpha1.Cluster)
 	if !ok {
-		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("%v is not a cluster", oldCluster))
+		ctl.logger.Error(nil, "old object is not a cluster", "obj", oldCluster)
 
 		return
 	}
 
 	newCluster, ok := newObj.(*extensionsv1alpha1.Cluster)
 	if !ok {
-		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("%v is not a cluster", newCluster))
+		ctl.logger.Error(nil, "new object is not a cluster", "obj", newCluster)
 
 		return
 	}
 
 	if bytes.Equal(oldCluster.Spec.Shoot.Raw, newCluster.Spec.Shoot.Raw) {
-		_ = level.Debug(ctl.logger).Log("msg", "reconciliation skipped, shoot is the same", "cluster", newCluster.Name)
+		ctl.logger.V(1).Info("reconciliation skipped, shoot is the same", "cluster", newCluster.Name)
 
 		return
 	}
 
 	shoot, err := extensioncontroller.ShootFromCluster(newCluster)
 	if err != nil {
-		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("can't extract shoot from cluster %v", newCluster.Name))
+		ctl.logger.Error(err, "can't extract shoot from cluster", "cluster", newCluster.Name)
 
 		return
 	}
 
-	_ = level.Debug(ctl.logger).Log("msg", "reconciling", "cluster", newCluster.Name)
+	ctl.logger.V(1).Info("reconciling", "cluster", newCluster.Name)
 
 	_client, ok := ctl.clients[newCluster.Name]
 	// The client exists in the list, so we need to update it.
@@ -172,9 +168,7 @@ func (ctl *controller) updateFunc(oldObj any, newObj any) {
 		}
 		// Sanity check
 		if _client == nil {
-			_ = level.Error(ctl.logger).Log(
-				"msg", fmt.Sprintf("Nil client for cluster: %v, creating...", oldCluster.Name),
-			)
+			ctl.logger.Error(nil, "nil client for cluster, creating...", "cluster", oldCluster.Name)
 			ctl.createControllerClient(newCluster.Name, shoot)
 
 			return
@@ -182,10 +176,7 @@ func (ctl *controller) updateFunc(oldObj any, newObj any) {
 
 		ctl.updateControllerClientState(_client, shoot)
 	} else if ctl.isAllowedShoot(shoot) {
-		_ = level.Info(ctl.logger).Log(
-			"msg", "client is not found in controller, creating...",
-			"cluster", newCluster.Name,
-		)
+		ctl.logger.Info("client is not found in controller, creating...", "cluster", newCluster.Name)
 		ctl.createControllerClient(newCluster.Name, shoot)
 	}
 }
@@ -193,7 +184,7 @@ func (ctl *controller) updateFunc(oldObj any, newObj any) {
 func (ctl *controller) delFunc(obj any) {
 	cluster, ok := obj.(*extensionsv1alpha1.Cluster)
 	if !ok {
-		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("%v is not a cluster", obj))
+		ctl.logger.Error(nil, "object is not a cluster", "obj", obj)
 
 		return
 	}
@@ -208,13 +199,10 @@ func (ctl *controller) updateClientConfig(clusterName string) *config.Config {
 
 	// Construct the client URL: DynamicHostPrefix + clusterName + DynamicHostSuffix
 	urlstr := fmt.Sprintf("%s%s%s", ctl.conf.ControllerConfig.DynamicHostPrefix, clusterName, suffix)
-	_ = level.Debug(ctl.logger).Log("msg", "set endpoint", "endpoint", urlstr, "cluster", clusterName)
+	ctl.logger.V(1).Info("set endpoint", "endpoint", urlstr, "cluster", clusterName)
 
 	if len(urlstr) == 0 {
-		_ = level.Error(ctl.logger).Log(
-			"msg",
-			fmt.Sprintf("incorect endpoint: %v", clusterName),
-		)
+		ctl.logger.Error(nil, "incorrect endpoint", "cluster", clusterName)
 
 		return nil
 	}
