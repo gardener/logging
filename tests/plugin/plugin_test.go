@@ -34,6 +34,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"sync"
 	"time"
 
@@ -72,6 +73,7 @@ type testContext struct {
 	logger          logr.Logger
 	clusters        []*extensionsv1alpha1.Cluster
 	stopCh          chan struct{}
+	tmpDir          string
 }
 
 var _ = Describe("Plugin Integration Test", Ordered, func() {
@@ -186,14 +188,17 @@ var _ = Describe("Plugin Integration Test", Ordered, func() {
 
 // setupTestContext initializes the test context with all required components
 func setupTestContext() *testContext {
+	tmpDir, err := os.MkdirTemp("", "plugin-test-")
+	Expect(err).NotTo(HaveOccurred(), "temporary directory creation should succeed")
 	ctx := &testContext{
 		logger:   pkglog.NewNopLogger(),
 		clusters: make([]*extensionsv1alpha1.Cluster, 0, numberOfClusters),
 		stopCh:   make(chan struct{}),
+		tmpDir:   tmpDir,
 	}
 
 	// Create configuration
-	ctx.cfg = createPluginConfig()
+	ctx.cfg = createPluginConfig(tmpDir)
 
 	// Create fake Kubernetes client
 	ctx.fakeClient = fakeclientset.NewSimpleClientset()
@@ -212,7 +217,6 @@ func setupTestContext() *testContext {
 	Expect(synced).To(BeTrue(), "informer cache should sync")
 
 	// Create plugin
-	var err error
 	ctx.plugin, err = plugin.NewPlugin(ctx.informer, ctx.cfg, ctx.logger)
 	Expect(err).NotTo(HaveOccurred(), "plugin creation should succeed")
 	Expect(ctx.plugin).NotTo(BeNil(), "plugin should not be nil")
@@ -233,17 +237,25 @@ func cleanup(ctx *testContext) {
 	if ctx.stopCh != nil {
 		close(ctx.stopCh)
 	}
+	err := os.RemoveAll(ctx.tmpDir)
+	Expect(err).NotTo(HaveOccurred(), "temporary directory cleanup should succeed")
 }
 
 // createPluginConfig creates a test configuration for the plugin
-func createPluginConfig() *config.Config {
+func createPluginConfig(tmpDir string) *config.Config {
 	return &config.Config{
 		LogLevel: "info", // Can be changed to "debug" for verbose testing
 		ClientConfig: config.ClientConfig{
 			SeedType:  types.NOOP.String(),
 			ShootType: types.NOOP.String(),
 			BufferConfig: config.BufferConfig{
-				Buffer: false, // Direct mode, no buffering
+				Buffer: true,
+				DqueConfig: config.DqueConfig{
+					QueueDir:         tmpDir,
+					QueueSegmentSize: 500,
+					QueueSync:        false,
+					QueueName:        "dque",
+				},
 			},
 		},
 		OTLPConfig: config.OTLPConfig{
