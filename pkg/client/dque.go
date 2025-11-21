@@ -41,7 +41,7 @@ type dqueClient struct {
 	vali      OutputClient
 	wg        sync.WaitGroup
 	url       string
-	isStooped bool
+	isStopped bool
 	lock      sync.Mutex
 }
 
@@ -127,7 +127,7 @@ func (c *dqueClient) dequeuer() {
 		}
 
 		c.lock.Lock()
-		if c.isStooped && c.queue.Size() <= 0 {
+		if c.isStopped && c.queue.Size() <= 0 {
 			c.lock.Unlock()
 
 			return
@@ -162,7 +162,7 @@ func (c *dqueClient) StopWait() {
 func (c *dqueClient) Handle(ls any, t time.Time, s string) error {
 	// Here we don't need any synchronization because the worst thing is to
 	// receive some more logs which would be dropped anyway.
-	if c.isStooped {
+	if c.isStopped {
 		return nil
 	}
 
@@ -185,7 +185,7 @@ func (e *dqueEntry) String() string {
 
 func (c *dqueClient) stopQue() error {
 	c.lock.Lock()
-	c.isStooped = true
+	c.isStopped = true
 	// In case the dequeuer is blocked on empty queue.
 	if c.queue.Size() == 0 {
 		c.lock.Unlock() // Nothing to wait for
