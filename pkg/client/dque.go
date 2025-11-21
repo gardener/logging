@@ -43,6 +43,7 @@ type dqueClient struct {
 	url       string
 	isStopped bool
 	lock      sync.Mutex
+	turboOn   bool
 }
 
 func (c *dqueClient) GetEndPoint() string {
@@ -76,7 +77,9 @@ func NewDque(cfg config.Config, logger log.Logger, newClientFunc func(cfg config
 	q.url = cfg.ClientConfig.CredativValiConfig.URL.String()
 
 	if !cfg.ClientConfig.BufferConfig.DqueConfig.QueueSync {
+		q.turboOn = true
 		if err = q.queue.TurboOn(); err != nil {
+			q.turboOn = false
 			_ = level.Error(q.logger).Log("msg", "cannot enable turbo mode for queue", "err", err)
 		}
 	}
@@ -97,6 +100,9 @@ func NewDque(cfg config.Config, logger log.Logger, newClientFunc func(cfg config
 func (c *dqueClient) dequeuer() {
 	defer c.wg.Done()
 
+	timer := time.NewTicker(30 * time.Second)
+	defer timer.Stop()
+
 	for {
 		// Dequeue the next item in the queue
 		entry, err := c.queue.DequeueBlock()
@@ -110,6 +116,22 @@ func (c *dqueClient) dequeuer() {
 
 				continue
 			}
+		}
+
+		// Update queue size metric
+
+		select {
+		case <-timer.C:
+			size := c.queue.Size()
+			metrics.DqueSize.WithLabelValues(c.queue.Name).Set(float64(size))
+			if c.turboOn {
+				if err = c.queue.TurboSync(); err != nil {
+					_ = c.logger.Log("msg", "turbo sync", "err", err)
+				}
+			}
+
+		default:
+			// Do nothing and continue
 		}
 
 		// Assert type of the response to an Item pointer so we can work with it
