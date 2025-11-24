@@ -9,7 +9,7 @@ JOBS                  ?= 10 # Number of parallel jobs per cluster
 LOGS                  ?= 1000 # Number of log lines per job
 LOGS_DELAY            ?= 25s # Delay between log messages
 
-SCENARIO              ?= "shoot" # Test scenario: "shoot" or "seed"
+SCENARIO              ?= shoot # Test scenario: "shoot" or "seed"
 
 LOGCLI_BIN            := $(DIR)/bin/logcli
 
