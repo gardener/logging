@@ -98,7 +98,7 @@ function shoot {
 
 function seed {
       local namespace="seed--logging--dev"
-      create_namespaces $namespace
+      create_namespaces "$namespace"
       create_jobs $namespace
       echo "Generated seed cluster"
 }
