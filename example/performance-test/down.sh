@@ -60,4 +60,6 @@ elif [ "$scenario" == "seed" ]; then
 else
     echo "Unknown scenario: $scenario"
     exit 1
+    echo "Unknown scenario: $scenario"
+    exit 1
 fi
