@@ -675,7 +675,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "sum(fluentbit_vali_gardener_incoming_logs_total{pod=~\"$pod\",host=~\"$host\"})",
+          "expr": "sum(fluentbit_gardener_incoming_logs_total{pod=~\"$pod\",host=~\"$host\"})",
           "interval": "",
           "legendFormat": "",
           "queryType": "randomWalk",
@@ -736,7 +736,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "sum(fluentbit_vali_gardener_forwarded_logs_total{pod=~\"$pod\",host=~\".+$host.+\"})",
+          "expr": "sum(fluentbit_gardener_forwarded_logs_total{pod=~\"$pod\",host=~\".+$host.+\"})",
           "interval": "",
           "legendFormat": "",
           "queryType": "randomWalk",
@@ -813,7 +813,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "sum(fluentbit_vali_gardener_errors_total{pod=~\"$pod\",host=~\"$host\"})",
+          "expr": "sum(fluentbit_gardener_errors_total{pod=~\"$pod\",host=~\"$host\"})",
           "interval": "",
           "legendFormat": "",
           "queryType": "randomWalk",
@@ -874,7 +874,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "sum(fluentbit_vali_gardener_dropped_logs_total{pod=~\"$pod\",host=~\"$host\"})",
+          "expr": "sum(fluentbit_gardener_dropped_logs_total{pod=~\"$pod\",host=~\"$host\"})",
           "interval": "",
           "legendFormat": "",
           "queryType": "randomWalk",
@@ -935,7 +935,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "sum(fluentbit_vali_gardener_logs_without_metadata_total{pod=~\"$pod\",host=~\"$host\"})",
+          "expr": "sum(fluentbit_gardener_logs_without_metadata_total{pod=~\"$pod\",host=~\"$host\"})",
           "interval": "",
           "legendFormat": "",
           "queryType": "randomWalk",
@@ -1013,7 +1013,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "fluentbit_vali_gardener_dque_size{pod=~\"$pod\",name=~\"$host\"}",
+          "expr": "fluentbit_gardener_dque_size{pod=~\"$pod\",name=~\"$host\"}",
           "instant": false,
           "interval": "",
           "legendFormat": "{{pod}}/{{name}}",
@@ -1092,7 +1092,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "sum(rate(fluentbit_vali_gardener_incoming_logs_total{pod=~\"$pod\",host=~\"$host\"}[$__rate_interval])) by (host)",
+          "expr": "sum(rate(fluentbit_gardener_incoming_logs_total{pod=~\"$pod\",host=~\"$host\"}[$__rate_interval])) by (host)",
           "instant": false,
           "interval": "",
           "legendFormat": "{{host}}",
@@ -1173,7 +1173,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "sum(rate(fluentbit_vali_gardener_forwarded_logs_total{pod=~\"$pod\",host=~\".+$host.+\"}[$__rate_interval])) by (host)",
+          "expr": "sum(rate(fluentbit_gardener_forwarded_logs_total{pod=~\"$pod\",host=~\".+$host.+\"}[$__rate_interval])) by (host)",
           "instant": false,
           "interval": "",
           "legendFormat": "{{host}}",
@@ -1254,7 +1254,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "sum(rate(fluentbit_vali_gardener_errors_total{pod=~\"$pod\",host=~\"$host\"}[$__rate_interval])) by (host)",
+          "expr": "sum(rate(fluentbit_gardener_errors_total{pod=~\"$pod\",host=~\"$host\"}[$__rate_interval])) by (host)",
           "instant": false,
           "interval": "",
           "legendFormat": "{{host}}",
@@ -1335,7 +1335,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "sum(rate(fluentbit_vali_gardener_dropped_logs_total{pod=~\"$pod\",host=~\"$host\"}[$__rate_interval])) by (host)",
+          "expr": "sum(rate(fluentbit_gardener_dropped_logs_total{pod=~\"$pod\",host=~\"$host\"}[$__rate_interval])) by (host)",
           "instant": false,
           "interval": "",
           "legendFormat": "{{host}}",
@@ -1416,7 +1416,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "sum(rate(fluentbit_vali_gardener_logs_without_metadata_total{pod=~\"$pod\",host=~\".*$host.*\"}[$__rate_interval])) by (host)",
+          "expr": "sum(rate(fluentbit_gardener_logs_without_metadata_total{pod=~\"$pod\",host=~\".*$host.*\"}[$__rate_interval])) by (host)",
           "instant": false,
           "interval": "",
           "legendFormat": "{{host}}",
@@ -1427,498 +1427,6 @@
       "timeShift": null,
       "title": "[Output Plugin] Logs without metadata Rate",
       "transformations": [],
-      "type": "timeseries"
-    },
-    {
-      "collapsed": false,
-      "datasource": null,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 43
-      },
-      "id": 92,
-      "panels": [],
-      "title": "ValiTail",
-      "type": "row"
-    },
-    {
-      "datasource": "prometheus",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 5,
-        "x": 0,
-        "y": 44
-      },
-      "id": 94,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "text": {},
-        "textMode": "auto"
-      },
-      "pluginVersion": "7.5.42",
-      "targets": [
-        {
-          "exemplar": true,
-          "expr": "sum(valitail_sent_entries_total{pod=~\"$pod\",host=~\"$url\"})",
-          "interval": "",
-          "legendFormat": "{{host}}",
-          "queryType": "randomWalk",
-          "refId": "A"
-        }
-      ],
-      "title": "ValiTail Sent Logs Total",
-      "type": "stat"
-    },
-    {
-      "datasource": "prometheus",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "graph": false,
-              "legend": false,
-              "tooltip": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": true
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "rps"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 19,
-        "x": 5,
-        "y": 44
-      },
-      "id": 97,
-      "options": {
-        "graph": {},
-        "legend": {
-          "calcs": [
-            "mean",
-            "sum"
-          ],
-          "displayMode": "table",
-          "placement": "right"
-        },
-        "tooltipOptions": {
-          "mode": "single"
-        }
-      },
-      "pluginVersion": "7.5.42",
-      "targets": [
-        {
-          "exemplar": true,
-          "expr": "sum(rate(valitail_sent_entries_total{pod=~\"$pod\",host=~\".+$host.+\"}[$__rate_interval])) by (host)",
-          "interval": "",
-          "legendFormat": "{{host}}",
-          "queryType": "randomWalk",
-          "refId": "A"
-        }
-      ],
-      "title": "ValiTail Client Send Logs",
-      "type": "timeseries"
-    },
-    {
-      "datasource": "prometheus",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "graph": false,
-              "legend": false,
-              "tooltip": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": true
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "decbytes"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 52
-      },
-      "id": 103,
-      "options": {
-        "graph": {},
-        "legend": {
-          "calcs": [
-            "mean",
-            "sum"
-          ],
-          "displayMode": "table",
-          "placement": "right"
-        },
-        "tooltipOptions": {
-          "mode": "single"
-        }
-      },
-      "pluginVersion": "7.5.42",
-      "targets": [
-        {
-          "exemplar": true,
-          "expr": "sum(rate(valitail_sent_bytes_total{pod=~\"$pod\",host=~\".+$host.+\"}[$__rate_interval])) by (host)",
-          "interval": "",
-          "legendFormat": "{{host}}",
-          "queryType": "randomWalk",
-          "refId": "A"
-        }
-      ],
-      "title": "ValiTail Send Bytes Rate",
-      "type": "timeseries"
-    },
-    {
-      "datasource": "prometheus",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "graph": false,
-              "legend": false,
-              "tooltip": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": true
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "decbytes"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 52
-      },
-      "id": 104,
-      "options": {
-        "graph": {},
-        "legend": {
-          "calcs": [
-            "mean",
-            "sum"
-          ],
-          "displayMode": "table",
-          "placement": "right"
-        },
-        "tooltipOptions": {
-          "mode": "single"
-        }
-      },
-      "pluginVersion": "7.5.42",
-      "targets": [
-        {
-          "exemplar": true,
-          "expr": "sum(rate(valitail_dropped_entries_total{pod=~\"$pod\",host=~\"$url\"}[$__rate_interval])) by (host)",
-          "interval": "",
-          "legendFormat": "{{host}}",
-          "queryType": "randomWalk",
-          "refId": "A"
-        }
-      ],
-      "title": "ValiTail Dropped Entries",
-      "type": "timeseries"
-    },
-    {
-      "datasource": "prometheus",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "graph": false,
-              "legend": false,
-              "tooltip": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": true
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "ms"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 60
-      },
-      "id": 99,
-      "options": {
-        "graph": {},
-        "legend": {
-          "calcs": [
-            "last"
-          ],
-          "displayMode": "table",
-          "placement": "right"
-        },
-        "tooltipOptions": {
-          "mode": "single"
-        }
-      },
-      "pluginVersion": "7.5.42",
-      "targets": [
-        {
-          "exemplar": true,
-          "expr": "histogram_quantile(0.50, sum(rate(valitail_request_duration_seconds_bucket{host=~\".+$host.+\",status_code=~\".+\"}[5m])) by (le,status_code,host)) * 1000 ",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "p50 / status code {{status_code}}",
-          "queryType": "randomWalk",
-          "refId": "C"
-        },
-        {
-          "exemplar": true,
-          "expr": "histogram_quantile(0.95, sum(rate(valitail_request_duration_seconds_bucket{host=~\".+$host.+\",status_code=~\".+\"}[5m])) by (le,status_code,host)) * 1000 ",
-          "interval": "",
-          "legendFormat": "p95 / status code {{status_code}}",
-          "queryType": "randomWalk",
-          "refId": "A"
-        },
-        {
-          "exemplar": true,
-          "expr": "histogram_quantile(0.99, sum(rate(valitail_request_duration_seconds_bucket{host=~\".+$host.+\",status_code=~\".+\"}[5m])) by (le,status_code,host))* 1000",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "p99  / status code {{status_code}}",
-          "queryType": "randomWalk",
-          "refId": "B"
-        }
-      ],
-      "title": "ValiTail Request Percentiles",
-      "type": "timeseries"
-    },
-    {
-      "datasource": "prometheus",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "graph": false,
-              "legend": false,
-              "tooltip": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": true
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "ms"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 60
-      },
-      "id": 101,
-      "options": {
-        "graph": {},
-        "legend": {
-          "calcs": [
-            "last"
-          ],
-          "displayMode": "table",
-          "placement": "right"
-        },
-        "tooltipOptions": {
-          "mode": "single"
-        }
-      },
-      "pluginVersion": "7.5.42",
-      "targets": [
-        {
-          "exemplar": true,
-          "expr": "sum(rate(valitail_request_duration_seconds_sum{pod=~\"$pod\",host=~\".+$host.+\"}[5m])) by (host)\n/\nsum(rate(valitail_request_duration_seconds_count{pod=~\"$pod\",host=~\".+$host.+\"}[5m])) by (host)\n* 1000",
-          "interval": "",
-          "legendFormat": "{{host}}",
-          "queryType": "randomWalk",
-          "refId": "A"
-        }
-      ],
-      "title": "ValiTail Avg Latency",
       "type": "timeseries"
     }
   ],
@@ -1971,7 +1479,7 @@
           "value": "$__all"
         },
         "datasource": "prometheus",
-        "definition": "label_values(fluentbit_vali_gardener_incoming_logs_total,host)",
+        "definition": "label_values(fluentbit_gardener_incoming_logs_total,host)",
         "description": "Output plugin host target",
         "error": null,
         "hide": 0,
@@ -1981,42 +1489,7 @@
         "name": "host",
         "options": [],
         "query": {
-          "query": "label_values(fluentbit_vali_gardener_incoming_logs_total,host)",
-          "refId": "StandardVariableQuery"
-        },
-        "refresh": 2,
-        "regex": "",
-        "skipUrlSync": false,
-        "sort": 0,
-        "tagValuesQuery": "",
-        "tags": [],
-        "tagsQuery": "",
-        "type": "query",
-        "useTags": false
-      },
-      {
-        "allValue": ".+",
-        "current": {
-          "selected": true,
-          "text": [
-            "All"
-          ],
-          "value": [
-            "$__all"
-          ]
-        },
-        "datasource": "prometheus",
-        "definition": "label_values(valitail_sent_entries_total, host)",
-        "description": null,
-        "error": null,
-        "hide": 2,
-        "includeAll": true,
-        "label": "Url",
-        "multi": true,
-        "name": "url",
-        "options": [],
-        "query": {
-          "query": "label_values(valitail_sent_entries_total, host)",
+          "query": "label_values(fluentbit_gardener_incoming_logs_total,host)",
           "refId": "StandardVariableQuery"
         },
         "refresh": 2,
