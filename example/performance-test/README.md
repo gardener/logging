@@ -31,7 +31,7 @@ sum(count_over_time({container_name=\"shoot--logging--dev-${i}\"}[24h]))
 ```
 
 The script polls aggregated logs count per namespace. (CLUSTERS)
-Expected count count ≈ `JOBS * LOGS` (after all pods finish and ingestion catches up).
+Expected count ≈ `JOBS * LOGS` (after all pods finish and ingestion catches up).
 
 ---
 
@@ -75,7 +75,7 @@ Deploys test components with the helm chart in `charts/fluent-bit-plugin`.
 * Installs prometheus and plutono with fluent-bit dashboard for monitoring.
 * Installs logging backend Vali simulating a seed cluster and shared Vali for all simulated shoots.
 
-### make up
+### make run
 
  Creates the test run workloads.
 
