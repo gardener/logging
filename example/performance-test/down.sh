@@ -49,7 +49,7 @@ function shoot {
 function seed {
   local namespace="seed--logging--dev"
   delete_jobs "$namespace"
-  delete_namespaces $namespace
+  delete_namespaces "$namespace"
 }
 
 scenario="${1:-shoot}"
