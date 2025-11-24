@@ -8,9 +8,9 @@ nameOverride="logging"
 
 
 function create_namespaces {
-    local shoot_namespace="shoot--logging--dev-${1}"
+    local namespace="${1}"
 
-    kubectl create namespace "$shoot_namespace" \
+    kubectl create namespace "$namespace" \
       --dry-run=client -o yaml | \
       kubectl apply -f -
 }
@@ -41,14 +41,14 @@ function create_clusters {
 }
 
 function create_jobs {
-    local shoot_namespace="shoot--logging--dev-${1}"
-
+    local namespace="${1}"
+    kubectl delete job logger --namespace "$namespace" --ignore-not-found >/dev/null 2>&1
     cat <<EOF | kubectl apply -f -
 kind: Job
 apiVersion: batch/v1
 metadata:
   name: logger
-  namespace: "$shoot_namespace"
+  namespace: "$namespace"
 spec:
   parallelism: $JOBS
   completions: $JOBS
@@ -71,26 +71,44 @@ kubectl wait \
   --namespace ${namespace} \
   statefulset/${nameOverride}-vali-shoot
 
+function shoot {
+    local clusters=${CLUSTERS:-10}
+    for ((i=1; i<=clusters; i++)); do
+        create_namespaces "shoot--logging--dev-${i}" &
+    done
+    wait
 
-for ((i=1; i<=CLUSTERS; i++)); do
-    create_namespaces "$i" &
-done
-wait
-
-for ((i=1; i<=CLUSTERS; i++)); do
-    create_services "$i" &
-done
-wait
+    for ((i=1; i<=clusters; i++)); do
+        create_services "$i" &
+    done
+    wait
 
 
-for ((i=1; i<=CLUSTERS; i++)); do
-    create_clusters "$i" &
-done
-wait
+    for ((i=1; i<=clusters; i++)); do
+        create_clusters "$i" &
+    done
+    wait
 
-for ((i=1; i<=CLUSTERS; i++)); do
-  create_jobs "$i" &
-done
-wait
+    for ((i=1; i<=clusters; i++)); do
+      create_jobs "shoot--logging--dev-${i}" &
+    done
+    wait
+    echo "Generated clusters clusters"
+}
 
-echo "Generated $CLUSTERS clusters"
+function seed {
+      local namespace="seed--logging--dev"
+      create_namespaces $namespace
+      create_jobs $namespace
+      echo "Generated seed cluster"
+}
+
+scenario="${1:-shoot}"
+if [ "$scenario" == "shoot" ]; then
+    shoot
+elif [ "$scenario" == "seed" ]; then
+    seed
+else
+    echo "Unknown scenario: $scenario"
+    exit 1
+fi
