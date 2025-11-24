@@ -46,7 +46,6 @@ var (
 		Name:      "dropped_logs_total",
 		Help:      "Total number of dropped logs by the output plugin",
 	}, []string{"host"})
-
 	// DqueSize is a prometheus metric which keeps the current size of the dque queue
 	DqueSize = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: namespace,
