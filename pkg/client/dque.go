@@ -41,8 +41,9 @@ type dqueClient struct {
 	vali      OutputClient
 	wg        sync.WaitGroup
 	url       string
-	isStooped bool
+	isStopped bool
 	lock      sync.Mutex
+	turboOn   bool
 }
 
 func (c *dqueClient) GetEndPoint() string {
@@ -76,7 +77,9 @@ func NewDque(cfg config.Config, logger log.Logger, newClientFunc func(cfg config
 	q.url = cfg.ClientConfig.CredativValiConfig.URL.String()
 
 	if !cfg.ClientConfig.BufferConfig.DqueConfig.QueueSync {
+		q.turboOn = true
 		if err = q.queue.TurboOn(); err != nil {
+			q.turboOn = false
 			_ = level.Error(q.logger).Log("msg", "cannot enable turbo mode for queue", "err", err)
 		}
 	}
@@ -97,6 +100,9 @@ func NewDque(cfg config.Config, logger log.Logger, newClientFunc func(cfg config
 func (c *dqueClient) dequeuer() {
 	defer c.wg.Done()
 
+	timer := time.NewTicker(30 * time.Second)
+	defer timer.Stop()
+
 	for {
 		// Dequeue the next item in the queue
 		entry, err := c.queue.DequeueBlock()
@@ -110,6 +116,22 @@ func (c *dqueClient) dequeuer() {
 
 				continue
 			}
+		}
+
+		// Update queue size metric
+
+		select {
+		case <-timer.C:
+			size := c.queue.Size()
+			metrics.DqueSize.WithLabelValues(c.queue.Name).Set(float64(size))
+			if c.turboOn {
+				if err = c.queue.TurboSync(); err != nil {
+					_ = c.logger.Log("msg", "turbo sync", "err", err)
+				}
+			}
+
+		default:
+			// Do nothing and continue
 		}
 
 		// Assert type of the response to an Item pointer so we can work with it
@@ -127,7 +149,7 @@ func (c *dqueClient) dequeuer() {
 		}
 
 		c.lock.Lock()
-		if c.isStooped && c.queue.Size() <= 0 {
+		if c.isStopped && c.queue.Size() <= 0 {
 			c.lock.Unlock()
 
 			return
@@ -162,7 +184,7 @@ func (c *dqueClient) StopWait() {
 func (c *dqueClient) Handle(ls any, t time.Time, s string) error {
 	// Here we don't need any synchronization because the worst thing is to
 	// receive some more logs which would be dropped anyway.
-	if c.isStooped {
+	if c.isStopped {
 		return nil
 	}
 
@@ -185,7 +207,7 @@ func (e *dqueEntry) String() string {
 
 func (c *dqueClient) stopQue() error {
 	c.lock.Lock()
-	c.isStooped = true
+	c.isStopped = true
 	// In case the dequeuer is blocked on empty queue.
 	if c.queue.Size() == 0 {
 		c.lock.Unlock() // Nothing to wait for

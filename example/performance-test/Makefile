@@ -9,6 +9,8 @@ JOBS                  ?= 10 # Number of parallel jobs per cluster
 LOGS                  ?= 1000 # Number of log lines per job
 LOGS_DELAY            ?= 25s # Delay between log messages
 
+SCENARIO              ?= shoot # Test scenario: "shoot" or "seed"
+
 LOGCLI_BIN            := $(DIR)/bin/logcli
 
 # Default target
@@ -55,7 +57,7 @@ setup: logcli check-kubeconfig
 # Create test clusters and start log generation
 run: check-kubeconfig setup
 	@echo "Starting performance test with $(CLUSTERS) clusters, $(JOBS) jobs per cluster, $(LOGS) logs per job..."
-	@export CLUSTERS=$(CLUSTERS) JOBS=$(JOBS) LOGS=$(LOGS) LOGS_DELAY=$(LOGS_DELAY) && $(DIR)/up.sh
+	@export CLUSTERS=$(CLUSTERS) JOBS=$(JOBS) LOGS=$(LOGS) LOGS_DELAY=$(LOGS_DELAY) && $(DIR)/run.sh $(SCENARIO)
 
 # Check Current logs in Vali
 check: check-kubeconfig
@@ -70,7 +72,7 @@ fetch: check-kubeconfig
 # Clean up all test resources
 down: check-kubeconfig
 	@echo "Removing performance test workloads resources..."
-	@export CLUSTERS=$(CLUSTERS) && $(DIR)/down.sh
+	@export CLUSTERS=$(CLUSTERS) && $(DIR)/down.sh $(SCENARIO)
 
 # Alias for down
 clean: check-kubeconfig down
