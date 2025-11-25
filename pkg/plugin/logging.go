@@ -61,6 +61,7 @@ func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger lo
 	if l.seedClient, err = client.NewClient(*cfg, opt...); err != nil {
 		return nil, err
 	}
+	metrics.Clients.WithLabelValues(client.Seed.String()).Inc()
 
 	logger.Info("logging plugin created",
 		"seed_client_url", l.seedClient.GetEndPoint(),

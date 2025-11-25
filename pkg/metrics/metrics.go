@@ -12,6 +12,13 @@ import (
 var (
 	namespace = "fluentbit_gardener"
 
+	// Clients is a prometheus metric which keeps total number of the output clients
+	Clients = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: namespace,
+		Name:      "clients_total",
+		Help:      "Total number of the output clients",
+	}, []string{"type"})
+
 	// Errors is a prometheus which keeps total number of the errors
 	Errors = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: namespace,

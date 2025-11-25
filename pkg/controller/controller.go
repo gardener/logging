@@ -14,6 +14,7 @@ import (
 	extensioncontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	gardenercorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
+	"github.com/gardener/logging/pkg/metrics"
 	"github.com/go-logr/logr"
 	"k8s.io/client-go/tools/cache"
 
@@ -59,6 +60,7 @@ func NewController(informer cache.SharedIndexInformer, conf *config.Config, l lo
 	); err != nil {
 		return nil, fmt.Errorf("failed to create seed client in controller: %w", err)
 	}
+	metrics.Clients.WithLabelValues(client.Seed.String()).Inc()
 
 	ctl := &controller{
 		clients:    make(map[string]Client, expectedActiveClusters),
