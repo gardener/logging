@@ -144,7 +144,7 @@ func (l *logging) SendRecord(r map[any]any, ts time.Time) error {
 }
 
 func (l *logging) Close() {
-	l.seedClient.Stop()
+	l.seedClient.StopWait()
 	if l.controller != nil {
 		l.controller.Stop()
 	}

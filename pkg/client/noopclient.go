@@ -5,6 +5,7 @@
 package client
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -12,6 +13,8 @@ import (
 	"github.com/gardener/logging/pkg/config"
 	"github.com/gardener/logging/pkg/metrics"
 )
+
+const componentNoopName = "noop"
 
 // NoopClient is an implementation of OutputClient that discards all records
 // but keeps metrics and increments counters
@@ -29,7 +32,7 @@ func NewNoopClient(cfg config.Config, logger logr.Logger) (OutputClient, error) 
 		logger:   logger.WithValues("endpoint", cfg.OTLPConfig.Endpoint),
 	}
 
-	logger.V(1).Info("noop client created")
+	logger.V(1).Info(fmt.Sprintf("%s created", componentNoopName))
 
 	return client, nil
 }
@@ -45,12 +48,12 @@ func (c *NoopClient) Handle(_ time.Time, _ string) error {
 
 // Stop shuts down the client immediately
 func (c *NoopClient) Stop() {
-	c.logger.V(1).Info("noop client stopped without waiting")
+	c.logger.V(2).Info(fmt.Sprintf("stopping %s", componentNoopName))
 }
 
 // StopWait stops the client - since this is a no-op client, it's the same as Stop
 func (c *NoopClient) StopWait() {
-	c.logger.V(1).Info("noop client stopped")
+	c.logger.V(2).Info(fmt.Sprintf("stopping %s with wait", componentNoopName))
 }
 
 // GetEndPoint returns the configured endpoint
