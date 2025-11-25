@@ -7,6 +7,8 @@ Modifications Copyright SAP SE or an SAP affiliate company and Gardener contribu
 package client
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -22,11 +24,13 @@ import (
 )
 
 const componentNameDque = "dque"
+const syncTimeout = 30 * time.Second
 
 // OutputEntry is a single log entry with timestamp
 type OutputEntry struct {
 	Timestamp time.Time
 	Line      string
+	// TODO: add otel resource and service attributes
 }
 
 type dqueEntry struct {
@@ -58,20 +62,27 @@ var _ OutputClient = &dqueClient{}
 func NewDque(cfg config.Config, logger logr.Logger, newClientFunc NewClientFunc) (OutputClient, error) {
 	var err error
 
+	qDir := cfg.ClientConfig.BufferConfig.DqueConfig.QueueDir
+	qName := cfg.ClientConfig.BufferConfig.DqueConfig.QueueName
+	qSync := cfg.ClientConfig.BufferConfig.DqueConfig.QueueSync
+	qSize := cfg.ClientConfig.BufferConfig.DqueConfig.QueueSegmentSize
+
 	q := &dqueClient{
-		logger: logger.WithValues("component", componentNameDque, "name", cfg.ClientConfig.BufferConfig.DqueConfig.QueueName),
+		logger: logger.WithValues(
+			"name", qName,
+		),
 	}
 
-	if err = os.MkdirAll(cfg.ClientConfig.BufferConfig.DqueConfig.QueueDir, fs.FileMode(0644)); err != nil {
-		return nil, fmt.Errorf("cannot create directory %s: %v", cfg.ClientConfig.BufferConfig.DqueConfig.QueueDir, err)
+	if err = os.MkdirAll(qDir, fs.FileMode(0644)); err != nil {
+		return nil, fmt.Errorf("cannot create directory %s: %v", qDir, err)
 	}
 
-	q.queue, err = dque.NewOrOpen(cfg.ClientConfig.BufferConfig.DqueConfig.QueueName, cfg.ClientConfig.BufferConfig.DqueConfig.QueueDir, cfg.ClientConfig.BufferConfig.DqueConfig.QueueSegmentSize, dqueEntryBuilder)
+	q.queue, err = dque.NewOrOpen(qName, qDir, qSize, dqueEntryBuilder)
 	if err != nil {
-		return nil, fmt.Errorf("cannot create queue %s: %v", cfg.ClientConfig.BufferConfig.DqueConfig.QueueName, err)
+		return nil, fmt.Errorf("cannot create queue %s: %v", qName, err)
 	}
 
-	if !cfg.ClientConfig.BufferConfig.DqueConfig.QueueSync {
+	if !qSync {
 		q.turboOn = true
 		if err = q.queue.TurboOn(); err != nil {
 			q.turboOn = false
@@ -79,32 +90,32 @@ func NewDque(cfg config.Config, logger logr.Logger, newClientFunc NewClientFunc)
 		}
 	}
 
-	q.client, err = newClientFunc(cfg, logger)
-	if err != nil {
+	// Create the upstream client
+	if q.client, err = newClientFunc(cfg, logger); err != nil {
 		return nil, err
 	}
 
-	q.wg.Add(1)
-	go q.dequeuer()
+	q.wg.Go(q.dequeuer)
 
-	q.logger.V(1).Info("client created")
+	q.logger.Info(fmt.Sprintf("%s created", componentNameDque))
 
 	return q, nil
 }
 
 func (c *dqueClient) dequeuer() {
-	defer c.wg.Done()
-	c.logger.V(2).Info("dequeuer started")
+	c.logger.V(2).Info("starting dequeuer")
 
-	timer := time.NewTicker(30 * time.Second)
+	timer := time.NewTicker(syncTimeout)
 	defer timer.Stop()
 
 	for {
 		// Dequeue the next item in the queue
 		entry, err := c.queue.DequeueBlock()
 		if err != nil {
-			switch err {
-			case dque.ErrQueueClosed:
+			switch {
+			case errors.Is(err, dque.ErrQueueClosed):
+				c.logger.Error(err, "dequeuer stopped")
+
 				return
 			default:
 				metrics.Errors.WithLabelValues(metrics.ErrorDequeuer).Inc()
@@ -137,9 +148,9 @@ func (c *dqueClient) dequeuer() {
 			continue
 		}
 
-		if err := c.client.Handle(record.Timestamp, record.Line); err != nil {
+		if err = c.client.Handle(record.Timestamp, record.Line); err != nil {
 			metrics.Errors.WithLabelValues(metrics.ErrorDequeuerSendRecord).Inc()
-			c.logger.Error(err, "error sending record to Vali")
+			c.logger.Error(err, "error sending record to upstream client")
 		}
 
 		c.lock.Lock()
@@ -154,24 +165,23 @@ func (c *dqueClient) dequeuer() {
 
 // Stop the client
 func (c *dqueClient) Stop() {
-	if err := c.closeQue(); err != nil {
-		c.logger.Error(err, "error closing buffered client")
+	c.logger.V(2).Info(fmt.Sprintf("stopping %s", componentNameDque))
+	if err := c.queue.Close(); err != nil {
+		c.logger.Error(err, "error closing queue")
 	}
 	c.client.Stop()
-	c.logger.V(1).Info("client stopped, without waiting")
 }
 
 // StopWait the client waiting all saved logs to be sent.
 func (c *dqueClient) StopWait() {
-	if err := c.stopQue(); err != nil {
-		c.logger.Error(err, "error stopping buffered client")
+	c.logger.V(2).Info(fmt.Sprintf("stopping %s with wait", componentNameDque))
+	if err := c.stopQueWithTimeout(); err != nil {
+		c.logger.Error(err, "error stopping client")
 	}
 	if err := c.closeQueWithClean(); err != nil {
-		c.logger.Error(err, "error closing buffered client")
+		c.logger.Error(err, "error closing client")
 	}
-	c.client.StopWait()
-
-	c.logger.V(1).Info("client stopped")
+	c.client.StopWait() // Stop the underlying client
 }
 
 // Handle implement EntryHandler; adds a new line to the next batch; send is async.
@@ -198,11 +208,7 @@ func (c *dqueClient) Handle(t time.Time, line string) error {
 	return nil
 }
 
-func (e *dqueEntry) String() string {
-	return fmt.Sprintf("labels: %+v timestamp: %+v line: %+v", e.LabelSet, e.Timestamp, e.Line)
-}
-
-func (c *dqueClient) stopQue() error {
+func (c *dqueClient) stopQueWithTimeout() error {
 	c.lock.Lock()
 	c.stopped = true
 	// In case the dequeuer is blocked on empty queue.
@@ -212,27 +218,29 @@ func (c *dqueClient) stopQue() error {
 		return nil
 	}
 	c.lock.Unlock()
-	// TODO: Make time group waiter
-	c.wg.Wait()
 
-	return nil
-}
+	ctx, cancel := context.WithTimeout(context.Background(), syncTimeout)
+	defer cancel()
 
-func (c *dqueClient) closeQue() error {
-	if err := c.queue.Close(); err != nil {
-		return fmt.Errorf("cannot close %s buffer: %v", c.queue.Name, err)
+	done := make(chan struct{})
+	go func() {
+		c.wg.Wait() // Wait for dequeuer to finish
+		close(done)
+	}()
+
+	select {
+	case <-ctx.Done():
+		// Force close the queue to unblock the dequeuer goroutine and prevent leak
+		if err := c.queue.Close(); err != nil {
+			c.logger.Error(err, "error force closing queue after timeout %v", syncTimeout)
+		}
+
+		return nil
+	case <-done:
+		return nil
 	}
-
-	return nil
 }
 
 func (c *dqueClient) closeQueWithClean() error {
-	if err := c.closeQue(); err != nil {
-		return fmt.Errorf("cannot close %s buffer: %v", c.queue.Name, err)
-	}
-	if err := os.RemoveAll(path.Join(c.queue.DirPath, c.queue.Name)); err != nil {
-		return fmt.Errorf("cannot clean %s buffer: %v", c.queue.Name, err)
-	}
-
-	return nil
+	return os.RemoveAll(path.Join(c.queue.DirPath, c.queue.Name))
 }
