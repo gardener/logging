@@ -126,6 +126,7 @@ func (ctl *controller) createControllerClient(clusterName string, shoot *gardene
 
 		return
 	}
+	metrics.Clients.WithLabelValues(client.Shoot.String()).Inc()
 
 	ctl.updateControllerClientState(c, shoot)
 
@@ -154,6 +155,7 @@ func (ctl *controller) deleteControllerClient(clusterName string) {
 	c, ok := ctl.clients[clusterName]
 	if ok && c != nil {
 		delete(ctl.clients, clusterName)
+		metrics.Clients.WithLabelValues(client.Shoot.String()).Dec()
 	}
 
 	if ok && c != nil {
