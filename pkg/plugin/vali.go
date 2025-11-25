@@ -8,9 +8,11 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strings"
 	"time"
 
 	grafanavaliclient "github.com/credativ/vali/pkg/valitail/client"
+	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
 	"github.com/prometheus/common/model"
@@ -39,6 +41,11 @@ type vali struct {
 	controller                      controller.Controller
 	logger                          log.Logger
 }
+
+var (
+	// Matches typical Gardener shoot namespace naming convention.
+	shootNamespaceRegexp = regexp.MustCompile(`shoot--[a-z0-9-]+--[a-z0-9-]+`)
+)
 
 // NewPlugin returns OutputPlugin output plugin
 func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger log.Logger) (OutputPlugin, error) {
@@ -111,6 +118,17 @@ func (v *vali) SendRecord(r map[any]any, ts time.Time) error {
 	}
 
 	dynamicHostName := getDynamicHostName(records, v.cfg.PluginConfig.DynamicHostPath)
+
+	// Fallback: when the tag indicates istio ingress traffic, attempt to extract
+	// the dynamic host (e.g. shoot cluster namespace) from the log line using a regex.
+	// Pattern targets shoot cluster namespaces: shoot--<seed>--<shoot>
+	if tagVal, ok := records[v.cfg.PluginConfig.KubernetesMetadata.TagKey].(string); ok && strings.Contains(tagVal, v1beta1constants.DefaultSNIIngressNamespace) {
+		if logLine, ok := records["log"].(string); ok {
+			if match := shootNamespaceRegexp.FindString(logLine); match != "" {
+				dynamicHostName = match
+			}
+		}
+	}
 	host := dynamicHostName
 	if !v.isDynamicHost(host) {
 		host = "garden"
