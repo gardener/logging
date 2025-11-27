@@ -99,7 +99,7 @@ func getNewClientFunc(t types.Type) (NewClientFunc, error) {
 	case types.OTLPHTTP:
 		return nil, errors.New("OTLPHTTP not implemented yet")
 	case types.STDOUT:
-		return nil, errors.New("STDOUT  implemented yet")
+		return NewStdoutClient, nil
 	case types.NOOP:
 		return NewNoopClient, nil
 	default:
