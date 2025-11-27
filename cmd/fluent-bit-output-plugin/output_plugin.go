@@ -458,6 +458,7 @@ func toOutputRecord(record map[any]any) types.OutputRecord {
 		if !ok {
 			logger.V(2).Info("dropping record entry with non-string key", "keyType", fmt.Sprintf("%T", k))
 			metrics.Errors.WithLabelValues(metrics.ErrorInvalidRecordKey).Inc()
+
 			continue
 		}
 
