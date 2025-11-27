@@ -8,6 +8,7 @@ package client
 
 import (
 	"context"
+	"encoding/gob"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -21,21 +22,18 @@ import (
 
 	"github.com/gardener/logging/pkg/config"
 	"github.com/gardener/logging/pkg/metrics"
+	"github.com/gardener/logging/pkg/types"
 )
 
 const componentNameDque = "dque"
 const syncTimeout = 30 * time.Second
 
-// OutputEntry is a single log entry with timestamp
-type OutputEntry struct {
-	Timestamp time.Time
-	Line      string
-	// TODO: add otel resource and service attributes
+type dqueEntry struct {
+	types.OutputEntry
 }
 
-type dqueEntry struct {
-	LabelSet map[string]string
-	OutputEntry
+func init() {
+	gob.Register(map[string]any{})
 }
 
 func dqueEntryBuilder() any {
@@ -148,7 +146,7 @@ func (c *dqueClient) dequeuer() {
 			continue
 		}
 
-		if err = c.client.Handle(record.Timestamp, record.Line); err != nil {
+		if err = c.client.Handle(record.OutputEntry); err != nil {
 			metrics.Errors.WithLabelValues(metrics.ErrorDequeuerSendRecord).Inc()
 			c.logger.Error(err, "error sending record to upstream client")
 		}
@@ -161,6 +159,27 @@ func (c *dqueClient) dequeuer() {
 		}
 		c.lock.Unlock()
 	}
+}
+
+// Handle implement EntryHandler; adds a new line to the next batch; send is async.
+func (c *dqueClient) Handle(log types.OutputEntry) error {
+	// Here we don't need any synchronization because the worst thing is to
+	// receive some more logs which would be dropped anyway.
+	if c.stopped {
+		return nil
+	}
+
+	entry := &dqueEntry{
+		OutputEntry: log,
+	}
+
+	if err := c.queue.Enqueue(entry); err != nil {
+		metrics.Errors.WithLabelValues(metrics.ErrorEnqueuer).Inc()
+
+		return fmt.Errorf("failed to enqueue log entry: %w", err)
+	}
+
+	return nil
 }
 
 // Stop the client
@@ -182,30 +201,6 @@ func (c *dqueClient) StopWait() {
 		c.logger.Error(err, "error closing client")
 	}
 	c.client.StopWait() // Stop the underlying client
-}
-
-// Handle implement EntryHandler; adds a new line to the next batch; send is async.
-func (c *dqueClient) Handle(t time.Time, line string) error {
-	// Here we don't need any synchronization because the worst thing is to
-	// receive some more logs which would be dropped anyway.
-	if c.stopped {
-		return nil
-	}
-
-	entry := &dqueEntry{
-		OutputEntry: OutputEntry{
-			Timestamp: t,
-			Line:      line,
-		},
-	}
-
-	if err := c.queue.Enqueue(entry); err != nil {
-		metrics.Errors.WithLabelValues(metrics.ErrorEnqueuer).Inc()
-
-		return fmt.Errorf("failed to enqueue log entry: %w", err)
-	}
-
-	return nil
 }
 
 func (c *dqueClient) stopQueWithTimeout() error {

@@ -8,7 +8,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"regexp"
 	"sync"
 	"time"
 
@@ -28,6 +27,7 @@ import (
 	"github.com/gardener/logging/pkg/config"
 	"github.com/gardener/logging/pkg/log"
 	"github.com/gardener/logging/pkg/metrics"
+	"github.com/gardener/logging/pkg/types"
 )
 
 var _ = Describe("OutputPlugin plugin", func() {
@@ -125,16 +125,19 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 		Context("basic record processing", func() {
 			It("should send a valid record with kubernetes metadata", func() {
-				record := map[any]any{
-					"log": "test log message",
-					"kubernetes": map[any]any{
-						"namespace_name": "default",
-						"pod_name":       "test-pod",
-						"container_name": "test-container",
+				entry := types.OutputEntry{
+					Timestamp: time.Time{},
+					Record: types.OutputRecord{
+						"log": "test log message",
+						"kubernetes": types.OutputRecord{
+							"namespace_name": "default",
+							"pod_name":       "test-pod",
+							"container_name": "test-container",
+						},
 					},
 				}
 
-				err := plugin.SendRecord(record, time.Now())
+				err := plugin.SendRecord(entry)
 				Expect(err).NotTo(HaveOccurred())
 
 				// Verify metrics
@@ -143,14 +146,17 @@ var _ = Describe("OutputPlugin plugin", func() {
 				}, "5s", "100ms").Should(BeNumerically(">", 0))
 			})
 
-			It("should convert map[any]any to map[string]any", func() {
-				record := map[any]any{
-					"log":       []byte("byte log message"),
-					"timestamp": time.Now().Unix(),
-					"level":     "info",
+			It("should convert types.OutputRecord to map[string]any", func() {
+				entry := types.OutputEntry{
+					Timestamp: time.Time{},
+					Record: types.OutputRecord{
+						"log":       []byte("byte log message"),
+						"timestamp": time.Now().Unix(),
+						"level":     "info",
+					},
 				}
 
-				err := plugin.SendRecord(record, time.Now())
+				err := plugin.SendRecord(entry)
 				Expect(err).NotTo(HaveOccurred())
 
 				// Should not error on conversion
@@ -158,40 +164,49 @@ var _ = Describe("OutputPlugin plugin", func() {
 			})
 
 			It("should handle empty records", func() {
-				record := map[any]any{}
+				entry := types.OutputEntry{
+					Timestamp: time.Time{},
+					Record:    types.OutputRecord{},
+				}
 
-				err := plugin.SendRecord(record, time.Now())
+				err := plugin.SendRecord(entry)
 				Expect(err).NotTo(HaveOccurred())
 			})
 
 			It("should handle records with nested structures", func() {
-				record := map[any]any{
-					"log": "nested test",
-					"kubernetes": map[any]any{
-						"namespace_name": "kube-system",
-						"labels": map[any]any{
-							"app": "test",
+				entry := types.OutputEntry{
+					Timestamp: time.Time{},
+					Record: types.OutputRecord{
+						"log": "nested test",
+						"kubernetes": types.OutputRecord{
+							"namespace_name": "kube-system",
+							"labels": types.OutputRecord{
+								"app": "test",
+							},
 						},
+						"array": []any{"item1", "item2", []byte("item3")},
 					},
-					"array": []any{"item1", "item2", []byte("item3")},
 				}
 
-				err := plugin.SendRecord(record, time.Now())
+				err := plugin.SendRecord(entry)
 				Expect(err).NotTo(HaveOccurred())
 			})
 		})
 
 		Context("kubernetes metadata handling", func() {
 			It("should accept record with existing kubernetes metadata", func() {
-				record := map[any]any{
-					"log": "test",
-					"kubernetes": map[any]any{
-						"namespace_name": "test-ns",
-						"pod_name":       "test-pod",
+				entry := types.OutputEntry{
+					Timestamp: time.Now(),
+					Record: types.OutputRecord{
+						"log": "test",
+						"kubernetes": types.OutputRecord{
+							"namespace_name": "test-ns",
+							"pod_name":       "test-pod",
+						},
 					},
 				}
 
-				err := plugin.SendRecord(record, time.Now())
+				err := plugin.SendRecord(entry)
 				Expect(err).NotTo(HaveOccurred())
 
 				// Should not have metadata extraction errors
@@ -205,12 +220,15 @@ var _ = Describe("OutputPlugin plugin", func() {
 				plugin, err = NewPlugin(nil, cfg, logger)
 				Expect(err).NotTo(HaveOccurred())
 
-				record := map[any]any{
-					"log": "test",
-					"tag": "kube.test-pod_default_nginx-1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef.log",
+				entry := types.OutputEntry{
+					Timestamp: time.Now(),
+					Record: types.OutputRecord{
+						"log": "test",
+						"tag": "kube.test-pod_default_nginx-1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef.log",
+					},
 				}
 
-				err = plugin.SendRecord(record, time.Now())
+				err = plugin.SendRecord(entry)
 				Expect(err).NotTo(HaveOccurred())
 
 				// Should not increment error or missing metadata counters
@@ -225,12 +243,15 @@ var _ = Describe("OutputPlugin plugin", func() {
 				plugin, err = NewPlugin(nil, cfg, logger)
 				Expect(err).NotTo(HaveOccurred())
 
-				record := map[any]any{
-					"log": "test",
-					"tag": "invalid-tag-format",
+				entry := types.OutputEntry{
+					Timestamp: time.Now(),
+					Record: types.OutputRecord{
+						"log": "test",
+						"tag": "invalid-tag-format",
+					},
 				}
 
-				err = plugin.SendRecord(record, time.Now())
+				err = plugin.SendRecord(entry)
 				// Should not return error, just log it
 				Expect(err).NotTo(HaveOccurred())
 
@@ -248,12 +269,15 @@ var _ = Describe("OutputPlugin plugin", func() {
 				plugin, err = NewPlugin(nil, cfg, logger)
 				Expect(err).NotTo(HaveOccurred())
 
-				record := map[any]any{
-					"log": "test",
-					"tag": "invalid-tag",
+				entry := types.OutputEntry{
+					Timestamp: time.Now(),
+					Record: types.OutputRecord{
+						"log": "test",
+						"tag": "invalid-tag",
+					},
 				}
 
-				err = plugin.SendRecord(record, time.Now())
+				err = plugin.SendRecord(entry)
 				Expect(err).NotTo(HaveOccurred())
 
 				// Should increment missing metadata metric
@@ -267,11 +291,14 @@ var _ = Describe("OutputPlugin plugin", func() {
 			It("should increment IncomingLogs metric for each record", func() {
 				initialCount := promtest.ToFloat64(metrics.IncomingLogs.WithLabelValues("garden"))
 
-				record := map[any]any{
-					"log": "test log",
+				entry := types.OutputEntry{
+					Timestamp: time.Now(),
+					Record: types.OutputRecord{
+						"log": "test log",
+					},
 				}
 
-				err := plugin.SendRecord(record, time.Now())
+				err := plugin.SendRecord(entry)
 				Expect(err).NotTo(HaveOccurred())
 
 				Eventually(func() float64 {
@@ -282,11 +309,14 @@ var _ = Describe("OutputPlugin plugin", func() {
 			It("should track DroppedLogs metric via NoopClient", func() {
 				initialCount := promtest.ToFloat64(metrics.DroppedLogs.WithLabelValues(cfg.OTLPConfig.Endpoint))
 
-				record := map[any]any{
-					"log": "test log to be dropped",
+				entry := types.OutputEntry{
+					Timestamp: time.Now(),
+					Record: types.OutputRecord{
+						"log": "test log to be dropped",
+					},
 				}
 
-				err := plugin.SendRecord(record, time.Now())
+				err := plugin.SendRecord(entry)
 				Expect(err).NotTo(HaveOccurred())
 
 				// NoopClient increments DroppedLogs in Handle
@@ -380,12 +410,15 @@ var _ = Describe("OutputPlugin plugin", func() {
 				go func(id int) {
 					defer wg.Done()
 					for j := 0; j < recordsPerGoroutine; j++ {
-						record := map[any]any{
-							"log":       fmt.Sprintf("concurrent log from goroutine %d, record %d", id, j),
-							"goroutine": id,
-							"record":    j,
+						entry := types.OutputEntry{
+							Timestamp: time.Now(),
+							Record: types.OutputRecord{
+								"log":       fmt.Sprintf("concurrent log from goroutine %d, record %d", id, j),
+								"goroutine": id,
+								"record":    j,
+							},
 						}
-						err := plugin.SendRecord(record, time.Now())
+						err := plugin.SendRecord(entry)
 						Expect(err).NotTo(HaveOccurred())
 					}
 				}(i)
@@ -412,10 +445,13 @@ var _ = Describe("OutputPlugin plugin", func() {
 				go func(id int) {
 					defer wg.Done()
 					for j := 0; j < 20; j++ {
-						record := map[any]any{
-							"log": fmt.Sprintf("log %d-%d", id, j),
+						entry := types.OutputEntry{
+							Timestamp: time.Now(),
+							Record: types.OutputRecord{
+								"log": fmt.Sprintf("log %d-%d", id, j),
+							},
 						}
-						_ = plugin.SendRecord(record, time.Now())
+						_ = plugin.SendRecord(entry)
 						time.Sleep(10 * time.Millisecond)
 					}
 				}(i)
@@ -442,11 +478,14 @@ var _ = Describe("OutputPlugin plugin", func() {
 			initialDropped := promtest.ToFloat64(metrics.DroppedLogs.WithLabelValues(cfg.OTLPConfig.Endpoint))
 
 			for i := 0; i < messageCount; i++ {
-				record := map[any]any{
-					"log":   fmt.Sprintf("high volume message %d", i),
-					"index": i,
+				entry := types.OutputEntry{
+					Timestamp: time.Now(),
+					Record: types.OutputRecord{
+						"log":   fmt.Sprintf("high volume message %d", i),
+						"index": i,
+					},
 				}
-				err := plugin.SendRecord(record, time.Now())
+				err := plugin.SendRecord(entry)
 				Expect(err).NotTo(HaveOccurred())
 			}
 
@@ -471,10 +510,13 @@ var _ = Describe("OutputPlugin plugin", func() {
 			initialIncoming := promtest.ToFloat64(metrics.IncomingLogs.WithLabelValues("garden"))
 
 			for i := 0; i < messageCount; i++ {
-				record := map[any]any{
-					"log": fmt.Sprintf("overflow test message %d", i),
+				entry := types.OutputEntry{
+					Timestamp: time.Now(),
+					Record: types.OutputRecord{
+						"log": fmt.Sprintf("overflow test message %d", i),
+					},
 				}
-				err := plugin.SendRecord(record, time.Now())
+				err := plugin.SendRecord(entry)
 				Expect(err).NotTo(HaveOccurred())
 			}
 
@@ -489,8 +531,11 @@ var _ = Describe("OutputPlugin plugin", func() {
 			plugin1, err := NewPlugin(nil, cfg, logger)
 			Expect(err).NotTo(HaveOccurred())
 
-			record := map[any]any{"log": "test1"}
-			err = plugin1.SendRecord(record, time.Now())
+			entry1 := types.OutputEntry{
+				Timestamp: time.Now(),
+				Record:    types.OutputRecord{"log": "test1"},
+			}
+			err = plugin1.SendRecord(entry1)
 			Expect(err).NotTo(HaveOccurred())
 
 			count1 := promtest.ToFloat64(metrics.IncomingLogs.WithLabelValues("garden"))
@@ -502,8 +547,11 @@ var _ = Describe("OutputPlugin plugin", func() {
 			Expect(err).NotTo(HaveOccurred())
 			defer plugin2.Close()
 
-			record = map[any]any{"log": "test2"}
-			err = plugin2.SendRecord(record, time.Now())
+			entry2 := types.OutputEntry{
+				Timestamp: time.Now(),
+				Record:    types.OutputRecord{"log": "test1"},
+			}
+			err = plugin2.SendRecord(entry2)
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(func() float64 {
@@ -579,12 +627,15 @@ var _ = Describe("OutputPlugin plugin", func() {
 			GinkgoWriter.Printf("Shoot client created: %v, endpoint: %s\n", c != nil, c.GetEndPoint())
 
 			// Send a log with matching kubernetes metadata
-			record := map[any]any{
-				"log": "test log for shoot cluster",
-				"kubernetes": map[any]any{
-					"namespace_name": shootNamespace,
-					"pod_name":       "test-pod",
-					"container_name": "test-container",
+			entry := types.OutputEntry{
+				Timestamp: time.Now(),
+				Record: types.OutputRecord{
+					"log": "test log for shoot cluster",
+					"kubernetes": types.OutputRecord{
+						"namespace_name": shootNamespace,
+						"pod_name":       "test-pod",
+						"container_name": "test-container",
+					},
 				},
 			}
 
@@ -599,7 +650,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 			GinkgoWriter.Printf("Initial metrics - Incoming: %f, ShootDropped: %f, SeedDropped: %f\n",
 				initialIncoming, initialShootDropped, initialSeedDropped)
 
-			err = plugin.SendRecord(record, time.Now())
+			err = plugin.SendRecord(entry)
 			Expect(err).NotTo(HaveOccurred())
 
 			// Give some time for async processing
@@ -626,17 +677,20 @@ var _ = Describe("OutputPlugin plugin", func() {
 			Expect(finalSeedDropped).To(Equal(initialSeedDropped), "Seed should not receive shoot logs")
 
 			// Now send a log that doesn't match any shoot namespace (should go to seed)
-			gardenRecord := map[any]any{
-				"log": "test log for garden",
-				"kubernetes": map[any]any{
-					"namespace_name": "kube-system",
-					"pod_name":       "test-pod",
+			entry = types.OutputEntry{
+				Timestamp: time.Now(),
+				Record: types.OutputRecord{
+					"log": "test log for garden",
+					"kubernetes": types.OutputRecord{
+						"namespace_name": "kube-system",
+						"pod_name":       "test-pod",
+					},
 				},
 			}
 
 			initialSeedIncoming := promtest.ToFloat64(metrics.IncomingLogs.WithLabelValues("garden"))
 
-			err = plugin.SendRecord(gardenRecord, time.Now())
+			err = plugin.SendRecord(entry)
 			Expect(err).NotTo(HaveOccurred())
 
 			// Verify it went to seed
@@ -705,18 +759,24 @@ var _ = Describe("OutputPlugin plugin", func() {
 			Expect(c2).NotTo(BeNil())
 
 			// Send logs to both shoots
-			record1 := map[any]any{
-				"log":        "log for cluster1",
-				"kubernetes": map[any]any{"namespace_name": shoot1},
+			entry1 := types.OutputEntry{
+				Timestamp: time.Now(),
+				Record: types.OutputRecord{
+					"log":        "log for cluster1",
+					"kubernetes": types.OutputRecord{"namespace_name": shoot1},
+				},
 			}
-			record2 := map[any]any{
-				"log":        "log for cluster2",
-				"kubernetes": map[any]any{"namespace_name": shoot2},
+			entry2 := types.OutputEntry{
+				Timestamp: time.Now(),
+				Record: types.OutputRecord{
+					"log":        "log for cluster2",
+					"kubernetes": types.OutputRecord{"namespace_name": shoot2},
+				},
 			}
 
-			err = plugin.SendRecord(record1, time.Now())
+			err = plugin.SendRecord(entry1)
 			Expect(err).NotTo(HaveOccurred())
-			err = plugin.SendRecord(record2, time.Now())
+			err = plugin.SendRecord(entry2)
 			Expect(err).NotTo(HaveOccurred())
 
 			// Verify metrics for both shoots
@@ -775,159 +835,17 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 			// Hibernated cluster should not create a client or should be ignored
 			// Send a log - it should be dropped or go to seed
-			record := map[any]any{
-				"log":        "log for hibernated cluster",
-				"kubernetes": map[any]any{"namespace_name": shootNamespace},
+			entry := types.OutputEntry{
+				Timestamp: time.Now(),
+				Record: types.OutputRecord{
+					"log":        "log for hibernated cluster",
+					"kubernetes": types.OutputRecord{"namespace_name": shootNamespace},
+				},
 			}
 
-			err = plugin.SendRecord(record, time.Now())
+			err = plugin.SendRecord(entry)
 			// Should either succeed (sent to seed) or be dropped
 			Expect(err).NotTo(HaveOccurred())
-		})
-	})
-
-	Describe("Helper Functions", func() {
-		Describe("toStringMap", func() {
-			It("should convert byte slices to strings", func() {
-				input := map[any]any{
-					"log": []byte("test log"),
-				}
-
-				result := toStringMap(input)
-				Expect(result["log"]).To(Equal("test log"))
-			})
-
-			It("should handle nested maps", func() {
-				input := map[any]any{
-					"kubernetes": map[any]any{
-						"pod_name": []byte("test-pod"),
-					},
-				}
-
-				result := toStringMap(input)
-				nested, ok := result["kubernetes"].(map[string]any)
-				Expect(ok).To(BeTrue())
-				Expect(nested["pod_name"]).To(Equal("test-pod"))
-			})
-
-			It("should handle arrays", func() {
-				input := map[any]any{
-					"tags": []any{
-						[]byte("tag1"),
-						"tag2",
-						map[any]any{"nested": []byte("value")},
-					},
-				}
-
-				result := toStringMap(input)
-				tags, ok := result["tags"].([]any)
-				Expect(ok).To(BeTrue())
-				Expect(tags[0]).To(Equal("tag1"))
-				Expect(tags[1]).To(Equal("tag2"))
-			})
-
-			It("should skip non-string keys", func() {
-				input := map[any]any{
-					123:     "numeric key",
-					"valid": "string key",
-				}
-
-				result := toStringMap(input)
-				Expect(result).To(HaveKey("valid"))
-				Expect(result).NotTo(HaveKey(123))
-			})
-		})
-
-		Describe("getDynamicHostName", func() {
-			It("should extract dynamic host from nested structure", func() {
-				records := map[string]any{
-					"kubernetes": map[string]any{
-						"namespace_name": "shoot--test--cluster",
-					},
-				}
-
-				mapping := map[string]any{
-					"kubernetes": map[string]any{
-						"namespace_name": "namespace",
-					},
-				}
-
-				result := getDynamicHostName(records, mapping)
-				Expect(result).To(Equal("shoot--test--cluster"))
-			})
-
-			It("should return empty string when path not found", func() {
-				records := map[string]any{
-					"log": "test",
-				}
-
-				mapping := map[string]any{
-					"kubernetes": map[string]any{
-						"namespace_name": "namespace",
-					},
-				}
-
-				result := getDynamicHostName(records, mapping)
-				Expect(result).To(BeEmpty())
-			})
-
-			It("should handle byte slice values", func() {
-				records := map[string]any{
-					"kubernetes": map[string]any{
-						"namespace_name": []byte("shoot--test--cluster"),
-					},
-				}
-
-				mapping := map[string]any{
-					"kubernetes": map[string]any{
-						"namespace_name": "namespace",
-					},
-				}
-
-				result := getDynamicHostName(records, mapping)
-				Expect(result).To(Equal("shoot--test--cluster"))
-			})
-		})
-
-		Describe("extractKubernetesMetadataFromTag", func() {
-			It("should extract metadata from valid tag", func() {
-				records := map[string]any{
-					"tag": "kube.test-pod_default_nginx-1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef.log",
-				}
-
-				re := regexp.MustCompile(`kube.(?:[^_]+_)?(?P<pod_name>[^_]+)_(?P<namespace_name>[^_]+)_(?P<container_name>.+)-(?P<container_id>[a-z0-9]{64})\.log$`)
-
-				err := extractKubernetesMetadataFromTag(records, "tag", re)
-				Expect(err).NotTo(HaveOccurred())
-
-				k8s, ok := records["kubernetes"].(map[string]any)
-				Expect(ok).To(BeTrue())
-				Expect(k8s["pod_name"]).To(Equal("test-pod"))
-				Expect(k8s["namespace_name"]).To(Equal("default"))
-				Expect(k8s["container_name"]).To(Equal("nginx"))
-			})
-
-			It("should return error for invalid tag format", func() {
-				records := map[string]any{
-					"tag": "invalid-format",
-				}
-
-				re := regexp.MustCompile(`kube.(?:[^_]+_)?(?P<pod_name>[^_]+)_(?P<namespace_name>[^_]+)_(?P<container_name>.+)-(?P<container_id>[a-z0-9]{64})\.log$`)
-
-				err := extractKubernetesMetadataFromTag(records, "tag", re)
-				Expect(err).To(HaveOccurred())
-			})
-
-			It("should return error when tag key is missing", func() {
-				records := map[string]any{
-					"log": "test",
-				}
-
-				re := regexp.MustCompile(`kube.(?:[^_]+_)?(?P<pod_name>[^_]+)_(?P<namespace_name>[^_]+)_(?P<container_name>.+)-(?P<container_id>[a-z0-9]{64})\.log$`)
-
-				err := extractKubernetesMetadataFromTag(records, "tag", re)
-				Expect(err).To(HaveOccurred())
-			})
 		})
 	})
 })

@@ -39,6 +39,7 @@ import (
 	"github.com/gardener/logging/pkg/log"
 	"github.com/gardener/logging/pkg/metrics"
 	"github.com/gardener/logging/pkg/plugin"
+	"github.com/gardener/logging/pkg/types"
 )
 
 var (
@@ -284,11 +285,17 @@ func FLBPluginFlushCtx(ctx, data unsafe.Pointer, length C.int, tag *C.char) int 
 			timestamp = time.Now()
 		}
 
-		err := outputPlugin.SendRecord(record, timestamp)
+		// TODO: it shall also handle logs groups when opentelemetry envelope is enabled
+		// https://docs.fluentbit.io/manual/data-pipeline/processors/opentelemetry-envelope
+		l := types.OutputEntry{
+			Timestamp: timestamp,
+			Record:    toOutputRecord(record),
+		}
+		err := outputPlugin.SendRecord(l)
 		if err != nil {
 			logger.Error(err, "[flb-go] error sending record, retrying...", "tag", C.GoString(tag))
 
-			return output.FLB_RETRY // max retry of the outputPlugin is set to 3, then it shall be discarded by fluent-bit
+			return output.FLB_RETRY
 		}
 	}
 
@@ -439,4 +446,56 @@ func dumpConfiguration(conf *config.Config) {
 	if conf.OTLPConfig.TLSConfig != nil {
 		logger.V(1).Info("TLSConfig", "configured")
 	}
+}
+
+// toOutputRecord converts fluent-bit's map[any]any to types.OutputRecord.
+// It recursively processes nested structures and converts byte arrays to strings.
+// Entries with non-string keys are dropped and logged as warnings with metrics.
+func toOutputRecord(record map[any]any) types.OutputRecord {
+	m := make(types.OutputRecord, len(record))
+	for k, v := range record {
+		key, ok := k.(string)
+		if !ok {
+			logger.V(2).Info("dropping record entry with non-string key", "keyType", fmt.Sprintf("%T", k))
+			metrics.Errors.WithLabelValues(metrics.ErrorInvalidRecordKey).Inc()
+			continue
+		}
+
+		switch t := v.(type) {
+		case []byte:
+			m[key] = string(t)
+		case map[any]any:
+			m[key] = toOutputRecord(t)
+		case []any:
+			m[key] = toSlice(t)
+		default:
+			m[key] = v
+		}
+	}
+
+	return m
+}
+
+// toSlice recursively converts []any, handling nested structures and byte arrays.
+// It maintains the same conversion logic as toOutputRecord for consistency.
+func toSlice(slice []any) []any {
+	if len(slice) == 0 {
+		return slice
+	}
+
+	s := make([]any, 0, len(slice))
+	for _, v := range slice {
+		switch t := v.(type) {
+		case []byte:
+			s = append(s, string(t))
+		case map[any]any:
+			s = append(s, toOutputRecord(t))
+		case []any:
+			s = append(s, toSlice(t))
+		default:
+			s = append(s, t)
+		}
+	}
+
+	return s
 }

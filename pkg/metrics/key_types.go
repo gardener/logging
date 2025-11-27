@@ -18,5 +18,6 @@ const (
 	ErrorK8sLabelsNotFound            = "K8sLabelsNotFound"
 	ErrorCreateLine                   = "CreateLine"
 	ErrorSendRecord                   = "SendRecord"
+	ErrorInvalidRecordKey             = "InvalidRecordKey"
 	MissingMetadataType               = "Kubernetes"
 )

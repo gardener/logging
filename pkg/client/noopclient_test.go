@@ -15,6 +15,7 @@ import (
 	"github.com/gardener/logging/pkg/config"
 	"github.com/gardener/logging/pkg/log"
 	"github.com/gardener/logging/pkg/metrics"
+	"github.com/gardener/logging/pkg/types"
 )
 
 var _ = Describe("NoopClient", func() {
@@ -79,8 +80,11 @@ var _ = Describe("NoopClient", func() {
 			initialMetric := metrics.DroppedLogs.WithLabelValues(outputClient.GetEndPoint())
 			beforeCount := testutil.ToFloat64(initialMetric)
 
-			now := time.Now()
-			err := outputClient.Handle(now, "test log entry")
+			entry := types.OutputEntry{
+				Timestamp: time.Now(),
+				Record:    map[string]any{"msg": "test"},
+			}
+			err := outputClient.Handle(entry)
 
 			Expect(err).NotTo(HaveOccurred())
 			afterCount := testutil.ToFloat64(initialMetric)
@@ -91,10 +95,13 @@ var _ = Describe("NoopClient", func() {
 			initialMetric := metrics.DroppedLogs.WithLabelValues(outputClient.GetEndPoint())
 			beforeCount := testutil.ToFloat64(initialMetric)
 
-			now := time.Now()
 			numEntries := 10
 			for i := 0; i < numEntries; i++ {
-				err := outputClient.Handle(now, "test log entry")
+				entry := types.OutputEntry{
+					Timestamp: time.Now(),
+					Record:    map[string]any{"msg": "test"},
+				}
+				err := outputClient.Handle(entry)
 				Expect(err).NotTo(HaveOccurred())
 			}
 
@@ -106,7 +113,6 @@ var _ = Describe("NoopClient", func() {
 			initialMetric := metrics.DroppedLogs.WithLabelValues(outputClient.GetEndPoint())
 			beforeCount := testutil.ToFloat64(initialMetric)
 
-			now := time.Now()
 			numGoroutines := 10
 			entriesPerGoroutine := 10
 			done := make(chan bool, numGoroutines)
@@ -115,7 +121,11 @@ var _ = Describe("NoopClient", func() {
 				go func() {
 					defer GinkgoRecover()
 					for j := 0; j < entriesPerGoroutine; j++ {
-						err := outputClient.Handle(now, "concurrent log entry")
+						entry := types.OutputEntry{
+							Timestamp: time.Now(),
+							Record:    map[string]any{"msg": "test"},
+						}
+						err := outputClient.Handle(entry)
 						Expect(err).NotTo(HaveOccurred())
 					}
 					done <- true
@@ -150,7 +160,11 @@ var _ = Describe("NoopClient", func() {
 
 		It("should be safe to call Handle after Stop", func() {
 			outputClient.Stop()
-			err := outputClient.Handle(time.Now(), "log after stop")
+			entry := types.OutputEntry{
+				Timestamp: time.Now(),
+				Record:    map[string]any{"msg": "test"},
+			}
+			err := outputClient.Handle(entry)
 			Expect(err).NotTo(HaveOccurred())
 		})
 	})
@@ -196,13 +210,20 @@ var _ = Describe("NoopClient", func() {
 			before1 := testutil.ToFloat64(metric1)
 			before2 := testutil.ToFloat64(metric2)
 
-			now := time.Now()
 			for i := 0; i < 5; i++ {
-				err := client1.Handle(now, "log for endpoint1")
+				entry := types.OutputEntry{
+					Timestamp: time.Now(),
+					Record:    map[string]any{"msg": "test"},
+				}
+				err := client1.Handle(entry)
 				Expect(err).NotTo(HaveOccurred())
 			}
 			for i := 0; i < 3; i++ {
-				err := client2.Handle(now, "log for endpoint2")
+				entry := types.OutputEntry{
+					Timestamp: time.Now(),
+					Record:    map[string]any{"msg": "test"},
+				}
+				err := client2.Handle(entry)
 				Expect(err).NotTo(HaveOccurred())
 			}
 

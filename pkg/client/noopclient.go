@@ -6,12 +6,12 @@ package client
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/go-logr/logr"
 
 	"github.com/gardener/logging/pkg/config"
 	"github.com/gardener/logging/pkg/metrics"
+	"github.com/gardener/logging/pkg/types"
 )
 
 const componentNoopName = "noop"
@@ -38,7 +38,7 @@ func NewNoopClient(cfg config.Config, logger logr.Logger) (OutputClient, error) 
 }
 
 // Handle processes and discards the log entry while incrementing metrics
-func (c *NoopClient) Handle(_ time.Time, _ string) error {
+func (c *NoopClient) Handle(_ types.OutputEntry) error {
 	// Increment the dropped logs counter since we're discarding the record
 	metrics.DroppedLogs.WithLabelValues(c.endpoint).Inc()
 

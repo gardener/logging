@@ -324,15 +324,15 @@ func createTestCluster(name, purpose string, hibernated bool) *extensionsv1alpha
 }
 
 // createLogRecord creates a fluent-bit log record for testing
-func createLogRecord(clusterName string, logIndex int) map[any]any {
-	return map[any]any{
+func createLogRecord(clusterName string, logIndex int) types.OutputRecord {
+	return types.OutputRecord{
 		"log": fmt.Sprintf("Test log message %d for cluster %s at %s",
 			logIndex, clusterName, time.Now().Format(time.RFC3339)),
-		"kubernetes": map[any]any{
+		"kubernetes": map[string]any{
 			"namespace_name": clusterName,
 			"pod_name":       fmt.Sprintf("test-pod-%d", logIndex%10),
 			"container_name": "test-container",
-			"labels": map[any]any{
+			"labels": map[string]any{
 				"app":     "test-app",
 				"cluster": clusterName,
 			},
@@ -375,10 +375,12 @@ func sendLogsForCluster(ctx *testContext, cluster *extensionsv1alpha1.Cluster, l
 	clusterName := cluster.Name
 
 	for i := 0; i < logsPerCluster; i++ {
-		record := createLogRecord(clusterName, i)
-		timestamp := time.Now()
+		entry := types.OutputEntry{
+			Timestamp: time.Now(),
+			Record:    createLogRecord(clusterName, i),
+		}
 
-		err := ctx.plugin.SendRecord(record, timestamp)
+		err := ctx.plugin.SendRecord(entry)
 		Expect(err).NotTo(HaveOccurred(),
 			"sending log %d for cluster %s should not error", i, clusterName)
 	}

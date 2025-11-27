@@ -5,8 +5,6 @@
 package controller
 
 import (
-	"time"
-
 	gardenercorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	"github.com/go-logr/logr"
 	giterrors "github.com/pkg/errors"
@@ -14,6 +12,7 @@ import (
 	"github.com/gardener/logging/pkg/client"
 	"github.com/gardener/logging/pkg/config"
 	"github.com/gardener/logging/pkg/metrics"
+	"github.com/gardener/logging/pkg/types"
 )
 
 // ClusterState is a type alias for string.
@@ -173,7 +172,7 @@ func (c *controllerClient) GetEndPoint() string {
 }
 
 // Handle processes and sends log to Vali.
-func (c *controllerClient) Handle(t time.Time, s string) error {
+func (c *controllerClient) Handle(log types.OutputEntry) error {
 	var combineErr error
 
 	// Because we do not use thread save methods here we just copy the variables
@@ -186,12 +185,12 @@ func (c *controllerClient) Handle(t time.Time, s string) error {
 		// are sending the log record to both shoot and seed clients we have to pass a copy because
 		// we are not sure what kind of label set processing will be done in the corresponding
 		// client which can lead to "concurrent map iteration and map write error".
-		if err := c.shootTarget.client.Handle(t, s); err != nil {
+		if err := c.shootTarget.client.Handle(log); err != nil {
 			combineErr = giterrors.Wrap(combineErr, err.Error())
 		}
 	}
 	if sendToSeed {
-		if err := c.seedTarget.client.Handle(t, s); err != nil {
+		if err := c.seedTarget.client.Handle(log); err != nil {
 			combineErr = giterrors.Wrap(combineErr, err.Error())
 		}
 	}

@@ -7,7 +7,6 @@ package controller
 import (
 	"encoding/json"
 	"errors"
-	"time"
 
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
@@ -20,6 +19,7 @@ import (
 
 	"github.com/gardener/logging/pkg/client"
 	"github.com/gardener/logging/pkg/config"
+	"github.com/gardener/logging/pkg/types"
 )
 
 var _ client.OutputClient = &fakeOutputClient{}
@@ -32,7 +32,7 @@ func (*fakeOutputClient) GetEndPoint() string {
 	return "http://localhost"
 }
 
-func (c *fakeOutputClient) Handle(_ time.Time, _ string) error {
+func (c *fakeOutputClient) Handle(_ types.OutputEntry) error {
 	if c.isStopped {
 		return errors.New("client has been stopped")
 	}

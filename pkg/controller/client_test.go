@@ -17,18 +17,23 @@ import (
 	"github.com/gardener/logging/pkg/config"
 	"github.com/gardener/logging/pkg/log"
 	"github.com/gardener/logging/pkg/metrics"
+	"github.com/gardener/logging/pkg/types"
 )
 
 var _ = Describe("Controller Client", func() {
 	var (
-		ctlClient  controllerClient
-		logger     = log.NewLogger("info")
-		timestamp1 = time.Now()
-		timestamp2 = time.Now().Add(time.Second)
-		line1      = "testline1"
-		line2      = "testline2"
-		entry1     = client.OutputEntry{Timestamp: timestamp1, Line: line1}
-		entry2     = client.OutputEntry{Timestamp: timestamp2, Line: line2}
+		ctlClient controllerClient
+		logger    = log.NewLogger("info")
+		line1     = "testline1"
+		line2     = "testline2"
+		entry1    = types.OutputEntry{
+			Timestamp: time.Now(),
+			Record:    types.OutputRecord{"msg": line1},
+		}
+		entry2 = types.OutputEntry{
+			Timestamp: time.Now().Add(time.Second),
+			Record:    types.OutputRecord{"msg": line2},
+		}
 	)
 
 	BeforeEach(func() {
@@ -69,7 +74,7 @@ var _ = Describe("Controller Client", func() {
 			muteSeedClient  bool
 			muteShootClient bool
 		}
-		input []client.OutputEntry
+		input []types.OutputEntry
 		want  struct {
 			seedLogCount  int
 			shootLogCount int
@@ -85,7 +90,7 @@ var _ = Describe("Controller Client", func() {
 		ctlClient.seedTarget.mute = args.config.muteSeedClient
 		ctlClient.shootTarget.mute = args.config.muteShootClient
 		for _, entry := range args.input {
-			err := ctlClient.Handle(entry.Timestamp, entry.Line)
+			err := ctlClient.Handle(entry)
 			Expect(err).ToNot(HaveOccurred())
 		}
 
@@ -105,7 +110,7 @@ var _ = Describe("Controller Client", func() {
 				muteSeedClient  bool
 				muteShootClient bool
 			}{true, false},
-			input: []client.OutputEntry{entry1, entry2},
+			input: []types.OutputEntry{entry1, entry2},
 			want: struct {
 				seedLogCount  int
 				shootLogCount int
@@ -116,7 +121,7 @@ var _ = Describe("Controller Client", func() {
 				muteSeedClient  bool
 				muteShootClient bool
 			}{false, true},
-			input: []client.OutputEntry{entry1, entry2},
+			input: []types.OutputEntry{entry1, entry2},
 			want: struct {
 				seedLogCount  int
 				shootLogCount int
@@ -127,7 +132,7 @@ var _ = Describe("Controller Client", func() {
 				muteSeedClient  bool
 				muteShootClient bool
 			}{false, false},
-			input: []client.OutputEntry{entry1, entry2},
+			input: []types.OutputEntry{entry1, entry2},
 			want: struct {
 				seedLogCount  int
 				shootLogCount int
@@ -138,7 +143,7 @@ var _ = Describe("Controller Client", func() {
 				muteSeedClient  bool
 				muteShootClient bool
 			}{true, true},
-			input: []client.OutputEntry{entry1, entry2},
+			input: []types.OutputEntry{entry1, entry2},
 			want: struct {
 				seedLogCount  int
 				shootLogCount int
@@ -253,7 +258,11 @@ var _ = Describe("Controller Client", func() {
 			initialShootDropped := testutil.ToFloat64(metrics.DroppedLogs.WithLabelValues("shoot-endpoint:4317"))
 			initialSeedDropped := testutil.ToFloat64(metrics.DroppedLogs.WithLabelValues("seed-endpoint:4317"))
 
-			err := ctlClient.Handle(time.Now(), "test before graceful stop")
+			entry := types.OutputEntry{
+				Timestamp: time.Now(),
+				Record:    types.OutputRecord{"msg": "test before graceful stop"},
+			}
+			err := ctlClient.Handle(entry)
 			Expect(err).ToNot(HaveOccurred())
 
 			// StopWait should not panic or error
@@ -285,7 +294,11 @@ var _ = Describe("Controller Client", func() {
 				go func(id int) {
 					defer wg.Done()
 					for j := 0; j < logsPerGoroutine; j++ {
-						err := ctlClient.Handle(time.Now(), fmt.Sprintf("concurrent log from goroutine %d, message %d", id, j))
+						entry := types.OutputEntry{
+							Timestamp: time.Now(),
+							Record:    types.OutputRecord{"msg": fmt.Sprintf("concurrent log from goroutine %d, message %d", id, j)},
+						}
+						err := ctlClient.Handle(entry)
 						Expect(err).ToNot(HaveOccurred())
 					}
 				}(i)
@@ -334,7 +347,11 @@ var _ = Describe("Controller Client", func() {
 				go func(id int) {
 					defer wg.Done()
 					for j := 0; j < 10; j++ {
-						_ = ctlClient.Handle(time.Now(), fmt.Sprintf("concurrent log during state changes %d-%d", id, j))
+						entry := types.OutputEntry{
+							Timestamp: time.Now(),
+							Record:    types.OutputRecord{"msg": fmt.Sprintf("concurrent log during state changes %d-%d", id, j)},
+						}
+						_ = ctlClient.Handle(entry)
 					}
 				}(i)
 			}
@@ -366,7 +383,11 @@ var _ = Describe("Controller Client", func() {
 				go func(id int) {
 					defer wg.Done()
 					for j := 0; j < 20; j++ {
-						_ = ctlClient.Handle(time.Now(), fmt.Sprintf("concurrent log before stop %d-%d", id, j))
+						entry := types.OutputEntry{
+							Timestamp: time.Now(),
+							Record:    types.OutputRecord{"msg": fmt.Sprintf("concurrent log before stop %d-%d", id, j)},
+						}
+						_ = ctlClient.Handle(entry)
 						time.Sleep(1 * time.Millisecond)
 					}
 				}(i)
