@@ -5,17 +5,16 @@
 package client
 
 import (
-	"time"
-
 	"github.com/go-logr/logr"
 
 	"github.com/gardener/logging/pkg/config"
+	"github.com/gardener/logging/pkg/types"
 )
 
 // OutputClient represents an instance which sends logs to Vali ingester
 type OutputClient interface {
 	// Handle processes logs and then sends them to Vali ingester
-	Handle(t time.Time, entry string) error
+	Handle(log types.OutputEntry) error
 	// Stop shut down the client immediately without waiting to send the saved logs
 	Stop()
 	// StopWait stops the client of receiving new logs and waits all saved logs to be sent until shutting down

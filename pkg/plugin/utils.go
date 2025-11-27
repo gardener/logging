@@ -7,6 +7,8 @@ package plugin
 import (
 	"fmt"
 	"regexp"
+
+	"github.com/gardener/logging/pkg/types"
 )
 
 const (
@@ -17,49 +19,6 @@ const (
 	subExpressionNumber               = 5
 	inCaseKubernetesMetadataIsMissing = 1
 )
-
-// prevent base64-encoding []byte values (default json.Encoder rule) by
-// converting them to strings
-
-func toStringSlice(slice []any) []any {
-	s := make([]any, 0, len(slice))
-	for _, v := range slice {
-		switch t := v.(type) {
-		case []byte:
-			s = append(s, string(t))
-		case map[any]any:
-			s = append(s, toStringMap(t))
-		case []any:
-			s = append(s, toStringSlice(t))
-		default:
-			s = append(s, t)
-		}
-	}
-
-	return s
-}
-
-func toStringMap(record map[any]any) map[string]any {
-	m := make(map[string]any, len(record)+inCaseKubernetesMetadataIsMissing)
-	for k, v := range record {
-		key, ok := k.(string)
-		if !ok {
-			continue
-		}
-		switch t := v.(type) {
-		case []byte:
-			m[key] = string(t)
-		case map[any]any:
-			m[key] = toStringMap(t)
-		case []any:
-			m[key] = toStringSlice(t)
-		default:
-			m[key] = v
-		}
-	}
-
-	return m
-}
 
 // extractKubernetesMetadataFromTag extracts kubernetes metadata from a tag and adds it to the records map.
 // The tag should be in the format: pod_name.namespace_name.container_name.container_id
@@ -86,13 +45,17 @@ func extractKubernetesMetadataFromTag(records map[string]any, tagKey string, re 
 	return nil
 }
 
-func getDynamicHostName(records map[string]any, mapping map[string]any) string {
+func getDynamicHostName(records types.OutputRecord, mapping map[string]any) string {
 	for k, v := range mapping {
 		switch nextKey := v.(type) {
 		// if the next level is a map we are expecting we need to move deeper in the tree
 		case map[string]any:
+			// Try to get the nested value and convert it to OutputRecord
+			if nextValue, ok := records[k].(types.OutputRecord); ok {
+				return getDynamicHostName(nextValue, nextKey)
+			}
+			// Also try map[string]any directly since type aliases may not match in type assertions
 			if nextValue, ok := records[k].(map[string]any); ok {
-				// recursively search through the next level map.
 				return getDynamicHostName(nextValue, nextKey)
 			}
 		case string:

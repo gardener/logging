@@ -16,6 +16,7 @@ import (
 	"github.com/gardener/logging/pkg/config"
 	"github.com/gardener/logging/pkg/log"
 	"github.com/gardener/logging/pkg/metrics"
+	"github.com/gardener/logging/pkg/types"
 )
 
 var _ = Describe("Buffer", func() {
@@ -115,7 +116,11 @@ var _ = Describe("Buffer", func() {
 
 			// Send 100 messages through the buffer
 			for i := 0; i < 100; i++ {
-				err := outputClient.Handle(time.Now(), fmt.Sprintf("test log message %d", i))
+				entry := types.OutputEntry{
+					Timestamp: time.Now(),
+					Record:    types.OutputRecord{"msg": fmt.Sprintf("test log %d", i)},
+				}
+				err := outputClient.Handle(entry)
 				Expect(err).ToNot(HaveOccurred())
 			}
 

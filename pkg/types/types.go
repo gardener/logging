@@ -5,7 +5,10 @@
 //nolint:revive // var-naming: package name "types" is acceptable for this types definition package
 package types
 
-import "strings"
+import (
+	"strings"
+	"time"
+)
 
 // Type represents the type of OutputClient
 type Type int
@@ -56,3 +59,11 @@ func (t Type) String() string {
 		return ""
 	}
 }
+
+// OutputEntry represents a log record with a timestamp
+type OutputEntry struct {
+	Timestamp time.Time
+	Record    OutputRecord
+}
+
+type OutputRecord map[string]any

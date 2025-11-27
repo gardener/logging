@@ -12,6 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/gardener/logging/pkg/config"
+	"github.com/gardener/logging/pkg/types"
 )
 
 type getDynamicHostNameArgs struct {
@@ -37,7 +38,7 @@ var _ = Describe("OutputPlugin plugin utils", func() {
 		},
 		Entry("empty record",
 			getDynamicHostNameArgs{
-				records: map[string]any{},
+				records: types.OutputRecord{},
 				mapping: map[string]any{
 					"kubernetes": map[string]any{
 						"namespace_name": "namespace",
@@ -48,7 +49,7 @@ var _ = Describe("OutputPlugin plugin utils", func() {
 		),
 		Entry("empty mapping",
 			getDynamicHostNameArgs{
-				records: map[string]any{
+				records: types.OutputRecord{
 					"kubernetes": map[string]any{
 						"foo":            []byte("buzz"),
 						"namespace_name": []byte("garden"),
@@ -60,7 +61,7 @@ var _ = Describe("OutputPlugin plugin utils", func() {
 		),
 		Entry("empty subrecord",
 			getDynamicHostNameArgs{
-				records: map[string]any{
+				records: types.OutputRecord{
 					"kubernetes": map[string]any{
 						"foo": []byte("buzz"),
 					},
@@ -75,7 +76,7 @@ var _ = Describe("OutputPlugin plugin utils", func() {
 		),
 		Entry("subrecord",
 			getDynamicHostNameArgs{
-				records: map[string]any{
+				records: types.OutputRecord{
 					"kubernetes": map[string]any{
 						"foo":            []byte("buzz"),
 						"namespace_name": []byte("garden"),
@@ -91,7 +92,7 @@ var _ = Describe("OutputPlugin plugin utils", func() {
 		),
 		Entry("deep string",
 			getDynamicHostNameArgs{
-				records: map[string]any{
+				records: types.OutputRecord{
 					"int":   "42",
 					"float": "42.42",
 					"array": `[42,42.42,"foo"]`,

@@ -33,7 +33,11 @@ var _ = Describe("Simple Plugin Test", func() {
 		Expect(c).NotTo(BeNil())
 
 		// Test handle
-		err = c.Handle(time.Now(), "test log")
+		entry := types.OutputEntry{
+			Timestamp: time.Now(),
+			Record:    types.OutputRecord{"msg": "test log"},
+		}
+		err = c.Handle(entry)
 		Expect(err).NotTo(HaveOccurred())
 
 		// Test cleanup

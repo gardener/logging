@@ -5,10 +5,8 @@
 package plugin
 
 import (
-	"encoding/json"
 	"fmt"
 	"regexp"
-	"time"
 
 	"github.com/go-logr/logr"
 	"k8s.io/client-go/tools/cache"
@@ -17,11 +15,12 @@ import (
 	"github.com/gardener/logging/pkg/config"
 	"github.com/gardener/logging/pkg/controller"
 	"github.com/gardener/logging/pkg/metrics"
+	"github.com/gardener/logging/pkg/types"
 )
 
 // OutputPlugin plugin interface
 type OutputPlugin interface {
-	SendRecord(r map[any]any, ts time.Time) error
+	SendRecord(log types.OutputEntry) error
 	Close()
 }
 
@@ -76,11 +75,11 @@ func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger lo
 // TODO: we receive map[any]any from fluent-bit,
 // we should convert it to corresponding otlp log record
 // with resource attributes reflecting k8s metadata and origin info
-func (l *logging) SendRecord(r map[any]any, ts time.Time) error {
-	records := toStringMap(r)
-	// _ = level.Debug(l.logger).Log("msg", "processing records", "records", fluentBitRecords(records))
+// TODO: it shall also handle otlp log records directly when fluent-bit has otlp envelope enabled
+func (l *logging) SendRecord(log types.OutputEntry) error {
+	records := log.Record
 
-	// Check if metadata is missing
+	// Check if metadata is missing // TODO: There is no point to have fallback as a configuration
 	_, ok := records["kubernetes"]
 	if !ok && l.cfg.PluginConfig.KubernetesMetadata.FallbackToTagWhenMetadataIsMissing {
 		// Attempt to extract Kubernetes metadata from the tag
@@ -127,13 +126,7 @@ func (l *logging) SendRecord(r map[any]any, ts time.Time) error {
 		return fmt.Errorf("no client found in controller for host: %v", dynamicHostName)
 	}
 
-	// TODO: line shall be extracted from the record send from fluent-bit
-	js, err := json.Marshal(records)
-	if err != nil {
-		return err
-	}
-
-	err = l.send(c, ts, string(js))
+	err := c.Handle(log) // send log line to the underlying client (seed or shoot)
 	if err != nil {
 		l.logger.Error(err, "error sending record to logging", "host", dynamicHostName)
 		metrics.Errors.WithLabelValues(metrics.ErrorSendRecord).Inc()
@@ -171,8 +164,4 @@ func (l *logging) isDynamicHost(dynamicHostName string) bool {
 	return dynamicHostName != "" &&
 		l.dynamicHostRegexp != nil &&
 		l.dynamicHostRegexp.MatchString(dynamicHostName)
-}
-
-func (*logging) send(c client.OutputClient, ts time.Time, line string) error {
-	return c.Handle(ts, line)
 }
