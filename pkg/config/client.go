@@ -1,8 +1,5 @@
-/*
-
-Modifications Copyright SAP SE or an SAP affiliate company and Gardener contributors
-*/
-
+// Copyright 2025 SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
+// SPDX-License-Identifier: Apache-2.0
 package config
 
 import (
