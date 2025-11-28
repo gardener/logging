@@ -130,7 +130,7 @@ func (c *pluginConfig) toStringMap() map[string]string {
 		// Plugin config
 		"DynamicHostPath", "DynamicHostPrefix", "DynamicHostSuffix", "DynamicHostRegex",
 
-		// Hostname config
+		// Hostname config TODO: revisit if we really need this
 		"HostnameKey", "HostnameValue",
 
 		// Kubernetes metadata - TODO: revisit how to handle kubernetes metadata. Simplify?
@@ -144,13 +144,18 @@ func (c *pluginConfig) toStringMap() map[string]string {
 		"DeletedClientTimeExpiration", "ControllerSyncTimeout",
 
 		// Log flows depending on cluster state
-		// TODO: rename the flags for clarity. MainCluster is Shoot DefaultClient is seed
-		"SendLogsToMainClusterWhenIsInCreationState", "SendLogsToMainClusterWhenIsInReadyState",
-		"SendLogsToMainClusterWhenIsInHibernatingState", "SendLogsToMainClusterWhenIsInHibernatedState",
-		"SendLogsToMainClusterWhenIsInDeletionState", "SendLogsToMainClusterWhenIsInRestoreState",
-		"SendLogsToMainClusterWhenIsInMigrationState",
-		"SendLogsToDefaultClientWhenClusterIsInCreationState", "SendLogsToDefaultClientWhenClusterIsInReadyState",
-		"SendLogsToDefaultClientWhenClusterIsInHibernatingState", "SendLogsToDefaultClientWhenClusterIsInHibernatedState",
+		// Shoot client config
+		"SendLogsToShootWhenIsInCreationState", "SendLogsToShootWhenIsInReadyState",
+		"SendLogsToShootWhenIsInHibernatingState", "SendLogsToShootWhenIsInHibernatedState",
+		"SendLogsToShootWhenIsInWakingState", "SendLogsToShootWhenIsInDeletionState",
+		"SendLogsToShootWhenIsInDeletedState", "SendLogsToShootWhenIsInRestoreState",
+		"SendLogsToShootWhenIsInMigrationState",
+		// Seed client config for shoots with dynamic hostnames
+		"SendLogsToSeedWhenShootIsInCreationState", "SendLogsToSeedWhenShootIsInReadyState",
+		"SendLogsToSeedWhenShootIsInHibernatingState", "SendLogsToSeedWhenShootIsInHibernatedState",
+		"SendLogsToSeedWhenShootIsInWakingState", "SendLogsToSeedWhenShootIsInDeletionState",
+		"SendLogsToSeedWhenShootIsInDeletedState", "SendLogsToSeedWhenShootIsInRestoreState",
+		"SendLogsToSeedWhenShootIsInMigrationState",
 
 		// Common OTLP configs
 		"Endpoint", "Insecure", "Compression", "Timeout", "Headers",
