@@ -1,9 +1,5 @@
-/*
-This file was copied from the credativ/vali project
-https://github.com/credativ/vali/blob/v2.2.4/cmd/fluent-bit/out_vali.go
-
-Modifications Copyright SAP SE or an SAP affiliate company and Gardener contributors
-*/
+// Copyright 2025 SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
+// SPDX-License-Identifier: Apache-2.0
 
 package main
 

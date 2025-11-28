@@ -1,9 +1,6 @@
-/*
-This file was copied from the credativ/client project
-https://github.com/credativ/vali/blob/v2.2.4/cmd/fluent-bit/dque.go
+// Copyright 2025 SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
+// SPDX-License-Identifier: Apache-2.0
 
-Modifications Copyright SAP SE or an SAP affiliate company and Gardener contributors
-*/
 package client
 
 import (
