@@ -134,7 +134,7 @@ func (c *pluginConfig) toStringMap() map[string]string {
 		// Plugin config
 		"AutoKubernetesLabels", "LineFormat", "DropSingleKey", "LabelKeys", "RemoveKeys", "LabelMapPath",
 		"DynamicHostPath", "DynamicHostPrefix", "DynamicHostSuffix", "DynamicHostRegex",
-		"LabelSetInitCapacity", "HostnameKey", "HostnameValue", "PreservedLabels", "EnableMultiTenancy",
+		"LabelSetInitCapacity", "HostnameKey", "HostnameKeyValue", "HostnameValue", "PreservedLabels", "EnableMultiTenancy",
 
 		// Kubernetes metadata
 		"FallbackToTagWhenMetadataIsMissing", "DropLogEntryWithoutK8sMetadata",
