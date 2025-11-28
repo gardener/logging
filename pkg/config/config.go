@@ -147,28 +147,37 @@ func processDynamicHostPath(configMap map[string]any, config *Config) error {
 func processControllerConfigBoolFields(configMap map[string]any, config *Config) error {
 	// Map of ConfigMap keys to their corresponding ShootControllerClientConfig fields
 	shootConfigMapping := map[string]*bool{
-		"SendLogsToMainClusterWhenIsInCreationState":    &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInCreationState,
-		"SendLogsToMainClusterWhenIsInReadyState":       &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInReadyState,
-		"SendLogsToMainClusterWhenIsInHibernatingState": &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInHibernatingState,
-		"SendLogsToMainClusterWhenIsInHibernatedState":  &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInHibernatedState,
-		"SendLogsToMainClusterWhenIsInWakingState":      &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInWakingState,
-		"SendLogsToMainClusterWhenIsInDeletionState":    &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInDeletionState,
-		"SendLogsToMainClusterWhenIsInDeletedState":     &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInDeletedState,
-		"SendLogsToMainClusterWhenIsInRestoreState":     &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInRestoreState,
-		"SendLogsToMainClusterWhenIsInMigrationState":   &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInMigrationState,
+		"SendLogsToShootWhenIsInCreationState": &config.ControllerConfig.ShootControllerClientConfig.
+			SendLogsWhenIsInCreationState,
+		"SendLogsToShootWhenIsInReadyState": &config.ControllerConfig.ShootControllerClientConfig.
+			SendLogsWhenIsInReadyState,
+		"SendLogsToShootWhenIsInHibernatingState": &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInHibernatingState,
+		"SendLogsToShootWhenIsInHibernatedState":  &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInHibernatedState,
+		"SendLogsToShootWhenIsInWakingState":      &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInWakingState,
+		"SendLogsToShootWhenIsInDeletionState":    &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInDeletionState,
+		"SendLogsToShootWhenIsInDeletedState":     &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInDeletedState,
+		"SendLogsToShootWhenIsInRestoreState":     &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInRestoreState,
+		"SendLogsToShootWhenIsInMigrationState":   &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInMigrationState,
 	}
 
 	// Map of ConfigMap keys to their corresponding SeedControllerClientConfig fields
 	seedConfigMapping := map[string]*bool{
-		"SendLogsToDefaultClientWhenClusterIsInCreationState":    &config.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInCreationState,
-		"SendLogsToDefaultClientWhenClusterIsInReadyState":       &config.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInReadyState,
-		"SendLogsToDefaultClientWhenClusterIsInHibernatingState": &config.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInHibernatingState,
-		"SendLogsToDefaultClientWhenClusterIsInHibernatedState":  &config.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInHibernatedState,
-		"SendLogsToDefaultClientWhenClusterIsInWakingState":      &config.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInWakingState,
-		"SendLogsToDefaultClientWhenClusterIsInDeletionState":    &config.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInDeletionState,
-		"SendLogsToDefaultClientWhenClusterIsInDeletedState":     &config.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInDeletedState,
-		"SendLogsToDefaultClientWhenClusterIsInRestoreState":     &config.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInRestoreState,
-		"SendLogsToDefaultClientWhenClusterIsInMigrationState":   &config.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInMigrationState,
+		"SendLogsToSeedWhenShootIsInCreationState": &config.ControllerConfig.SeedControllerClientConfig.
+			SendLogsWhenIsInCreationState,
+		"SendLogsToSeedWhenShootIsInReadyState": &config.ControllerConfig.SeedControllerClientConfig.
+			SendLogsWhenIsInReadyState,
+		"SendLogsToSeedWhenShootIsInHibernatingState": &config.ControllerConfig.SeedControllerClientConfig.
+			SendLogsWhenIsInHibernatingState,
+		"SendLogsToSeedWhenShootIsInHibernatedState": &config.ControllerConfig.SeedControllerClientConfig.
+			SendLogsWhenIsInHibernatedState,
+		"SendLogsToSeedWhenShootIsInWakingState": &config.ControllerConfig.SeedControllerClientConfig.
+			SendLogsWhenIsInWakingState,
+		"SendLogsToSeedWhenShootIsInDeletionState": &config.ControllerConfig.SeedControllerClientConfig.
+			SendLogsWhenIsInDeletionState,
+		"SendLogsToSeedWhenShootIsInRestoreState": &config.ControllerConfig.SeedControllerClientConfig.
+			SendLogsWhenIsInRestoreState,
+		"SendLogsToSeedWhenShootIsInMigrationState": &config.ControllerConfig.SeedControllerClientConfig.
+			SendLogsWhenIsInMigrationState,
 	}
 
 	// Process ShootControllerClientConfig fields - only override if key exists in ConfigMap
