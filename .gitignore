@@ -13,3 +13,5 @@ bin
 kubeconfig
 *~
 gosec-report.sarif
+fluent-bit-output-plugin
+
