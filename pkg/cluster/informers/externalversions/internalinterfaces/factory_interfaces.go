@@ -11,7 +11,7 @@ import (
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	cache "k8s.io/client-go/tools/cache"
 
-	versioned "github.com/gardener/logging/pkg/cluster/clientset/versioned"
+	versioned "github.com/gardener/logging/v1/pkg/cluster/clientset/versioned"
 )
 
 // NewInformerFunc takes versioned.Interface and time.Duration to return a SharedIndexInformer.

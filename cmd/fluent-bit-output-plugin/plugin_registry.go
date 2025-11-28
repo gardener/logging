@@ -5,7 +5,7 @@
 package main
 
 import (
-	"github.com/gardener/logging/pkg/plugin"
+	"github.com/gardener/logging/v1/pkg/plugin"
 )
 
 // pluginsContains checks if a plugin with the given id exists in the plugins map.

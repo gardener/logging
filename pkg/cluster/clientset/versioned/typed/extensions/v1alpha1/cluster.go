@@ -14,7 +14,7 @@ import (
 	watch "k8s.io/apimachinery/pkg/watch"
 	rest "k8s.io/client-go/rest"
 
-	scheme "github.com/gardener/logging/pkg/cluster/clientset/versioned/scheme"
+	scheme "github.com/gardener/logging/v1/pkg/cluster/clientset/versioned/scheme"
 )
 
 // ClustersGetter has a method to return a ClusterInterface.

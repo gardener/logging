@@ -7,8 +7,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/gardener/logging/pkg/metrics"
-	"github.com/gardener/logging/pkg/types"
+	"github.com/gardener/logging/v1/pkg/metrics"
+	"github.com/gardener/logging/v1/pkg/types"
 )
 
 // toOutputRecord converts fluent-bit's map[any]any to types.OutputRecord.

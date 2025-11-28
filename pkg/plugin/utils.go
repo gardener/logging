@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/gardener/logging/pkg/types"
+	"github.com/gardener/logging/v1/pkg/types"
 )
 
 const (

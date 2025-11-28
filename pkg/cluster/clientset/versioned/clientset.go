@@ -9,7 +9,7 @@ package versioned
 import (
 	"fmt"
 
-	extensionsv1alpha1 "github.com/gardener/logging/pkg/cluster/clientset/versioned/typed/extensions/v1alpha1"
+	extensionsv1alpha1 "github.com/gardener/logging/v1/pkg/cluster/clientset/versioned/typed/extensions/v1alpha1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"

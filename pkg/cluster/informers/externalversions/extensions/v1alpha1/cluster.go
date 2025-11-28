@@ -14,9 +14,9 @@ import (
 	watch "k8s.io/apimachinery/pkg/watch"
 	cache "k8s.io/client-go/tools/cache"
 
-	versioned "github.com/gardener/logging/pkg/cluster/clientset/versioned"
-	internalinterfaces "github.com/gardener/logging/pkg/cluster/informers/externalversions/internalinterfaces"
-	v1alpha1 "github.com/gardener/logging/pkg/cluster/listers/extensions/v1alpha1"
+	versioned "github.com/gardener/logging/v1/pkg/cluster/clientset/versioned"
+	internalinterfaces "github.com/gardener/logging/v1/pkg/cluster/informers/externalversions/internalinterfaces"
+	v1alpha1 "github.com/gardener/logging/v1/pkg/cluster/listers/extensions/v1alpha1"
 )
 
 // ClusterInformer provides access to a shared informer and lister for

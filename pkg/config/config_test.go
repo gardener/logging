@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/gardener/logging/pkg/config"
+	"github.com/gardener/logging/v1/pkg/config"
 )
 
 func TestConfig(t *testing.T) {

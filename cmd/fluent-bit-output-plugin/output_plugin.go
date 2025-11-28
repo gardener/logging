@@ -28,12 +28,12 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/component-base/version"
 
-	"github.com/gardener/logging/pkg/config"
-	"github.com/gardener/logging/pkg/healthz"
-	"github.com/gardener/logging/pkg/log"
-	"github.com/gardener/logging/pkg/metrics"
-	"github.com/gardener/logging/pkg/plugin"
-	"github.com/gardener/logging/pkg/types"
+	"github.com/gardener/logging/v1/pkg/config"
+	"github.com/gardener/logging/v1/pkg/healthz"
+	"github.com/gardener/logging/v1/pkg/log"
+	"github.com/gardener/logging/v1/pkg/metrics"
+	"github.com/gardener/logging/v1/pkg/plugin"
+	"github.com/gardener/logging/v1/pkg/types"
 )
 
 var (

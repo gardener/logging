@@ -7,8 +7,8 @@ package client
 import (
 	"github.com/go-logr/logr"
 
-	"github.com/gardener/logging/pkg/config"
-	"github.com/gardener/logging/pkg/types"
+	"github.com/gardener/logging/v1/pkg/config"
+	"github.com/gardener/logging/v1/pkg/types"
 )
 
 // OutputClient represents an instance which sends logs to Vali ingester

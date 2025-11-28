@@ -14,9 +14,9 @@ import (
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
 
-	versioned "github.com/gardener/logging/pkg/cluster/clientset/versioned"
-	extensions "github.com/gardener/logging/pkg/cluster/informers/externalversions/extensions"
-	internalinterfaces "github.com/gardener/logging/pkg/cluster/informers/externalversions/internalinterfaces"
+	versioned "github.com/gardener/logging/v1/pkg/cluster/clientset/versioned"
+	extensions "github.com/gardener/logging/v1/pkg/cluster/informers/externalversions/extensions"
+	internalinterfaces "github.com/gardener/logging/v1/pkg/cluster/informers/externalversions/internalinterfaces"
 )
 
 // SharedInformerOption defines the functional option type for SharedInformerFactory.

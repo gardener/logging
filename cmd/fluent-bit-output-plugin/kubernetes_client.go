@@ -12,8 +12,8 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
-	gardenerclientsetversioned "github.com/gardener/logging/pkg/cluster/clientset/versioned"
-	gardeninternalcoreinformers "github.com/gardener/logging/pkg/cluster/informers/externalversions"
+	gardenerclientsetversioned "github.com/gardener/logging/v1/pkg/cluster/clientset/versioned"
+	gardeninternalcoreinformers "github.com/gardener/logging/v1/pkg/cluster/informers/externalversions"
 )
 
 // inClusterKubernetesClient creates a Kubernetes client using in-cluster configuration.
