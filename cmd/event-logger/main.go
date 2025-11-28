@@ -7,7 +7,7 @@ package main
 import (
 	"os"
 
-	"github.com/gardener/logging/cmd/event-logger/app"
+	"github.com/gardener/logging/v1/cmd/event-logger/app"
 )
 
 func main() {

@@ -5,7 +5,7 @@
 package v1alpha1
 
 import (
-	internalinterfaces "github.com/gardener/logging/pkg/cluster/informers/externalversions/internalinterfaces"
+	internalinterfaces "github.com/gardener/logging/v1/pkg/cluster/informers/externalversions/internalinterfaces"
 )
 
 // Interface provides access to all the informers in this group version.

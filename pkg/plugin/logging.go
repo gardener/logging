@@ -11,11 +11,11 @@ import (
 	"github.com/go-logr/logr"
 	"k8s.io/client-go/tools/cache"
 
-	"github.com/gardener/logging/pkg/client"
-	"github.com/gardener/logging/pkg/config"
-	"github.com/gardener/logging/pkg/controller"
-	"github.com/gardener/logging/pkg/metrics"
-	"github.com/gardener/logging/pkg/types"
+	"github.com/gardener/logging/v1/pkg/client"
+	"github.com/gardener/logging/v1/pkg/config"
+	"github.com/gardener/logging/v1/pkg/controller"
+	"github.com/gardener/logging/v1/pkg/metrics"
+	"github.com/gardener/logging/v1/pkg/types"
 )
 
 // OutputPlugin plugin interface

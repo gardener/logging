@@ -8,7 +8,7 @@ package v1alpha1
 
 import (
 	v1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
-	"github.com/gardener/logging/pkg/cluster/clientset/versioned/scheme"
+	"github.com/gardener/logging/v1/pkg/cluster/clientset/versioned/scheme"
 	rest "k8s.io/client-go/rest"
 )
 

@@ -10,10 +10,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/gardener/logging/pkg/client"
-	"github.com/gardener/logging/pkg/config"
-	"github.com/gardener/logging/pkg/log"
-	"github.com/gardener/logging/pkg/types"
+	"github.com/gardener/logging/v1/pkg/client"
+	"github.com/gardener/logging/v1/pkg/config"
+	"github.com/gardener/logging/v1/pkg/log"
+	"github.com/gardener/logging/v1/pkg/types"
 )
 
 var _ = Describe("Simple Plugin Test", func() {

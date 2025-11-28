@@ -11,9 +11,9 @@ import (
 	fakediscovery "k8s.io/client-go/discovery/fake"
 	"k8s.io/client-go/testing"
 
-	clientset "github.com/gardener/logging/pkg/cluster/clientset/versioned"
-	extensionsv1alpha1 "github.com/gardener/logging/pkg/cluster/clientset/versioned/typed/extensions/v1alpha1"
-	fakeextensionsv1alpha1 "github.com/gardener/logging/pkg/cluster/clientset/versioned/typed/extensions/v1alpha1/fake"
+	clientset "github.com/gardener/logging/v1/pkg/cluster/clientset/versioned"
+	extensionsv1alpha1 "github.com/gardener/logging/v1/pkg/cluster/clientset/versioned/typed/extensions/v1alpha1"
+	fakeextensionsv1alpha1 "github.com/gardener/logging/v1/pkg/cluster/clientset/versioned/typed/extensions/v1alpha1/fake"
 )
 
 // NewSimpleClientset returns a clientset that will respond with the provided objects.

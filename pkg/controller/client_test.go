@@ -13,11 +13,11 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 
-	"github.com/gardener/logging/pkg/client"
-	"github.com/gardener/logging/pkg/config"
-	"github.com/gardener/logging/pkg/log"
-	"github.com/gardener/logging/pkg/metrics"
-	"github.com/gardener/logging/pkg/types"
+	"github.com/gardener/logging/v1/pkg/client"
+	"github.com/gardener/logging/v1/pkg/config"
+	"github.com/gardener/logging/v1/pkg/log"
+	"github.com/gardener/logging/v1/pkg/metrics"
+	"github.com/gardener/logging/v1/pkg/types"
 )
 
 var _ = Describe("Controller Client", func() {

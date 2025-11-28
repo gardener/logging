@@ -20,9 +20,9 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/joncrlsn/dque"
 
-	"github.com/gardener/logging/pkg/config"
-	"github.com/gardener/logging/pkg/metrics"
-	"github.com/gardener/logging/pkg/types"
+	"github.com/gardener/logging/v1/pkg/config"
+	"github.com/gardener/logging/v1/pkg/metrics"
+	"github.com/gardener/logging/v1/pkg/types"
 )
 
 const componentNameDque = "dque"

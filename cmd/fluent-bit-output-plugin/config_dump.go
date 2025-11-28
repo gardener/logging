@@ -7,7 +7,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/gardener/logging/pkg/config"
+	"github.com/gardener/logging/v1/pkg/config"
 )
 
 // dumpConfiguration logs the complete plugin configuration at debug level (V(1)).

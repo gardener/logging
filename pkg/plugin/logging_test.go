@@ -22,12 +22,12 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/ptr"
 
-	fakeclientset "github.com/gardener/logging/pkg/cluster/clientset/versioned/fake"
-	"github.com/gardener/logging/pkg/cluster/informers/externalversions"
-	"github.com/gardener/logging/pkg/config"
-	"github.com/gardener/logging/pkg/log"
-	"github.com/gardener/logging/pkg/metrics"
-	"github.com/gardener/logging/pkg/types"
+	fakeclientset "github.com/gardener/logging/v1/pkg/cluster/clientset/versioned/fake"
+	"github.com/gardener/logging/v1/pkg/cluster/informers/externalversions"
+	"github.com/gardener/logging/v1/pkg/config"
+	"github.com/gardener/logging/v1/pkg/log"
+	"github.com/gardener/logging/v1/pkg/metrics"
+	"github.com/gardener/logging/v1/pkg/types"
 )
 
 var _ = Describe("OutputPlugin plugin", func() {
