@@ -45,8 +45,42 @@ type Config struct {
 	Pprof            bool             `mapstructure:"Pprof"`
 }
 
+// sanitizeConfigString removes surrounding quotes (" or ') from configuration string values
+// This is needed because Fluent Bit may pass values with quotes, e.g., "value" or 'value'
+func sanitizeConfigString(value string) string {
+	// Remove leading and trailing whitespace first
+	value = strings.TrimSpace(value)
+
+	// Remove surrounding double quotes
+	if len(value) >= 2 && value[0] == '"' && value[len(value)-1] == '"' {
+		return value[1 : len(value)-1]
+	}
+
+	// Remove surrounding single quotes
+	if len(value) >= 2 && value[0] == '\'' && value[len(value)-1] == '\'' {
+		return value[1 : len(value)-1]
+	}
+
+	return value
+}
+
+// sanitizeConfigMap recursively sanitizes all string values in the configuration map
+func sanitizeConfigMap(configMap map[string]any) {
+	for key, value := range configMap {
+		switch v := value.(type) {
+		case string:
+			configMap[key] = sanitizeConfigString(v)
+		case map[string]any:
+			sanitizeConfigMap(v)
+		}
+	}
+}
+
 // ParseConfig parses a configuration from a map of string interfaces
 func ParseConfig(configMap map[string]any) (*Config, error) {
+	// Sanitize configuration values to remove surrounding quotes
+	sanitizeConfigMap(configMap)
+
 	// Set default LogLevel
 
 	config, err := defaultConfig()

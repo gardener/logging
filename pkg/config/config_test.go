@@ -438,4 +438,211 @@ var _ = Describe("Config", func() {
 			Expect(cfg.PluginConfig.KubernetesMetadata.DropLogEntryWithoutK8sMetadata).To(BeTrue())
 		})
 	})
+
+	Context("Quote Handling", func() {
+		It("should strip double quotes from string values", func() {
+			configMap := map[string]any{
+				"Endpoint":  `"localhost:4317"`,
+				"LogLevel":  `"debug"`,
+				"QueueName": `"my-queue"`,
+			}
+
+			cfg, err := config.ParseConfig(configMap)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(cfg).ToNot(BeNil())
+
+			// Quotes should be stripped
+			Expect(cfg.OTLPConfig.Endpoint).To(Equal("localhost:4317"))
+			Expect(cfg.LogLevel).To(Equal("debug"))
+			Expect(cfg.ClientConfig.BufferConfig.DqueConfig.QueueName).To(Equal("my-queue"))
+		})
+
+		It("should strip single quotes from string values", func() {
+			configMap := map[string]any{
+				"Endpoint":  `'localhost:4317'`,
+				"LogLevel":  `'warn'`,
+				"QueueName": `'my-queue'`,
+			}
+
+			cfg, err := config.ParseConfig(configMap)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(cfg).ToNot(BeNil())
+
+			// Quotes should be stripped
+			Expect(cfg.OTLPConfig.Endpoint).To(Equal("localhost:4317"))
+			Expect(cfg.LogLevel).To(Equal("warn"))
+			Expect(cfg.ClientConfig.BufferConfig.DqueConfig.QueueName).To(Equal("my-queue"))
+		})
+
+		It("should handle values with quotes and whitespace", func() {
+			configMap := map[string]any{
+				"Endpoint":  `  "localhost:4317"  `,
+				"QueueName": `  'my-queue'  `,
+				"LogLevel":  `  "info"  `,
+				"SeedType":  `  "OTLPGRPC"  `,
+				"ShootType": `  'STDOUT'  `,
+				"QueueDir":  `  "/tmp/queue"  `,
+			}
+
+			cfg, err := config.ParseConfig(configMap)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(cfg).ToNot(BeNil())
+
+			// Quotes and whitespace should be stripped
+			Expect(cfg.OTLPConfig.Endpoint).To(Equal("localhost:4317"))
+			Expect(cfg.ClientConfig.BufferConfig.DqueConfig.QueueName).To(Equal("my-queue"))
+			Expect(cfg.LogLevel).To(Equal("info"))
+			Expect(cfg.ClientConfig.SeedType).To(Equal("OTLPGRPC"))
+			Expect(cfg.ClientConfig.ShootType).To(Equal("STDOUT"))
+			Expect(cfg.ClientConfig.BufferConfig.DqueConfig.QueueDir).To(Equal("/tmp/queue"))
+		})
+
+		It("should handle values without quotes", func() {
+			configMap := map[string]any{
+				"Endpoint":  "localhost:4317",
+				"LogLevel":  "error",
+				"QueueName": "my-queue",
+			}
+
+			cfg, err := config.ParseConfig(configMap)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(cfg).ToNot(BeNil())
+
+			// Values should remain unchanged
+			Expect(cfg.OTLPConfig.Endpoint).To(Equal("localhost:4317"))
+			Expect(cfg.LogLevel).To(Equal("error"))
+			Expect(cfg.ClientConfig.BufferConfig.DqueConfig.QueueName).To(Equal("my-queue"))
+		})
+
+		It("should handle quoted boolean values", func() {
+			configMap := map[string]any{
+				"Buffer":                             `"true"`,
+				"Insecure":                           `"false"`,
+				"RetryEnabled":                       `'true'`,
+				"TLSInsecureSkipVerify":              `'false'`,
+				"FallbackToTagWhenMetadataIsMissing": `"true"`,
+				"DropLogEntryWithoutK8sMetadata":     `'false'`,
+			}
+
+			cfg, err := config.ParseConfig(configMap)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(cfg).ToNot(BeNil())
+
+			// Should parse booleans correctly after stripping quotes
+			Expect(cfg.ClientConfig.BufferConfig.Buffer).To(BeTrue())
+			Expect(cfg.OTLPConfig.Insecure).To(BeFalse())
+			Expect(cfg.OTLPConfig.RetryEnabled).To(BeTrue())
+			Expect(cfg.OTLPConfig.TLSInsecureSkipVerify).To(BeFalse())
+			Expect(cfg.PluginConfig.KubernetesMetadata.FallbackToTagWhenMetadataIsMissing).To(BeTrue())
+			Expect(cfg.PluginConfig.KubernetesMetadata.DropLogEntryWithoutK8sMetadata).To(BeFalse())
+		})
+
+		It("should handle quoted numeric values", func() {
+			configMap := map[string]any{
+				"QueueSegmentSize": `"500"`,
+				"Compression":      `'1'`,
+			}
+
+			cfg, err := config.ParseConfig(configMap)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(cfg).ToNot(BeNil())
+
+			// Should parse numbers correctly after stripping quotes
+			Expect(cfg.ClientConfig.BufferConfig.DqueConfig.QueueSegmentSize).To(Equal(500))
+			Expect(cfg.OTLPConfig.Compression).To(Equal(1))
+		})
+
+		It("should handle quoted duration values", func() {
+			configMap := map[string]any{
+				"Timeout":               `"45s"`,
+				"ControllerSyncTimeout": `'90s'`,
+				"RetryInitialInterval":  `"5s"`,
+				"RetryMaxInterval":      `'30s'`,
+			}
+
+			cfg, err := config.ParseConfig(configMap)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(cfg).ToNot(BeNil())
+
+			// Should parse durations correctly after stripping quotes
+			Expect(cfg.OTLPConfig.Timeout).To(Equal(45 * time.Second))
+			Expect(cfg.ControllerConfig.CtlSyncTimeout).To(Equal(90 * time.Second))
+			Expect(cfg.OTLPConfig.RetryInitialInterval).To(Equal(5 * time.Second))
+			Expect(cfg.OTLPConfig.RetryMaxInterval).To(Equal(30 * time.Second))
+		})
+
+		It("should handle quoted JSON values", func() {
+			configMap := map[string]any{
+				"DynamicHostPath": `"{"kubernetes": {"namespace_name": "test"}}"`,
+				"Headers":         `'{"authorization": "Bearer token"}'`,
+			}
+
+			cfg, err := config.ParseConfig(configMap)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(cfg).ToNot(BeNil())
+
+			// Should parse JSON correctly after stripping outer quotes
+			Expect(cfg.PluginConfig.DynamicHostPath).ToNot(BeNil())
+			Expect(cfg.PluginConfig.DynamicHostPath).To(HaveKey("kubernetes"))
+
+			Expect(cfg.OTLPConfig.Headers).ToNot(BeNil())
+			Expect(cfg.OTLPConfig.Headers).To(HaveKeyWithValue("authorization", "Bearer token"))
+		})
+
+		It("should handle mixed quoted and unquoted values", func() {
+			configMap := map[string]any{
+				"Endpoint":          `"localhost:4317"`,
+				"LogLevel":          "info",
+				"Buffer":            `'true'`,
+				"QueueSegmentSize":  500,
+				"Timeout":           `"30s"`,
+				"RetryEnabled":      "true",
+				"DynamicHostPrefix": `"http://logging."`,
+				"DynamicHostSuffix": `.svc:3100/vali/api/v1/push`,
+			}
+
+			cfg, err := config.ParseConfig(configMap)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(cfg).ToNot(BeNil())
+
+			// All values should be parsed correctly regardless of quoting
+			Expect(cfg.OTLPConfig.Endpoint).To(Equal("localhost:4317"))
+			Expect(cfg.LogLevel).To(Equal("info"))
+			Expect(cfg.ClientConfig.BufferConfig.Buffer).To(BeTrue())
+			Expect(cfg.ClientConfig.BufferConfig.DqueConfig.QueueSegmentSize).To(Equal(500))
+			Expect(cfg.OTLPConfig.Timeout).To(Equal(30 * time.Second))
+			Expect(cfg.OTLPConfig.RetryEnabled).To(BeTrue())
+			Expect(cfg.ControllerConfig.DynamicHostPrefix).To(Equal("http://logging."))
+			Expect(cfg.ControllerConfig.DynamicHostSuffix).To(Equal(".svc:3100/vali/api/v1/push"))
+		})
+
+		It("should handle empty strings with quotes", func() {
+			configMap := map[string]any{
+				"TLSServerName": `""`,
+				"TLSCAFile":     `''`,
+			}
+
+			cfg, err := config.ParseConfig(configMap)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(cfg).ToNot(BeNil())
+
+			// Empty strings should remain empty after stripping quotes
+			Expect(cfg.OTLPConfig.TLSServerName).To(BeEmpty())
+			Expect(cfg.OTLPConfig.TLSCAFile).To(BeEmpty())
+		})
+
+		It("should not strip quotes from values with quotes in the middle", func() {
+			configMap := map[string]any{
+				"Headers": `{"authorization": "Bearer \"token123\""}`,
+			}
+
+			cfg, err := config.ParseConfig(configMap)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(cfg).ToNot(BeNil())
+
+			// Only outer quotes should be stripped, inner escaped quotes should remain
+			Expect(cfg.OTLPConfig.Headers).ToNot(BeNil())
+			Expect(cfg.OTLPConfig.Headers).To(HaveKeyWithValue("authorization", `Bearer "token123"`))
+		})
+	})
 })

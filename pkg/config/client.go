@@ -45,7 +45,6 @@ var DefaultDqueConfig = DqueConfig{
 }
 
 // OTLPConfig holds configuration for otlp endpoint
-// TODO: handle config fields with \" and \' prefixes/suffixes
 type OTLPConfig struct {
 	Endpoint    string            `mapstructure:"Endpoint"`
 	Insecure    bool              `mapstructure:"Insecure"`
