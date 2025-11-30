@@ -42,6 +42,7 @@ func NewOTLPGRPCClient(cfg config.Config, logger logr.Logger) (OutputClient, err
 	metricsSetup, err := NewMetricsSetup()
 	if err != nil {
 		cancel()
+
 		return nil, err
 	}
 
@@ -56,6 +57,7 @@ func NewOTLPGRPCClient(cfg config.Config, logger logr.Logger) (OutputClient, err
 	exporter, err := otlploggrpc.New(ctx, exporterOpts...)
 	if err != nil {
 		cancel()
+
 		return nil, fmt.Errorf("failed to create OTLP gRPC exporter: %w", err)
 	}
 

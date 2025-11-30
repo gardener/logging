@@ -26,6 +26,7 @@ func NewLogRecordBuilder() *LogRecordBuilder {
 // WithTimestamp sets the timestamp
 func (b *LogRecordBuilder) WithTimestamp(timestamp time.Time) *LogRecordBuilder {
 	b.record.SetTimestamp(timestamp)
+
 	return b
 }
 
@@ -35,6 +36,7 @@ func (b *LogRecordBuilder) WithSeverity(record types.OutputRecord) *LogRecordBui
 	b.record.SetSeverity(severity)
 	b.record.SetSeverityText(severityText)
 	b.severityText = severityText
+
 	return b
 }
 
@@ -42,6 +44,7 @@ func (b *LogRecordBuilder) WithSeverity(record types.OutputRecord) *LogRecordBui
 func (b *LogRecordBuilder) WithBody(record types.OutputRecord) *LogRecordBuilder {
 	body := extractBody(record)
 	b.record.SetBody(otlplog.StringValue(body))
+
 	return b
 }
 
@@ -49,6 +52,7 @@ func (b *LogRecordBuilder) WithBody(record types.OutputRecord) *LogRecordBuilder
 func (b *LogRecordBuilder) WithAttributes(entry types.OutputEntry) *LogRecordBuilder {
 	attrs := b.buildAttributes(entry)
 	b.record.AddAttributes(attrs...)
+
 	return b
 }
 
@@ -65,6 +69,7 @@ func extractBody(record types.OutputRecord) string {
 	if msg, ok := record["message"].(string); ok {
 		return msg
 	}
+
 	return fmt.Sprintf("%v", record)
 }
 

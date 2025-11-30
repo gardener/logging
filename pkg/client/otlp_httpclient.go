@@ -42,6 +42,7 @@ func NewOTLPHTTPClient(cfg config.Config, logger logr.Logger) (OutputClient, err
 	metricsSetup, err := NewMetricsSetup()
 	if err != nil {
 		cancel()
+
 		return nil, err
 	}
 
@@ -53,6 +54,7 @@ func NewOTLPHTTPClient(cfg config.Config, logger logr.Logger) (OutputClient, err
 	exporter, err := otlploghttp.New(ctx, exporterOpts...)
 	if err != nil {
 		cancel()
+
 		return nil, fmt.Errorf("failed to create OTLP HTTP exporter: %w", err)
 	}
 
