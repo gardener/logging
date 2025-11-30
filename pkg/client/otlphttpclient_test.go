@@ -207,6 +207,56 @@ var _ = Describe("OTLPHTTPClient", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
+		It("should extract all kubernetes metadata following semantic conventions", func() {
+			entry := types.OutputEntry{
+				Timestamp: time.Now(),
+				Record: types.OutputRecord{
+					"log": "full kubernetes metadata test",
+					"kubernetes": map[string]any{
+						"namespace_name": "production",
+						"pod_name":       "myapp-pod-abc123",
+						"pod_id":         "550e8400-e29b-41d4-a716-446655440000",
+						"container_name": "app-container",
+						"container_id":   "docker://abcdef123456",
+						"host":           "node-1",
+					},
+				},
+			}
+
+			err := client.Handle(entry)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should handle log entry with partial kubernetes metadata", func() {
+			entry := types.OutputEntry{
+				Timestamp: time.Now(),
+				Record: types.OutputRecord{
+					"log": "partial kubernetes metadata",
+					"kubernetes": map[string]any{
+						"pod_name":       "test-pod-xyz",
+						"namespace_name": "default",
+						// container_name and other fields are missing
+					},
+				},
+			}
+
+			err := client.Handle(entry)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should handle log entry without kubernetes metadata", func() {
+			entry := types.OutputEntry{
+				Timestamp: time.Now(),
+				Record: types.OutputRecord{
+					"log":   "no kubernetes metadata",
+					"level": "info",
+				},
+			}
+
+			err := client.Handle(entry)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
 		It("should handle log entry with various data types", func() {
 			entry := types.OutputEntry{
 				Timestamp: time.Now(),
