@@ -30,6 +30,7 @@ func (b *ResourceAttributesBuilder) WithHostname(cfg config.Config) *ResourceAtt
 			Value: attribute.StringValue(cfg.PluginConfig.HostnameValue),
 		})
 	}
+
 	return b
 }
 
@@ -39,6 +40,7 @@ func (b *ResourceAttributesBuilder) WithOrigin(origin string) *ResourceAttribute
 		Key:   attribute.Key("origin"),
 		Value: attribute.StringValue(origin),
 	})
+
 	return b
 }
 
