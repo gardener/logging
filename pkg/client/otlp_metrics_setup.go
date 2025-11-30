@@ -1,10 +1,15 @@
 // Copyright 2025 SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
 // SPDX-License-Identifier: Apache-2.0
 
+// Package client provides OTLP client implementations with integrated metrics collection.
+// The metrics setup uses a singleton pattern to ensure only one Prometheus exporter
+// is created across all clients, preventing duplicate metric collection errors.
 package client
 
 import (
+	"context"
 	"fmt"
+	"sync"
 
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
@@ -13,36 +18,101 @@ import (
 	"google.golang.org/grpc"
 )
 
-// MetricsSetup encapsulates metrics provider creation and configuration
+// MetricsSetup encapsulates the OpenTelemetry meter provider and manages its lifecycle.
+// It ensures idempotent shutdown and provides helpers for gRPC instrumentation.
+// This type is thread-safe and designed to be used as a singleton.
 type MetricsSetup struct {
-	provider *sdkmetric.MeterProvider
+	provider     *sdkmetric.MeterProvider
+	shutdownOnce sync.Once
 }
 
-// NewMetricsSetup creates and configures a meter provider with Prometheus exporter
+var (
+	// globalMetricsSetup is the singleton instance shared across all OTLP clients.
+	// It is initialized lazily on first access and reused for all subsequent requests.
+	globalMetricsSetup *MetricsSetup
+
+	// metricsSetupOnce ensures the metrics setup is initialized exactly once,
+	// even when called concurrently from multiple goroutines.
+	metricsSetupOnce sync.Once
+
+	// metricsSetupErr stores any initialization error that occurred during setup.
+	// If non-nil, all calls to NewMetricsSetup() will return this error.
+	metricsSetupErr error
+)
+
+// NewMetricsSetup returns the singleton MetricsSetup instance.
+// On first call, it creates a Prometheus exporter and meter provider.
+// Subsequent calls return the same instance, ensuring no duplicate metrics.
+//
+// Multiple concurrent calls are safe - initialization happens exactly once.
+//
+// Returns an error if the Prometheus exporter creation fails.
 func NewMetricsSetup() (*MetricsSetup, error) {
+	metricsSetupOnce.Do(func() {
+		globalMetricsSetup, metricsSetupErr = initializeMetricsSetup()
+	})
+
+	if metricsSetupErr != nil {
+		return nil, metricsSetupErr
+	}
+
+	return globalMetricsSetup, nil
+}
+
+// initializeMetricsSetup creates and configures the metrics infrastructure.
+// This function is called exactly once by the singleton pattern.
+func initializeMetricsSetup() (*MetricsSetup, error) {
 	promExporter, err := prometheus.New()
 	if err != nil {
-		return nil, fmt.Errorf("failed to create prometheus exporter: %w", err)
+		return nil, fmt.Errorf("failed to initialize prometheus exporter for OTLP metrics: %w", err)
 	}
 
 	meterProvider := sdkmetric.NewMeterProvider(
 		sdkmetric.WithReader(promExporter),
 	)
 
-	// Set as global meter provider for instrumentation libraries
+	// Set as global meter provider so instrumentation libraries can discover it
 	otel.SetMeterProvider(meterProvider)
 
-	return &MetricsSetup{provider: meterProvider}, nil
+	return &MetricsSetup{
+		provider: meterProvider,
+	}, nil
 }
 
-// GetProvider returns the configured meter provider
+// GetProvider returns the configured OpenTelemetry meter provider.
+// The provider is used for creating meters and recording metrics.
 func (m *MetricsSetup) GetProvider() *sdkmetric.MeterProvider {
 	return m.provider
 }
 
-// GetGRPCStatsHandler returns a gRPC stats handler for automatic metrics collection
+// GetGRPCStatsHandler returns a gRPC dial option that enables automatic
+// metrics collection for gRPC client calls.
+//
+// The handler collects standard gRPC metrics like request count, duration,
+// and message sizes using the OpenTelemetry meter provider.
 func (m *MetricsSetup) GetGRPCStatsHandler() grpc.DialOption {
 	return grpc.WithStatsHandler(otelgrpc.NewClientHandler(
 		otelgrpc.WithMeterProvider(m.provider),
 	))
+}
+
+// Shutdown gracefully shuts down the meter provider and stops metrics collection.
+//
+// This method is idempotent - multiple calls are safe and will only perform
+// the actual shutdown once. Subsequent calls return nil immediately.
+//
+// The context is used to enforce a timeout on the shutdown operation.
+// If the context expires before shutdown completes, the context error is returned.
+//
+// After shutdown, the meter provider should not be used for new metric operations.
+func (m *MetricsSetup) Shutdown(ctx context.Context) error {
+	var shutdownErr error
+
+	m.shutdownOnce.Do(func() {
+		if err := m.provider.Shutdown(ctx); err != nil {
+			shutdownErr = fmt.Errorf("failed to shutdown meter provider: %w", err)
+		}
+	})
+
+	return shutdownErr
 }

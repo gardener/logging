@@ -118,8 +118,12 @@ func (c *OTLPGRPCClient) Stop() {
 		c.logger.Error(err, "error during logger provider shutdown")
 	}
 
-	if err := c.meterProvider.Shutdown(ctx); err != nil {
-		c.logger.Error(err, "error during meter provider shutdown")
+	// Use singleton metrics setup shutdown (idempotent)
+	metricsSetup, _ := NewMetricsSetup()
+	if metricsSetup != nil {
+		if err := metricsSetup.Shutdown(ctx); err != nil {
+			c.logger.Error(err, "error during meter provider shutdown")
+		}
 	}
 }
 
@@ -140,8 +144,12 @@ func (c *OTLPGRPCClient) StopWait() {
 		c.logger.Error(err, "error during logger provider shutdown")
 	}
 
-	if err := c.meterProvider.Shutdown(ctx); err != nil {
-		c.logger.Error(err, "error during meter provider shutdown")
+	// Use singleton metrics setup shutdown (idempotent)
+	metricsSetup, _ := NewMetricsSetup()
+	if metricsSetup != nil {
+		if err := metricsSetup.Shutdown(ctx); err != nil {
+			c.logger.Error(err, "error during meter provider shutdown")
+		}
 	}
 }
 
