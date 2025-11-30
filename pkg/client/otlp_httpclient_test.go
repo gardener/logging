@@ -415,69 +415,69 @@ var _ = Describe("OTLPHTTPClient", func() {
 		})
 	})
 
-	Describe("convertToKeyValueHTTP", func() {
+	Describe("convertToKeyValue", func() {
 		It("should convert string values", func() {
-			kv := convertToKeyValueHTTP("key", "value")
+			kv := convertToKeyValue("key", "value")
 			Expect(kv.Key).To(Equal("key"))
 		})
 
 		It("should convert integer values", func() {
-			kv := convertToKeyValueHTTP("count", 42)
+			kv := convertToKeyValue("count", 42)
 			Expect(kv.Key).To(Equal("count"))
 		})
 
 		It("should convert int64 values", func() {
-			kv := convertToKeyValueHTTP("bignum", int64(9223372036854775807))
+			kv := convertToKeyValue("bignum", int64(9223372036854775807))
 			Expect(kv.Key).To(Equal("bignum"))
 		})
 
 		It("should convert float values", func() {
-			kv := convertToKeyValueHTTP("pi", 3.14159)
+			kv := convertToKeyValue("pi", 3.14159)
 			Expect(kv.Key).To(Equal("pi"))
 		})
 
 		It("should convert boolean true", func() {
-			kv := convertToKeyValueHTTP("enabled", true)
+			kv := convertToKeyValue("enabled", true)
 			Expect(kv.Key).To(Equal("enabled"))
 		})
 
 		It("should convert boolean false", func() {
-			kv := convertToKeyValueHTTP("disabled", false)
+			kv := convertToKeyValue("disabled", false)
 			Expect(kv.Key).To(Equal("disabled"))
 		})
 
 		It("should convert byte array to string", func() {
-			kv := convertToKeyValueHTTP("data", []byte("binary"))
+			kv := convertToKeyValue("data", []byte("binary"))
 			Expect(kv.Key).To(Equal("data"))
 		})
 
 		It("should convert empty byte array", func() {
-			kv := convertToKeyValueHTTP("empty", []byte{})
+			kv := convertToKeyValue("empty", []byte{})
 			Expect(kv.Key).To(Equal("empty"))
 		})
 
 		It("should convert map to string representation", func() {
-			kv := convertToKeyValueHTTP("metadata", map[string]any{"pod": "test", "ns": "default"})
+			kv := convertToKeyValue("metadata", map[string]any{"pod": "test", "ns": "default"})
 			Expect(kv.Key).To(Equal("metadata"))
 		})
 
 		It("should convert empty map", func() {
-			kv := convertToKeyValueHTTP("emptymap", map[string]any{})
+			kv := convertToKeyValue("emptymap", map[string]any{})
 			Expect(kv.Key).To(Equal("emptymap"))
 		})
 
 		It("should convert slice to string representation", func() {
-			kv := convertToKeyValueHTTP("tags", []any{"tag1", "tag2", "tag3"})
+			kv := convertToKeyValue("tags", []any{"tag1", "tag2", "tag3"})
 			Expect(kv.Key).To(Equal("tags"))
 		})
 
 		It("should convert empty slice", func() {
-			kv := convertToKeyValueHTTP("emptytags", []any{})
+			kv := convertToKeyValue("emptytags", []any{})
 			Expect(kv.Key).To(Equal("emptytags"))
 		})
 
 		It("should convert nil value", func() {
-			kv := convertToKeyValueHTTP("nullval", nil)
+			kv := convertToKeyValue("nullval", nil)
 			Expect(kv.Key).To(Equal("nullval"))
 		})
 
@@ -485,7 +485,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 			type CustomType struct {
 				Field string
 			}
-			kv := convertToKeyValueHTTP("custom", CustomType{Field: "value"})
+			kv := convertToKeyValue("custom", CustomType{Field: "value"})
 			Expect(kv.Key).To(Equal("custom"))
 		})
 	})
