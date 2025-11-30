@@ -4,7 +4,6 @@
 package client
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/go-logr/logr"
@@ -94,9 +93,9 @@ func NewClient(cfg config.Config, opts ...Option) (OutputClient, error) {
 func getNewClientFunc(t types.Type) (NewClientFunc, error) {
 	switch t {
 	case types.OTLPGRPC:
-		return nil, errors.New("OTLPGRPC not implemented yet")
+		return NewOTLPGRPCClient, nil
 	case types.OTLPHTTP:
-		return nil, errors.New("OTLPHTTP not implemented yet")
+		return NewOTLPHTTPClient, nil
 	case types.STDOUT:
 		return NewStdoutClient, nil
 	case types.NOOP:

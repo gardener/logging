@@ -37,7 +37,7 @@ func (c *pluginConfig) toStringMap() map[string]string {
 		"DynamicHostPath", "DynamicHostPrefix", "DynamicHostSuffix", "DynamicHostRegex",
 
 		// Hostname config TODO: revisit if we really need this
-		"HostnameKey", "HostnameValue",
+		"HostnameKey", "HostnameValue", "HostnameKeyValue",
 
 		// Kubernetes metadata - TODO: revisit how to handle kubernetes metadata. Simplify?
 		"FallbackToTagWhenMetadataIsMissing", "DropLogEntryWithoutK8sMetadata",
