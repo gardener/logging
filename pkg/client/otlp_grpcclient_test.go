@@ -264,17 +264,17 @@ var _ = Describe("OTLPGRPCClient", func() {
 		})
 	})
 
-	Describe("getCompression", func() {
-		It("should return gzip for compression 1", func() {
-			Expect(getCompression(1)).To(Equal("gzip"))
+	Describe("compressionToString", func() {
+		It("should return gzip for compression code 1", func() {
+			Expect(compressionToString(1)).To(Equal("gzip"))
 		})
 
-		It("should return none for compression 0", func() {
-			Expect(getCompression(0)).To(Equal("none"))
+		It("should return none for compression code 0", func() {
+			Expect(compressionToString(0)).To(Equal("none"))
 		})
 
-		It("should return none for unknown compression", func() {
-			Expect(getCompression(99)).To(Equal("none"))
+		It("should return none for unknown compression codes", func() {
+			Expect(compressionToString(99)).To(Equal("none"))
 		})
 	})
 })
