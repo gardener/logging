@@ -82,7 +82,10 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 	}
 
 	pluginCfg := &pluginConfig{ctx: ctx}
-	conf, err := config.ParseConfigFromStringMap(pluginCfg.toStringMap())
+	configurationMap := pluginCfg.toStringMap()
+	logger.Info(fmt.Sprintf("plugin configuration: %v", configurationMap))
+	cfg, err := config.ParseConfigFromStringMap(configurationMap)
+
 	if err != nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorFLBPluginInit).Inc()
 		logger.Info("[flb-go] failed to launch", "error", err)
@@ -90,19 +93,22 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 		return output.FLB_ERROR
 	}
 
-	if conf.Pprof {
+	dumpConfiguration(cfg)
+
+	if cfg.Pprof {
 		setPprofProfile()
 	}
 
-	if len(conf.PluginConfig.DynamicHostPath) > 0 {
+	if len(cfg.PluginConfig.DynamicHostPath) > 0 {
 		initClusterInformer()
 	}
 
 	id, _, _ := strings.Cut(string(uuid.NewUUID()), "-")
 
-	dumpConfiguration(conf)
+	// dump the complete configuration at debug level
+	// dumpConfiguration(cfg)
 
-	outputPlugin, err := plugin.NewPlugin(informer, conf, log.NewLogger(conf.LogLevel))
+	outputPlugin, err := plugin.NewPlugin(informer, cfg, log.NewLogger(cfg.LogLevel))
 	if err != nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorNewPlugin).Inc()
 		logger.Error(err, "[flb-go]", "error creating outputPlugin")

@@ -4,6 +4,7 @@
 package main
 
 import (
+	"strings"
 	"unsafe"
 
 	"github.com/fluent/fluent-bit-go/output"
@@ -30,60 +31,96 @@ func (c *pluginConfig) toStringMap() map[string]string {
 	// Define all possible configuration keys based on the structs and documentation
 	configKeys := []string{
 		// Client types
-		"SeedType",
-		"ShootType",
+		"SeedType", "seedType",
+		"ShootType", "shootType",
 
 		// Plugin config
-		"DynamicHostPath", "DynamicHostPrefix", "DynamicHostSuffix", "DynamicHostRegex",
+		"DynamicHostPath", "dynamicHostPath",
+		"DynamicHostPrefix", "dynamicHostPrefix",
+		"DynamicHostSuffix", "dynamicHostSuffix",
+		"DynamicHostRegex", "dynamicHostRegex",
 
 		// Hostname config TODO: revisit if we really need this
-		"HostnameKey", "HostnameValue", "HostnameKeyValue",
+		"HostnameKey", "hostnameKey",
+		"HostnameValue", "hostnameValue",
+		"HostnameKeyValue", "hostnameKeyValue",
 
 		// Kubernetes metadata - TODO: revisit how to handle kubernetes metadata. Simplify?
-		"FallbackToTagWhenMetadataIsMissing", "DropLogEntryWithoutK8sMetadata",
-		"TagKey", "TagPrefix", "TagExpression",
+		"FallbackToTagWhenMetadataIsMissing", "fallbackToTagWhenMetadataIsMissing",
+		"DropLogEntryWithoutK8sMetadata", "dropLogEntryWithoutK8sMetadata",
+		"TagKey", "tagKey",
+		"TagPrefix", "tagPrefix",
+		"TagExpression", "tagExpression",
 
 		// Buffer config
-		"Buffer", "QueueDir", "QueueSegmentSize", "QueueSync", "QueueName",
+		"Buffer", "buffer",
+		"QueueDir", "queueDir",
+		"QueueSegmentSize", "queueSegmentSize",
+		"QueueSync", "queueSync",
+		"QueueName", " queueName",
 
 		// Controller config
-		"DeletedClientTimeExpiration", "ControllerSyncTimeout",
+		"DeletedClientTimeExpiration", "deletedClientTimeExpiration",
+		"ControllerSyncTimeout", "controllerSyncTimeout",
 
 		// Log flows depending on cluster state
 		// Shoot client config
-		"SendLogsToShootWhenIsInCreationState", "SendLogsToShootWhenIsInReadyState",
-		"SendLogsToShootWhenIsInHibernatingState", "SendLogsToShootWhenIsInHibernatedState",
-		"SendLogsToShootWhenIsInWakingState", "SendLogsToShootWhenIsInDeletionState",
-		"SendLogsToShootWhenIsInDeletedState", "SendLogsToShootWhenIsInRestoreState",
-		"SendLogsToShootWhenIsInMigrationState",
+		"SendLogsToShootWhenIsInCreationState", "sendLogsToShootWhenIsInCreationState",
+		"SendLogsToShootWhenIsInReadyState", "sendLogsToShootWhenIsInReadyState",
+		"SendLogsToShootWhenIsInHibernatingState", "sendLogsToShootWhenIsInHibernatingState",
+		"SendLogsToShootWhenIsInHibernatedState", "sendLogsToShootWhenIsInHibernatedState",
+		"SendLogsToShootWhenIsInWakingState", "sendLogsToShootWhenIsInWakingState",
+		"SendLogsToShootWhenIsInDeletionState", "sendLogsToShootWhenIsInDeletionState",
+		"SendLogsToShootWhenIsInDeletedState", "sendLogsToShootWhenIsInDeletedState",
+		"SendLogsToShootWhenIsInRestoreState", "sendLogsToShootWhenIsInRestoreState",
+		"SendLogsToShootWhenIsInMigrationState", "sendLogsToShootWhenIsInMigrationState",
+
 		// Seed client config for shoots with dynamic hostnames
-		"SendLogsToSeedWhenShootIsInCreationState", "SendLogsToSeedWhenShootIsInReadyState",
-		"SendLogsToSeedWhenShootIsInHibernatingState", "SendLogsToSeedWhenShootIsInHibernatedState",
-		"SendLogsToSeedWhenShootIsInWakingState", "SendLogsToSeedWhenShootIsInDeletionState",
-		"SendLogsToSeedWhenShootIsInDeletedState", "SendLogsToSeedWhenShootIsInRestoreState",
-		"SendLogsToSeedWhenShootIsInMigrationState",
+		"SendLogsToSeedWhenShootIsInCreationState", "sendLogsToSeedWhenShootIsInCreationState",
+		"SendLogsToSeedWhenShootIsInReadyState", "sendLogsToSeedWhenShootIsInReadyState",
+		"SendLogsToSeedWhenShootIsInHibernatingState", "sendLogsToSeedWhenShootIsInHibernatingState",
+		"SendLogsToSeedWhenShootIsInHibernatedState", "sendLogsToSeedWhenShootIsInHibernatedState",
+		"SendLogsToSeedWhenShootIsInWakingState", "sendLogsToSeedWhenShootIsInWakingState",
+		"SendLogsToSeedWhenShootIsInDeletionState", "sendLogsToSeedWhenShootIsInDeletionState",
+		"SendLogsToSeedWhenShootIsInDeletedState", "sendLogsToSeedWhenShootIsInDeletedState",
+		"SendLogsToSeedWhenShootIsInRestoreState", "sendLogsToSeedWhenShootIsInRestoreState",
+		"SendLogsToSeedWhenShootIsInMigrationState", "sendLogsToSeedWhenShootIsInMigrationState",
 
 		// Common OTLP configs
-		"Endpoint", "Insecure", "Compression", "Timeout", "Headers",
+		"Endpoint", "endpoint",
+		"Insecure", "insecure",
+		"Compression", "compression",
+		"Timeout", "timeout",
+		"Headers", "headers",
 
 		// OTLP Retry configs
-		"RetryEnabled", "RetryInitialInterval", "RetryMaxInterval", "RetryMaxElapsedTime",
+		"RetryEnabled", "retryEnabled",
+		"RetryInitialInterval", "retryInitialInterval",
+		"RetryMaxInterval", "retryMaxInterval",
+		"RetryMaxElapsedTime", "retryMaxElapsedTime",
 
 		// OTLP HTTP specific configs
-		"HTTPPath", "HTTPProxy",
+		"HTTPPath", "httpPath",
+		"HTTPProxy", "httpProxy",
 
 		// OTLP TLS configs
-		"TLSCertFile", "TLSKeyFile", "TLSCAFile", "TLSServerName",
-		"TLSInsecureSkipVerify", "LSMinVersion", "TLSMaxVersion",
+		"TLSCertFile", "tlsCertFile",
+		"TLSKeyFile", "tlsKeyFile",
+		"TLSCAFile", "tlsCAFile",
+		"TLSServerName", "tlsServerName",
+		"TLSInsecureSkipVerify", "tlsInsecureSkipVerify",
+		"TLSMinVersion", "tlsMinVersion",
+		"TLSMaxVersion", "tlsMaxVersion",
 
 		// General config
-		"LogLevel", "Pprof",
+		"LogLevel", "logLevel",
+		"Pprof", "pprof",
 	}
 
 	// Extract values for all known keys
 	for _, key := range configKeys {
 		if value := c.Get(key); value != "" {
-			configMap[key] = value
+			configMap[strings.ToLower(key)] = value
 		}
 	}
 

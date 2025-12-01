@@ -5,7 +5,7 @@
 REPO_ROOT                                  := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 VERSION                                    := $(shell cat VERSION)
 REGISTRY                                   ?= europe-docker.pkg.dev/gardener-project/snapshots/gardener
-FLUENT_BIT_OUTPUT_PLUGIN_IMAGE_REPOSITORY  := $(REGISTRY)/fluent-bit-output-plugin
+FLUENT_BIT_PLUGIN_IMAGE_REPOSITORY         := $(REGISTRY)/fluent-bit-plugin
 FLUENT_BIT_OUTPUT_IMAGE_REPOSITORY         := $(REGISTRY)/fluent-bit-output
 TUNE2FS_IMAGE_REPOSITORY                   := $(REGISTRY)/tune2fs
 EVENT_LOGGER_IMAGE_REPOSITORY              := $(REGISTRY)/event-logger
@@ -73,7 +73,7 @@ copy: tidy
 docker-images:
 	@BUILD_ARCH=$(BUILD_ARCH) \
 		$(REPO_ROOT)/hack/docker-image-build.sh "fluent-bit-plugin" \
-		$(FLUENT_BIT_OUTPUT_IMAGE_REPOSITORY) $(IMAGE_TAG)
+		$(FLUENT_BIT_PLUGIN_IMAGE_REPOSITORY) $(IMAGE_TAG)
 
 	@BUILD_ARCH=$(BUILD_ARCH) \
 		$(REPO_ROOT)/hack/docker-image-build.sh "fluent-bit-output" \
@@ -90,7 +90,7 @@ docker-images:
 .PHONY: docker-push
 docker-push:
 	@$(REPO_ROOT)/hack/docker-image-push.sh "fluent-bit-plugin" \
-	$(FLUENT_BIT_OUTPUT_IMAGE_REPOSITORY) $(IMAGE_TAG)
+	$(FLUENT_BIT_PLUGIN_IMAGE_REPOSITORY) $(IMAGE_TAG)
 
 	@$(REPO_ROOT)/hack/docker-image-push.sh "event-logger" \
 	$(EVENT_LOGGER_IMAGE_REPOSITORY) $(IMAGE_TAG) $(EFFECTIVE_VERSION)
