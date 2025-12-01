@@ -102,8 +102,19 @@ func (b *LogRecordBuilder) shouldSkipAttribute(key string) bool {
 // and returns them as OTLP KeyValue attributes following OpenTelemetry semantic conventions
 // for Kubernetes: https://opentelemetry.io/docs/specs/semconv/resource/k8s/
 func extractK8sResourceAttributes(entry types.OutputEntry) []otlplog.KeyValue {
-	k8sData, ok := entry.Record["kubernetes"].(map[string]any)
-	if !ok {
+	k8sField, exists := entry.Record["kubernetes"]
+	if !exists {
+		return nil
+	}
+
+	// Handle both map[string]any and types.OutputRecord (which is also map[string]any)
+	var k8sData map[string]any
+	switch v := k8sField.(type) {
+	case map[string]any:
+		k8sData = v
+	case types.OutputRecord:
+		k8sData = v
+	default:
 		return nil
 	}
 
