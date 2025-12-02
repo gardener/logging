@@ -90,7 +90,7 @@ data:
           action: replace
         - separator: ;
           target_label: __metrics_path__
-          replacement: /api/v1/metrics/prometheus
+          replacement: /api/v2/metrics/prometheus
           action: replace
         - separator: ;
           regex: __meta_kubernetes_pod_label_(.+)
@@ -190,6 +190,143 @@ data:
         metric_relabel_configs:
         - source_labels: [__name__]
           separator: ;
-          regex: ^(valitail_.*|fluentbit_vali_.*)$
+          regex: ^(fluentbit_gardener.*)$
           replacement: $1
           action: keep
+
+      - job_name: otel-collector
+        honor_timestamps: true
+        metrics_path: /metrics
+        scheme: http
+        enable_compression: true
+        follow_redirects: true
+        enable_http2: true
+        kubernetes_sd_configs:
+        - role: endpoints
+          kubeconfig_file: ""
+          follow_redirects: true
+          enable_http2: true
+          namespaces:
+            own_namespace: true
+        relabel_configs:
+        - source_labels: [job]
+          separator: ;
+          target_label: __tmp_prometheus_job_name
+          replacement: $1
+          action: replace
+        - source_labels: [__meta_kubernetes_service_label_app_kubernetes_io_name, __meta_kubernetes_service_labelpresent_app_kubernetes_io_name]
+          separator: ;
+          regex: (logging-otel-collector);true
+          replacement: $1
+          action: keep
+        - source_labels: [__meta_kubernetes_endpoint_port_name]
+          separator: ;
+          regex: metrics
+          replacement: $1
+          action: keep
+        - source_labels: [__meta_kubernetes_namespace]
+          separator: ;
+          target_label: namespace
+          replacement: $1
+          action: replace
+        - source_labels: [__meta_kubernetes_service_name]
+          separator: ;
+          target_label: service
+          replacement: $1
+          action: replace
+        - source_labels: [__meta_kubernetes_pod_name]
+          separator: ;
+          target_label: pod
+          replacement: $1
+          action: replace
+        - source_labels: [__meta_kubernetes_pod_container_name]
+          separator: ;
+          target_label: container
+          replacement: $1
+          action: replace
+        - source_labels: [__meta_kubernetes_pod_phase]
+          separator: ;
+          regex: (Failed|Succeeded)
+          replacement: $1
+          action: drop
+        - separator: ;
+          target_label: endpoint
+          replacement: metrics
+          action: replace
+        - separator: ;
+          target_label: job
+          replacement: otel-collector
+          action: replace
+        - separator: ;
+          regex: __meta_kubernetes_pod_label_(.+)
+          replacement: $1
+          action: labelmap
+
+      - job_name: victorialogs
+        honor_timestamps: true
+        metrics_path: /metrics
+        scheme: http
+        enable_compression: true
+        follow_redirects: true
+        enable_http2: true
+        kubernetes_sd_configs:
+        - role: endpoints
+          kubeconfig_file: ""
+          follow_redirects: true
+          enable_http2: true
+          namespaces:
+            own_namespace: true
+        relabel_configs:
+        - source_labels: [job]
+          separator: ;
+          target_label: __tmp_prometheus_job_name
+          replacement: $1
+          action: replace
+        - source_labels: [__meta_kubernetes_service_label_app_kubernetes_io_name, __meta_kubernetes_service_labelpresent_app_kubernetes_io_name]
+          separator: ;
+          regex: (logging-victorialogs);true
+          replacement: $1
+          action: keep
+        - source_labels: [__meta_kubernetes_endpoint_port_name]
+          separator: ;
+          regex: http
+          replacement: $1
+          action: keep
+        - source_labels: [__meta_kubernetes_namespace]
+          separator: ;
+          target_label: namespace
+          replacement: $1
+          action: replace
+        - source_labels: [__meta_kubernetes_service_name]
+          separator: ;
+          target_label: service
+          replacement: $1
+          action: replace
+        - source_labels: [__meta_kubernetes_pod_name]
+          separator: ;
+          target_label: pod
+          replacement: $1
+          action: replace
+        - source_labels: [__meta_kubernetes_pod_container_name]
+          separator: ;
+          target_label: container
+          replacement: $1
+          action: replace
+        - source_labels: [__meta_kubernetes_pod_phase]
+          separator: ;
+          regex: (Failed|Succeeded)
+          replacement: $1
+          action: drop
+        - separator: ;
+          target_label: endpoint
+          replacement: http
+          action: replace
+        - separator: ;
+          target_label: job
+          replacement: victorialogs
+          action: replace
+        - separator: ;
+          regex: __meta_kubernetes_pod_label_(.+)
+          replacement: $1
+          action: labelmap
+

@@ -82,116 +82,86 @@ data:
         Parsers_File    parsers.conf
 
     [Input]
-        Name   systemd
-        Tag    journald.containerd
-        Systemd_Filter    _SYSTEMD_UNIT=containerd.service
-        Read_From_Tail    on
+        Name                systemd
+        Tag                 systemd.*
+        Path                /var/log/journal
+        DB                  /var/run/fluentbit/systemd.db
+        DB.Sync              normal
+        Mem_Buf_Limit       50MB
+        Systemd_Filter      _SYSTEMD_UNIT=containerd.service
+        Systemd_Filter      _SYSTEMD_UNIT=kubelet.service
+        Read_From_Tail      On
+        Strip_Underscores   Off
+
     [Input]
-        Name   systemd
-        Tag    journald.kubelet
-        Systemd_Filter    _SYSTEMD_UNIT=kubelet.service
-        Read_From_Tail    on
-    [Input]
-        Name    tail
-        Path    /var/log/containers/*.log
-        Exclude_Path    *_fluent-bit-*.log,*_vali-*.log
+        Name                tail
+        Tag                 kubernetes.*
+        Path                /var/log/containers/*.log
+        Exclude_Path        *_fluent-bit-*.log
         Refresh_Interval    10
-        Ignore_Older    30m
-        Skip_Long_Lines    true
-        DB    /var/fluentbit/flb_kube.db
-        Mem_Buf_Limit    60MB
-        Tag    kubernetes.*
+        Ignore_Older        30m
+        Skip_Long_Lines     On
+        DB                  /var/run/fluentbit/flb_kube.db
+        DB.Sync             normal
+        Mem_Buf_Limit       50MB
+        Parser              cri
+
 
     [Filter]
-        Name    parser
-        Match    kubernetes.*
-        Key_Name    log
-        Parser    containerd-parser
-        Reserve_Data    true
+        Name                lua
+        Match               kubernetes.*
+        script              /fluent-bit/config/add_tag_to_record.lua
+        call                add_tag_to_record
     [Filter]
-        Name    lua
-        Match    kubernetes.*
-        script    /fluent-bit/config/add_tag_to_record.lua
-        call    add_tag_to_record
+        Name                lua
+        Match               kubernetes.*
+        script              /fluent-bit/config/modify_severity.lua
+        call                cb_modify
+
     [Filter]
-        Name    lua
-        Match    kubernetes.*
-        script    /fluent-bit/config/modify_severity.lua
-        call    cb_modify
+        Name                record_modifier
+        Match               systemd.containerd.*
+        Record              hostname ${NODE_NAME}
+        Record              unit containerd
     [Filter]
-        Name    record_modifier
-        Match    journald.containerd
-        Record    hostname ${NODE_NAME}
-        Record    unit containerd
-    [Filter]
-        Name    record_modifier
-        Match    journald.kubelet
-        Record    hostname ${NODE_NAME}
-        Record    unit kubelet
+        Name                record_modifier
+        Match               systemd.kubelet.*
+        Record              hostname ${NODE_NAME}
+        Record              unit kubelet
 
 
     [Output]
-        Name gardenervali
+        Name gardener
         Match kubernetes.*
-        Labels {origin="seed"}
-        DropSingleKey false
+        SeedType noop
+        ShootType noop
         DynamicHostPath {"kubernetes": {"namespace_name": "namespace"}}
-        DynamicHostPrefix http://logging.
-        DynamicHostSuffix .svc:3100/vali/api/v1/push
+        DynamicHostPrefix logging.
+        DynamicHostSuffix :4317
         DynamicHostRegex ^shoot-
-        QueueDir /fluent-bit/buffers/seed
-        QueueName seed-dynamic
-        SendDeletedClustersLogsToDefaultClient true
-        CleanExpiredClientsPeriod 1h
-        ControllerSyncTimeout 120s
-        PreservedLabels origin,namespace_name,pod_name
+        QueueDir /var/run/fluentbit/dque
+        QueueName dynamic
         LogLevel info
-        Url http://logging-vali-seed:3100/vali/api/v1/push
-        BatchWait 5s
-        BatchSize 1048576
-        MaxRetries 5
-        Timeout 10s
-        MinBackoff 10s
-        MaxBackoff 300s
-        LineFormat json
-        SortByTimestamp true
-        DropSingleKey false
-        AutoKubernetesLabels false
+        Endpoint otel-collector-seed:4317
         HostnameKeyValue nodename ${NODE_NAME}
         Buffer true
-        BufferType dque
-        QueueSegmentSize 300
+        QueueSegmentSize 100
         QueueSync normal
-        NumberOfBatchIDs 5
-        RemoveKeys kubernetes,stream,time,tag,gardenuser,job
-        LabelMapPath {"kubernetes": {"container_name":"container_name","container_id":"container_id","namespace_name":"namespace_name","pod_name":"pod_name"},"severity": "severity","job": "job"}
         FallbackToTagWhenMetadataIsMissing true
         TagKey tag
-        DropLogEntryWithoutK8sMetadata true
 
     [Output]
-        Name gardenervali
-        Match journald.*
-        Labels {origin="seed-journald"}
-        RemoveKeys kubernetes,stream,hostname,unit
-        LabelMapPath {"hostname":"host_name","unit":"systemd_component"}
-        QueueDir /fluent-bit/buffers
-        QueueName seed-journald
+        Name gardener
+        Match systemd.*
+        SeedType noop
+        ShootType noop
+        QueueDir /var/run/fluentbit/dque
+        QueueName systemd
         LogLevel info
-        Url http://logging-vali-seed:3100/vali/api/v1/push
-        BatchWait 5s
-        BatchSize 1048576
-        MaxRetries 5
-        Timeout 10s
-        MinBackoff 10s
-        MaxBackoff 300s
-        LineFormat json
-        SortByTimestamp true
-        DropSingleKey false
-        AutoKubernetesLabels false
+        Endpoint otel-collector-seed:4317
         HostnameKeyValue nodename ${NODE_NAME}
         Buffer true
-        BufferType dque
-        QueueSegmentSize 300
+        QueueSegmentSize 100
         QueueSync normal
-        NumberOfBatchIDs 5
+        FallbackToTagWhenMetadataIsMissing true
+        TagKey tag
