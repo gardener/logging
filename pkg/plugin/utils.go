@@ -29,6 +29,7 @@ func extractKubernetesMetadataFromTag(record map[string]any, tagKey string, re *
 		for k := range record {
 			availableKeys = append(availableKeys, k)
 		}
+
 		return fmt.Errorf("the tag entry for key %q is missing or not a string, available keys: %v, value type: %T", tagKey, availableKeys, record[tagKey])
 	}
 

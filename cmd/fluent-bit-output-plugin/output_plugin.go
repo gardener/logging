@@ -104,7 +104,7 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 	}
 
 	if len(cfg.PluginConfig.DynamicHostPath) > 0 {
-		initClusterInformer(logger)
+		initClusterInformer()
 	}
 
 	id, _, _ := strings.Cut(string(uuid.NewUUID()), "-")

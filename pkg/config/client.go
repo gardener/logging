@@ -72,6 +72,12 @@ type OTLPConfig struct {
 
 	// TLS configuration - processed from the above fields
 	TLSConfig *tls.Config `mapstructure:"-"`
+
+	// Batch Processor configuration fields
+	BatchProcessorMaxQueueSize   int           `mapstructure:"BatchProcessorMaxQueueSize"`
+	BatchProcessorMaxBatchSize   int           `mapstructure:"BatchProcessorMaxBatchSize"`
+	BatchProcessorExportTimeout  time.Duration `mapstructure:"BatchProcessorExportTimeout"`
+	BatchProcessorExportInterval time.Duration `mapstructure:"BatchProcessorExportInterval"`
 }
 
 // DefaultOTLPConfig holds the default configuration for OTLP
@@ -94,4 +100,10 @@ var DefaultOTLPConfig = OTLPConfig{
 	TLSMinVersion:         "1.2", // TLS 1.2 as default minimum
 	TLSMaxVersion:         "",    // Use Go's default maximum
 	TLSConfig:             nil,   // Will be built from other fields
+
+	// Batch Processor defaults - tuned to prevent OOM under high load
+	BatchProcessorMaxQueueSize:   512,              // Max records in queue before dropping
+	BatchProcessorMaxBatchSize:   256,              // Max records per export batch
+	BatchProcessorExportTimeout:  30 * time.Second, // Timeout for single export
+	BatchProcessorExportInterval: 1 * time.Second,  // Flush interval
 }

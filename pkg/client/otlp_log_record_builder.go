@@ -167,6 +167,7 @@ func convertToKeyValue(key string, value any) otlplog.KeyValue {
 		if len(v) > 1024 {
 			return otlplog.String(key, fmt.Sprintf("<bytes: %d bytes>", len(v)))
 		}
+
 		return otlplog.String(key, string(v))
 	case map[string]any:
 		// For nested maps, avoid deep serialization that causes memory leaks
