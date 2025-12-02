@@ -110,7 +110,8 @@ func (c *dqueClient) dequeuer() {
 		if err != nil {
 			switch {
 			case errors.Is(err, dque.ErrQueueClosed):
-				c.logger.Error(err, "dequeuer stopped")
+				// Queue closed is expected during shutdown, log at info level
+				c.logger.V(1).Info("dequeuer stopped gracefully, queue closed")
 
 				return
 			default:
