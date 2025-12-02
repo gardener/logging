@@ -93,6 +93,10 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 		return output.FLB_ERROR
 	}
 
+	if cfg.LogLevel != "info" {
+		logger = log.NewLogger(cfg.LogLevel)
+	}
+
 	dumpConfiguration(cfg)
 
 	if cfg.Pprof {
@@ -100,7 +104,7 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 	}
 
 	if len(cfg.PluginConfig.DynamicHostPath) > 0 {
-		initClusterInformer()
+		initClusterInformer(logger)
 	}
 
 	id, _, _ := strings.Cut(string(uuid.NewUUID()), "-")

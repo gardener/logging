@@ -8,6 +8,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/go-logr/logr"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
@@ -41,7 +42,7 @@ func envKubernetesClient() (gardenerclientsetversioned.Interface, error) {
 // It first attempts to use in-cluster configuration, falling back to KUBECONFIG if that fails.
 // The informer is used to watch for changes to Cluster resources when dynamic host paths are configured.
 // This function panics if it cannot obtain a valid Kubernetes client from either source.
-func initClusterInformer() {
+func initClusterInformer(l logr.Logger) {
 	if informer != nil && !informer.IsStopped() {
 		return
 	}
@@ -62,4 +63,6 @@ func initClusterInformer() {
 	informer = kubeInformerFactory.Extensions().V1alpha1().Clusters().Informer()
 	informerStopChan = make(chan struct{})
 	kubeInformerFactory.Start(informerStopChan)
+	l.Info("[flb-go] starting informer")
+
 }

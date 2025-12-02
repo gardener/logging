@@ -76,13 +76,14 @@ func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger lo
 // with resource attributes reflecting k8s metadata and origin info
 // TODO: it shall also handle otlp log records directly when fluent-bit has otlp envelope enabled
 func (l *logging) SendRecord(log types.OutputEntry) error {
-	records := log.Record
+	record := log.Record
 
 	// Check if metadata is missing // TODO: There is no point to have fallback as a configuration
-	_, ok := records["kubernetes"]
+	_, ok := record["kubernetes"]
 	if !ok && l.cfg.PluginConfig.KubernetesMetadata.FallbackToTagWhenMetadataIsMissing {
 		// Attempt to extract Kubernetes metadata from the tag
-		if err := extractKubernetesMetadataFromTag(records,
+		if err := extractKubernetesMetadataFromTag(
+			record,
 			l.cfg.PluginConfig.KubernetesMetadata.TagKey,
 			l.extractKubernetesMetadataRegexp,
 		); err != nil {
@@ -97,7 +98,7 @@ func (l *logging) SendRecord(log types.OutputEntry) error {
 		}
 	}
 
-	dynamicHostName := getDynamicHostName(records, l.cfg.PluginConfig.DynamicHostPath)
+	dynamicHostName := getDynamicHostName(record, l.cfg.PluginConfig.DynamicHostPath)
 	host := dynamicHostName
 	if !l.isDynamicHost(host) {
 		host = "garden" // the record needs to go to the seed client (in garden namespace)
@@ -105,8 +106,8 @@ func (l *logging) SendRecord(log types.OutputEntry) error {
 
 	metrics.IncomingLogs.WithLabelValues(host).Inc()
 
-	if len(records) == 0 {
-		l.logger.Info("no records left after removing keys", "host", dynamicHostName)
+	if len(record) == 0 {
+		l.logger.Info("no record left after removing keys", "host", dynamicHostName)
 
 		return nil
 	}
