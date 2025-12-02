@@ -450,6 +450,41 @@ func processOTLPConfig(config *Config, configMap map[string]any) error {
 		config.OTLPConfig.TLSMaxVersion = maxVersion
 	}
 
+	// Process Batch Processor configuration fields
+	if maxQueueSize, ok := configMap["batchprocessormaxqueuesize"].(string); ok && maxQueueSize != "" {
+		val, err := strconv.Atoi(maxQueueSize)
+		if err != nil {
+			return fmt.Errorf("failed to parse BatchProcessorMaxQueueSize as integer: %w", err)
+		}
+		if val <= 0 {
+			return fmt.Errorf("BatchProcessorMaxQueueSize must be positive, got %d", val)
+		}
+		config.OTLPConfig.BatchProcessorMaxQueueSize = val
+	}
+
+	if maxBatchSize, ok := configMap["batchprocessormaxbatchsize"].(string); ok && maxBatchSize != "" {
+		val, err := strconv.Atoi(maxBatchSize)
+		if err != nil {
+			return fmt.Errorf("failed to parse BatchProcessorMaxBatchSize as integer: %w", err)
+		}
+		if val <= 0 {
+			return fmt.Errorf("BatchProcessorMaxBatchSize must be positive, got %d", val)
+		}
+		config.OTLPConfig.BatchProcessorMaxBatchSize = val
+	}
+
+	if err := processDurationField(configMap, "batchprocessorexporttimeout", func(d time.Duration) {
+		config.OTLPConfig.BatchProcessorExportTimeout = d
+	}); err != nil {
+		return err
+	}
+
+	if err := processDurationField(configMap, "batchprocessorexportinterval", func(d time.Duration) {
+		config.OTLPConfig.BatchProcessorExportInterval = d
+	}); err != nil {
+		return err
+	}
+
 	// Build retry config from individual fields
 	if err := buildRetryConfig(config); err != nil {
 		return fmt.Errorf("failed to build retry config: %w", err)

@@ -9,8 +9,6 @@ import (
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	"github.com/gardener/logging/v1/pkg/types"
 )
 
 func TestRecordConverter(t *testing.T) {
@@ -116,7 +114,7 @@ var _ = Describe("toOutputRecord", func() {
 			result := toOutputRecord(input)
 
 			Expect(result).To(HaveKey("outer"))
-			nested, ok := result["outer"].(types.OutputRecord)
+			nested, ok := result["outer"].(map[string]any)
 			Expect(ok).To(BeTrue())
 			Expect(nested).To(HaveKeyWithValue("inner", "value"))
 		})
@@ -135,13 +133,13 @@ var _ = Describe("toOutputRecord", func() {
 			result := toOutputRecord(input)
 
 			Expect(result).To(HaveKey("level1"))
-			level1, ok := result["level1"].(types.OutputRecord)
+			level1, ok := result["level1"].(map[string]any)
 			Expect(ok).To(BeTrue())
 			Expect(level1).To(HaveKey("level2"))
-			level2, ok := level1["level2"].(types.OutputRecord)
+			level2, ok := level1["level2"].(map[string]any)
 			Expect(ok).To(BeTrue())
 			Expect(level2).To(HaveKey("level3"))
-			level3, ok := level2["level3"].(types.OutputRecord)
+			level3, ok := level2["level3"].(map[string]any)
 			Expect(ok).To(BeTrue())
 			Expect(level3).To(HaveKeyWithValue("deep", "value"))
 		})
@@ -156,7 +154,7 @@ var _ = Describe("toOutputRecord", func() {
 			result := toOutputRecord(input)
 
 			Expect(result).To(HaveKey("kubernetes"))
-			k8s, ok := result["kubernetes"].(types.OutputRecord)
+			k8s, ok := result["kubernetes"].(map[string]any)
 			Expect(ok).To(BeTrue())
 			Expect(k8s).To(HaveKeyWithValue("pod_name", "my-pod"))
 		})
@@ -222,7 +220,7 @@ var _ = Describe("toOutputRecord", func() {
 			objects, ok := result["objects"].([]any)
 			Expect(ok).To(BeTrue())
 			Expect(objects).To(HaveLen(2))
-			obj1, ok := objects[0].(types.OutputRecord)
+			obj1, ok := objects[0].(map[string]any)
 			Expect(ok).To(BeTrue())
 			Expect(obj1).To(HaveKeyWithValue("name", "obj1"))
 		})
@@ -312,12 +310,12 @@ var _ = Describe("toOutputRecord", func() {
 			Expect(result).To(HaveKeyWithValue("log", "Application started"))
 			Expect(result).To(HaveKeyWithValue("level", "info"))
 
-			k8s, ok := result["kubernetes"].(types.OutputRecord)
+			k8s, ok := result["kubernetes"].(map[string]any)
 			Expect(ok).To(BeTrue())
 			Expect(k8s).To(HaveKeyWithValue("namespace_name", "default"))
 			Expect(k8s).To(HaveKeyWithValue("pod_name", "test-pod-123"))
 
-			labels, ok := k8s["labels"].(types.OutputRecord)
+			labels, ok := k8s["labels"].(map[string]any)
 			Expect(ok).To(BeTrue())
 			Expect(labels).To(HaveKeyWithValue("app", "my-app"))
 		})
@@ -340,7 +338,7 @@ var _ = Describe("toOutputRecord", func() {
 			Expect(result).To(HaveKeyWithValue("log", "2024-11-28T10:00:00Z INFO Sample log message"))
 			Expect(result).To(HaveKeyWithValue("stream", "stdout"))
 
-			k8s, ok := result["kubernetes"].(types.OutputRecord)
+			k8s, ok := result["kubernetes"].(map[string]any)
 			Expect(ok).To(BeTrue())
 			Expect(k8s).To(HaveKeyWithValue("pod_name", "app-deployment-abc123-xyz"))
 			Expect(k8s).To(HaveKeyWithValue("namespace_name", "production"))
@@ -428,7 +426,7 @@ var _ = Describe("toSlice", func() {
 			result := toSlice(input)
 
 			Expect(result).To(HaveLen(2))
-			obj1, ok := result[0].(types.OutputRecord)
+			obj1, ok := result[0].(map[string]any)
 			Expect(ok).To(BeTrue())
 			Expect(obj1).To(HaveKeyWithValue("id", 1))
 			Expect(obj1).To(HaveKeyWithValue("name", "first"))
@@ -462,7 +460,7 @@ var _ = Describe("toSlice", func() {
 
 			result := toSlice(input)
 
-			obj, ok := result[0].(types.OutputRecord)
+			obj, ok := result[0].(map[string]any)
 			Expect(ok).To(BeTrue())
 			Expect(obj).To(HaveKeyWithValue("data", "binary"))
 		})
@@ -504,7 +502,7 @@ var _ = Describe("toSlice", func() {
 			Expect(result).To(HaveLen(3))
 
 			// First element: map with array and bytes
-			obj1, ok := result[0].(types.OutputRecord)
+			obj1, ok := result[0].(map[string]any)
 			Expect(ok).To(BeTrue())
 			arr, ok := obj1["array"].([]any)
 			Expect(ok).To(BeTrue())
@@ -514,7 +512,7 @@ var _ = Describe("toSlice", func() {
 			// Second element: array with map
 			arr2, ok := result[1].([]any)
 			Expect(ok).To(BeTrue())
-			nestedMap, ok := arr2[0].(types.OutputRecord)
+			nestedMap, ok := arr2[0].(map[string]any)
 			Expect(ok).To(BeTrue())
 			Expect(nestedMap).To(HaveKeyWithValue("nested", "value"))
 

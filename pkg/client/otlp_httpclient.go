@@ -64,10 +64,28 @@ func NewOTLPHTTPClient(cfg config.Config, logger logr.Logger) (OutputClient, err
 		WithOrigin("seed").
 		Build()
 
-	// Create logger provider
+	// Configure batch processor with limits from configuration to prevent OOM under high load
+	batchProcessorOpts := []sdklog.BatchProcessorOption{
+		// Maximum queue size - if queue is full, records are dropped
+		// This prevents unbounded memory growth under high load
+		sdklog.WithMaxQueueSize(cfg.OTLPConfig.BatchProcessorMaxQueueSize),
+
+		// Maximum batch size - number of records per export
+		// Larger batches are more efficient but use more memory
+		sdklog.WithExportMaxBatchSize(cfg.OTLPConfig.BatchProcessorMaxBatchSize),
+
+		// Export timeout - maximum time for a single export attempt
+		sdklog.WithExportTimeout(cfg.OTLPConfig.BatchProcessorExportTimeout),
+
+		// Batch timeout - maximum time to wait before exporting a partial batch
+		// This ensures logs don't sit in memory too long
+		sdklog.WithExportInterval(cfg.OTLPConfig.BatchProcessorExportInterval),
+	}
+
+	// Create logger provider with configured batch processor
 	loggerProvider := sdklog.NewLoggerProvider(
 		sdklog.WithResource(resource),
-		sdklog.WithProcessor(sdklog.NewBatchProcessor(exporter)),
+		sdklog.WithProcessor(sdklog.NewBatchProcessor(exporter, batchProcessorOpts...)),
 	)
 
 	client := &OTLPHTTPClient{
