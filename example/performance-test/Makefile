@@ -1,6 +1,8 @@
 # Plugin Performance Test Makefile
 # This Makefile provides targets to run performance tests for the logging plugin.
 DIR                   := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+PLATFORM              ?= $(shell uname -s | tr '[:upper:]' '[:lower:]')
+ARCH                  ?= $(shell uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
 
 # Default values - suitable for test environment verification
 # These can be overridden via environment variables for actual performance testing.
@@ -11,10 +13,12 @@ LOGS_DELAY            ?= 25s # Delay between log messages
 
 SCENARIO              ?= shoot # Test scenario: "shoot" or "seed"
 
-LOGCLI_BIN            := $(DIR)/bin/logcli
+VLOGSCLI_BIN            := $(DIR)/bin/vlogscli
+VLOGSCLI_BIN_VERSION    := v1.39.0
+VLOGSCLI_URL 		    := "https://github.com/VictoriaMetrics/VictoriaLogs/releases/download/$(VLOGSCLI_BIN_VERSION)/vlutils-$(PLATFORM)-$(ARCH)-$(VLOGSCLI_BIN_VERSION).tar.gz"
 
 # Default target
-.PHONY: help logcli setup run fetch down clean test check check-kubeconfig
+.PHONY: help vlogscli setup run fetch down clean test check check-kubeconfig
 help:
 	@echo "Available targets:"
 	@echo "  setup  - Install fluent-bit chart and apply cluster CRD"
@@ -23,7 +27,7 @@ help:
 	@echo "  check  - Show current number of logs in Vali"
 	@echo "  down   - Clean up test clusters and log generation jobs"
 	@echo "  clean  - Remove all test components"
-	@echo "  logcli - Download and install logcli tool"
+	@echo "  vlogsqcli - Download and install vlogsqcli tool"
 	@echo ""
 	@echo "Environment variables:"
 	@echo "  CLUSTERS    - Number of clusters to create (default: $(CLUSTERS))"
@@ -33,24 +37,23 @@ help:
 
 # Download and install logcli tool using a dedicated Go module
 
-logcli: $(LOGCLI_BIN)
-    @echo "logcli present: $(LOGCLI_BIN)"
+vlogscli: $(VLOGSCLI_BIN)
+    @echo "vlogscli present: $(VLOGSCLI_BIN)"
 
-$(LOGCLI_BIN):
-	@echo "Building logcli from credativ/vali (clone & build) ..."
+$(VLOGSCLI_BIN):
+	@echo "Downloading vlogscli from victorialogs"
 	@mkdir -p $(DIR)/bin
 	@TMP_DIR=$$(mktemp -d) && \
-		cd $$TMP_DIR && \
-		git clone --depth 1 https://github.com/credativ/vali.git && \
-		cd vali && \
-		echo "Building logcli..." && \
-		CGO_ENABLED=0 GOTOOLCHAIN=go1.22.0 go build -ldflags="-s -w" -tags netgo -o logcli ./cmd/logcli && \
-		mv $$TMP_DIR/vali/logcli $(DIR)/bin/logcli
+	    cd $$TMP_DIR && \
+		curl -L -O -s $(VLOGSCLI_URL) && \
+	    tar xzf vlutils-$(PLATFORM)-$(ARCH)-$(VLOGSCLI_BIN_VERSION).tar.gz && \
+		mv ./vlogscli-prod $(DIR)/bin/vlogscli && \
+		chmod +x $(DIR)/bin/vlogscli
 	@rm -rf $$TMP_DIR
-	@echo "logcli installed: bin/logcli"
+	@$(DIR)/bin/vlogscli -version
 
 # Install fluent-bit chart and apply cluster CRD
-setup: logcli check-kubeconfig
+setup: vlogscli check-kubeconfig
 	@echo "Setting up logging performance test environment..."
 	@$(DIR)/setup.sh
 
