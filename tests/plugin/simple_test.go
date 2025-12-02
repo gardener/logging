@@ -34,7 +34,7 @@ var _ = Describe("Simple Plugin Test", func() {
 		// Test handle
 		entry := types.OutputEntry{
 			Timestamp: time.Now(),
-			Record:    types.OutputRecord{"msg": "test log"},
+			Record:    map[string]any{"msg": "test log"},
 		}
 		err = c.Handle(entry)
 		Expect(err).NotTo(HaveOccurred())

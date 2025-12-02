@@ -323,8 +323,8 @@ func createTestCluster(name, purpose string, hibernated bool) *extensionsv1alpha
 }
 
 // createLogRecord creates a fluent-bit log record for testing
-func createLogRecord(clusterName string, logIndex int) types.OutputRecord {
-	return types.OutputRecord{
+func createLogRecord(clusterName string, logIndex int) map[string]any {
+	return map[string]any{
 		"log": fmt.Sprintf("Test log message %d for cluster %s at %s",
 			logIndex, clusterName, time.Now().Format(time.RFC3339)),
 		"kubernetes": map[string]any{

@@ -6,8 +6,6 @@ package plugin
 import (
 	"fmt"
 	"regexp"
-
-	"github.com/gardener/logging/v1/pkg/types"
 )
 
 const (
@@ -23,10 +21,15 @@ const (
 // The tag should be in the format: pod_name.namespace_name.container_name.container_id
 // This is required since the fluent-bit does not use the kubernetes filter plugin, reason for it is to avoid querying
 // the kubernetes API server for the metadata.
-func extractKubernetesMetadataFromTag(record types.OutputRecord, tagKey string, re *regexp.Regexp) error {
+func extractKubernetesMetadataFromTag(record map[string]any, tagKey string, re *regexp.Regexp) error {
 	tag, ok := record[tagKey].(string)
 	if !ok {
-		return fmt.Errorf("the tag entry for key %q is missing", tagKey)
+		// Collect available keys for debugging
+		availableKeys := make([]string, 0, len(record))
+		for k := range record {
+			availableKeys = append(availableKeys, k)
+		}
+		return fmt.Errorf("the tag entry for key %q is missing or not a string, available keys: %v, value type: %T", tagKey, availableKeys, record[tagKey])
 	}
 
 	kubernetesMetaData := re.FindStringSubmatch(tag)
@@ -44,16 +47,12 @@ func extractKubernetesMetadataFromTag(record types.OutputRecord, tagKey string, 
 	return nil
 }
 
-func getDynamicHostName(records types.OutputRecord, mapping map[string]any) string {
+func getDynamicHostName(records map[string]any, mapping map[string]any) string {
 	for k, v := range mapping {
 		switch nextKey := v.(type) {
 		// if the next level is a map we are expecting we need to move deeper in the tree
 		case map[string]any:
-			// Try to get the nested value and convert it to OutputRecord
-			if nextValue, ok := records[k].(types.OutputRecord); ok {
-				return getDynamicHostName(nextValue, nextKey)
-			}
-			// Also try map[string]any directly since type aliases may not match in type assertions
+			// FluentBit always sends map[string]any for nested structures
 			if nextValue, ok := records[k].(map[string]any); ok {
 				return getDynamicHostName(nextValue, nextKey)
 			}

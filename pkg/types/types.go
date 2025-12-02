@@ -62,7 +62,5 @@ func (t Type) String() string {
 // OutputEntry represents a log record with a timestamp
 type OutputEntry struct {
 	Timestamp time.Time
-	Record    OutputRecord
+	Record    map[string]any
 }
-
-type OutputRecord map[string]any

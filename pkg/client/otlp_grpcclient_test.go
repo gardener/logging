@@ -94,7 +94,7 @@ var _ = Describe("OTLPGRPCClient", func() {
 		It("should handle a simple log entry", func() {
 			entry := types.OutputEntry{
 				Timestamp: time.Now(),
-				Record: types.OutputRecord{
+				Record: map[string]any{
 					"log":   "test message",
 					"level": "info",
 				},
@@ -107,7 +107,7 @@ var _ = Describe("OTLPGRPCClient", func() {
 		It("should handle log entry with kubernetes metadata", func() {
 			entry := types.OutputEntry{
 				Timestamp: time.Now(),
-				Record: types.OutputRecord{
+				Record: map[string]any{
 					"log": "application started",
 					"kubernetes": map[string]any{
 						"pod_name":       "test-pod",
@@ -123,7 +123,7 @@ var _ = Describe("OTLPGRPCClient", func() {
 		It("should extract all kubernetes metadata following semantic conventions", func() {
 			entry := types.OutputEntry{
 				Timestamp: time.Now(),
-				Record: types.OutputRecord{
+				Record: map[string]any{
 					"log": "full kubernetes metadata test",
 					"kubernetes": map[string]any{
 						"namespace_name": "production",
@@ -143,7 +143,7 @@ var _ = Describe("OTLPGRPCClient", func() {
 		It("should handle log entry with partial kubernetes metadata", func() {
 			entry := types.OutputEntry{
 				Timestamp: time.Now(),
-				Record: types.OutputRecord{
+				Record: map[string]any{
 					"log": "partial kubernetes metadata",
 					"kubernetes": map[string]any{
 						"pod_name": "test-pod-xyz",
@@ -159,7 +159,7 @@ var _ = Describe("OTLPGRPCClient", func() {
 		It("should handle log entry without kubernetes metadata", func() {
 			entry := types.OutputEntry{
 				Timestamp: time.Now(),
-				Record: types.OutputRecord{
+				Record: map[string]any{
 					"log":   "no kubernetes metadata",
 					"level": "info",
 				},
@@ -172,7 +172,7 @@ var _ = Describe("OTLPGRPCClient", func() {
 		It("should handle log entry without log field", func() {
 			entry := types.OutputEntry{
 				Timestamp: time.Now(),
-				Record: types.OutputRecord{
+				Record: map[string]any{
 					"message": "test message",
 					"level":   "debug",
 				},
@@ -185,7 +185,7 @@ var _ = Describe("OTLPGRPCClient", func() {
 		It("should handle log entry with various data types", func() {
 			entry := types.OutputEntry{
 				Timestamp: time.Now(),
-				Record: types.OutputRecord{
+				Record: map[string]any{
 					"log":      "test",
 					"count":    42,
 					"duration": 3.14,
@@ -215,7 +215,7 @@ var _ = Describe("OTLPGRPCClient", func() {
 		// 	// Send a log entry
 		// 	entry := types.OutputEntry{
 		// 		Timestamp: time.Now(),
-		// 		Record: types.OutputRecord{
+		// 		Record: map[string]any{
 		// 			"log": "test message",
 		// 		},
 		// 	}

@@ -134,7 +134,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 		It("should handle a simple log entry", func() {
 			entry := types.OutputEntry{
 				Timestamp: time.Now(),
-				Record: types.OutputRecord{
+				Record: map[string]any{
 					"log":   "test message",
 					"level": "info",
 				},
@@ -147,7 +147,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 		It("should handle log entry with log field", func() {
 			entry := types.OutputEntry{
 				Timestamp: time.Now(),
-				Record: types.OutputRecord{
+				Record: map[string]any{
 					"log":      "HTTP request received",
 					"method":   "GET",
 					"path":     "/api/v1/users",
@@ -163,7 +163,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 		It("should handle log entry with message field", func() {
 			entry := types.OutputEntry{
 				Timestamp: time.Now(),
-				Record: types.OutputRecord{
+				Record: map[string]any{
 					"message": "test message",
 					"level":   "debug",
 				},
@@ -176,7 +176,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 		It("should handle log entry without log or message field", func() {
 			entry := types.OutputEntry{
 				Timestamp: time.Now(),
-				Record: types.OutputRecord{
+				Record: map[string]any{
 					"level":  "warn",
 					"source": "test",
 				},
@@ -189,7 +189,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 		It("should handle log entry with kubernetes metadata", func() {
 			entry := types.OutputEntry{
 				Timestamp: time.Now(),
-				Record: types.OutputRecord{
+				Record: map[string]any{
 					"log": "application started",
 					"kubernetes": map[string]any{
 						"pod_name":       "test-pod-abc123",
@@ -210,7 +210,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 		It("should extract all kubernetes metadata following semantic conventions", func() {
 			entry := types.OutputEntry{
 				Timestamp: time.Now(),
-				Record: types.OutputRecord{
+				Record: map[string]any{
 					"log": "full kubernetes metadata test",
 					"kubernetes": map[string]any{
 						"namespace_name": "production",
@@ -230,7 +230,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 		It("should handle log entry with partial kubernetes metadata", func() {
 			entry := types.OutputEntry{
 				Timestamp: time.Now(),
-				Record: types.OutputRecord{
+				Record: map[string]any{
 					"log": "partial kubernetes metadata",
 					"kubernetes": map[string]any{
 						"pod_name":       "test-pod-xyz",
@@ -247,7 +247,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 		It("should handle log entry without kubernetes metadata", func() {
 			entry := types.OutputEntry{
 				Timestamp: time.Now(),
-				Record: types.OutputRecord{
+				Record: map[string]any{
 					"log":   "no kubernetes metadata",
 					"level": "info",
 				},
@@ -260,7 +260,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 		It("should handle log entry with various data types", func() {
 			entry := types.OutputEntry{
 				Timestamp: time.Now(),
-				Record: types.OutputRecord{
+				Record: map[string]any{
 					"log":      "test",
 					"count":    42,
 					"duration": 3.14,
@@ -277,7 +277,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 		It("should handle log entry with byte array", func() {
 			entry := types.OutputEntry{
 				Timestamp: time.Now(),
-				Record: types.OutputRecord{
+				Record: map[string]any{
 					"log":  "binary data received",
 					"data": []byte("binary content"),
 				},
@@ -290,7 +290,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 		It("should handle log entry with nested structures", func() {
 			entry := types.OutputEntry{
 				Timestamp: time.Now(),
-				Record: types.OutputRecord{
+				Record: map[string]any{
 					"log": "complex entry",
 					"metadata": map[string]any{
 						"request": map[string]any{
@@ -313,7 +313,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 			for i := 0; i < 10; i++ {
 				entry := types.OutputEntry{
 					Timestamp: time.Now(),
-					Record: types.OutputRecord{
+					Record: map[string]any{
 						"log":   "sequential message",
 						"index": i,
 					},
@@ -341,7 +341,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 			// Send a log entry
 			entry := types.OutputEntry{
 				Timestamp: time.Now(),
-				Record: types.OutputRecord{
+				Record: map[string]any{
 					"log": "test message",
 				},
 			}
@@ -369,7 +369,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 			for i := 0; i < 5; i++ {
 				entry := types.OutputEntry{
 					Timestamp: time.Now(),
-					Record: types.OutputRecord{
+					Record: map[string]any{
 						"log":   "message to flush",
 						"index": i,
 					},
@@ -498,7 +498,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 
 			entry := types.OutputEntry{
 				Timestamp: time.Now(),
-				Record: types.OutputRecord{
+				Record: map[string]any{
 					"log":    "2024-11-28T10:00:00Z INFO Application started",
 					"stream": "stdout",
 					"kubernetes": map[string]any{
@@ -521,7 +521,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 
 			entry := types.OutputEntry{
 				Timestamp: time.Now(),
-				Record: types.OutputRecord{
+				Record: map[string]any{
 					"log": "Reconciling shoot cluster",
 					"kubernetes": map[string]any{
 						"namespace_name": "garden-shoot--project--cluster",
