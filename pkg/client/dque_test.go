@@ -117,7 +117,7 @@ var _ = Describe("Buffer", func() {
 			for i := 0; i < 100; i++ {
 				entry := types.OutputEntry{
 					Timestamp: time.Now(),
-					Record:    types.OutputRecord{"msg": fmt.Sprintf("test log %d", i)},
+					Record:    map[string]any{"msg": fmt.Sprintf("test log %d", i)},
 				}
 				err := outputClient.Handle(entry)
 				Expect(err).ToNot(HaveOccurred())

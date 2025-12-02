@@ -18,7 +18,7 @@ var _ = Describe("LogRecordBuilder", func() {
 		It("should extract all Kubernetes attributes when all fields are present", func() {
 			entry := types.OutputEntry{
 				Timestamp: time.Now(),
-				Record: types.OutputRecord{
+				Record: map[string]any{
 					"kubernetes": map[string]any{
 						"namespace_name": "test-namespace",
 						"pod_name":       "test-pod",
@@ -44,7 +44,7 @@ var _ = Describe("LogRecordBuilder", func() {
 		It("should extract partial attributes when only some fields are present", func() {
 			entry := types.OutputEntry{
 				Timestamp: time.Now(),
-				Record: types.OutputRecord{
+				Record: map[string]any{
 					"kubernetes": map[string]any{
 						"namespace_name": "test-namespace",
 						"pod_name":       "test-pod",
@@ -64,8 +64,8 @@ var _ = Describe("LogRecordBuilder", func() {
 		It("should handle OutputRecord type for kubernetes field", func() {
 			entry := types.OutputEntry{
 				Timestamp: time.Now(),
-				Record: types.OutputRecord{
-					"kubernetes": types.OutputRecord{
+				Record: map[string]any{
+					"kubernetes": map[string]any{
 						"namespace_name": "test-namespace",
 						"pod_name":       "test-pod",
 						"container_name": "test-container",
@@ -84,7 +84,7 @@ var _ = Describe("LogRecordBuilder", func() {
 		It("should return nil when kubernetes field is missing", func() {
 			entry := types.OutputEntry{
 				Timestamp: time.Now(),
-				Record: types.OutputRecord{
+				Record: map[string]any{
 					"message": "test log",
 				},
 			}
@@ -97,7 +97,7 @@ var _ = Describe("LogRecordBuilder", func() {
 		It("should return nil when kubernetes field is not a map", func() {
 			entry := types.OutputEntry{
 				Timestamp: time.Now(),
-				Record: types.OutputRecord{
+				Record: map[string]any{
 					"kubernetes": "invalid-type",
 				},
 			}
@@ -110,7 +110,7 @@ var _ = Describe("LogRecordBuilder", func() {
 		It("should skip empty string values", func() {
 			entry := types.OutputEntry{
 				Timestamp: time.Now(),
-				Record: types.OutputRecord{
+				Record: map[string]any{
 					"kubernetes": map[string]any{
 						"namespace_name": "test-namespace",
 						"pod_name":       "",
@@ -132,7 +132,7 @@ var _ = Describe("LogRecordBuilder", func() {
 		It("should skip fields with wrong type", func() {
 			entry := types.OutputEntry{
 				Timestamp: time.Now(),
-				Record: types.OutputRecord{
+				Record: map[string]any{
 					"kubernetes": map[string]any{
 						"namespace_name": "test-namespace",
 						"pod_name":       123, // wrong type
@@ -151,7 +151,7 @@ var _ = Describe("LogRecordBuilder", func() {
 		It("should handle real-world fluent-bit kubernetes metadata", func() {
 			entry := types.OutputEntry{
 				Timestamp: time.Now(),
-				Record: types.OutputRecord{
+				Record: map[string]any{
 					"kubernetes": map[string]any{
 						"container_name": "fluent-bit",
 						"namespace_name": "fluent-bit",
@@ -174,7 +174,7 @@ var _ = Describe("LogRecordBuilder", func() {
 
 	Describe("extractBody", func() {
 		It("should extract body from 'log' field", func() {
-			record := types.OutputRecord{
+			record := map[string]any{
 				"log": "test log message",
 			}
 
@@ -184,7 +184,7 @@ var _ = Describe("LogRecordBuilder", func() {
 		})
 
 		It("should extract body from 'message' field when 'log' is not present", func() {
-			record := types.OutputRecord{
+			record := map[string]any{
 				"message": "test message",
 			}
 
@@ -194,7 +194,7 @@ var _ = Describe("LogRecordBuilder", func() {
 		})
 
 		It("should prefer 'log' field over 'message' field", func() {
-			record := types.OutputRecord{
+			record := map[string]any{
 				"log":     "log message",
 				"message": "message field",
 			}
@@ -205,7 +205,7 @@ var _ = Describe("LogRecordBuilder", func() {
 		})
 
 		It("should convert entire record to string when neither 'log' nor 'message' present", func() {
-			record := types.OutputRecord{
+			record := map[string]any{
 				"field1": "value1",
 				"field2": "value2",
 			}
@@ -265,7 +265,7 @@ var _ = Describe("LogRecordBuilder", func() {
 		It("should build a complete log record", func() {
 			entry := types.OutputEntry{
 				Timestamp: time.Date(2025, 12, 1, 18, 0, 0, 0, time.UTC),
-				Record: types.OutputRecord{
+				Record: map[string]any{
 					"log":   "test message",
 					"level": "info",
 					"kubernetes": map[string]any{
@@ -291,7 +291,7 @@ var _ = Describe("LogRecordBuilder", func() {
 		It("should skip specified attributes", func() {
 			entry := types.OutputEntry{
 				Timestamp: time.Now(),
-				Record: types.OutputRecord{
+				Record: map[string]any{
 					"log":     "test message",
 					"message": "should be skipped",
 					"level":   "info",

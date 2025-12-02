@@ -27,11 +27,11 @@ var _ = Describe("Controller Client", func() {
 		line2     = "testline2"
 		entry1    = types.OutputEntry{
 			Timestamp: time.Now(),
-			Record:    types.OutputRecord{"msg": line1},
+			Record:    map[string]any{"msg": line1},
 		}
 		entry2 = types.OutputEntry{
 			Timestamp: time.Now().Add(time.Second),
-			Record:    types.OutputRecord{"msg": line2},
+			Record:    map[string]any{"msg": line2},
 		}
 	)
 
@@ -259,7 +259,7 @@ var _ = Describe("Controller Client", func() {
 
 			entry := types.OutputEntry{
 				Timestamp: time.Now(),
-				Record:    types.OutputRecord{"msg": "test before graceful stop"},
+				Record:    map[string]any{"msg": "test before graceful stop"},
 			}
 			err := ctlClient.Handle(entry)
 			Expect(err).ToNot(HaveOccurred())
@@ -295,7 +295,7 @@ var _ = Describe("Controller Client", func() {
 					for j := 0; j < logsPerGoroutine; j++ {
 						entry := types.OutputEntry{
 							Timestamp: time.Now(),
-							Record:    types.OutputRecord{"msg": fmt.Sprintf("concurrent log from goroutine %d, message %d", id, j)},
+							Record:    map[string]any{"msg": fmt.Sprintf("concurrent log from goroutine %d, message %d", id, j)},
 						}
 						err := ctlClient.Handle(entry)
 						Expect(err).ToNot(HaveOccurred())
@@ -348,7 +348,7 @@ var _ = Describe("Controller Client", func() {
 					for j := 0; j < 10; j++ {
 						entry := types.OutputEntry{
 							Timestamp: time.Now(),
-							Record:    types.OutputRecord{"msg": fmt.Sprintf("concurrent log during state changes %d-%d", id, j)},
+							Record:    map[string]any{"msg": fmt.Sprintf("concurrent log during state changes %d-%d", id, j)},
 						}
 						_ = ctlClient.Handle(entry)
 					}
@@ -384,7 +384,7 @@ var _ = Describe("Controller Client", func() {
 					for j := 0; j < 20; j++ {
 						entry := types.OutputEntry{
 							Timestamp: time.Now(),
-							Record:    types.OutputRecord{"msg": fmt.Sprintf("concurrent log before stop %d-%d", id, j)},
+							Record:    map[string]any{"msg": fmt.Sprintf("concurrent log before stop %d-%d", id, j)},
 						}
 						_ = ctlClient.Handle(entry)
 						time.Sleep(1 * time.Millisecond)

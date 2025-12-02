@@ -126,9 +126,9 @@ var _ = Describe("OutputPlugin plugin", func() {
 			It("should send a valid record with kubernetes metadata", func() {
 				entry := types.OutputEntry{
 					Timestamp: time.Time{},
-					Record: types.OutputRecord{
+					Record: map[string]any{
 						"log": "test log message",
-						"kubernetes": types.OutputRecord{
+						"kubernetes": map[string]any{
 							"namespace_name": "default",
 							"pod_name":       "test-pod",
 							"container_name": "test-container",
@@ -145,10 +145,10 @@ var _ = Describe("OutputPlugin plugin", func() {
 				}, "5s", "100ms").Should(BeNumerically(">", 0))
 			})
 
-			It("should convert types.OutputRecord to map[string]any", func() {
+			It("should convert map[string]any to map[string]any", func() {
 				entry := types.OutputEntry{
 					Timestamp: time.Time{},
-					Record: types.OutputRecord{
+					Record: map[string]any{
 						"log":       []byte("byte log message"),
 						"timestamp": time.Now().Unix(),
 						"level":     "info",
@@ -165,7 +165,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 			It("should handle empty records", func() {
 				entry := types.OutputEntry{
 					Timestamp: time.Time{},
-					Record:    types.OutputRecord{},
+					Record:    map[string]any{},
 				}
 
 				err := plugin.SendRecord(entry)
@@ -175,11 +175,11 @@ var _ = Describe("OutputPlugin plugin", func() {
 			It("should handle records with nested structures", func() {
 				entry := types.OutputEntry{
 					Timestamp: time.Time{},
-					Record: types.OutputRecord{
+					Record: map[string]any{
 						"log": "nested test",
-						"kubernetes": types.OutputRecord{
+						"kubernetes": map[string]any{
 							"namespace_name": "kube-system",
-							"labels": types.OutputRecord{
+							"labels": map[string]any{
 								"app": "test",
 							},
 						},
@@ -196,9 +196,9 @@ var _ = Describe("OutputPlugin plugin", func() {
 			It("should accept record with existing kubernetes metadata", func() {
 				entry := types.OutputEntry{
 					Timestamp: time.Now(),
-					Record: types.OutputRecord{
+					Record: map[string]any{
 						"log": "test",
-						"kubernetes": types.OutputRecord{
+						"kubernetes": map[string]any{
 							"namespace_name": "test-ns",
 							"pod_name":       "test-pod",
 						},
@@ -221,7 +221,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 				entry := types.OutputEntry{
 					Timestamp: time.Now(),
-					Record: types.OutputRecord{
+					Record: map[string]any{
 						"log": "test",
 						"tag": "kube.test-pod_default_nginx-1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef.log",
 					},
@@ -244,7 +244,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 				entry := types.OutputEntry{
 					Timestamp: time.Now(),
-					Record: types.OutputRecord{
+					Record: map[string]any{
 						"log": "test",
 						"tag": "invalid-tag-format",
 					},
@@ -270,7 +270,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 				entry := types.OutputEntry{
 					Timestamp: time.Now(),
-					Record: types.OutputRecord{
+					Record: map[string]any{
 						"log": "test",
 						"tag": "invalid-tag",
 					},
@@ -292,7 +292,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 				entry := types.OutputEntry{
 					Timestamp: time.Now(),
-					Record: types.OutputRecord{
+					Record: map[string]any{
 						"log": "test log",
 					},
 				}
@@ -310,7 +310,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 				entry := types.OutputEntry{
 					Timestamp: time.Now(),
-					Record: types.OutputRecord{
+					Record: map[string]any{
 						"log": "test log to be dropped",
 					},
 				}
@@ -411,7 +411,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 					for j := 0; j < recordsPerGoroutine; j++ {
 						entry := types.OutputEntry{
 							Timestamp: time.Now(),
-							Record: types.OutputRecord{
+							Record: map[string]any{
 								"log":       fmt.Sprintf("concurrent log from goroutine %d, record %d", id, j),
 								"goroutine": id,
 								"record":    j,
@@ -446,7 +446,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 					for j := 0; j < 20; j++ {
 						entry := types.OutputEntry{
 							Timestamp: time.Now(),
-							Record: types.OutputRecord{
+							Record: map[string]any{
 								"log": fmt.Sprintf("log %d-%d", id, j),
 							},
 						}
@@ -479,7 +479,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 			for i := 0; i < messageCount; i++ {
 				entry := types.OutputEntry{
 					Timestamp: time.Now(),
-					Record: types.OutputRecord{
+					Record: map[string]any{
 						"log":   fmt.Sprintf("high volume message %d", i),
 						"index": i,
 					},
@@ -511,7 +511,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 			for i := 0; i < messageCount; i++ {
 				entry := types.OutputEntry{
 					Timestamp: time.Now(),
-					Record: types.OutputRecord{
+					Record: map[string]any{
 						"log": fmt.Sprintf("overflow test message %d", i),
 					},
 				}
@@ -532,7 +532,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 			entry1 := types.OutputEntry{
 				Timestamp: time.Now(),
-				Record:    types.OutputRecord{"log": "test1"},
+				Record:    map[string]any{"log": "test1"},
 			}
 			err = plugin1.SendRecord(entry1)
 			Expect(err).NotTo(HaveOccurred())
@@ -548,7 +548,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 			entry2 := types.OutputEntry{
 				Timestamp: time.Now(),
-				Record:    types.OutputRecord{"log": "test1"},
+				Record:    map[string]any{"log": "test1"},
 			}
 			err = plugin2.SendRecord(entry2)
 			Expect(err).NotTo(HaveOccurred())
@@ -628,9 +628,9 @@ var _ = Describe("OutputPlugin plugin", func() {
 			// Send a log with matching kubernetes metadata
 			entry := types.OutputEntry{
 				Timestamp: time.Now(),
-				Record: types.OutputRecord{
+				Record: map[string]any{
 					"log": "test log for shoot cluster",
-					"kubernetes": types.OutputRecord{
+					"kubernetes": map[string]any{
 						"namespace_name": shootNamespace,
 						"pod_name":       "test-pod",
 						"container_name": "test-container",
@@ -678,9 +678,9 @@ var _ = Describe("OutputPlugin plugin", func() {
 			// Now send a log that doesn't match any shoot namespace (should go to seed)
 			entry = types.OutputEntry{
 				Timestamp: time.Now(),
-				Record: types.OutputRecord{
+				Record: map[string]any{
 					"log": "test log for garden",
-					"kubernetes": types.OutputRecord{
+					"kubernetes": map[string]any{
 						"namespace_name": "kube-system",
 						"pod_name":       "test-pod",
 					},
@@ -760,16 +760,16 @@ var _ = Describe("OutputPlugin plugin", func() {
 			// Send logs to both shoots
 			entry1 := types.OutputEntry{
 				Timestamp: time.Now(),
-				Record: types.OutputRecord{
+				Record: map[string]any{
 					"log":        "log for cluster1",
-					"kubernetes": types.OutputRecord{"namespace_name": shoot1},
+					"kubernetes": map[string]any{"namespace_name": shoot1},
 				},
 			}
 			entry2 := types.OutputEntry{
 				Timestamp: time.Now(),
-				Record: types.OutputRecord{
+				Record: map[string]any{
 					"log":        "log for cluster2",
-					"kubernetes": types.OutputRecord{"namespace_name": shoot2},
+					"kubernetes": map[string]any{"namespace_name": shoot2},
 				},
 			}
 
@@ -836,9 +836,9 @@ var _ = Describe("OutputPlugin plugin", func() {
 			// Send a log - it should be dropped or go to seed
 			entry := types.OutputEntry{
 				Timestamp: time.Now(),
-				Record: types.OutputRecord{
+				Record: map[string]any{
 					"log":        "log for hibernated cluster",
-					"kubernetes": types.OutputRecord{"namespace_name": shootNamespace},
+					"kubernetes": map[string]any{"namespace_name": shootNamespace},
 				},
 			}
 

@@ -7,14 +7,13 @@ import (
 	"fmt"
 
 	"github.com/gardener/logging/v1/pkg/metrics"
-	"github.com/gardener/logging/v1/pkg/types"
 )
 
 // toOutputRecord converts fluent-bit's map[any]any to types.OutputRecord.
 // It recursively processes nested structures and converts byte arrays to strings.
 // Entries with non-string keys are dropped and logged as warnings with metrics.
-func toOutputRecord(record map[any]any) types.OutputRecord {
-	m := make(types.OutputRecord, len(record))
+func toOutputRecord(record map[any]any) map[string]any {
+	m := make(map[string]any, len(record))
 	for k, v := range record {
 		key, ok := k.(string)
 		if !ok {

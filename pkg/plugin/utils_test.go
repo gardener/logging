@@ -11,7 +11,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/gardener/logging/v1/pkg/config"
-	"github.com/gardener/logging/v1/pkg/types"
 )
 
 type getDynamicHostNameArgs struct {
@@ -37,7 +36,7 @@ var _ = Describe("OutputPlugin plugin utils", func() {
 		},
 		Entry("empty record",
 			getDynamicHostNameArgs{
-				records: types.OutputRecord{},
+				records: map[string]any{},
 				mapping: map[string]any{
 					"kubernetes": map[string]any{
 						"namespace_name": "namespace",
@@ -48,7 +47,7 @@ var _ = Describe("OutputPlugin plugin utils", func() {
 		),
 		Entry("empty mapping",
 			getDynamicHostNameArgs{
-				records: types.OutputRecord{
+				records: map[string]any{
 					"kubernetes": map[string]any{
 						"foo":            []byte("buzz"),
 						"namespace_name": []byte("garden"),
@@ -60,7 +59,7 @@ var _ = Describe("OutputPlugin plugin utils", func() {
 		),
 		Entry("empty subrecord",
 			getDynamicHostNameArgs{
-				records: types.OutputRecord{
+				records: map[string]any{
 					"kubernetes": map[string]any{
 						"foo": []byte("buzz"),
 					},
@@ -75,7 +74,7 @@ var _ = Describe("OutputPlugin plugin utils", func() {
 		),
 		Entry("subrecord",
 			getDynamicHostNameArgs{
-				records: types.OutputRecord{
+				records: map[string]any{
 					"kubernetes": map[string]any{
 						"foo":            []byte("buzz"),
 						"namespace_name": []byte("garden"),
@@ -91,7 +90,7 @@ var _ = Describe("OutputPlugin plugin utils", func() {
 		),
 		Entry("deep string",
 			getDynamicHostNameArgs{
-				records: types.OutputRecord{
+				records: map[string]any{
 					"int":   "42",
 					"float": "42.42",
 					"array": `[42,42.42,"foo"]`,
@@ -167,7 +166,8 @@ var _ = Describe("OutputPlugin plugin utils", func() {
 				tagKey:    config.DefaultKubernetesMetadataTagKey,
 				tagPrefix: config.DefaultKubernetesMetadataTagPrefix,
 				tagRegexp: config.DefaultKubernetesMetadataTagExpression,
-				err:       fmt.Errorf("the tag entry for key %q is missing", config.DefaultKubernetesMetadataTagKey),
+				err: fmt.Errorf("the tag entry for key %q is missing or not a string, "+
+					"available keys: [missing_tag], value type: <nil>", config.DefaultKubernetesMetadataTagKey),
 			},
 		),
 	)

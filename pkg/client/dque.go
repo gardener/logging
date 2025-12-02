@@ -31,7 +31,6 @@ type dqueEntry struct {
 
 func init() {
 	gob.Register(map[string]any{})
-	gob.Register(types.OutputRecord{})
 }
 
 func dqueEntryBuilder() any {

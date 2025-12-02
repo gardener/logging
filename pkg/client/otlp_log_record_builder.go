@@ -31,7 +31,7 @@ func (b *LogRecordBuilder) WithTimestamp(timestamp time.Time) *LogRecordBuilder 
 }
 
 // WithSeverity sets the severity from the entry record
-func (b *LogRecordBuilder) WithSeverity(record types.OutputRecord) *LogRecordBuilder {
+func (b *LogRecordBuilder) WithSeverity(record map[string]any) *LogRecordBuilder {
 	severity, severityText := mapSeverity(record)
 	b.record.SetSeverity(severity)
 	b.record.SetSeverityText(severityText)
@@ -41,7 +41,7 @@ func (b *LogRecordBuilder) WithSeverity(record types.OutputRecord) *LogRecordBui
 }
 
 // WithBody sets the body from the entry record
-func (b *LogRecordBuilder) WithBody(record types.OutputRecord) *LogRecordBuilder {
+func (b *LogRecordBuilder) WithBody(record map[string]any) *LogRecordBuilder {
 	body := extractBody(record)
 	b.record.SetBody(otlplog.StringValue(body))
 
@@ -62,7 +62,7 @@ func (b *LogRecordBuilder) Build() otlplog.Record {
 }
 
 // extractBody extracts the log message body from the record
-func extractBody(record types.OutputRecord) string {
+func extractBody(record map[string]any) string {
 	if msg, ok := record["log"].(string); ok {
 		return msg
 	}
@@ -107,14 +107,9 @@ func extractK8sResourceAttributes(entry types.OutputEntry) []otlplog.KeyValue {
 		return nil
 	}
 
-	// Handle both map[string]any and types.OutputRecord (which is also map[string]any)
-	var k8sData map[string]any
-	switch v := k8sField.(type) {
-	case map[string]any:
-		k8sData = v
-	case types.OutputRecord:
-		k8sData = v
-	default:
+	// FluentBit always sends map[string]any for nested structures
+	k8sData, ok := k8sField.(map[string]any)
+	if !ok {
 		return nil
 	}
 
@@ -154,6 +149,7 @@ func extractK8sResourceAttributes(entry types.OutputEntry) []otlplog.KeyValue {
 }
 
 // convertToKeyValue converts a Go value to an OTLP KeyValue attribute
+// FluentBit sends map[string]any, so we can safely assume string keys for nested maps
 func convertToKeyValue(key string, value any) otlplog.KeyValue {
 	switch v := value.(type) {
 	case string:
@@ -167,14 +163,19 @@ func convertToKeyValue(key string, value any) otlplog.KeyValue {
 	case bool:
 		return otlplog.Bool(key, v)
 	case []byte:
+		// Avoid memory leak: limit string conversion for large byte slices
+		if len(v) > 1024 {
+			return otlplog.String(key, fmt.Sprintf("<bytes: %d bytes>", len(v)))
+		}
 		return otlplog.String(key, string(v))
 	case map[string]any:
-		// For nested structures, convert to string representation
-		return otlplog.String(key, fmt.Sprintf("%v", v))
+		// For nested maps, avoid deep serialization that causes memory leaks
+		return otlplog.String(key, fmt.Sprintf("<map: %d keys>", len(v)))
 	case []any:
-		// For arrays, convert to string representation
-		return otlplog.String(key, fmt.Sprintf("%v", v))
+		// For arrays, avoid deep serialization that causes memory leaks
+		return otlplog.String(key, fmt.Sprintf("<array: %d items>", len(v)))
 	default:
-		return otlplog.String(key, fmt.Sprintf("%v", v))
+		// For unknown types, use type name instead of full value to prevent memory leaks
+		return otlplog.String(key, fmt.Sprintf("<%T>", v))
 	}
 }
