@@ -78,7 +78,7 @@ data:
         Http_Listen     0.0.0.0
         Http_Port       2020
         Http_Server     true
-        Log_Level       error
+        Log_Level       info
         Parsers_File    parsers.conf
 
     [Input]
@@ -137,8 +137,8 @@ data:
     [Output]
         Name gardener
         Match kubernetes.*
-        SeedType noop
-        ShootType noop
+        SeedType otlpgrpc
+        ShootType otlpgrpc
         DynamicHostPath {"kubernetes": {"namespace_name": "namespace"}}
         DynamicHostPrefix logging.
         DynamicHostSuffix .svc.cluster.local:4317
@@ -146,23 +146,26 @@ data:
         QueueDir /var/run/fluentbit/dque
         QueueName dynamic
         LogLevel debug
-        Endpoint otel-collector-seed:4317
+        Endpoint logging-otel-collector-seed.fluent-bit.svc.cluster.local:4317
+        Insecure true
         HostnameKeyValue nodename ${NODE_NAME}
         Buffer true
-        QueueSegmentSize 100
+        QueueSegmentSize 1000
         QueueSync normal
         FallbackToTagWhenMetadataIsMissing true
         TagKey tag
+        Pprof true
 
     [Output]
         Name gardener
         Match systemd.*
-        SeedType noop
-        ShootType noop
+        SeedType otlpgrpc
+        ShootType otlpgrpc
         QueueDir /var/run/fluentbit/dque
         QueueName systemd
-        LogLevel info
-        Endpoint otel-collector-seed:4317
+        LogLevel error
+        Endpoint logging-otel-collector-seed.fluent-bit.svc.cluster.local:4317
+        Insecure true
         HostnameKeyValue nodename ${NODE_NAME}
         Buffer true
         QueueSegmentSize 100
