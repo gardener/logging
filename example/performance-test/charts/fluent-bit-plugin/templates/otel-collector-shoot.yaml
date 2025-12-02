@@ -24,8 +24,8 @@ data:
         send_batch_size: 50000
       memory_limiter:
         check_interval: 1s
-        limit_percentage: 85
-        spike_limit_percentage: 15
+        limit_percentage: 75
+        spike_limit_percentage: 10
     exporters:
       debug:
         verbosity: basic
