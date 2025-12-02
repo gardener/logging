@@ -28,7 +28,7 @@ metadata:
   namespace: "$shoot_namespace"
 spec:
   type: ExternalName
-  externalName: logging-vali-shoot.fluent-bit.svc.cluster.local
+  externalName: logging-otel-collector-shoot.fluent-bit.svc.cluster.local
 EOF
 }
 
@@ -72,7 +72,13 @@ kubectl wait \
   --for=jsonpath='{.status.readyReplicas}'=1 \
   --timeout=300s \
   --namespace ${namespace} \
-  statefulset/${nameOverride}-vali-shoot
+  statefulset/${nameOverride}-victorialogs-shoot
+
+kubectl wait \
+  --for=jsonpath='{.status.readyReplicas}'=1 \
+  --timeout=300s \
+  --namespace ${namespace} \
+  deployment/${nameOverride}-otel-collector-shoot
 
 function shoot {
     local clusters=${CLUSTERS:-10}

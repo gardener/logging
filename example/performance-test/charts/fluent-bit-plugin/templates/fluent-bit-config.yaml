@@ -78,7 +78,7 @@ data:
         Http_Listen     0.0.0.0
         Http_Port       2020
         Http_Server     true
-        Log_Level       info
+        Log_Level       error
         Parsers_File    parsers.conf
 
     [Input]
@@ -104,9 +104,13 @@ data:
         DB                  /var/run/fluentbit/flb_kube.db
         DB.Sync             normal
         Mem_Buf_Limit       50MB
-        Parser              cri
 
-
+    [Filter]
+        Name                parser
+        Match               kubernetes.*
+        Key_Name            log
+        Parser              containerd-parser
+        Reserve_Data        true
     [Filter]
         Name                lua
         Match               kubernetes.*
@@ -137,11 +141,11 @@ data:
         ShootType noop
         DynamicHostPath {"kubernetes": {"namespace_name": "namespace"}}
         DynamicHostPrefix logging.
-        DynamicHostSuffix :4317
+        DynamicHostSuffix .svc.cluster.local:4317
         DynamicHostRegex ^shoot-
         QueueDir /var/run/fluentbit/dque
         QueueName dynamic
-        LogLevel info
+        LogLevel debug
         Endpoint otel-collector-seed:4317
         HostnameKeyValue nodename ${NODE_NAME}
         Buffer true
@@ -163,5 +167,4 @@ data:
         Buffer true
         QueueSegmentSize 100
         QueueSync normal
-        FallbackToTagWhenMetadataIsMissing true
-        TagKey tag
+        FallbackToTagWhenMetadataIsMissing false

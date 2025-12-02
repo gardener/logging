@@ -64,6 +64,26 @@ func sanitizeConfigString(value string) string {
 	return value
 }
 
+// normalizeConfigMapKeys converts all keys in the configuration map to lowercase
+// This ensures case-insensitive configuration key matching throughout the codebase
+func normalizeConfigMapKeys(configMap map[string]any) map[string]any {
+	normalized := make(map[string]any, len(configMap))
+
+	for key, value := range configMap {
+		lowerKey := strings.ToLower(key)
+
+		// Recursively normalize nested maps
+		switch v := value.(type) {
+		case map[string]any:
+			normalized[lowerKey] = normalizeConfigMapKeys(v)
+		default:
+			normalized[lowerKey] = value
+		}
+	}
+
+	return normalized
+}
+
 // sanitizeConfigMap recursively sanitizes all string values in the configuration map
 func sanitizeConfigMap(configMap map[string]any) {
 	for key, value := range configMap {
@@ -78,6 +98,9 @@ func sanitizeConfigMap(configMap map[string]any) {
 
 // ParseConfig parses a configuration from a map of string interfaces
 func ParseConfig(configMap map[string]any) (*Config, error) {
+	// Normalize all keys to lowercase for case-insensitive matching
+	configMap = normalizeConfigMapKeys(configMap)
+
 	// Sanitize configuration values to remove surrounding quotes
 	sanitizeConfigMap(configMap)
 
@@ -145,7 +168,8 @@ func processDurationField(configMap map[string]any, key string, setter func(time
 }
 
 func processHostnameKeyValue(configMap map[string]any, config *Config) error {
-	if hostnameKeyValue, ok := configMap["HostnameKeyValue"].(string); ok && hostnameKeyValue != "" {
+	// Keys are already normalized to lowercase by ParseConfig
+	if hostnameKeyValue, ok := configMap["hostnamekeyvalue"].(string); ok && hostnameKeyValue != "" {
 		parts := strings.Fields(hostnameKeyValue)
 		if len(parts) < 2 {
 			return fmt.Errorf("HostnameKeyValue must have at least 2 parts (key value), got %d parts: %s", len(parts), hostnameKeyValue)
@@ -160,7 +184,10 @@ func processHostnameKeyValue(configMap map[string]any, config *Config) error {
 }
 
 func processDynamicHostPath(configMap map[string]any, config *Config) error {
-	if dynamicHostPath, ok := configMap["DynamicHostPath"].(string); ok && dynamicHostPath != "" {
+	// Keys are already normalized to lowercase by ParseConfig
+	dynamicHostPath, ok := configMap["dynamichostpath"].(string)
+
+	if ok && dynamicHostPath != "" {
 		// Check size limit before parsing to prevent memory exhaustion
 		if len(dynamicHostPath) > MaxJSONSize {
 			return fmt.Errorf("DynamicHostPath JSON exceeds maximum size of %d bytes", MaxJSONSize)
@@ -178,38 +205,39 @@ func processDynamicHostPath(configMap map[string]any, config *Config) error {
 
 // processControllerConfigBoolFields handles boolean configuration fields for controller config
 func processControllerConfigBoolFields(configMap map[string]any, config *Config) error {
-	// Map of ConfigMap keys to their corresponding ShootControllerClientConfig fields
+	// Map of lowercase ConfigMap keys to their corresponding ShootControllerClientConfig fields
+	// Keys are already normalized to lowercase by ParseConfig
 	shootConfigMapping := map[string]*bool{
-		"SendLogsToShootWhenIsInCreationState": &config.ControllerConfig.ShootControllerClientConfig.
+		"sendlogstoshootwhenisincreationstate": &config.ControllerConfig.ShootControllerClientConfig.
 			SendLogsWhenIsInCreationState,
-		"SendLogsToShootWhenIsInReadyState": &config.ControllerConfig.ShootControllerClientConfig.
+		"sendlogstoshootwhenisinnreadystate": &config.ControllerConfig.ShootControllerClientConfig.
 			SendLogsWhenIsInReadyState,
-		"SendLogsToShootWhenIsInHibernatingState": &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInHibernatingState,
-		"SendLogsToShootWhenIsInHibernatedState":  &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInHibernatedState,
-		"SendLogsToShootWhenIsInWakingState":      &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInWakingState,
-		"SendLogsToShootWhenIsInDeletionState":    &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInDeletionState,
-		"SendLogsToShootWhenIsInDeletedState":     &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInDeletedState,
-		"SendLogsToShootWhenIsInRestoreState":     &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInRestoreState,
-		"SendLogsToShootWhenIsInMigrationState":   &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInMigrationState,
+		"sendlogstoshootwhenisinhhibernatingstate": &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInHibernatingState,
+		"sendlogstoshootwhenisinhhibernatedstate":  &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInHibernatedState,
+		"sendlogstoshootwheninwakingstate":         &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInWakingState,
+		"sendlogstoshootwhenisdeletionstate":       &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInDeletionState,
+		"sendlogstoshootwhenisdeletedstate":        &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInDeletedState,
+		"sendlogstoshootwhenisrestorestate":        &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInRestoreState,
+		"sendlogstoshootwhenismigrationstate":      &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInMigrationState,
 	}
 
-	// Map of ConfigMap keys to their corresponding SeedControllerClientConfig fields
+	// Map of lowercase ConfigMap keys to their corresponding SeedControllerClientConfig fields
 	seedConfigMapping := map[string]*bool{
-		"SendLogsToSeedWhenShootIsInCreationState": &config.ControllerConfig.SeedControllerClientConfig.
+		"sendlogstoseedwhenshootisincreationstate": &config.ControllerConfig.SeedControllerClientConfig.
 			SendLogsWhenIsInCreationState,
-		"SendLogsToSeedWhenShootIsInReadyState": &config.ControllerConfig.SeedControllerClientConfig.
+		"sendlogstoseedwhenshootisinnreadystate": &config.ControllerConfig.SeedControllerClientConfig.
 			SendLogsWhenIsInReadyState,
-		"SendLogsToSeedWhenShootIsInHibernatingState": &config.ControllerConfig.SeedControllerClientConfig.
+		"sendlogstoseedwhenshootisinhhibernatingstate": &config.ControllerConfig.SeedControllerClientConfig.
 			SendLogsWhenIsInHibernatingState,
-		"SendLogsToSeedWhenShootIsInHibernatedState": &config.ControllerConfig.SeedControllerClientConfig.
+		"sendlogstoseedwhenshootisinhhibernatedstate": &config.ControllerConfig.SeedControllerClientConfig.
 			SendLogsWhenIsInHibernatedState,
-		"SendLogsToSeedWhenShootIsInWakingState": &config.ControllerConfig.SeedControllerClientConfig.
+		"sendlogstoseedwhenshootinwakingstate": &config.ControllerConfig.SeedControllerClientConfig.
 			SendLogsWhenIsInWakingState,
-		"SendLogsToSeedWhenShootIsInDeletionState": &config.ControllerConfig.SeedControllerClientConfig.
+		"sendlogstoseedwhenshootisdeletionstate": &config.ControllerConfig.SeedControllerClientConfig.
 			SendLogsWhenIsInDeletionState,
-		"SendLogsToSeedWhenShootIsInRestoreState": &config.ControllerConfig.SeedControllerClientConfig.
+		"sendlogstoseedwhenshootisrestorestate": &config.ControllerConfig.SeedControllerClientConfig.
 			SendLogsWhenIsInRestoreState,
-		"SendLogsToSeedWhenShootIsInMigrationState": &config.ControllerConfig.SeedControllerClientConfig.
+		"sendlogstoseedwhenshootismigrationstate": &config.ControllerConfig.SeedControllerClientConfig.
 			SendLogsWhenIsInMigrationState,
 	}
 
@@ -259,7 +287,8 @@ func postProcessConfig(config *Config, configMap map[string]any) error {
 }
 
 func processClientTypes(config *Config, configMap map[string]any) error {
-	if seedType, ok := configMap["SeedType"].(string); ok && seedType != "" {
+	// Keys are already normalized to lowercase by ParseConfig
+	if seedType, ok := configMap["seedtype"].(string); ok && seedType != "" {
 		t := types.GetClientTypeFromString(seedType)
 		if t == types.UNKNOWN {
 			return fmt.Errorf("invalid SeedType: %s", seedType)
@@ -267,7 +296,7 @@ func processClientTypes(config *Config, configMap map[string]any) error {
 		config.ClientConfig.SeedType = t.String()
 	}
 
-	if shootType, ok := configMap["ShootType"].(string); ok && shootType != "" {
+	if shootType, ok := configMap["shoottype"].(string); ok && shootType != "" {
 		t := types.GetClientTypeFromString(shootType)
 		if t == types.UNKNOWN {
 			return fmt.Errorf("invalid ShootType: %s", shootType)
@@ -290,7 +319,8 @@ func processDynamicHostPathConfig(config *Config, configMap map[string]any) erro
 
 // processQueueSyncConfig handles QueueSync special conversion
 func processQueueSyncConfig(config *Config, configMap map[string]any) error {
-	if queueSync, ok := configMap["QueueSync"].(string); ok {
+	// Keys are already normalized to lowercase by ParseConfig
+	if queueSync, ok := configMap["queuesync"].(string); ok {
 		switch queueSync {
 		case "normal", "":
 			config.ClientConfig.BufferConfig.DqueConfig.QueueSync = false
@@ -311,13 +341,15 @@ func processControllerBoolConfigs(config *Config, configMap map[string]any) erro
 
 // processOTLPConfig handles OTLP configuration field processing
 func processOTLPConfig(config *Config, configMap map[string]any) error {
+	// Keys are already normalized to lowercase by ParseConfig
+
 	// Process OTLPEndpoint
-	if endpoint, ok := configMap["Endpoint"].(string); ok && endpoint != "" {
+	if endpoint, ok := configMap["endpoint"].(string); ok && endpoint != "" {
 		config.OTLPConfig.Endpoint = endpoint
 	}
 
 	// Process OTLPInsecure
-	if insecure, ok := configMap["Insecure"].(string); ok && insecure != "" {
+	if insecure, ok := configMap["insecure"].(string); ok && insecure != "" {
 		boolVal, err := strconv.ParseBool(insecure)
 		if err != nil {
 			return fmt.Errorf("failed to parse OTLPInsecure as boolean: %w", err)
@@ -326,7 +358,7 @@ func processOTLPConfig(config *Config, configMap map[string]any) error {
 	}
 
 	// Process OTLPCompression
-	if compression, ok := configMap["Compression"].(string); ok && compression != "" {
+	if compression, ok := configMap["compression"].(string); ok && compression != "" {
 		compVal, err := strconv.Atoi(compression)
 		if err != nil {
 			return fmt.Errorf("failed to parse Compression as integer: %w", err)
@@ -338,14 +370,14 @@ func processOTLPConfig(config *Config, configMap map[string]any) error {
 	}
 
 	// Process OTLPTimeout
-	if err := processDurationField(configMap, "Timeout", func(d time.Duration) {
+	if err := processDurationField(configMap, "timeout", func(d time.Duration) {
 		config.OTLPConfig.Timeout = d
 	}); err != nil {
 		return err
 	}
 
 	// Process OTLPHeaders - parse JSON string into map
-	if headers, ok := configMap["Headers"].(string); ok && headers != "" {
+	if headers, ok := configMap["headers"].(string); ok && headers != "" {
 		// Check size limit before parsing to prevent memory exhaustion
 		if len(headers) > MaxJSONSize {
 			return fmt.Errorf("field Headers JSON exceeds maximum size of %d bytes", MaxJSONSize)
@@ -359,7 +391,7 @@ func processOTLPConfig(config *Config, configMap map[string]any) error {
 	}
 
 	// Process RetryConfig fields
-	if enabled, ok := configMap["RetryEnabled"].(string); ok && enabled != "" {
+	if enabled, ok := configMap["retryenabled"].(string); ok && enabled != "" {
 		boolVal, err := strconv.ParseBool(enabled)
 		if err != nil {
 			return fmt.Errorf("failed to parse RetryEnabled as boolean: %w", err)
@@ -367,42 +399,42 @@ func processOTLPConfig(config *Config, configMap map[string]any) error {
 		config.OTLPConfig.RetryEnabled = boolVal
 	}
 
-	if err := processDurationField(configMap, "RetryInitialInterval", func(d time.Duration) {
+	if err := processDurationField(configMap, "retryinitialinterval", func(d time.Duration) {
 		config.OTLPConfig.RetryInitialInterval = d
 	}); err != nil {
 		return err
 	}
 
-	if err := processDurationField(configMap, "RetryMaxInterval", func(d time.Duration) {
+	if err := processDurationField(configMap, "retrymaxinterval", func(d time.Duration) {
 		config.OTLPConfig.RetryMaxInterval = d
 	}); err != nil {
 		return err
 	}
 
-	if err := processDurationField(configMap, "RetryMaxElapsedTime", func(d time.Duration) {
+	if err := processDurationField(configMap, "retrymaxelapsedtime", func(d time.Duration) {
 		config.OTLPConfig.RetryMaxElapsedTime = d
 	}); err != nil {
 		return err
 	}
 
 	// Process TLS configuration fields
-	if certFile, ok := configMap["TLSCertFile"].(string); ok && certFile != "" {
+	if certFile, ok := configMap["tlscertfile"].(string); ok && certFile != "" {
 		config.OTLPConfig.TLSCertFile = certFile
 	}
 
-	if keyFile, ok := configMap["TLSKeyFile"].(string); ok && keyFile != "" {
+	if keyFile, ok := configMap["tlskeyfile"].(string); ok && keyFile != "" {
 		config.OTLPConfig.TLSKeyFile = keyFile
 	}
 
-	if caFile, ok := configMap["TLSCAFile"].(string); ok && caFile != "" {
+	if caFile, ok := configMap["tlscafile"].(string); ok && caFile != "" {
 		config.OTLPConfig.TLSCAFile = caFile
 	}
 
-	if serverName, ok := configMap["TLSServerName"].(string); ok && serverName != "" {
+	if serverName, ok := configMap["tlsservername"].(string); ok && serverName != "" {
 		config.OTLPConfig.TLSServerName = serverName
 	}
 
-	if insecureSkipVerify, ok := configMap["TLSInsecureSkipVerify"].(string); ok && insecureSkipVerify != "" {
+	if insecureSkipVerify, ok := configMap["tlsinsecureskipverify"].(string); ok && insecureSkipVerify != "" {
 		boolVal, err := strconv.ParseBool(insecureSkipVerify)
 		if err != nil {
 			return fmt.Errorf("failed to parse LSInsecureSkipVerify as boolean: %w", err)
@@ -410,11 +442,11 @@ func processOTLPConfig(config *Config, configMap map[string]any) error {
 		config.OTLPConfig.TLSInsecureSkipVerify = boolVal
 	}
 
-	if minVersion, ok := configMap["TLSMinVersion"].(string); ok && minVersion != "" {
+	if minVersion, ok := configMap["tlsminversion"].(string); ok && minVersion != "" {
 		config.OTLPConfig.TLSMinVersion = minVersion
 	}
 
-	if maxVersion, ok := configMap["TLSMaxVersion"].(string); ok && maxVersion != "" {
+	if maxVersion, ok := configMap["tlsmaxversion"].(string); ok && maxVersion != "" {
 		config.OTLPConfig.TLSMaxVersion = maxVersion
 	}
 

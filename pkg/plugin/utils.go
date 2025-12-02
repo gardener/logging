@@ -23,8 +23,8 @@ const (
 // The tag should be in the format: pod_name.namespace_name.container_name.container_id
 // This is required since the fluent-bit does not use the kubernetes filter plugin, reason for it is to avoid querying
 // the kubernetes API server for the metadata.
-func extractKubernetesMetadataFromTag(records map[string]any, tagKey string, re *regexp.Regexp) error {
-	tag, ok := records[tagKey].(string)
+func extractKubernetesMetadataFromTag(record types.OutputRecord, tagKey string, re *regexp.Regexp) error {
+	tag, ok := record[tagKey].(string)
 	if !ok {
 		return fmt.Errorf("the tag entry for key %q is missing", tagKey)
 	}
@@ -34,7 +34,7 @@ func extractKubernetesMetadataFromTag(records map[string]any, tagKey string, re 
 		return fmt.Errorf("invalid format for tag %v. The tag should be in format: %s", tag, re.String())
 	}
 
-	records["kubernetes"] = map[string]any{
+	record["kubernetes"] = map[string]any{
 		podName:       kubernetesMetaData[1],
 		namespaceName: kubernetesMetaData[2],
 		containerName: kubernetesMetaData[3],
