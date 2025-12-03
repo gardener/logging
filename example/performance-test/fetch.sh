@@ -47,7 +47,7 @@ function fetch_all_logs {
      done
 }
 
-if ${#} -eq 0; then
+if [[ $# -eq 0 ]]; then
     fetch_all_logs
 else
     fetch_logs "$1"
