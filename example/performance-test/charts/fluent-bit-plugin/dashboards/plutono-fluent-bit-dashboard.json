@@ -16,7 +16,7 @@
   "editable": true,
   "gnetId": 7752,
   "graphTooltip": 1,
-  "iteration": 1764781982942,
+  "iteration": 1764785923255,
   "links": [],
   "panels": [
     {
@@ -1255,6 +1255,1099 @@
       "title": "[Output Plugin] Output Clients logs Total",
       "transformations": [],
       "type": "timeseries"
+    },
+    {
+      "collapsed": true,
+      "datasource": null,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 42
+      },
+      "id": 100,
+      "panels": [
+        {
+          "datasource": "prometheus",
+          "description": "CPU time spent in user and system mode",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "graph": false,
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "percentunit"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 24,
+            "x": 0,
+            "y": 43
+          },
+          "id": 104,
+          "options": {
+            "legend": {
+              "calcs": [
+                "lastNotNull",
+                "max",
+                "mean"
+              ],
+              "displayMode": "table",
+              "placement": "right"
+            },
+            "tooltip": {
+              "mode": "multi"
+            },
+            "tooltipOptions": {
+              "mode": "single"
+            }
+          },
+          "pluginVersion": "7.5.42",
+          "targets": [
+            {
+              "exemplar": true,
+              "expr": "rate(process_cpu_seconds_total{pod=~\"$pod\"}[$__rate_interval])",
+              "interval": "",
+              "legendFormat": "{{pod}} - CPU usage",
+              "refId": "A"
+            }
+          ],
+          "title": "[Process] CPU Usage",
+          "type": "timeseries"
+        },
+        {
+          "datasource": "prometheus",
+          "description": "Network bytes sent and received",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "graph": false,
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "Bps"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 50
+          },
+          "id": 106,
+          "options": {
+            "legend": {
+              "calcs": [
+                "lastNotNull",
+                "max",
+                "mean"
+              ],
+              "displayMode": "table",
+              "placement": "right"
+            },
+            "tooltip": {
+              "mode": "multi"
+            },
+            "tooltipOptions": {
+              "mode": "single"
+            }
+          },
+          "pluginVersion": "7.5.42",
+          "targets": [
+            {
+              "exemplar": true,
+              "expr": "rate(process_network_transmit_bytes_total{pod=~\"$pod\"}[$__rate_interval])",
+              "interval": "",
+              "legendFormat": "{{pod}} - TX",
+              "refId": "A"
+            },
+            {
+              "exemplar": true,
+              "expr": "rate(process_network_receive_bytes_total{pod=~\"$pod\"}[$__rate_interval])",
+              "interval": "",
+              "legendFormat": "{{pod}} - RX",
+              "refId": "B"
+            }
+          ],
+          "title": "[Process] Network I/O Rate",
+          "type": "timeseries"
+        },
+        {
+          "datasource": "prometheus",
+          "description": "Memory allocated in heap and currently in use",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "graph": false,
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "bytes"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 24,
+            "x": 0,
+            "y": 58
+          },
+          "id": 101,
+          "options": {
+            "legend": {
+              "calcs": [
+                "lastNotNull",
+                "max"
+              ],
+              "displayMode": "table",
+              "placement": "right"
+            },
+            "tooltip": {
+              "mode": "multi"
+            },
+            "tooltipOptions": {
+              "mode": "single"
+            }
+          },
+          "pluginVersion": "7.5.42",
+          "targets": [
+            {
+              "exemplar": true,
+              "expr": "go_memstats_heap_alloc_bytes{pod=~\"$pod\"}",
+              "interval": "",
+              "legendFormat": "{{pod}} - heap alloc",
+              "refId": "A"
+            },
+            {
+              "exemplar": true,
+              "expr": "go_memstats_heap_inuse_bytes{pod=~\"$pod\"}",
+              "interval": "",
+              "legendFormat": "{{pod}} - heap in use",
+              "refId": "B"
+            },
+            {
+              "exemplar": true,
+              "expr": "go_memstats_heap_idle_bytes{pod=~\"$pod\"}",
+              "interval": "",
+              "legendFormat": "{{pod}} - heap idle",
+              "refId": "C"
+            }
+          ],
+          "title": "[Go] Heap Memory Usage",
+          "type": "timeseries"
+        },
+        {
+          "datasource": "prometheus",
+          "description": "Number of heap objects allocated",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "graph": false,
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 65
+          },
+          "id": 107,
+          "options": {
+            "legend": {
+              "calcs": [
+                "lastNotNull",
+                "max"
+              ],
+              "displayMode": "table",
+              "placement": "right"
+            },
+            "tooltip": {
+              "mode": "multi"
+            },
+            "tooltipOptions": {
+              "mode": "single"
+            }
+          },
+          "pluginVersion": "7.5.42",
+          "targets": [
+            {
+              "exemplar": true,
+              "expr": "go_memstats_heap_objects{pod=~\"$pod\"}",
+              "interval": "",
+              "legendFormat": "{{pod}} - heap objects",
+              "refId": "A"
+            },
+            {
+              "exemplar": true,
+              "expr": "rate(go_memstats_mallocs_total{pod=~\"$pod\"}[$__rate_interval])",
+              "interval": "",
+              "legendFormat": "{{pod}} - alloc rate",
+              "refId": "B"
+            },
+            {
+              "exemplar": true,
+              "expr": "rate(go_memstats_frees_total{pod=~\"$pod\"}[$__rate_interval])",
+              "interval": "",
+              "legendFormat": "{{pod}} - free rate",
+              "refId": "C"
+            }
+          ],
+          "title": "[Go] Heap Objects & Allocation Rate",
+          "type": "timeseries"
+        },
+        {
+          "datasource": "prometheus",
+          "description": "Number of goroutines currently running",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "graph": false,
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 1000
+                  },
+                  {
+                    "color": "red",
+                    "value": 10000
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 24,
+            "x": 0,
+            "y": 73
+          },
+          "id": 102,
+          "options": {
+            "legend": {
+              "calcs": [
+                "lastNotNull",
+                "max",
+                "mean"
+              ],
+              "displayMode": "table",
+              "placement": "right"
+            },
+            "tooltip": {
+              "mode": "multi"
+            },
+            "tooltipOptions": {
+              "mode": "single"
+            }
+          },
+          "pluginVersion": "7.5.42",
+          "targets": [
+            {
+              "exemplar": true,
+              "expr": "go_goroutines{pod=~\"$pod\"}",
+              "interval": "",
+              "legendFormat": "{{pod}}",
+              "refId": "A"
+            }
+          ],
+          "title": "[Go] Goroutines",
+          "type": "timeseries"
+        },
+        {
+          "datasource": "prometheus",
+          "description": "GC pause duration and frequency",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "graph": false,
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 80
+          },
+          "id": 103,
+          "options": {
+            "legend": {
+              "calcs": [
+                "lastNotNull",
+                "max",
+                "mean"
+              ],
+              "displayMode": "table",
+              "placement": "right"
+            },
+            "tooltip": {
+              "mode": "multi"
+            },
+            "tooltipOptions": {
+              "mode": "single"
+            }
+          },
+          "pluginVersion": "7.5.42",
+          "targets": [
+            {
+              "exemplar": true,
+              "expr": "rate(go_gc_duration_seconds_sum{pod=~\"$pod\"}[$__rate_interval])",
+              "interval": "",
+              "legendFormat": "{{pod}} - GC duration rate",
+              "refId": "A"
+            },
+            {
+              "exemplar": true,
+              "expr": "rate(go_gc_duration_seconds_count{pod=~\"$pod\"}[$__rate_interval])",
+              "interval": "",
+              "legendFormat": "{{pod}} - GC frequency",
+              "refId": "B"
+            }
+          ],
+          "title": "[Go] GC Duration & Frequency",
+          "type": "timeseries"
+        },
+        {
+          "datasource": "prometheus",
+          "description": "Process memory usage - resident and virtual",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "graph": false,
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "bytes"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 88
+          },
+          "id": 105,
+          "options": {
+            "legend": {
+              "calcs": [
+                "lastNotNull",
+                "max"
+              ],
+              "displayMode": "table",
+              "placement": "right"
+            },
+            "tooltip": {
+              "mode": "multi"
+            },
+            "tooltipOptions": {
+              "mode": "single"
+            }
+          },
+          "pluginVersion": "7.5.42",
+          "targets": [
+            {
+              "exemplar": true,
+              "expr": "process_resident_memory_bytes{pod=~\"$pod\"}",
+              "interval": "",
+              "legendFormat": "{{pod}} - resident memory",
+              "refId": "A"
+            },
+            {
+              "exemplar": true,
+              "expr": "process_virtual_memory_bytes{pod=~\"$pod\"}",
+              "interval": "",
+              "legendFormat": "{{pod}} - virtual memory",
+              "refId": "B"
+            }
+          ],
+          "title": "[Process] Memory Usage",
+          "type": "timeseries"
+        }
+      ],
+      "title": "Output Plugin Go Runtime & Process Metrics",
+      "type": "row"
+    },
+    {
+      "collapsed": true,
+      "datasource": null,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 43
+      },
+      "id": 110,
+      "panels": [
+        {
+          "datasource": "prometheus",
+          "description": "RPC call duration in milliseconds",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "tooltip": false,
+                  "viz": false,
+                  "legend": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 100
+                  },
+                  {
+                    "color": "red",
+                    "value": 500
+                  }
+                ]
+              },
+              "unit": "ms"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 44
+          },
+          "id": 111,
+          "options": {
+            "legend": {
+              "calcs": [
+                "lastNotNull",
+                "max",
+                "mean"
+              ],
+              "displayMode": "table",
+              "placement": "right"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "pluginVersion": "7.5.42",
+          "targets": [
+            {
+              "exemplar": true,
+              "expr": "histogram_quantile(0.95, rate(rpc_client_duration_milliseconds_bucket{pod=~\"$pod\"}[$__rate_interval]))",
+              "interval": "",
+              "legendFormat": "{{pod}} - p95",
+              "refId": "A"
+            },
+            {
+              "exemplar": true,
+              "expr": "histogram_quantile(0.99, rate(rpc_client_duration_milliseconds_bucket{pod=~\"$pod\"}[$__rate_interval]))",
+              "interval": "",
+              "legendFormat": "{{pod}} - p99",
+              "refId": "B"
+            },
+            {
+              "exemplar": true,
+              "expr": "rate(rpc_client_duration_milliseconds_sum{pod=~\"$pod\"}[$__rate_interval]) / rate(rpc_client_duration_milliseconds_count{pod=~\"$pod\"}[$__rate_interval])",
+              "interval": "",
+              "legendFormat": "{{pod}} - avg",
+              "refId": "C"
+            }
+          ],
+          "title": "[OTLP gRPC] RPC Duration",
+          "type": "timeseries"
+        },
+        {
+          "datasource": "prometheus",
+          "description": "RPC call rate per second",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "tooltip": false,
+                  "viz": false,
+                  "legend": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "reqps"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 44
+          },
+          "id": 112,
+          "options": {
+            "legend": {
+              "calcs": [
+                "lastNotNull",
+                "max",
+                "mean"
+              ],
+              "displayMode": "table",
+              "placement": "right"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "pluginVersion": "7.5.42",
+          "targets": [
+            {
+              "exemplar": true,
+              "expr": "rate(rpc_client_duration_milliseconds_count{pod=~\"$pod\"}[$__rate_interval])",
+              "interval": "",
+              "legendFormat": "{{pod}} - {{rpc_method}}",
+              "refId": "A"
+            }
+          ],
+          "title": "[OTLP gRPC] RPC Call Rate",
+          "type": "timeseries"
+        },
+        {
+          "datasource": "prometheus",
+          "description": "Size of RPC request and response messages",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "tooltip": false,
+                  "viz": false,
+                  "legend": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "bytes"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 52
+          },
+          "id": 113,
+          "options": {
+            "legend": {
+              "calcs": [
+                "lastNotNull",
+                "max",
+                "mean"
+              ],
+              "displayMode": "table",
+              "placement": "right"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "pluginVersion": "7.5.42",
+          "targets": [
+            {
+              "exemplar": true,
+              "expr": "histogram_quantile(0.95, rate(rpc_client_request_size_bytes_bucket{pod=~\"$pod\"}[$__rate_interval]))",
+              "interval": "",
+              "legendFormat": "{{pod}} - request p95",
+              "refId": "A"
+            },
+            {
+              "exemplar": true,
+              "expr": "histogram_quantile(0.95, rate(rpc_client_response_size_bytes_bucket{pod=~\"$pod\"}[$__rate_interval]))",
+              "interval": "",
+              "legendFormat": "{{pod}} - response p95",
+              "refId": "B"
+            },
+            {
+              "exemplar": true,
+              "expr": "rate(rpc_client_request_size_bytes_sum{pod=~\"$pod\"}[$__rate_interval]) / rate(rpc_client_request_size_bytes_count{pod=~\"$pod\"}[$__rate_interval])",
+              "interval": "",
+              "legendFormat": "{{pod}} - request avg",
+              "refId": "C"
+            },
+            {
+              "exemplar": true,
+              "expr": "rate(rpc_client_response_size_bytes_sum{pod=~\"$pod\"}[$__rate_interval]) / rate(rpc_client_response_size_bytes_count{pod=~\"$pod\"}[$__rate_interval])",
+              "interval": "",
+              "legendFormat": "{{pod}} - response avg",
+              "refId": "D"
+            }
+          ],
+          "title": "[OTLP gRPC] Request/Response Message Size",
+          "type": "timeseries"
+        },
+        {
+          "datasource": "prometheus",
+          "description": "Number of messages per RPC call",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "tooltip": false,
+                  "viz": false,
+                  "legend": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 52
+          },
+          "id": 114,
+          "options": {
+            "legend": {
+              "calcs": [
+                "lastNotNull",
+                "max",
+                "mean"
+              ],
+              "displayMode": "table",
+              "placement": "right"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "pluginVersion": "7.5.42",
+          "targets": [
+            {
+              "exemplar": true,
+              "expr": "rate(rpc_client_requests_per_rpc_sum{pod=~\"$pod\"}[$__rate_interval]) / rate(rpc_client_requests_per_rpc_count{pod=~\"$pod\"}[$__rate_interval])",
+              "interval": "",
+              "legendFormat": "{{pod}} - avg requests per RPC",
+              "refId": "A"
+            },
+            {
+              "exemplar": true,
+              "expr": "rate(rpc_client_responses_per_rpc_sum{pod=~\"$pod\"}[$__rate_interval]) / rate(rpc_client_responses_per_rpc_count{pod=~\"$pod\"}[$__rate_interval])",
+              "interval": "",
+              "legendFormat": "{{pod}} - avg responses per RPC",
+              "refId": "B"
+            }
+          ],
+          "title": "[OTLP gRPC] Messages Per RPC",
+          "type": "timeseries"
+        },
+        {
+          "datasource": "prometheus",
+          "description": "Network throughput for gRPC communication",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "tooltip": false,
+                  "viz": false,
+                  "legend": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "Bps"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 60
+          },
+          "id": 115,
+          "options": {
+            "legend": {
+              "calcs": [
+                "lastNotNull",
+                "max",
+                "mean"
+              ],
+              "displayMode": "table",
+              "placement": "right"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "pluginVersion": "7.5.42",
+          "targets": [
+            {
+              "exemplar": true,
+              "expr": "rate(rpc_client_request_size_bytes_sum{pod=~\"$pod\"}[$__rate_interval])",
+              "interval": "",
+              "legendFormat": "{{pod}} - request bytes/sec",
+              "refId": "A"
+            },
+            {
+              "exemplar": true,
+              "expr": "rate(rpc_client_response_size_bytes_sum{pod=~\"$pod\"}[$__rate_interval])",
+              "interval": "",
+              "legendFormat": "{{pod}} - response bytes/sec",
+              "refId": "B"
+            }
+          ],
+          "title": "[OTLP gRPC] Network Throughput",
+          "type": "timeseries"
+        }
+      ],
+      "title": "OTLP gRPC Client Metrics",
+      "type": "row"
     }
   ],
   "refresh": "5s",
@@ -1301,13 +2394,9 @@
       {
         "allValue": ".+",
         "current": {
-          "selected": true,
-          "text": [
-            "shoot--logging--dev-15"
-          ],
-          "value": [
-            "shoot--logging--dev-15"
-          ]
+          "selected": false,
+          "text": "All",
+          "value": "$__all"
         },
         "datasource": "prometheus",
         "definition": "label_values(fluentbit_gardener_incoming_logs_total,host)",
@@ -1336,7 +2425,7 @@
     ]
   },
   "time": {
-    "from": "now-30m",
+    "from": "now-1h",
     "to": "now"
   },
   "timepicker": {
