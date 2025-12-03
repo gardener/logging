@@ -78,7 +78,7 @@ data:
         Http_Listen     0.0.0.0
         Http_Port       2020
         Http_Server     true
-        Log_Level       info
+        Log_Level       warn
         Parsers_File    parsers.conf
 
     [Input]
@@ -145,16 +145,26 @@ data:
         DynamicHostRegex ^shoot-
         QueueDir /var/run/fluentbit/dque
         QueueName dynamic
-        LogLevel debug
+        LogLevel info
         Endpoint logging-otel-collector-seed.fluent-bit.svc.cluster.local:4317
         Insecure true
+
+        BatchProcessorMaxQueueSize 512
+        BatchProcessorMaxBatchSize 256
+        BatchProcessorExportTimeout 30s
+        BatchProcessorExportInterval 1s
+
+        RetryEnabled  true
+        RetryInitialInterval 5s
+        RetryMaxInterval  30s
+        RetryMaxElapsedTime 1m
+
         HostnameKeyValue nodename ${NODE_NAME}
         Buffer true
         QueueSegmentSize 1000
         QueueSync normal
         FallbackToTagWhenMetadataIsMissing true
         TagKey tag
-        Pprof true
 
     [Output]
         Name gardener
