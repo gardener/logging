@@ -17,7 +17,7 @@ helm uninstall logging \
     --ignore-not-found || true
 
 kubectl delete pvc \
-    --selector "app.kubernetes.io/name=$nameOverride-vali" \
+    --selector "app.kubernetes.io/name=$nameOverride-victorialogs" \
     --namespace $namespace \
     --ignore-not-found=true || true
 

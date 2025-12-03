@@ -52,6 +52,12 @@ type OTLPConfig struct {
 	Timeout     time.Duration     `mapstructure:"Timeout"`
 	Headers     map[string]string `mapstructure:"-"` // Handled manually in processOTLPConfig
 
+	// Batch Processor configuration fields
+	BatchProcessorMaxQueueSize   int           `mapstructure:"BatchProcessorMaxQueueSize"`
+	BatchProcessorMaxBatchSize   int           `mapstructure:"BatchProcessorMaxBatchSize"`
+	BatchProcessorExportTimeout  time.Duration `mapstructure:"BatchProcessorExportTimeout"`
+	BatchProcessorExportInterval time.Duration `mapstructure:"BatchProcessorExportInterval"`
+
 	// Retry configuration fields
 	RetryEnabled         bool          `mapstructure:"RetryEnabled"`
 	RetryInitialInterval time.Duration `mapstructure:"RetryInitialInterval"`
@@ -72,12 +78,6 @@ type OTLPConfig struct {
 
 	// TLS configuration - processed from the above fields
 	TLSConfig *tls.Config `mapstructure:"-"`
-
-	// Batch Processor configuration fields
-	BatchProcessorMaxQueueSize   int           `mapstructure:"BatchProcessorMaxQueueSize"`
-	BatchProcessorMaxBatchSize   int           `mapstructure:"BatchProcessorMaxBatchSize"`
-	BatchProcessorExportTimeout  time.Duration `mapstructure:"BatchProcessorExportTimeout"`
-	BatchProcessorExportInterval time.Duration `mapstructure:"BatchProcessorExportInterval"`
 }
 
 // DefaultOTLPConfig holds the default configuration for OTLP
@@ -90,7 +90,7 @@ var DefaultOTLPConfig = OTLPConfig{
 	RetryEnabled:          true,
 	RetryInitialInterval:  5 * time.Second,
 	RetryMaxInterval:      30 * time.Second,
-	RetryMaxElapsedTime:   time.Minute,
+	RetryMaxElapsedTime:   1 * time.Minute,
 	RetryConfig:           nil, // Will be built from other fields
 	TLSCertFile:           "",
 	TLSKeyFile:            "",
