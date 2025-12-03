@@ -37,15 +37,3 @@ data:
           access: proxy
           url: http://logging-prometheus:9090 # prometheus headless service in the same namespace
           isDefault: true
-        - name: vali-seed
-          type: vali
-          access: proxy
-          url: http://logging-vali-seed:3100 # vali-seed headless service in the same namespace
-          jsonData:
-            maxLines: 1000
-        - name: vali-shoot
-          type: vali
-          access: proxy
-          url: http://logging-vali-shoot:3100 # vali-shoot headless service in the same namespace
-          jsonData:
-            maxLines: 1000

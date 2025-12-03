@@ -79,7 +79,8 @@ data:
         Http_Port       2020
         Http_Server     true
         Log_Level       warn
-        Parsers_File    parsers.conf
+        Parsers_File    /fluent-bit/config/parsers.conf
+        Hot_Reload      On
 
     [Input]
         Name                systemd
@@ -97,7 +98,6 @@ data:
         Name                tail
         Tag                 kubernetes.*
         Path                /var/log/containers/*.log
-        Exclude_Path        *_fluent-bit-*.log
         Refresh_Interval    10
         Ignore_Older        30m
         Skip_Long_Lines     On
@@ -150,13 +150,13 @@ data:
         Insecure true
 
         BatchProcessorMaxQueueSize 350
-        BatchProcessorMaxBatchSize 256
+        BatchProcessorMaxBatchSize 200
         BatchProcessorExportTimeout 10m
         BatchProcessorExportInterval 1s
 
         RetryEnabled  true
         RetryInitialInterval 1s
-        RetryMaxInterval  30s
+        RetryMaxInterval  60s
         RetryMaxElapsedTime 10m
 
         HostnameKeyValue nodename ${NODE_NAME}
