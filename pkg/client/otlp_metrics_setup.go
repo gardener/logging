@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"sync"
 
+	promclient "github.com/prometheus/client_golang/prometheus"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/prometheus"
@@ -62,7 +63,12 @@ func NewMetricsSetup() (*MetricsSetup, error) {
 // initializeMetricsSetup creates and configures the metrics infrastructure.
 // This function is called exactly once by the singleton pattern.
 func initializeMetricsSetup() (*MetricsSetup, error) {
-	promExporter, err := prometheus.New()
+	// Create Prometheus exporter using the default registry
+	// This ensures OTLP metrics are exposed on the same /metrics endpoint
+	// as the existing Prometheus metrics (port 2021)
+	promExporter, err := prometheus.New(
+		prometheus.WithRegisterer(promclient.DefaultRegisterer),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize prometheus exporter for OTLP metrics: %w", err)
 	}
