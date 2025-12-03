@@ -11,6 +11,8 @@ data:
     extensions:
       health_check:
         endpoint: 0.0.0.0:13133
+      file_storage: # Define the extension instance
+        directory: /var/lib/otelcol/storage # Choose a persistent directory
     receivers:
       otlp:
         protocols:
@@ -21,7 +23,7 @@ data:
     processors:
       batch:
         timeout: 5s
-        send_batch_size: 50000
+        send_batch_size: 10000
       memory_limiter:
         check_interval: 1s
         limit_percentage: 75
@@ -30,11 +32,19 @@ data:
       debug:
         verbosity: basic
       otlphttp/logs:
+        # Resilience https://opentelemetry.io/docs/collector/resiliency/
+        sending_queue:
+          storage: file_storage
+          queue_size: 5_000 # Increase queue size (default 1000)
+        retry_on_failure:
+          initial_interval: 5s
+          max_interval: 30s
+          max_elapsed_time: 10m # Increase m
         logs_endpoint: http://{{ include "fluent-bit-plugin.victorialogsName" . }}-shoot.{{ .Release.Namespace }}.svc.cluster.local:9428/insert/opentelemetry/v1/logs
         headers:
           VL-Stream-Fields: "k8s.event.reason,k8s.node.name,k8s.namespace.name,k8s.object.name,k8s.pods.name,k8s.container.name,severity,k8s.object.name,k8s.object.kind,origin"
     service:
-      extensions: [health_check]
+      extensions: [health_check,file_storage]
       pipelines:
         logs:
           receivers: [otlp]
@@ -117,6 +127,8 @@ spec:
             - name: config
               mountPath: /conf
               readOnly: true
+            - name: varlibotelcol
+              mountPath: /var/lib/otelcol/storage
           {{- with .Values.otelCollector.volumeMounts }}
             {{- toYaml . | nindent 12 }}
           {{- end }}
@@ -125,6 +137,8 @@ spec:
           configMap:
             name: {{ include "fluent-bit-plugin.otelCollectorName" . }}-shoot
             defaultMode: 420
+        - name:  varlibotelcol
+          emptyDir: {}
       {{- with .Values.otelCollector.volumes }}
         {{- toYaml . | nindent 8 }}
       {{- end }}
