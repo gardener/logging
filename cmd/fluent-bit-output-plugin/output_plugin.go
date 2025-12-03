@@ -70,7 +70,6 @@ func FLBPluginRegister(ctx unsafe.Pointer) int {
 // FLBPluginInit is called for each vali plugin instance
 // Since fluent-bit 3, the context is recreated upon hot-reload.
 // Any plugin instances created before are not present in the new context, which may lead to memory leaks.
-// The fluent-bit shall invoke
 //
 //export FLBPluginInit
 func FLBPluginInit(ctx unsafe.Pointer) int {
