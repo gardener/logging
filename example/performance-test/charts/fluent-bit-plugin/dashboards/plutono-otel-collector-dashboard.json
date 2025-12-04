@@ -15,9 +15,316 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "iteration": 1764790335433,
+  "iteration": 1764797363373,
   "links": [],
   "panels": [
+    {
+      "datasource": "prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "green",
+            "mode": "fixed"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
+      "id": 46,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {},
+        "textMode": "auto"
+      },
+      "pluginVersion": "7.5.42",
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "sum(otelcol_receiver_accepted_log_records_total{pod=~\"$pod\"}) by (receiver)",
+          "interval": "",
+          "legendFormat": "",
+          "queryType": "randomWalk",
+          "refId": "A"
+        }
+      ],
+      "title": "Receiver accepted logs",
+      "type": "stat"
+    },
+    {
+      "datasource": "prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "blue",
+            "mode": "fixed"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
+      "id": 47,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {},
+        "textMode": "auto"
+      },
+      "pluginVersion": "7.5.42",
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "sum(otelcol_exporter_sent_log_records_total{pod=~\"$pod\"}) by (exporter)",
+          "interval": "",
+          "legendFormat": "",
+          "queryType": "randomWalk",
+          "refId": "A"
+        }
+      ],
+      "title": "Exporter sent logs",
+      "type": "stat"
+    },
+    {
+      "datasource": "prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 12,
+        "y": 0
+      },
+      "id": 48,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {},
+        "textMode": "auto"
+      },
+      "pluginVersion": "7.5.42",
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "sum(otelcol_receiver_refused_log_records_total{pod=~\"$pod\"}) by (receiver)",
+          "interval": "",
+          "legendFormat": "",
+          "queryType": "randomWalk",
+          "refId": "A"
+        }
+      ],
+      "title": "Receiver refused logs",
+      "type": "stat"
+    },
+    {
+      "datasource": "prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 16,
+        "y": 0
+      },
+      "id": 49,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {},
+        "textMode": "auto"
+      },
+      "pluginVersion": "7.5.42",
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "sum(otelcol_receiver_failed_log_records_total{pod=~\"$pod\"}) by (receiver)",
+          "interval": "",
+          "legendFormat": "",
+          "queryType": "randomWalk",
+          "refId": "A"
+        }
+      ],
+      "title": "Receiver failed logs",
+      "type": "stat"
+    },
+    {
+      "datasource": "prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 20,
+        "y": 0
+      },
+      "id": 50,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {},
+        "textMode": "auto"
+      },
+      "pluginVersion": "7.5.42",
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "sum(otelcol_exporter_send_failed_log_records_total{pod=~\"$pod\"}) by (exporter)",
+          "interval": "",
+          "legendFormat": "",
+          "queryType": "randomWalk",
+          "refId": "A"
+        }
+      ],
+      "title": "Exporter send failed logs",
+      "type": "stat"
+    },
     {
       "collapsed": false,
       "datasource": null,
@@ -25,7 +332,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 0
+        "y": 5
       },
       "id": 1,
       "panels": [],
@@ -66,7 +373,7 @@
         "h": 6,
         "w": 6,
         "x": 0,
-        "y": 1
+        "y": 6
       },
       "id": 2,
       "options": {
@@ -121,7 +428,7 @@
         "h": 6,
         "w": 6,
         "x": 6,
-        "y": 1
+        "y": 6
       },
       "id": 3,
       "options": {
@@ -188,7 +495,7 @@
         "h": 6,
         "w": 6,
         "x": 12,
-        "y": 1
+        "y": 6
       },
       "id": 4,
       "options": {
@@ -257,7 +564,7 @@
         "h": 6,
         "w": 6,
         "x": 18,
-        "y": 1
+        "y": 6
       },
       "id": 5,
       "options": {
@@ -293,7 +600,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 7
+        "y": 12
       },
       "id": 10,
       "panels": [],
@@ -394,7 +701,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 8
+        "y": 13
       },
       "id": 11,
       "options": {
@@ -448,7 +755,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 16
+        "y": 21
       },
       "id": 20,
       "panels": [],
@@ -503,7 +810,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 17
+        "y": 22
       },
       "id": 21,
       "options": {
@@ -591,7 +898,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 17
+        "y": 22
       },
       "id": 22,
       "options": {
@@ -679,7 +986,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 25
+        "y": 30
       },
       "id": 23,
       "options": {
@@ -768,7 +1075,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 25
+        "y": 30
       },
       "id": 24,
       "options": {
@@ -807,7 +1114,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 33
+        "y": 38
       },
       "id": 30,
       "panels": [],
@@ -893,7 +1200,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 34
+        "y": 39
       },
       "id": 31,
       "options": {
@@ -1007,7 +1314,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 42
+        "y": 47
       },
       "id": 32,
       "options": {
@@ -1094,7 +1401,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 42
+        "y": 47
       },
       "id": 33,
       "options": {
@@ -1170,7 +1477,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 50
+        "y": 55
       },
       "id": 34,
       "options": {
@@ -1206,7 +1513,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 58
+        "y": 63
       },
       "id": 40,
       "panels": [],
@@ -1261,7 +1568,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 59
+        "y": 64
       },
       "id": 41,
       "options": {
@@ -1342,7 +1649,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 59
+        "y": 64
       },
       "id": 42,
       "options": {
@@ -1422,7 +1729,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 67
+        "y": 72
       },
       "id": 43,
       "options": {
@@ -1509,7 +1816,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 67
+        "y": 72
       },
       "id": 44,
       "options": {
@@ -1591,7 +1898,7 @@
     ]
   },
   "time": {
-    "from": "now-1h",
+    "from": "now-15m",
     "to": "now"
   },
   "timepicker": {
