@@ -16,9 +16,23 @@
   "editable": true,
   "gnetId": 7752,
   "graphTooltip": 1,
-  "iteration": 1764785923255,
+  "iteration": 1764832359172,
   "links": [],
   "panels": [
+    {
+      "collapsed": false,
+      "datasource": null,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 84,
+      "panels": [],
+      "title": "Fluent Bit",
+      "type": "row"
+    },
     {
       "datasource": "prometheus",
       "description": "",
@@ -48,7 +62,7 @@
         "h": 3,
         "w": 4,
         "x": 0,
-        "y": 0
+        "y": 1
       },
       "id": 73,
       "options": {
@@ -108,7 +122,7 @@
         "h": 6,
         "w": 5,
         "x": 4,
-        "y": 0
+        "y": 1
       },
       "id": 2,
       "links": [],
@@ -169,7 +183,7 @@
         "h": 6,
         "w": 5,
         "x": 9,
-        "y": 0
+        "y": 1
       },
       "id": 9,
       "links": [],
@@ -230,7 +244,7 @@
         "h": 6,
         "w": 5,
         "x": 14,
-        "y": 0
+        "y": 1
       },
       "id": 96,
       "links": [],
@@ -291,7 +305,7 @@
         "h": 6,
         "w": 5,
         "x": 19,
-        "y": 0
+        "y": 1
       },
       "id": 99,
       "links": [],
@@ -354,7 +368,7 @@
         "h": 3,
         "w": 4,
         "x": 0,
-        "y": 3
+        "y": 4
       },
       "id": 74,
       "options": {
@@ -385,20 +399,6 @@
       ],
       "title": "[Fluentbit] Output Plugin Total Records",
       "type": "stat"
-    },
-    {
-      "collapsed": false,
-      "datasource": null,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 6
-      },
-      "id": 84,
-      "panels": [],
-      "title": "Fluent Bit",
-      "type": "row"
     },
     {
       "datasource": "prometheus",
@@ -1893,7 +1893,7 @@
       "type": "row"
     },
     {
-      "collapsed": true,
+      "collapsed": false,
       "datasource": null,
       "gridPos": {
         "h": 1,
@@ -1902,452 +1902,613 @@
         "y": 43
       },
       "id": 110,
-      "panels": [
-        {
-          "datasource": "prometheus",
-          "description": "RPC call duration in milliseconds",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "tooltip": false,
-                  "viz": false,
-                  "legend": false
-                },
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": false
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "yellow",
-                    "value": 100
-                  },
-                  {
-                    "color": "red",
-                    "value": 500
-                  }
-                ]
-              },
-              "unit": "ms"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 44
-          },
-          "id": 111,
-          "options": {
-            "legend": {
-              "calcs": [
-                "lastNotNull",
-                "max",
-                "mean"
-              ],
-              "displayMode": "table",
-              "placement": "right"
-            },
-            "tooltip": {
-              "mode": "multi"
-            }
-          },
-          "pluginVersion": "7.5.42",
-          "targets": [
-            {
-              "exemplar": true,
-              "expr": "histogram_quantile(0.95, rate(rpc_client_duration_milliseconds_bucket{pod=~\"$pod\"}[$__rate_interval]))",
-              "interval": "",
-              "legendFormat": "{{pod}} - p95",
-              "refId": "A"
-            },
-            {
-              "exemplar": true,
-              "expr": "histogram_quantile(0.99, rate(rpc_client_duration_milliseconds_bucket{pod=~\"$pod\"}[$__rate_interval]))",
-              "interval": "",
-              "legendFormat": "{{pod}} - p99",
-              "refId": "B"
-            },
-            {
-              "exemplar": true,
-              "expr": "rate(rpc_client_duration_milliseconds_sum{pod=~\"$pod\"}[$__rate_interval]) / rate(rpc_client_duration_milliseconds_count{pod=~\"$pod\"}[$__rate_interval])",
-              "interval": "",
-              "legendFormat": "{{pod}} - avg",
-              "refId": "C"
-            }
-          ],
-          "title": "[OTLP gRPC] RPC Duration",
-          "type": "timeseries"
-        },
-        {
-          "datasource": "prometheus",
-          "description": "RPC call rate per second",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "tooltip": false,
-                  "viz": false,
-                  "legend": false
-                },
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": false
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  }
-                ]
-              },
-              "unit": "reqps"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 44
-          },
-          "id": 112,
-          "options": {
-            "legend": {
-              "calcs": [
-                "lastNotNull",
-                "max",
-                "mean"
-              ],
-              "displayMode": "table",
-              "placement": "right"
-            },
-            "tooltip": {
-              "mode": "multi"
-            }
-          },
-          "pluginVersion": "7.5.42",
-          "targets": [
-            {
-              "exemplar": true,
-              "expr": "rate(rpc_client_duration_milliseconds_count{pod=~\"$pod\"}[$__rate_interval])",
-              "interval": "",
-              "legendFormat": "{{pod}} - {{rpc_method}}",
-              "refId": "A"
-            }
-          ],
-          "title": "[OTLP gRPC] RPC Call Rate",
-          "type": "timeseries"
-        },
-        {
-          "datasource": "prometheus",
-          "description": "Size of RPC request and response messages",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "tooltip": false,
-                  "viz": false,
-                  "legend": false
-                },
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": false
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  }
-                ]
-              },
-              "unit": "bytes"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 52
-          },
-          "id": 113,
-          "options": {
-            "legend": {
-              "calcs": [
-                "lastNotNull",
-                "max",
-                "mean"
-              ],
-              "displayMode": "table",
-              "placement": "right"
-            },
-            "tooltip": {
-              "mode": "multi"
-            }
-          },
-          "pluginVersion": "7.5.42",
-          "targets": [
-            {
-              "exemplar": true,
-              "expr": "histogram_quantile(0.95, rate(rpc_client_request_size_bytes_bucket{pod=~\"$pod\"}[$__rate_interval]))",
-              "interval": "",
-              "legendFormat": "{{pod}} - request p95",
-              "refId": "A"
-            },
-            {
-              "exemplar": true,
-              "expr": "histogram_quantile(0.95, rate(rpc_client_response_size_bytes_bucket{pod=~\"$pod\"}[$__rate_interval]))",
-              "interval": "",
-              "legendFormat": "{{pod}} - response p95",
-              "refId": "B"
-            },
-            {
-              "exemplar": true,
-              "expr": "rate(rpc_client_request_size_bytes_sum{pod=~\"$pod\"}[$__rate_interval]) / rate(rpc_client_request_size_bytes_count{pod=~\"$pod\"}[$__rate_interval])",
-              "interval": "",
-              "legendFormat": "{{pod}} - request avg",
-              "refId": "C"
-            },
-            {
-              "exemplar": true,
-              "expr": "rate(rpc_client_response_size_bytes_sum{pod=~\"$pod\"}[$__rate_interval]) / rate(rpc_client_response_size_bytes_count{pod=~\"$pod\"}[$__rate_interval])",
-              "interval": "",
-              "legendFormat": "{{pod}} - response avg",
-              "refId": "D"
-            }
-          ],
-          "title": "[OTLP gRPC] Request/Response Message Size",
-          "type": "timeseries"
-        },
-        {
-          "datasource": "prometheus",
-          "description": "Number of messages per RPC call",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "tooltip": false,
-                  "viz": false,
-                  "legend": false
-                },
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": false
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  }
-                ]
-              },
-              "unit": "short"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 52
-          },
-          "id": 114,
-          "options": {
-            "legend": {
-              "calcs": [
-                "lastNotNull",
-                "max",
-                "mean"
-              ],
-              "displayMode": "table",
-              "placement": "right"
-            },
-            "tooltip": {
-              "mode": "multi"
-            }
-          },
-          "pluginVersion": "7.5.42",
-          "targets": [
-            {
-              "exemplar": true,
-              "expr": "rate(rpc_client_requests_per_rpc_sum{pod=~\"$pod\"}[$__rate_interval]) / rate(rpc_client_requests_per_rpc_count{pod=~\"$pod\"}[$__rate_interval])",
-              "interval": "",
-              "legendFormat": "{{pod}} - avg requests per RPC",
-              "refId": "A"
-            },
-            {
-              "exemplar": true,
-              "expr": "rate(rpc_client_responses_per_rpc_sum{pod=~\"$pod\"}[$__rate_interval]) / rate(rpc_client_responses_per_rpc_count{pod=~\"$pod\"}[$__rate_interval])",
-              "interval": "",
-              "legendFormat": "{{pod}} - avg responses per RPC",
-              "refId": "B"
-            }
-          ],
-          "title": "[OTLP gRPC] Messages Per RPC",
-          "type": "timeseries"
-        },
-        {
-          "datasource": "prometheus",
-          "description": "Network throughput for gRPC communication",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "tooltip": false,
-                  "viz": false,
-                  "legend": false
-                },
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": false
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  }
-                ]
-              },
-              "unit": "Bps"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 24,
-            "x": 0,
-            "y": 60
-          },
-          "id": 115,
-          "options": {
-            "legend": {
-              "calcs": [
-                "lastNotNull",
-                "max",
-                "mean"
-              ],
-              "displayMode": "table",
-              "placement": "right"
-            },
-            "tooltip": {
-              "mode": "multi"
-            }
-          },
-          "pluginVersion": "7.5.42",
-          "targets": [
-            {
-              "exemplar": true,
-              "expr": "rate(rpc_client_request_size_bytes_sum{pod=~\"$pod\"}[$__rate_interval])",
-              "interval": "",
-              "legendFormat": "{{pod}} - request bytes/sec",
-              "refId": "A"
-            },
-            {
-              "exemplar": true,
-              "expr": "rate(rpc_client_response_size_bytes_sum{pod=~\"$pod\"}[$__rate_interval])",
-              "interval": "",
-              "legendFormat": "{{pod}} - response bytes/sec",
-              "refId": "B"
-            }
-          ],
-          "title": "[OTLP gRPC] Network Throughput",
-          "type": "timeseries"
-        }
-      ],
+      "panels": [],
       "title": "OTLP gRPC Client Metrics",
       "type": "row"
+    },
+    {
+      "datasource": "prometheus",
+      "description": "RPC call duration in milliseconds",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "graph": false,
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 100
+              },
+              {
+                "color": "red",
+                "value": 500
+              }
+            ]
+          },
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 44
+      },
+      "id": 111,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "max",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "right"
+        },
+        "tooltip": {
+          "mode": "multi"
+        },
+        "tooltipOptions": {
+          "mode": "single"
+        }
+      },
+      "pluginVersion": "7.5.42",
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "histogram_quantile(0.95, rate(output_plugin_rpc_client_duration_milliseconds_bucket{pod=~\"$pod\"}[$__rate_interval]))",
+          "interval": "",
+          "legendFormat": "{{pod}} - p95",
+          "refId": "A"
+        },
+        {
+          "exemplar": true,
+          "expr": "histogram_quantile(0.99, rate(output_plugin_rpc_client_duration_milliseconds_bucket{pod=~\"$pod\"}[$__rate_interval]))",
+          "interval": "",
+          "legendFormat": "{{pod}} - p99",
+          "refId": "B"
+        },
+        {
+          "exemplar": true,
+          "expr": "rate(output_plugin_rpc_client_duration_milliseconds_sum{pod=~\"$pod\"}[$__rate_interval]) / rate(output_plugin_rpc_client_duration_milliseconds_count{pod=~\"$pod\"}[$__rate_interval])",
+          "interval": "",
+          "legendFormat": "{{pod}} - avg",
+          "refId": "C"
+        }
+      ],
+      "title": "[OTLP gRPC] RPC Duration",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "prometheus",
+      "description": "RPC call rate per second",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "graph": false,
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 44
+      },
+      "id": 112,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "max",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "right"
+        },
+        "tooltip": {
+          "mode": "multi"
+        },
+        "tooltipOptions": {
+          "mode": "single"
+        }
+      },
+      "pluginVersion": "7.5.42",
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "rate(output_plugin_rpc_client_duration_milliseconds_count{pod=~\"$pod\"}[$__rate_interval])",
+          "interval": "",
+          "legendFormat": "{{pod}} - {{rpc_method}}",
+          "refId": "A"
+        }
+      ],
+      "title": "[OTLP gRPC] RPC Call Rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "prometheus",
+      "description": "Size of RPC request and response messages",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "graph": false,
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 52
+      },
+      "id": 113,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "max",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "right"
+        },
+        "tooltip": {
+          "mode": "multi"
+        },
+        "tooltipOptions": {
+          "mode": "single"
+        }
+      },
+      "pluginVersion": "7.5.42",
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "histogram_quantile(0.95, rate(output_plugin_rpc_client_request_size_bytes_bucket{pod=~\"$pod\"}[$__rate_interval]))",
+          "interval": "",
+          "legendFormat": "{{pod}} - request p95",
+          "refId": "A"
+        },
+        {
+          "exemplar": true,
+          "expr": "histogram_quantile(0.95, rate(output_plugin_rpc_client_response_size_bytes_bucket{pod=~\"$pod\"}[$__rate_interval]))",
+          "interval": "",
+          "legendFormat": "{{pod}} - response p95",
+          "refId": "B"
+        },
+        {
+          "exemplar": true,
+          "expr": "rate(output_plugin_rpc_client_request_size_bytes_sum{pod=~\"$pod\"}[$__rate_interval]) / rate(output_plugin_rpc_client_request_size_bytes_count{pod=~\"$pod\"}[$__rate_interval])",
+          "interval": "",
+          "legendFormat": "{{pod}} - request avg",
+          "refId": "C"
+        },
+        {
+          "exemplar": true,
+          "expr": "rate(output_plugin_rpc_client_response_size_bytes_sum{pod=~\"$pod\"}[$__rate_interval]) / rate(output_plugin_rpc_client_response_size_bytes_count{pod=~\"$pod\"}[$__rate_interval])",
+          "interval": "",
+          "legendFormat": "{{pod}} - response avg",
+          "refId": "D"
+        }
+      ],
+      "title": "[OTLP gRPC] Request/Response Message Size",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "prometheus",
+      "description": "Number of messages per RPC call",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "graph": false,
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 52
+      },
+      "id": 114,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "max",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "right"
+        },
+        "tooltip": {
+          "mode": "multi"
+        },
+        "tooltipOptions": {
+          "mode": "single"
+        }
+      },
+      "pluginVersion": "7.5.42",
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "rate(output_plugin_rpc_client_requests_per_rpc_sum{pod=~\"$pod\"}[$__rate_interval]) / rate(output_plugin_rpc_client_requests_per_rpc_count{pod=~\"$pod\"}[$__rate_interval])",
+          "interval": "",
+          "legendFormat": "{{pod}} - avg requests per RPC",
+          "refId": "A"
+        },
+        {
+          "exemplar": true,
+          "expr": "rate(output_plugin_rpc_client_responses_per_rpc_sum{pod=~\"$pod\"}[$__rate_interval]) / rate(output_plugin_rpc_client_responses_per_rpc_count{pod=~\"$pod\"}[$__rate_interval])",
+          "interval": "",
+          "legendFormat": "{{pod}} - avg responses per RPC",
+          "refId": "B"
+        }
+      ],
+      "title": "[OTLP gRPC] Messages Per RPC",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "prometheus",
+      "description": "gRPC response status codes distribution",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "graph": false,
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "text": "OK"
+                },
+                "1": {
+                  "text": "CANCELLED"
+                },
+                "2": {
+                  "text": "UNKNOWN"
+                },
+                "3": {
+                  "text": "INVALID_ARGUMENT"
+                },
+                "4": {
+                  "text": "DEADLINE_EXCEEDED"
+                },
+                "5": {
+                  "text": "NOT_FOUND"
+                },
+                "6": {
+                  "text": "ALREADY_EXISTS"
+                },
+                "7": {
+                  "text": "PERMISSION_DENIED"
+                },
+                "8": {
+                  "text": "RESOURCE_EXHAUSTED"
+                },
+                "9": {
+                  "text": "FAILED_PRECONDITION"
+                },
+                "10": {
+                  "text": "ABORTED"
+                },
+                "11": {
+                  "text": "OUT_OF_RANGE"
+                },
+                "12": {
+                  "text": "UNIMPLEMENTED"
+                },
+                "13": {
+                  "text": "INTERNAL"
+                },
+                "14": {
+                  "text": "UNAVAILABLE"
+                },
+                "15": {
+                  "text": "DATA_LOSS"
+                },
+                "16": {
+                  "text": "UNAUTHENTICATED"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 60
+      },
+      "id": 116,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "max",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "right"
+        },
+        "tooltip": {
+          "mode": "multi"
+        },
+        "tooltipOptions": {
+          "mode": "single"
+        }
+      },
+      "pluginVersion": "7.5.42",
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "rate(output_plugin_rpc_client_responses_per_rpc_count{pod=~\"$pod\"}[$__rate_interval])",
+          "interval": "",
+          "legendFormat": "{{pod}} - status {{rpc_grpc_status_code}}",
+          "refId": "A"
+        }
+      ],
+      "title": "[OTLP gRPC] Response Status Codes",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "prometheus",
+      "description": "Network throughput for gRPC communication",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "graph": false,
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "Bps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 68
+      },
+      "id": 115,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "max",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "right"
+        },
+        "tooltip": {
+          "mode": "multi"
+        },
+        "tooltipOptions": {
+          "mode": "single"
+        }
+      },
+      "pluginVersion": "7.5.42",
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "rate(output_plugin_rpc_client_request_size_bytes_sum{pod=~\"$pod\"}[$__rate_interval])",
+          "interval": "",
+          "legendFormat": "{{pod}} - request bytes/sec",
+          "refId": "A"
+        },
+        {
+          "exemplar": true,
+          "expr": "rate(output_plugin_rpc_client_response_size_bytes_sum{pod=~\"$pod\"}[$__rate_interval])",
+          "interval": "",
+          "legendFormat": "{{pod}} - response bytes/sec",
+          "refId": "B"
+        }
+      ],
+      "title": "[OTLP gRPC] Network Throughput",
+      "type": "timeseries"
     }
   ],
   "refresh": "5s",
@@ -2425,7 +2586,7 @@
     ]
   },
   "time": {
-    "from": "now-1h",
+    "from": "now-15m",
     "to": "now"
   },
   "timepicker": {

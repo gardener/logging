@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	promclient "github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/otlptranslator"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/prometheus"
@@ -68,6 +69,8 @@ func initializeMetricsSetup() (*MetricsSetup, error) {
 	// as the existing Prometheus metrics (port 2021)
 	promExporter, err := prometheus.New(
 		prometheus.WithRegisterer(promclient.DefaultRegisterer),
+		prometheus.WithNamespace("output_plugin"),
+		prometheus.WithTranslationStrategy(otlptranslator.UnderscoreEscapingWithSuffixes),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize prometheus exporter for OTLP metrics: %w", err)
