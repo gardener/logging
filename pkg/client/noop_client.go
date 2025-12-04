@@ -5,6 +5,7 @@
 package client
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/go-logr/logr"
@@ -19,6 +20,7 @@ const componentNoopName = "noop"
 // NoopClient is an implementation of OutputClient that discards all records
 // but keeps metrics and increments counters
 type NoopClient struct {
+	ctx      context.Context
 	logger   logr.Logger
 	endpoint string
 }
@@ -26,8 +28,9 @@ type NoopClient struct {
 var _ OutputClient = &NoopClient{}
 
 // NewNoopClient creates a new NoopClient that discards all records
-func NewNoopClient(cfg config.Config, logger logr.Logger) (OutputClient, error) {
+func NewNoopClient(ctx context.Context, cfg config.Config, logger logr.Logger) (OutputClient, error) {
 	client := &NoopClient{
+		ctx:      ctx,
 		endpoint: cfg.OTLPConfig.Endpoint,
 		logger:   logger.WithValues("endpoint", cfg.OTLPConfig.Endpoint),
 	}

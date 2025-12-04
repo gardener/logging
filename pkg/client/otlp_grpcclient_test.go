@@ -4,6 +4,7 @@
 package client
 
 import (
+	"context"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -46,7 +47,7 @@ var _ = Describe("OTLPGRPCClient", func() {
 
 	Describe("NewOTLPGRPCClient", func() {
 		It("should create an OTLP gRPC client", func() {
-			client, err := NewOTLPGRPCClient(cfg, logger)
+			client, err := NewOTLPGRPCClient(context.Background(), cfg, logger)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(client).ToNot(BeNil())
 
@@ -55,7 +56,7 @@ var _ = Describe("OTLPGRPCClient", func() {
 		})
 
 		It("should set the correct endpoint", func() {
-			client, err := NewOTLPGRPCClient(cfg, logger)
+			client, err := NewOTLPGRPCClient(context.Background(), cfg, logger)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(client.GetEndPoint()).To(Equal("localhost:4317"))
 
@@ -67,7 +68,7 @@ var _ = Describe("OTLPGRPCClient", func() {
 			cfg.OTLPConfig.Insecure = false
 			cfg.OTLPConfig.TLSConfig = nil // No TLS config, will use system defaults
 
-			client, err := NewOTLPGRPCClient(cfg, logger)
+			client, err := NewOTLPGRPCClient(context.Background(), cfg, logger)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(client).ToNot(BeNil())
 
@@ -81,7 +82,7 @@ var _ = Describe("OTLPGRPCClient", func() {
 
 		BeforeEach(func() {
 			var err error
-			client, err = NewOTLPGRPCClient(cfg, logger)
+			client, err = NewOTLPGRPCClient(context.Background(), cfg, logger)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -201,7 +202,7 @@ var _ = Describe("OTLPGRPCClient", func() {
 
 	Describe("Stop and StopWait", func() {
 		It("should stop the client immediately", func() {
-			client, err := NewOTLPGRPCClient(cfg, logger)
+			client, err := NewOTLPGRPCClient(context.Background(), cfg, logger)
 			Expect(err).ToNot(HaveOccurred())
 
 			client.Stop()

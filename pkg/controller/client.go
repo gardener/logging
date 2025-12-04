@@ -4,6 +4,8 @@
 package controller
 
 import (
+	"context"
+
 	gardenercorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	"github.com/go-logr/logr"
 	giterrors "github.com/pkg/errors"
@@ -35,8 +37,8 @@ type target struct {
 	conf   *config.ControllerClientConfiguration
 }
 
-// Because loosing some logs when switching on and off client is not important we are omitting the synchronization.
 type controllerClient struct {
+	ctx         context.Context
 	shootTarget target
 	seedTarget  target
 	state       clusterState
@@ -80,12 +82,14 @@ func (ctl *controller) newControllerClient(clusterName string, clientConf *confi
 	if clientConf.ClientConfig.BufferConfig.Buffer {
 		opt = append(opt, client.WithDque(true))
 	}
-	shootClient, err := client.NewClient(*clientConf, opt...)
+	// Pass the controller's context to the shoot client
+	shootClient, err := client.NewClient(ctl.ctx, *clientConf, opt...)
 	if err != nil {
 		return nil, err
 	}
 
 	c := &controllerClient{
+		ctx: ctl.ctx, // TODO: consider creating a separate context for the client
 		shootTarget: target{
 			client: shootClient,
 			mute:   !ctl.conf.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInCreationState,
@@ -99,6 +103,7 @@ func (ctl *controller) newControllerClient(clusterName string, clientConf *confi
 		state:  clusterStateCreation, // check here the actual cluster state
 		logger: ctl.logger,
 		name:   ctl.conf.OTLPConfig.Endpoint, // TODO: set proper name from clusterName
+
 	}
 
 	return c, nil

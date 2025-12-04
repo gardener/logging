@@ -4,6 +4,7 @@
 package controller
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
@@ -37,18 +38,22 @@ var _ = Describe("Controller Client", func() {
 
 	BeforeEach(func() {
 		// Create separate NoopClient instances with different endpoints for separate metrics
-		shootClient, err := client.NewNoopClient(config.Config{
-			OTLPConfig: config.OTLPConfig{
-				Endpoint: "shoot-endpoint:4317",
-			},
-		}, logger)
+		shootClient, err := client.NewNoopClient(
+			context.Background(),
+			config.Config{
+				OTLPConfig: config.OTLPConfig{
+					Endpoint: "shoot-endpoint:4317",
+				},
+			}, logger)
 		Expect(err).ToNot(HaveOccurred())
 
-		seedClient, err := client.NewNoopClient(config.Config{
-			OTLPConfig: config.OTLPConfig{
-				Endpoint: "seed-endpoint:4317",
-			},
-		}, logger)
+		seedClient, err := client.NewNoopClient(
+			context.Background(),
+			config.Config{
+				OTLPConfig: config.OTLPConfig{
+					Endpoint: "seed-endpoint:4317",
+				},
+			}, logger)
 		Expect(err).ToNot(HaveOccurred())
 
 		ctlClient = controllerClient{
@@ -426,11 +431,13 @@ var _ = Describe("Controller Client", func() {
 		)
 
 		BeforeEach(func() {
-			noopClient, err := client.NewNoopClient(config.Config{
-				OTLPConfig: config.OTLPConfig{
-					Endpoint: "fake-client-endpoint:4317",
-				},
-			}, logger)
+			noopClient, err := client.NewNoopClient(
+				context.Background(),
+				config.Config{
+					OTLPConfig: config.OTLPConfig{
+						Endpoint: "fake-client-endpoint:4317",
+					},
+				}, logger)
 			Expect(err).ToNot(HaveOccurred())
 
 			testControllerClient = &fakeControllerClient{

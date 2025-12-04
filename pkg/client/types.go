@@ -4,6 +4,8 @@
 package client
 
 import (
+	"context"
+
 	"github.com/go-logr/logr"
 
 	"github.com/gardener/logging/v1/pkg/config"
@@ -23,4 +25,4 @@ type OutputClient interface {
 }
 
 // NewClientFunc is a function type for creating new OutputClient instances
-type NewClientFunc func(cfg config.Config, logger logr.Logger) (OutputClient, error)
+type NewClientFunc func(ctx context.Context, cfg config.Config, logger logr.Logger) (OutputClient, error)

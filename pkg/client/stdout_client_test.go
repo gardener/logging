@@ -5,6 +5,7 @@ package client
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"os"
@@ -43,7 +44,7 @@ var _ = Describe("StdoutClient", func() {
 		r, w, _ = os.Pipe()
 		os.Stdout = w
 
-		outputClient, _ = NewStdoutClient(cfg, logger)
+		outputClient, _ = NewStdoutClient(context.Background(), cfg, logger)
 
 		// Reset metrics for clean state
 		metrics.OutputClientLogs.Reset()
@@ -65,14 +66,14 @@ var _ = Describe("StdoutClient", func() {
 				},
 			}
 
-			testClient, err := NewStdoutClient(testCfg, logger)
+			testClient, err := NewStdoutClient(context.Background(), testCfg, logger)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(testClient).NotTo(BeNil())
 			Expect(testClient.GetEndPoint()).To(Equal(testEndpoint))
 		})
 
 		It("should work with nil logger", func() {
-			testClient, err := NewStdoutClient(cfg, logger)
+			testClient, err := NewStdoutClient(context.Background(), cfg, logger)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(testClient).NotTo(BeNil())
 		})
@@ -84,7 +85,7 @@ var _ = Describe("StdoutClient", func() {
 				},
 			}
 
-			testClient, err := NewStdoutClient(testCfg, logger)
+			testClient, err := NewStdoutClient(context.Background(), testCfg, logger)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(testClient).NotTo(BeNil())
 			Expect(testClient.GetEndPoint()).To(Equal(""))
@@ -243,7 +244,7 @@ var _ = Describe("StdoutClient", func() {
 				},
 			}
 
-			testClient, err := NewStdoutClient(testCfg, logger)
+			testClient, err := NewStdoutClient(context.Background(), testCfg, logger)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(testClient.GetEndPoint()).To(Equal(testEndpoint))
 		})
@@ -265,9 +266,9 @@ var _ = Describe("StdoutClient", func() {
 				},
 			}
 
-			client1, err := NewStdoutClient(cfg1, logger)
+			client1, err := NewStdoutClient(context.Background(), cfg1, logger)
 			Expect(err).NotTo(HaveOccurred())
-			client2, err := NewStdoutClient(cfg2, logger)
+			client2, err := NewStdoutClient(context.Background(), cfg2, logger)
 			Expect(err).NotTo(HaveOccurred())
 
 			metric1 := metrics.OutputClientLogs.WithLabelValues(endpoint1)

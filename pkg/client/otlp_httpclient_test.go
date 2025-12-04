@@ -4,6 +4,7 @@
 package client
 
 import (
+	"context"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -46,7 +47,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 
 	Describe("NewOTLPHTTPClient", func() {
 		It("should create an OTLP HTTP client", func() {
-			client, err := NewOTLPHTTPClient(cfg, logger)
+			client, err := NewOTLPHTTPClient(context.Background(), cfg, logger)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(client).ToNot(BeNil())
 
@@ -55,7 +56,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 		})
 
 		It("should set the correct endpoint", func() {
-			client, err := NewOTLPHTTPClient(cfg, logger)
+			client, err := NewOTLPHTTPClient(context.Background(), cfg, logger)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(client.GetEndPoint()).To(Equal("localhost:4318"))
 
@@ -67,7 +68,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 			cfg.OTLPConfig.Insecure = false
 			cfg.OTLPConfig.TLSConfig = nil // No TLS config, will use system defaults
 
-			client, err := NewOTLPHTTPClient(cfg, logger)
+			client, err := NewOTLPHTTPClient(context.Background(), cfg, logger)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(client).ToNot(BeNil())
 
@@ -81,7 +82,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 				"X-Custom-Hdr": "custom-value",
 			}
 
-			client, err := NewOTLPHTTPClient(cfg, logger)
+			client, err := NewOTLPHTTPClient(context.Background(), cfg, logger)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(client).ToNot(BeNil())
 
@@ -92,7 +93,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 		It("should handle compression configuration", func() {
 			cfg.OTLPConfig.Compression = 1 // gzip
 
-			client, err := NewOTLPHTTPClient(cfg, logger)
+			client, err := NewOTLPHTTPClient(context.Background(), cfg, logger)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(client).ToNot(BeNil())
 
@@ -107,7 +108,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 			cfg.OTLPConfig.RetryMaxElapsedTime = time.Minute
 			cfg.OTLPConfig.RetryConfig = &config.RetryConfig{}
 
-			client, err := NewOTLPHTTPClient(cfg, logger)
+			client, err := NewOTLPHTTPClient(context.Background(), cfg, logger)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(client).ToNot(BeNil())
 
@@ -121,7 +122,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 
 		BeforeEach(func() {
 			var err error
-			client, err = NewOTLPHTTPClient(cfg, logger)
+			client, err = NewOTLPHTTPClient(context.Background(), cfg, logger)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -327,7 +328,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 
 	Describe("Stop and StopWait", func() {
 		It("should stop the client immediately", func() {
-			client, err := NewOTLPHTTPClient(cfg, logger)
+			client, err := NewOTLPHTTPClient(context.Background(), cfg, logger)
 			Expect(err).ToNot(HaveOccurred())
 
 			client.Stop()
@@ -335,7 +336,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 		})
 
 		It("should stop the client with wait", func() {
-			client, err := NewOTLPHTTPClient(cfg, logger)
+			client, err := NewOTLPHTTPClient(context.Background(), cfg, logger)
 			Expect(err).ToNot(HaveOccurred())
 
 			// Send a log entry
@@ -353,7 +354,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 		})
 
 		It("should handle multiple stops gracefully", func() {
-			client, err := NewOTLPHTTPClient(cfg, logger)
+			client, err := NewOTLPHTTPClient(context.Background(), cfg, logger)
 			Expect(err).ToNot(HaveOccurred())
 
 			client.Stop()
@@ -362,7 +363,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 		})
 
 		It("should flush pending logs on StopWait", func() {
-			client, err := NewOTLPHTTPClient(cfg, logger)
+			client, err := NewOTLPHTTPClient(context.Background(), cfg, logger)
 			Expect(err).ToNot(HaveOccurred())
 
 			// Send multiple log entries
@@ -385,7 +386,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 
 	Describe("GetEndPoint", func() {
 		It("should return the configured endpoint", func() {
-			client, err := NewOTLPHTTPClient(cfg, logger)
+			client, err := NewOTLPHTTPClient(context.Background(), cfg, logger)
 			Expect(err).ToNot(HaveOccurred())
 
 			endpoint := client.GetEndPoint()
@@ -398,14 +399,14 @@ var _ = Describe("OTLPHTTPClient", func() {
 			// First client
 			cfg1 := cfg
 			cfg1.OTLPConfig.Endpoint = "otlp-collector-1:4318"
-			client1, err := NewOTLPHTTPClient(cfg1, logger)
+			client1, err := NewOTLPHTTPClient(context.Background(), cfg1, logger)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(client1.GetEndPoint()).To(Equal("otlp-collector-1:4318"))
 
 			// Second client
 			cfg2 := cfg
 			cfg2.OTLPConfig.Endpoint = "otlp-collector-2:4318"
-			client2, err := NewOTLPHTTPClient(cfg2, logger)
+			client2, err := NewOTLPHTTPClient(context.Background(), cfg2, logger)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(client2.GetEndPoint()).To(Equal("otlp-collector-2:4318"))
 
@@ -492,7 +493,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 
 	Describe("Integration scenarios", func() {
 		It("should handle fluent-bit typical log format", func() {
-			client, err := NewOTLPHTTPClient(cfg, logger)
+			client, err := NewOTLPHTTPClient(context.Background(), cfg, logger)
 			Expect(err).ToNot(HaveOccurred())
 			defer client.Stop()
 
@@ -515,7 +516,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 		})
 
 		It("should handle gardener shoot log format", func() {
-			client, err := NewOTLPHTTPClient(cfg, logger)
+			client, err := NewOTLPHTTPClient(context.Background(), cfg, logger)
 			Expect(err).ToNot(HaveOccurred())
 			defer client.Stop()
 
