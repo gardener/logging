@@ -35,8 +35,9 @@ type OTLPHTTPClient struct {
 var _ OutputClient = &OTLPHTTPClient{}
 
 // NewOTLPHTTPClient creates a new OTLP HTTP client
-func NewOTLPHTTPClient(cfg config.Config, logger logr.Logger) (OutputClient, error) {
-	ctx, cancel := context.WithCancel(context.Background())
+func NewOTLPHTTPClient(ctx context.Context, cfg config.Config, logger logr.Logger) (OutputClient, error) {
+	// Use the provided context with cancel capability
+	clientCtx, cancel := context.WithCancel(ctx)
 
 	// Setup metrics
 	metricsSetup, err := NewMetricsSetup()
@@ -50,15 +51,15 @@ func NewOTLPHTTPClient(cfg config.Config, logger logr.Logger) (OutputClient, err
 	configBuilder := NewOTLPHTTPConfigBuilder(cfg)
 	exporterOpts := configBuilder.Build()
 
-	// Create exporter
-	exporter, err := otlploghttp.New(ctx, exporterOpts...)
+	// Create exporter using the client context
+	exporter, err := otlploghttp.New(clientCtx, exporterOpts...)
 	if err != nil {
 		cancel()
 
 		return nil, fmt.Errorf("failed to create OTLP HTTP exporter: %w", err)
 	}
 
-	// Build resource attributes
+	// ...existing code for resource and batch processor...
 	resource := NewResourceAttributesBuilder().
 		WithHostname(cfg).
 		WithOrigin("seed").
@@ -94,7 +95,7 @@ func NewOTLPHTTPClient(cfg config.Config, logger logr.Logger) (OutputClient, err
 		loggerProvider: loggerProvider,
 		meterProvider:  metricsSetup.GetProvider(),
 		otlLogger:      loggerProvider.Logger(componentOTLPHTTPName),
-		ctx:            ctx,
+		ctx:            clientCtx,
 		cancel:         cancel,
 	}
 
@@ -105,6 +106,11 @@ func NewOTLPHTTPClient(cfg config.Config, logger logr.Logger) (OutputClient, err
 
 // Handle processes and sends the log entry via OTLP HTTP
 func (c *OTLPHTTPClient) Handle(entry types.OutputEntry) error {
+	// Check if the client's context is cancelled
+	if c.ctx.Err() != nil {
+		return c.ctx.Err()
+	}
+
 	// Build log record using builder pattern
 	logRecord := NewLogRecordBuilder().
 		WithTimestamp(entry.Timestamp).
@@ -113,7 +119,7 @@ func (c *OTLPHTTPClient) Handle(entry types.OutputEntry) error {
 		WithAttributes(entry).
 		Build()
 
-	// Emit the log record
+	// Emit the log record using the client's context
 	c.otlLogger.Emit(c.ctx, logRecord)
 
 	// Increment the output logs counter
@@ -128,7 +134,7 @@ func (c *OTLPHTTPClient) Stop() {
 	c.cancel()
 
 	// Force shutdown without waiting
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(c.ctx, time.Second)
 	defer cancel()
 
 	if err := c.loggerProvider.Shutdown(ctx); err != nil {
@@ -150,7 +156,7 @@ func (c *OTLPHTTPClient) StopWait() {
 	c.cancel()
 
 	// Force flush before shutdown
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(c.ctx, 30*time.Second)
 	defer cancel()
 
 	if err := c.loggerProvider.ForceFlush(ctx); err != nil {

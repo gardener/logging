@@ -4,6 +4,7 @@
 package client
 
 import (
+	"context"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -31,6 +32,7 @@ var _ = Describe("NoopClient", func() {
 
 		logger = log.NewNopLogger()
 		outputClient, _ = NewNoopClient(
+			context.Background(),
 			cfg,
 			logger,
 		)
@@ -48,14 +50,14 @@ var _ = Describe("NoopClient", func() {
 				},
 			}
 
-			testClient, err := NewNoopClient(testCfg, logger)
+			testClient, err := NewNoopClient(context.Background(), testCfg, logger)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(testClient).NotTo(BeNil())
 			Expect(testClient.GetEndPoint()).To(Equal(testEndpoint))
 		})
 
 		It("should work with nil logger", func() {
-			testClient, err := NewNoopClient(cfg, logger)
+			testClient, err := NewNoopClient(context.Background(), cfg, logger)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(testClient).NotTo(BeNil())
 		})
@@ -67,7 +69,7 @@ var _ = Describe("NoopClient", func() {
 				},
 			}
 
-			testClient, err := NewNoopClient(testCfg, logger)
+			testClient, err := NewNoopClient(context.Background(), testCfg, logger)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(testClient).NotTo(BeNil())
 			Expect(testClient.GetEndPoint()).To(Equal(""))
@@ -177,7 +179,7 @@ var _ = Describe("NoopClient", func() {
 				},
 			}
 
-			testClient, err := NewNoopClient(testCfg, logger)
+			testClient, err := NewNoopClient(context.Background(), testCfg, logger)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(testClient.GetEndPoint()).To(Equal(testEndpoint))
 		})
@@ -199,9 +201,9 @@ var _ = Describe("NoopClient", func() {
 				},
 			}
 
-			client1, err := NewNoopClient(cfg1, logger)
+			client1, err := NewNoopClient(context.Background(), cfg1, logger)
 			Expect(err).NotTo(HaveOccurred())
-			client2, err := NewNoopClient(cfg2, logger)
+			client2, err := NewNoopClient(context.Background(), cfg2, logger)
 			Expect(err).NotTo(HaveOccurred())
 
 			metric1 := metrics.DroppedLogs.WithLabelValues(endpoint1)

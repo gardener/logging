@@ -4,6 +4,7 @@
 package plugin
 
 import (
+	"context"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -27,7 +28,7 @@ var _ = Describe("Simple Plugin Test", func() {
 			},
 		}
 
-		c, err := client.NewNoopClient(cfg, logger)
+		c, err := client.NewNoopClient(context.Background(), cfg, logger)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(c).NotTo(BeNil())
 

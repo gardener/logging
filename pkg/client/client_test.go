@@ -4,6 +4,8 @@
 package client
 
 import (
+	"context"
+
 	"github.com/go-logr/logr"
 	ginkgov2 "github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
@@ -44,6 +46,7 @@ var _ = ginkgov2.Describe("Client", func() {
 	ginkgov2.Describe("NewClient", func() {
 		ginkgov2.It("should create a client", func() {
 			c, err := NewClient(
+				context.Background(),
 				conf,
 				WithLogger(logger),
 			)

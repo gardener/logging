@@ -4,6 +4,7 @@
 package client
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/go-logr/logr"
@@ -50,7 +51,7 @@ func WithTarget(target Target) Option {
 }
 
 // NewClient creates a new client based on the fluent-bit configuration.
-func NewClient(cfg config.Config, opts ...Option) (OutputClient, error) {
+func NewClient(ctx context.Context, cfg config.Config, opts ...Option) (OutputClient, error) {
 	options := &clientOptions{}
 	for _, opt := range opts {
 		if err := opt(options); err != nil {
@@ -84,10 +85,10 @@ func NewClient(cfg config.Config, opts ...Option) (OutputClient, error) {
 	}
 
 	if options.dque {
-		return NewDque(cfg, logger, nfc)
+		return NewDque(ctx, cfg, logger, nfc)
 	}
 
-	return nfc(cfg, logger)
+	return nfc(ctx, cfg, logger)
 }
 
 func getNewClientFunc(t types.Type) (NewClientFunc, error) {

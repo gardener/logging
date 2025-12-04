@@ -5,6 +5,7 @@ package controller
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"sync"
@@ -39,10 +40,11 @@ type controller struct {
 	logger     logr.Logger
 	informer   cache.SharedIndexInformer
 	r          cache.ResourceEventHandlerRegistration
+	ctx        context.Context
 }
 
 // NewController return Controller interface
-func NewController(informer cache.SharedIndexInformer, conf *config.Config, l logr.Logger) (Controller, error) {
+func NewController(ctx context.Context, informer cache.SharedIndexInformer, conf *config.Config, l logr.Logger) (Controller, error) {
 	var err error
 	var seedClient client.OutputClient
 
@@ -53,7 +55,9 @@ func NewController(informer cache.SharedIndexInformer, conf *config.Config, l lo
 	if cfgShallowCopy.ClientConfig.BufferConfig.Buffer {
 		opt = append(opt, client.WithDque(true))
 	}
+	// Pass the context when creating the seed client
 	if seedClient, err = client.NewClient(
+		ctx,
 		cfgShallowCopy,
 		opt...,
 	); err != nil {
@@ -67,6 +71,7 @@ func NewController(informer cache.SharedIndexInformer, conf *config.Config, l lo
 		seedClient: seedClient,
 		informer:   informer,
 		logger:     l,
+		ctx:        ctx,
 	}
 
 	if ctl.r, err = informer.AddEventHandler(cache.ResourceEventHandlerFuncs{

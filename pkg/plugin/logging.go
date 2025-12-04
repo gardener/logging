@@ -4,6 +4,7 @@
 package plugin
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 
@@ -30,19 +31,33 @@ type logging struct {
 	extractKubernetesMetadataRegexp *regexp.Regexp
 	controller                      controller.Controller
 	logger                          logr.Logger
+	ctx                             context.Context
+	cancel                          context.CancelFunc
 }
 
 // NewPlugin returns OutputPlugin output plugin
 func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger logr.Logger) (OutputPlugin, error) {
 	var err error
-	l := &logging{cfg: cfg, logger: logger}
+
+	// Create a single context for the entire plugin lifecycle
+	ctx, cancel := context.WithCancel(context.Background())
+
+	l := &logging{
+		cfg:    cfg,
+		logger: logger,
+		ctx:    ctx,
+		cancel: cancel,
+	}
 
 	// TODO(nickytd): Remove this magic check and introduce an Id field in the plugin output configuration
 	// If the plugin ID is "shoot" then we shall have a dynamic host and a default "controller" client
 	if len(cfg.PluginConfig.DynamicHostPath) > 0 {
 		l.dynamicHostRegexp = regexp.MustCompile(cfg.PluginConfig.DynamicHostRegex)
 
-		if l.controller, err = controller.NewController(informer, cfg, logger); err != nil {
+		// Pass the plugin's context to the controller
+		if l.controller, err = controller.NewController(ctx, informer, cfg, logger); err != nil {
+			cancel()
+
 			return nil, err
 		}
 	}
@@ -56,7 +71,10 @@ func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger lo
 		opt = append(opt, client.WithDque(true))
 	}
 
-	if l.seedClient, err = client.NewClient(*cfg, opt...); err != nil {
+	// Pass the plugin's context to the client
+	if l.seedClient, err = client.NewClient(ctx, *cfg, opt...); err != nil {
+		cancel()
+
 		return nil, err
 	}
 	metrics.Clients.WithLabelValues(client.Seed.String()).Inc()
@@ -126,7 +144,8 @@ func (l *logging) SendRecord(log types.OutputEntry) error {
 		return fmt.Errorf("no client found in controller for host: %v", dynamicHostName)
 	}
 
-	err := c.Handle(log) // send log line to the underlying client (seed or shoot)
+	// Client uses its own lifecycle context
+	err := c.Handle(log)
 	if err != nil {
 		l.logger.Error(err, "error sending record to logging", "host", dynamicHostName)
 		metrics.Errors.WithLabelValues(metrics.ErrorSendRecord).Inc()
@@ -138,6 +157,9 @@ func (l *logging) SendRecord(log types.OutputEntry) error {
 }
 
 func (l *logging) Close() {
+	// Cancel the plugin context first to signal all operations to stop
+	l.cancel()
+
 	l.seedClient.StopWait()
 	if l.controller != nil {
 		l.controller.Stop()

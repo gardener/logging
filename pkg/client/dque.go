@@ -38,6 +38,7 @@ func dqueEntryBuilder() any {
 }
 
 type dqueClient struct {
+	ctx     context.Context
 	logger  logr.Logger
 	queue   *dque.DQue
 	client  OutputClient
@@ -54,7 +55,7 @@ func (c *dqueClient) GetEndPoint() string {
 var _ OutputClient = &dqueClient{}
 
 // NewDque makes a new dque client
-func NewDque(cfg config.Config, logger logr.Logger, newClientFunc NewClientFunc) (OutputClient, error) {
+func NewDque(ctx context.Context, cfg config.Config, logger logr.Logger, newClientFunc NewClientFunc) (OutputClient, error) {
 	var err error
 
 	qDir := cfg.ClientConfig.BufferConfig.DqueConfig.QueueDir
@@ -63,6 +64,7 @@ func NewDque(cfg config.Config, logger logr.Logger, newClientFunc NewClientFunc)
 	qSize := cfg.ClientConfig.BufferConfig.DqueConfig.QueueSegmentSize
 
 	q := &dqueClient{
+		ctx: ctx, // TODO: consider using a child context with cancel
 		logger: logger.WithValues(
 			"name", qName,
 		),
@@ -85,8 +87,8 @@ func NewDque(cfg config.Config, logger logr.Logger, newClientFunc NewClientFunc)
 		}
 	}
 
-	// Create the upstream client
-	if q.client, err = newClientFunc(cfg, logger); err != nil {
+	// Create the upstream client, passing the context
+	if q.client, err = newClientFunc(ctx, cfg, logger); err != nil {
 		return nil, err
 	}
 
@@ -144,6 +146,7 @@ func (c *dqueClient) dequeuer() {
 			continue
 		}
 
+		// Call Handle without context - client manages its own lifecycle context
 		if err = c.client.Handle(record.OutputEntry); err != nil {
 			metrics.Errors.WithLabelValues(metrics.ErrorDequeuerSendRecord).Inc()
 			c.logger.Error(err, "error sending record to upstream client")

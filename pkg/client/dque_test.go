@@ -4,6 +4,7 @@
 package client
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"time"
@@ -47,7 +48,7 @@ var _ = Describe("Buffer", func() {
 
 		It("should create a buffered client when buffer is set", func() {
 			conf.ClientConfig.BufferConfig.Buffer = true
-			outputClient, err := NewDque(conf, logger, NewNoopClient)
+			outputClient, err := NewDque(context.Background(), conf, logger, NewNoopClient)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(outputClient).ToNot(BeNil())
 			defer outputClient.Stop()
@@ -58,7 +59,7 @@ var _ = Describe("Buffer", func() {
 
 		It("should return error when queue directory cannot be created", func() {
 			conf.ClientConfig.BufferConfig.DqueConfig.QueueDir = "/invalid/path/that/cannot/be/created"
-			_, err := NewDque(conf, logger, NewNoopClient)
+			_, err := NewDque(context.Background(), conf, logger, NewNoopClient)
 			Expect(err).To(HaveOccurred())
 		})
 	})
@@ -84,7 +85,7 @@ var _ = Describe("Buffer", func() {
 					Endpoint: "localhost:4317",
 				},
 			}
-			outputClient, err = NewDque(conf, logger, NewNoopClient)
+			outputClient, err = NewDque(context.Background(), conf, logger, NewNoopClient)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(outputClient).ToNot(BeNil())
 		})

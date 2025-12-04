@@ -4,6 +4,7 @@
 package client
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -19,6 +20,7 @@ const componentStdoutName = "stdout"
 
 // StdoutClient is an implementation of OutputClient that writes all records to stdout
 type StdoutClient struct {
+	ctx      context.Context
 	logger   logr.Logger
 	endpoint string
 }
@@ -26,8 +28,9 @@ type StdoutClient struct {
 var _ OutputClient = &StdoutClient{}
 
 // NewStdoutClient creates a new StdoutClient that writes all records to stdout
-func NewStdoutClient(cfg config.Config, logger logr.Logger) (OutputClient, error) {
+func NewStdoutClient(ctx context.Context, cfg config.Config, logger logr.Logger) (OutputClient, error) {
 	client := &StdoutClient{
+		ctx:      ctx,
 		endpoint: cfg.OTLPConfig.Endpoint,
 		logger:   logger.WithValues("endpoint", cfg.OTLPConfig.Endpoint),
 	}

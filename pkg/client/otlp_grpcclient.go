@@ -35,8 +35,9 @@ type OTLPGRPCClient struct {
 var _ OutputClient = &OTLPGRPCClient{}
 
 // NewOTLPGRPCClient creates a new OTLP gRPC client
-func NewOTLPGRPCClient(cfg config.Config, logger logr.Logger) (OutputClient, error) {
-	ctx, cancel := context.WithCancel(context.Background())
+func NewOTLPGRPCClient(ctx context.Context, cfg config.Config, logger logr.Logger) (OutputClient, error) {
+	// Use the provided context with cancel capability
+	clientCtx, cancel := context.WithCancel(ctx)
 
 	// Setup metrics
 	metricsSetup, err := NewMetricsSetup()
@@ -53,8 +54,8 @@ func NewOTLPGRPCClient(cfg config.Config, logger logr.Logger) (OutputClient, err
 	// Add metrics instrumentation to gRPC dial options
 	exporterOpts = append(exporterOpts, otlploggrpc.WithDialOption(metricsSetup.GetGRPCStatsHandler()))
 
-	// Create exporter
-	exporter, err := otlploggrpc.New(ctx, exporterOpts...)
+	// Create exporter using the client context
+	exporter, err := otlploggrpc.New(clientCtx, exporterOpts...)
 	if err != nil {
 		cancel()
 
@@ -97,7 +98,7 @@ func NewOTLPGRPCClient(cfg config.Config, logger logr.Logger) (OutputClient, err
 		loggerProvider: loggerProvider,
 		meterProvider:  metricsSetup.GetProvider(),
 		otlLogger:      loggerProvider.Logger(componentOTLPGRPCName),
-		ctx:            ctx,
+		ctx:            clientCtx,
 		cancel:         cancel,
 	}
 
@@ -108,6 +109,11 @@ func NewOTLPGRPCClient(cfg config.Config, logger logr.Logger) (OutputClient, err
 
 // Handle processes and sends the log entry via OTLP gRPC
 func (c *OTLPGRPCClient) Handle(entry types.OutputEntry) error {
+	// Check if the client's context is cancelled
+	if c.ctx.Err() != nil {
+		return c.ctx.Err()
+	}
+
 	// Build log record using builder pattern
 	logRecord := NewLogRecordBuilder().
 		WithTimestamp(entry.Timestamp).
@@ -116,7 +122,7 @@ func (c *OTLPGRPCClient) Handle(entry types.OutputEntry) error {
 		WithAttributes(entry).
 		Build()
 
-	// Emit the log record
+	// Emit the log record using the client's context
 	c.otlLogger.Emit(c.ctx, logRecord)
 
 	// Increment the output logs counter
@@ -131,7 +137,7 @@ func (c *OTLPGRPCClient) Stop() {
 	c.cancel()
 
 	// Force shutdown without waiting
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(c.ctx, time.Second)
 	defer cancel()
 
 	if err := c.loggerProvider.Shutdown(ctx); err != nil {
@@ -153,7 +159,7 @@ func (c *OTLPGRPCClient) StopWait() {
 	c.cancel()
 
 	// Force flush before shutdown
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(c.ctx, 30*time.Second)
 	defer cancel()
 
 	if err := c.loggerProvider.ForceFlush(ctx); err != nil {
