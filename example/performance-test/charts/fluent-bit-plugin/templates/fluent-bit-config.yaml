@@ -103,7 +103,7 @@ data:
         Skip_Long_Lines     On
         DB                  /var/run/fluentbit/flb_kube.db
         DB.Sync             normal
-        Mem_Buf_Limit       50MB
+        Mem_Buf_Limit       100MB
 
     [Filter]
         Name                parser
@@ -148,6 +148,9 @@ data:
         LogLevel info
         Endpoint logging-otel-collector-seed.fluent-bit.svc.cluster.local:4317
         Insecure true
+
+        ThrottleEnabled: true
+        ThrottleRequestsPerSec: 100
 
         BatchProcessorMaxQueueSize 512
         BatchProcessorMaxBatchSize 256

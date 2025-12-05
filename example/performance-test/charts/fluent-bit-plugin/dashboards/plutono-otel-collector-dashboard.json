@@ -15,11 +15,26 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "iteration": 1764797363373,
+  "iteration": 1764916904770,
   "links": [],
   "panels": [
     {
+      "collapsed": false,
+      "datasource": null,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "panels": [],
+      "title": "Overview & Health",
+      "type": "row"
+    },
+    {
       "datasource": "prometheus",
+      "description": "Collector uptime in hours",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -31,29 +46,33 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "red",
                 "value": null
               },
               {
-                "color": "red",
-                "value": 80
+                "color": "yellow",
+                "value": 3600
+              },
+              {
+                "color": "green",
+                "value": 86400
               }
             ]
           },
-          "unit": "none"
+          "unit": "s"
         },
         "overrides": []
       },
       "gridPos": {
         "h": 5,
-        "w": 6,
+        "w": 8,
         "x": 0,
-        "y": 0
+        "y": 1
       },
-      "id": 46,
+      "id": 2,
       "options": {
         "colorMode": "value",
-        "graphMode": "area",
+        "graphMode": "none",
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
@@ -70,15 +89,79 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "sum(otelcol_receiver_accepted_log_records_total{pod=~\"$pod\"}) by (receiver)",
+          "expr": "otelcol_process_uptime_seconds_total{pod=~\"$pod\"}",
           "interval": "",
-          "legendFormat": "",
-          "queryType": "randomWalk",
+          "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ],
-      "title": "Receiver accepted logs",
+      "title": "Collector Uptime",
       "type": "stat"
+    },
+    {
+      "datasource": "prometheus",
+      "description": "Success rate percentage",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 95
+              },
+              {
+                "color": "green",
+                "value": 99
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 8,
+        "y": 1
+      },
+      "id": 5,
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "text": {}
+      },
+      "pluginVersion": "7.5.42",
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "sum(otelcol_exporter_sent_log_records_total{pod=~\"$pod\"}) / (sum(otelcol_exporter_sent_log_records_total{pod=~\"$pod\"}) + sum(otelcol_exporter_send_failed_log_records_total{pod=~\"$pod\"})) * 100",
+          "interval": "",
+          "legendFormat": "Success rate",
+          "refId": "A"
+        }
+      ],
+      "title": "Export Success Rate",
+      "type": "gauge"
     },
     {
       "datasource": "prometheus",
@@ -108,9 +191,9 @@
       },
       "gridPos": {
         "h": 5,
-        "w": 6,
-        "x": 6,
-        "y": 0
+        "w": 12,
+        "x": 12,
+        "y": 1
       },
       "id": 47,
       "options": {
@@ -147,7 +230,8 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "thresholds"
+            "fixedColor": "green",
+            "mode": "fixed"
           },
           "mappings": [],
           "thresholds": {
@@ -163,17 +247,17 @@
               }
             ]
           },
-          "unit": "short"
+          "unit": "none"
         },
         "overrides": []
       },
       "gridPos": {
         "h": 5,
         "w": 4,
-        "x": 12,
-        "y": 0
+        "x": 0,
+        "y": 6
       },
-      "id": 48,
+      "id": 46,
       "options": {
         "colorMode": "value",
         "graphMode": "area",
@@ -193,14 +277,73 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "sum(otelcol_receiver_refused_log_records_total{pod=~\"$pod\"}) by (receiver)",
+          "expr": "sum(otelcol_receiver_accepted_log_records_total{pod=~\"$pod\"}) by (receiver)",
           "interval": "",
           "legendFormat": "",
           "queryType": "randomWalk",
           "refId": "A"
         }
       ],
-      "title": "Receiver refused logs",
+      "title": "Receiver accepted logs",
+      "type": "stat"
+    },
+    {
+      "datasource": "prometheus",
+      "description": "Total log records successfully sent to destination",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 4,
+        "y": 6
+      },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "text": {},
+        "textMode": "auto"
+      },
+      "pluginVersion": "7.5.42",
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "sum(otelcol_exporter_sent_log_records_total{pod=~\"$pod\"})",
+          "interval": "",
+          "legendFormat": "Total sent",
+          "refId": "A"
+        }
+      ],
+      "title": "Total Logs Sent",
       "type": "stat"
     },
     {
@@ -231,8 +374,8 @@
       "gridPos": {
         "h": 5,
         "w": 4,
-        "x": 16,
-        "y": 0
+        "x": 8,
+        "y": 6
       },
       "id": 49,
       "options": {
@@ -291,9 +434,9 @@
       },
       "gridPos": {
         "h": 5,
-        "w": 4,
-        "x": 20,
-        "y": 0
+        "w": 6,
+        "x": 12,
+        "y": 6
       },
       "id": 50,
       "options": {
@@ -326,22 +469,7 @@
       "type": "stat"
     },
     {
-      "collapsed": false,
-      "datasource": null,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 5
-      },
-      "id": 1,
-      "panels": [],
-      "title": "Overview & Health",
-      "type": "row"
-    },
-    {
       "datasource": "prometheus",
-      "description": "Collector uptime in hours",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -351,72 +479,13 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
               {
                 "color": "red",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 3600
-              },
-              {
-                "color": "green",
-                "value": 86400
-              }
-            ]
-          },
-          "unit": "s"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 6,
-        "w": 6,
-        "x": 0,
-        "y": 6
-      },
-      "id": 2,
-      "options": {
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
-        "text": {}
-      },
-      "pluginVersion": "7.5.42",
-      "targets": [
-        {
-          "exemplar": true,
-          "expr": "otelcol_process_uptime_seconds_total{pod=~\"$pod\"}",
-          "interval": "",
-          "legendFormat": "{{pod}}",
-          "refId": "A"
-        }
-      ],
-      "title": "Collector Uptime",
-      "type": "gauge"
-    },
-    {
-      "datasource": "prometheus",
-      "description": "Total log records successfully sent to destination",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
+                "value": 80
               }
             ]
           },
@@ -425,12 +494,12 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 6,
-        "w": 6,
-        "x": 6,
+        "h": 5,
+        "w": 3,
+        "x": 18,
         "y": 6
       },
-      "id": 3,
+      "id": 48,
       "options": {
         "colorMode": "value",
         "graphMode": "area",
@@ -443,8 +512,6 @@
           "fields": "",
           "values": false
         },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
         "text": {},
         "textMode": "auto"
       },
@@ -452,13 +519,14 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "sum(otelcol_exporter_sent_log_records_total{pod=~\"$pod\"})",
+          "expr": "sum(otelcol_receiver_refused_log_records_total{pod=~\"$pod\"}) by (receiver)",
           "interval": "",
-          "legendFormat": "Total sent",
+          "legendFormat": "",
+          "queryType": "randomWalk",
           "refId": "A"
         }
       ],
-      "title": "Total Logs Sent",
+      "title": "Receiver refused logs",
       "type": "stat"
     },
     {
@@ -492,9 +560,9 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 6,
-        "w": 6,
-        "x": 12,
+        "h": 5,
+        "w": 3,
+        "x": 21,
         "y": 6
       },
       "id": 4,
@@ -529,78 +597,13 @@
       "type": "stat"
     },
     {
-      "datasource": "prometheus",
-      "description": "Success rate percentage",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "max": 100,
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 95
-              },
-              {
-                "color": "green",
-                "value": 99
-              }
-            ]
-          },
-          "unit": "percent"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 6,
-        "w": 6,
-        "x": 18,
-        "y": 6
-      },
-      "id": 5,
-      "options": {
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
-        "text": {}
-      },
-      "pluginVersion": "7.5.42",
-      "targets": [
-        {
-          "exemplar": true,
-          "expr": "sum(otelcol_exporter_sent_log_records_total{pod=~\"$pod\"}) / (sum(otelcol_exporter_sent_log_records_total{pod=~\"$pod\"}) + sum(otelcol_exporter_send_failed_log_records_total{pod=~\"$pod\"})) * 100",
-          "interval": "",
-          "legendFormat": "Success rate",
-          "refId": "A"
-        }
-      ],
-      "title": "Export Success Rate",
-      "type": "gauge"
-    },
-    {
       "collapsed": false,
       "datasource": null,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 12
+        "y": 11
       },
       "id": 10,
       "panels": [],
@@ -701,7 +704,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 13
+        "y": 12
       },
       "id": 11,
       "options": {
@@ -755,7 +758,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 21
+        "y": 20
       },
       "id": 20,
       "panels": [],
@@ -810,7 +813,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 22
+        "y": 21
       },
       "id": 21,
       "options": {
@@ -898,7 +901,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 22
+        "y": 21
       },
       "id": 22,
       "options": {
@@ -986,7 +989,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 30
+        "y": 29
       },
       "id": 23,
       "options": {
@@ -1075,7 +1078,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 30
+        "y": 29
       },
       "id": 24,
       "options": {
@@ -1114,7 +1117,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 38
+        "y": 37
       },
       "id": 30,
       "panels": [],
@@ -1200,7 +1203,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 39
+        "y": 38
       },
       "id": 31,
       "options": {
@@ -1314,7 +1317,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 47
+        "y": 46
       },
       "id": 32,
       "options": {
@@ -1401,7 +1404,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 47
+        "y": 46
       },
       "id": 33,
       "options": {
@@ -1477,7 +1480,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 55
+        "y": 54
       },
       "id": 34,
       "options": {
@@ -1513,7 +1516,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 63
+        "y": 62
       },
       "id": 40,
       "panels": [],
@@ -1568,7 +1571,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 64
+        "y": 63
       },
       "id": 41,
       "options": {
@@ -1649,7 +1652,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 64
+        "y": 63
       },
       "id": 42,
       "options": {
@@ -1729,7 +1732,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 72
+        "y": 71
       },
       "id": 43,
       "options": {
@@ -1816,7 +1819,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 72
+        "y": 71
       },
       "id": 44,
       "options": {
@@ -1863,13 +1866,9 @@
       {
         "allValue": ".*otel-collector.+",
         "current": {
-          "selected": true,
-          "text": [
-            "All"
-          ],
-          "value": [
-            "$__all"
-          ]
+          "selected": false,
+          "text": "All",
+          "value": "$__all"
         },
         "datasource": "prometheus",
         "definition": "label_values(otelcol_process_uptime_seconds_total, pod)",
