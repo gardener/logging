@@ -67,6 +67,10 @@ type OTLPConfig struct {
 	// RetryConfig - processed from the above fields
 	RetryConfig *RetryConfig `mapstructure:"-"`
 
+	// Throttle configuration fields
+	ThrottleEnabled        bool `mapstructure:"ThrottleEnabled"`
+	ThrottleRequestsPerSec int  `mapstructure:"ThrottleRequestsPerSec"` // Maximum requests per second, 0 means no limit
+
 	// TLS configuration fields
 	TLSCertFile           string `mapstructure:"TLSCertFile"`
 	TLSKeyFile            string `mapstructure:"TLSKeyFile"`
@@ -82,24 +86,26 @@ type OTLPConfig struct {
 
 // DefaultOTLPConfig holds the default configuration for OTLP
 var DefaultOTLPConfig = OTLPConfig{
-	Endpoint:              "localhost:4317",
-	Insecure:              false,
-	Compression:           0, // No compression by default
-	Timeout:               30 * time.Second,
-	Headers:               make(map[string]string),
-	RetryEnabled:          true,
-	RetryInitialInterval:  5 * time.Second,
-	RetryMaxInterval:      30 * time.Second,
-	RetryMaxElapsedTime:   1 * time.Minute,
-	RetryConfig:           nil, // Will be built from other fields
-	TLSCertFile:           "",
-	TLSKeyFile:            "",
-	TLSCAFile:             "",
-	TLSServerName:         "",
-	TLSInsecureSkipVerify: false,
-	TLSMinVersion:         "1.2", // TLS 1.2 as default minimum
-	TLSMaxVersion:         "",    // Use Go's default maximum
-	TLSConfig:             nil,   // Will be built from other fields
+	Endpoint:               "localhost:4317",
+	Insecure:               false,
+	Compression:            0, // No compression by default
+	Timeout:                30 * time.Second,
+	Headers:                make(map[string]string),
+	RetryEnabled:           true,
+	RetryInitialInterval:   5 * time.Second,
+	RetryMaxInterval:       30 * time.Second,
+	RetryMaxElapsedTime:    1 * time.Minute,
+	RetryConfig:            nil, // Will be built from other fields
+	ThrottleEnabled:        false,
+	ThrottleRequestsPerSec: 0, // No throttling by default
+	TLSCertFile:            "",
+	TLSKeyFile:             "",
+	TLSCAFile:              "",
+	TLSServerName:          "",
+	TLSInsecureSkipVerify:  false,
+	TLSMinVersion:          "1.2", // TLS 1.2 as default minimum
+	TLSMaxVersion:          "",    // Use Go's default maximum
+	TLSConfig:              nil,   // Will be built from other fields
 
 	// Batch Processor defaults - tuned to prevent OOM under high load
 	BatchProcessorMaxQueueSize:   512,              // Max records in queue before dropping

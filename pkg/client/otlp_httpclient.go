@@ -13,6 +13,7 @@ import (
 	otlplog "go.opentelemetry.io/otel/log"
 	sdklog "go.opentelemetry.io/otel/sdk/log"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"golang.org/x/time/rate"
 
 	"github.com/gardener/logging/v1/pkg/config"
 	"github.com/gardener/logging/v1/pkg/metrics"
@@ -30,6 +31,7 @@ type OTLPHTTPClient struct {
 	otlLogger      otlplog.Logger
 	ctx            context.Context
 	cancel         context.CancelFunc
+	limiter        *rate.Limiter // Rate limiter for throttling
 }
 
 var _ OutputClient = &OTLPHTTPClient{}
@@ -89,6 +91,17 @@ func NewOTLPHTTPClient(ctx context.Context, cfg config.Config, logger logr.Logge
 		sdklog.WithProcessor(sdklog.NewBatchProcessor(exporter, batchProcessorOpts...)),
 	)
 
+	// Initialize rate limiter if throttling is enabled
+	var limiter *rate.Limiter
+	if cfg.OTLPConfig.ThrottleEnabled && cfg.OTLPConfig.ThrottleRequestsPerSec > 0 {
+		// Create a rate limiter with the configured requests per second
+		// Burst is set to allow some burstiness (e.g., 2x the rate)
+		limiter = rate.NewLimiter(rate.Limit(cfg.OTLPConfig.ThrottleRequestsPerSec), cfg.OTLPConfig.ThrottleRequestsPerSec*2)
+		logger.V(1).Info("throttling enabled",
+			"requests_per_sec", cfg.OTLPConfig.ThrottleRequestsPerSec,
+			"burst", cfg.OTLPConfig.ThrottleRequestsPerSec*2)
+	}
+
 	client := &OTLPHTTPClient{
 		logger:         logger.WithValues("endpoint", cfg.OTLPConfig.Endpoint, "component", componentOTLPHTTPName),
 		endpoint:       cfg.OTLPConfig.Endpoint,
@@ -97,6 +110,7 @@ func NewOTLPHTTPClient(ctx context.Context, cfg config.Config, logger logr.Logge
 		otlLogger:      loggerProvider.Logger(componentOTLPHTTPName),
 		ctx:            clientCtx,
 		cancel:         cancel,
+		limiter:        limiter,
 	}
 
 	logger.V(1).Info(fmt.Sprintf("%s created", componentOTLPHTTPName), "endpoint", cfg.OTLPConfig.Endpoint)
@@ -109,6 +123,17 @@ func (c *OTLPHTTPClient) Handle(entry types.OutputEntry) error {
 	// Check if the client's context is cancelled
 	if c.ctx.Err() != nil {
 		return c.ctx.Err()
+	}
+
+	// Check rate limit if throttling is enabled
+	if c.limiter != nil {
+		// Try to acquire a token from the rate limiter
+		// Allow returns false if the request would exceed the rate limit
+		if !c.limiter.Allow() {
+			c.logger.V(2).Info("request throttled", "endpoint", c.endpoint)
+			// Return throttled error which will cause Fluent Bit to retry
+			return ErrThrottled
+		}
 	}
 
 	// Build log record using builder pattern

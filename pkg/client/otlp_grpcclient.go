@@ -5,6 +5,7 @@ package client
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	otlplog "go.opentelemetry.io/otel/log"
 	sdklog "go.opentelemetry.io/otel/sdk/log"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"golang.org/x/time/rate"
 
 	"github.com/gardener/logging/v1/pkg/config"
 	"github.com/gardener/logging/v1/pkg/metrics"
@@ -20,6 +22,9 @@ import (
 )
 
 const componentOTLPGRPCName = "otlpgrpc"
+
+// ErrThrottled is returned when the client is throttled
+var ErrThrottled = errors.New("client throttled: rate limit exceeded")
 
 // OTLPGRPCClient is an implementation of OutputClient that sends logs via OTLP gRPC
 type OTLPGRPCClient struct {
@@ -30,6 +35,7 @@ type OTLPGRPCClient struct {
 	otlLogger      otlplog.Logger
 	ctx            context.Context
 	cancel         context.CancelFunc
+	limiter        *rate.Limiter // Rate limiter for throttling
 }
 
 var _ OutputClient = &OTLPGRPCClient{}
@@ -92,6 +98,17 @@ func NewOTLPGRPCClient(ctx context.Context, cfg config.Config, logger logr.Logge
 		sdklog.WithProcessor(sdklog.NewBatchProcessor(exporter, batchProcessorOpts...)),
 	)
 
+	// Initialize rate limiter if throttling is enabled
+	var limiter *rate.Limiter
+	if cfg.OTLPConfig.ThrottleEnabled && cfg.OTLPConfig.ThrottleRequestsPerSec > 0 {
+		// Create a rate limiter with the configured requests per second
+		// Burst is set to allow some burstiness (e.g., 2x the rate)
+		limiter = rate.NewLimiter(rate.Limit(cfg.OTLPConfig.ThrottleRequestsPerSec), cfg.OTLPConfig.ThrottleRequestsPerSec*2)
+		logger.V(1).Info("throttling enabled",
+			"requests_per_sec", cfg.OTLPConfig.ThrottleRequestsPerSec,
+			"burst", cfg.OTLPConfig.ThrottleRequestsPerSec*2)
+	}
+
 	client := &OTLPGRPCClient{
 		logger:         logger.WithValues("endpoint", cfg.OTLPConfig.Endpoint, "component", componentOTLPGRPCName),
 		endpoint:       cfg.OTLPConfig.Endpoint,
@@ -100,6 +117,7 @@ func NewOTLPGRPCClient(ctx context.Context, cfg config.Config, logger logr.Logge
 		otlLogger:      loggerProvider.Logger(componentOTLPGRPCName),
 		ctx:            clientCtx,
 		cancel:         cancel,
+		limiter:        limiter,
 	}
 
 	logger.V(1).Info(fmt.Sprintf("%s created", componentOTLPGRPCName), "endpoint", cfg.OTLPConfig.Endpoint)
@@ -114,6 +132,17 @@ func (c *OTLPGRPCClient) Handle(entry types.OutputEntry) error {
 		return c.ctx.Err()
 	}
 
+	// Check rate limit if throttling is enabled
+	if c.limiter != nil {
+		// Try to acquire a token from the rate limiter
+		// Allow returns false if the request would exceed the rate limit
+		if !c.limiter.Allow() {
+			c.logger.V(2).Info("request throttled", "endpoint", c.endpoint)
+			// Return throttled error which will cause Fluent Bit to retry
+			return ErrThrottled
+		}
+	}
+
 	// Build log record using builder pattern
 	logRecord := NewLogRecordBuilder().
 		WithTimestamp(entry.Timestamp).
@@ -122,10 +151,6 @@ func (c *OTLPGRPCClient) Handle(entry types.OutputEntry) error {
 		WithAttributes(entry).
 		Build()
 
-	// test throttle
-	// replace with throttle based on config request/per second
-	// return FLB_RETRY in fluentbit if throttled
-	time.Sleep(2 * time.Millisecond)
 	// Emit the log record using the client's context
 	c.otlLogger.Emit(c.ctx, logRecord)
 
