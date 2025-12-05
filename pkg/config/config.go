@@ -495,6 +495,25 @@ func processOTLPConfig(config *Config, configMap map[string]any) error {
 		return fmt.Errorf("failed to build TLS config: %w", err)
 	}
 
+	// Process Throttle configuration fields
+	if throttleEnabled, ok := configMap["throttleenabled"].(string); ok && throttleEnabled != "" {
+		boolVal, err := strconv.ParseBool(throttleEnabled)
+		if err != nil {
+			return fmt.Errorf("failed to parse ThrottleEnabled as boolean: %w", err)
+		}
+		config.OTLPConfig.ThrottleEnabled = boolVal
+	}
+
+	if requestsPerSec, ok := configMap["throttlerequestspersec"].(string); ok && requestsPerSec != "" {
+		val, err := strconv.Atoi(requestsPerSec)
+		if err != nil {
+			return fmt.Errorf("failed to parse ThrottleRequestsPerSec as integer: %w", err)
+		}
+		if val < 0 {
+			return fmt.Errorf("ThrottleRequestsPerSec cannot be negative, got %d", val)
+		}
+		config.OTLPConfig.ThrottleRequestsPerSec = val
+	}
 	return nil
 }
 

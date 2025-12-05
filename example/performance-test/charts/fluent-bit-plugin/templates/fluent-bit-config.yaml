@@ -87,7 +87,7 @@ data:
         Tag                 systemd.*
         Path                /var/log/journal
         DB                  /var/run/fluentbit/systemd.db
-        DB.Sync              normal
+        DB.Sync             normal
         Mem_Buf_Limit       50MB
         Systemd_Filter      _SYSTEMD_UNIT=containerd.service
         Systemd_Filter      _SYSTEMD_UNIT=kubelet.service
@@ -149,8 +149,8 @@ data:
         Endpoint logging-otel-collector-seed.fluent-bit.svc.cluster.local:4317
         Insecure true
 
-        ThrottleEnabled: true
-        ThrottleRequestsPerSec: 100
+        ThrottleEnabled true
+        ThrottleRequestsPerSec 150
 
         BatchProcessorMaxQueueSize 512
         BatchProcessorMaxBatchSize 256

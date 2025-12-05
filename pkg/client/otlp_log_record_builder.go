@@ -63,11 +63,48 @@ func (b *LogRecordBuilder) Build() otlplog.Record {
 
 // extractBody extracts the log message body from the record
 func extractBody(record map[string]any) string {
-	if msg, ok := record["log"].(string); ok {
-		return msg
+	msg, ok := record["log"]
+	if ok {
+		switch v := msg.(type) {
+		case string:
+			return fmt.Sprintf("%v", msg)
+		case []byte:
+			// Avoid memory leak: limit string conversion for large byte slices
+			if len(v) > 1024 {
+				// take first 1024 bytes only
+				return fmt.Sprintf("%s... <truncated %d bytes>", string(v[:1024]), len(v)-1024)
+			}
+		case map[string]interface{}:
+			// For nested maps, avoid deep serialization that causes memory leaks
+			// Serialize the line and fetch 1024 bytes only
+			t := fmt.Sprintf("%v", msg)
+			if len(t) > 1024 {
+				return fmt.Sprintf("%s... <truncated %d bytes>", t[:1024], len(t)-1024)
+			}
+			return t
+		}
 	}
-	if msg, ok := record["message"].(string); ok {
-		return msg
+
+	msg, ok = record["message"]
+	if ok {
+		switch v := msg.(type) {
+		case string:
+			return fmt.Sprintf("%v", msg)
+		case []byte:
+			// Avoid memory leak: limit string conversion for large byte slices
+			if len(v) > 1024 {
+				// take first 1024 bytes only
+				return fmt.Sprintf("%s... <truncated %d bytes>", string(v[:1024]), len(v)-1024)
+			}
+		case map[string]interface{}:
+			// For nested maps, avoid deep serialization that causes memory leaks
+			// Serialize the line and fetch 1024 bytes only
+			t := fmt.Sprintf("%v", msg)
+			if len(t) > 1024 {
+				return fmt.Sprintf("%s... <truncated %d bytes>", t[:1024], len(t)-1024)
+			}
+			return t
+		}
 	}
 
 	return fmt.Sprintf("%v", record)
