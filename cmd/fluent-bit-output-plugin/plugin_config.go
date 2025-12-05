@@ -112,6 +112,9 @@ func (c *pluginConfig) toStringMap() map[string]string {
 		"TLSMinVersion", "tlsMinVersion",
 		"TLSMaxVersion", "tlsMaxVersion",
 
+		"ThrottleEnabled", "throttleEnabled",
+		"ThrottleRequestsPerSec", "throttleRequestsPerSec",
+
 		// OTLP Batch Processor configs
 		"BatchProcessorMaxQueueSize", "batchProcessorMaxQueueSize",
 		"BatchProcessorMaxBatchSize", "batchProcessorMaxBatchSize",

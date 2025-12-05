@@ -177,10 +177,7 @@ func FLBPluginFlushCtx(ctx, data unsafe.Pointer, length C.int, tag *C.char) int 
 			Timestamp: timestamp,
 			Record:    toOutputRecord(record),
 		}
-		err := outputPlugin.SendRecord(l)
-		if err != nil {
-			logger.Error(err, "[flb-go] error sending record, retrying...", "tag", C.GoString(tag))
-
+		if err := outputPlugin.SendRecord(l); err != nil {
 			return output.FLB_RETRY
 		}
 	}

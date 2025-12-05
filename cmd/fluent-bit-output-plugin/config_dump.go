@@ -69,6 +69,10 @@ func dumpConfiguration(conf *config.Config) {
 		logger.V(1).Info("[flb-go]", "RetryConfig", "configured")
 	}
 
+	// Throttle configuration
+	logger.V(1).Info("[flb-go]", "ThrottleEnabled", fmt.Sprintf("%+v", conf.OTLPConfig.ThrottleEnabled))
+	logger.V(1).Info("[flb-go]", "ThrottlePeriod", fmt.Sprintf("%+v", conf.OTLPConfig.ThrottleRequestsPerSec))
+
 	// OTLP TLS configuration
 	logger.V(1).Info("[flb-go]", "TLSCertFile", fmt.Sprintf("%+v", conf.OTLPConfig.TLSCertFile))
 	logger.V(1).Info("[flb-go]", "TLSKeyFile", fmt.Sprintf("%+v", conf.OTLPConfig.TLSKeyFile))

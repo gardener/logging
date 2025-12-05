@@ -16,7 +16,7 @@
   "editable": true,
   "gnetId": 7752,
   "graphTooltip": 1,
-  "iteration": 1764862272216,
+  "iteration": 1764952647351,
   "links": [],
   "panels": [
     {
@@ -1264,13 +1264,96 @@
       "type": "timeseries"
     },
     {
+      "datasource": "prometheus",
+      "description": "Logs throttled by output plugin clients",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "graph": false,
+              "legend": false,
+              "tooltip": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": true
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 42
+      },
+      "id": 118,
+      "options": {
+        "graph": {},
+        "legend": {
+          "calcs": [
+            "last",
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "right"
+        },
+        "tooltipOptions": {
+          "mode": "single"
+        }
+      },
+      "pluginVersion": "7.5.42",
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "sum by (host) (rate(fluentbit_gardener_throttled_logs_total{pod=~\"$pod\",host=~\"$host\"}[$__rate_interval]))",
+          "interval": "",
+          "legendFormat": "{{host}}",
+          "queryType": "randomWalk",
+          "refId": "A"
+        }
+      ],
+      "title": "[Output Plugin] Throttled logs ",
+      "type": "timeseries"
+    },
+    {
       "collapsed": true,
       "datasource": null,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 42
+        "y": 50
       },
       "id": 100,
       "panels": [
@@ -1322,7 +1405,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 43
+            "y": 51
           },
           "id": 104,
           "options": {
@@ -1403,7 +1486,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 50
+            "y": 58
           },
           "id": 106,
           "options": {
@@ -1491,7 +1574,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 58
+            "y": 66
           },
           "id": 101,
           "options": {
@@ -1585,7 +1668,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 65
+            "y": 73
           },
           "id": 107,
           "options": {
@@ -1687,7 +1770,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 73
+            "y": 81
           },
           "id": 102,
           "options": {
@@ -1768,7 +1851,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 80
+            "y": 88
           },
           "id": 103,
           "options": {
@@ -1856,7 +1939,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 88
+            "y": 96
           },
           "id": 105,
           "options": {
@@ -1906,7 +1989,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 43
+        "y": 51
       },
       "id": 110,
       "panels": [
@@ -2528,7 +2611,7 @@
       {
         "allValue": "fluent-bit.+",
         "current": {
-          "selected": false,
+          "selected": true,
           "text": [
             "All"
           ],

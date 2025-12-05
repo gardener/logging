@@ -173,8 +173,9 @@ victorialogs:
 
   resources:
     requests:
-      cpu: 250m
-      memory: 64Mi
+      memory: 256Mi
+    limits:
+      memory: 8Gi
 
   ports:
     - containerPort: 9428

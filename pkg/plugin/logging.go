@@ -5,6 +5,7 @@ package plugin
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 
@@ -146,7 +147,7 @@ func (l *logging) SendRecord(log types.OutputEntry) error {
 
 	// Client uses its own lifecycle context
 	err := c.Handle(log)
-	if err != nil {
+	if err != nil && !errors.Is(err, client.ErrThrottled) {
 		l.logger.Error(err, "error sending record to logging", "host", dynamicHostName)
 		metrics.Errors.WithLabelValues(metrics.ErrorSendRecord).Inc()
 
