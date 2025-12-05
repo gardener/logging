@@ -163,9 +163,6 @@ data:
         RetryMaxElapsedTime 5m
 
         HostnameKeyValue nodename ${NODE_NAME}
-        Buffer false
-        QueueSegmentSize 1000
-        QueueSync normal
         FallbackToTagWhenMetadataIsMissing true
         TagKey tag
 
@@ -180,7 +177,4 @@ data:
         Endpoint logging-otel-collector-seed.fluent-bit.svc.cluster.local:4317
         Insecure true
         HostnameKeyValue nodename ${NODE_NAME}
-        Buffer true
-        QueueSegmentSize 100
-        QueueSync normal
         FallbackToTagWhenMetadataIsMissing false
