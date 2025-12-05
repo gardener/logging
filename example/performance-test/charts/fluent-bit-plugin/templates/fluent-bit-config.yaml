@@ -149,18 +149,18 @@ data:
         Endpoint logging-otel-collector-seed.fluent-bit.svc.cluster.local:4317
         Insecure true
 
-        BatchProcessorMaxQueueSize 350
-        BatchProcessorMaxBatchSize 200
-        BatchProcessorExportTimeout 10m
-        BatchProcessorExportInterval 1s
+        BatchProcessorMaxQueueSize 512
+        BatchProcessorMaxBatchSize 256
+        BatchProcessorExportTimeout 5m
+        BatchProcessorExportInterval 3s
 
         RetryEnabled  true
         RetryInitialInterval 1s
-        RetryMaxInterval  60s
-        RetryMaxElapsedTime 10m
+        RetryMaxInterval  300s
+        RetryMaxElapsedTime 5m
 
         HostnameKeyValue nodename ${NODE_NAME}
-        Buffer true
+        Buffer false
         QueueSegmentSize 1000
         QueueSync normal
         FallbackToTagWhenMetadataIsMissing true

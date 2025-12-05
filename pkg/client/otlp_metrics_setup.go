@@ -9,7 +9,6 @@ package client
 import (
 	"context"
 	"fmt"
-	"os"
 	"sync"
 
 	promclient "github.com/prometheus/client_golang/prometheus"
@@ -52,7 +51,6 @@ var (
 // Returns an error if the Prometheus exporter creation fails.
 func NewMetricsSetup() (*MetricsSetup, error) {
 	metricsSetupOnce.Do(func() {
-		_ = os.Setenv("OTEL_GO_X_OBSERVABILITY", "true")
 		globalMetricsSetup, metricsSetupErr = initializeMetricsSetup()
 	})
 

@@ -27,7 +27,7 @@ fluentBit:
     limits:
       memory: 350Mi
     requests:
-      memory: 100Mi
+      memory: 200Mi
 
   ports:
     - name: metrics
