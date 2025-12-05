@@ -122,6 +122,10 @@ func (c *OTLPGRPCClient) Handle(entry types.OutputEntry) error {
 		WithAttributes(entry).
 		Build()
 
+	// test throttle
+	// replace with throttle based on config request/per second
+	// return FLB_RETRY in fluentbit if throttled
+	time.Sleep(2 * time.Millisecond)
 	// Emit the log record using the client's context
 	c.otlLogger.Emit(c.ctx, logRecord)
 

@@ -23,7 +23,7 @@ data:
     processors:
       batch:
         timeout: 5s
-        send_batch_size: 10000
+        send_batch_size: 1000
       memory_limiter:
         check_interval: 1s
         limit_percentage: 75
@@ -35,7 +35,7 @@ data:
         # Resilience https://opentelemetry.io/docs/collector/resiliency/
         sending_queue:
           storage: file_storage
-          queue_size: 5_000 # Increase queue size (default 1000)
+          queue_size: 5000 # Increase queue size (default 1000)
         retry_on_failure:
           initial_interval: 5s
           max_interval: 30s
