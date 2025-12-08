@@ -4,7 +4,9 @@
 package client
 
 import (
+	"bytes"
 	"fmt"
+	"sort"
 	"time"
 
 	otlplog "go.opentelemetry.io/otel/log"
@@ -77,7 +79,7 @@ func extractBody(record map[string]any) string {
 		case map[string]interface{}:
 			// For nested maps, avoid deep serialization that causes memory leaks
 			// Serialize the line and fetch 1024 bytes only
-			t := fmt.Sprintf("%v", msg)
+			t := marshalMap(msg.(map[string]interface{}))
 			if len(t) > 1024 {
 				return fmt.Sprintf("%s... <truncated %d bytes>", t[:1024], len(t)-1024)
 			}
@@ -99,7 +101,7 @@ func extractBody(record map[string]any) string {
 		case map[string]interface{}:
 			// For nested maps, avoid deep serialization that causes memory leaks
 			// Serialize the line and fetch 1024 bytes only
-			t := fmt.Sprintf("%v", msg)
+			t := marshalMap(msg.(map[string]interface{}))
 			if len(t) > 1024 {
 				return fmt.Sprintf("%s... <truncated %d bytes>", t[:1024], len(t)-1024)
 			}
@@ -216,4 +218,21 @@ func convertToKeyValue(key string, value any) otlplog.KeyValue {
 		// For unknown types, use type name instead of full value to prevent memory leaks
 		return otlplog.String(key, fmt.Sprintf("<%T>", v))
 	}
+}
+
+func marshalMap(m map[string]interface{}) string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	var b bytes.Buffer
+	for i, k := range keys {
+		if i > 0 {
+			b.WriteString(" ")
+		}
+		fmt.Fprintf(&b, "%s:%v", k, m[k])
+	}
+	return b.String()
 }

@@ -22,11 +22,11 @@ data:
             endpoint: 0.0.0.0:4318
     processors:
       batch:
-        timeout: 5s
+        timeout: 1s
         send_batch_size: 10000
       memory_limiter:
         check_interval: 1s
-        limit_percentage: 75
+        limit_percentage: 85
         spike_limit_percentage: 10
     exporters:
       debug:
@@ -37,9 +37,9 @@ data:
           storage: file_storage
           queue_size: 10000 # Increase queue size (default 1000)
         retry_on_failure:
-          initial_interval: 5s
-          max_interval: 30s
-          max_elapsed_time: 10m # Increase m
+          initial_interval: 1s
+          max_interval: 60s
+          max_elapsed_time: 300s
         logs_endpoint: http://{{ include "fluent-bit-plugin.victorialogsName" . }}-shoot.{{ .Release.Namespace }}.svc.cluster.local:9428/insert/opentelemetry/v1/logs
         headers:
           VL-Stream-Fields: "k8s.event.reason,k8s.node.name,k8s.namespace.name,k8s.object.name,k8s.pods.name,k8s.container.name,severity,k8s.object.name,k8s.object.kind,origin"
