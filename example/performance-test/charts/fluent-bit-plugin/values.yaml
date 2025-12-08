@@ -25,9 +25,9 @@ fluentBit:
 
   resources:
     limits:
-      memory: 600Mi
+      memory: 1Gi
     requests:
-      memory: 200Mi
+      memory: 400Mi
 
   ports:
     - name: metrics
@@ -145,7 +145,7 @@ prometheus:
   volumes: [] # additional volumes to add to the StatefulSet
 
 victorialogs:
-  image: victoriametrics/victoria-logs:v1.39.0
+  image: victoriametrics/victoria-logs:v1.40.0
   livenessProbe:
     failureThreshold: 10
     initialDelaySeconds: 30
@@ -226,7 +226,7 @@ otelCollector:
     requests:
       memory: 256Mi
     limits:
-      memory: 1Gi
+      memory: 2Gi
 
   ports:
     - name: otlp-grpc

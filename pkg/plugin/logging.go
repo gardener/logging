@@ -147,14 +147,17 @@ func (l *logging) SendRecord(log types.OutputEntry) error {
 
 	// Client uses its own lifecycle context
 	err := c.Handle(log)
-	if err != nil && !errors.Is(err, client.ErrThrottled) {
-		l.logger.Error(err, "error sending record to logging", "host", dynamicHostName)
-		metrics.Errors.WithLabelValues(metrics.ErrorSendRecord).Inc()
-
+	if err == nil {
+		return nil
+	}
+	if errors.Is(err, client.ErrThrottled) {
 		return err
 	}
 
-	return nil
+	l.logger.Error(err, "error sending record to logging", "host", dynamicHostName)
+	metrics.Errors.WithLabelValues(metrics.ErrorSendRecord).Inc()
+
+	return err
 }
 
 func (l *logging) Close() {
