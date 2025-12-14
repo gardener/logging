@@ -26,6 +26,7 @@ fluentBit:
   resources:
     limits:
       memory: 1Gi
+      ephemeral-storage: 10Gi
     requests:
       memory: 400Mi
 

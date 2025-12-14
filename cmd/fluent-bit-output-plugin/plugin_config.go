@@ -120,6 +120,7 @@ func (c *pluginConfig) toStringMap() map[string]string {
 		"BatchProcessorMaxBatchSize", "batchProcessorMaxBatchSize",
 		"BatchProcessorExportTimeout", "batchProcessorExportTimeout",
 		"BatchProcessorExportInterval", "batchProcessorExportInterval",
+		"BatchProcessorExportBufferSize", "batchProcessorExportBufferSize",
 
 		// General config
 		"LogLevel", "logLevel",

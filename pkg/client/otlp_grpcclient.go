@@ -90,6 +90,8 @@ func NewOTLPGRPCClient(ctx context.Context, cfg config.Config, logger logr.Logge
 		// Batch timeout - maximum time to wait before exporting a partial batch
 		// This ensures logs don't sit in memory too long
 		sdklog.WithExportInterval(cfg.OTLPConfig.BatchProcessorExportInterval),
+		// Export buffer size - number of log records to buffer before processing
+		sdklog.WithExportBufferSize(cfg.OTLPConfig.BatchProcessorExportBufferSize),
 	}
 
 	// Create logger provider with configured batch processor
@@ -138,6 +140,7 @@ func (c *OTLPGRPCClient) Handle(entry types.OutputEntry) error {
 		// Allow returns false if the request would exceed the rate limit
 		if !c.limiter.Allow() {
 			metrics.ThrottledLogs.WithLabelValues(c.endpoint).Inc()
+
 			return ErrThrottled
 		}
 	}
