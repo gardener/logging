@@ -53,10 +53,11 @@ type OTLPConfig struct {
 	Headers     map[string]string `mapstructure:"-"` // Handled manually in processOTLPConfig
 
 	// Batch Processor configuration fields
-	BatchProcessorMaxQueueSize   int           `mapstructure:"BatchProcessorMaxQueueSize"`
-	BatchProcessorMaxBatchSize   int           `mapstructure:"BatchProcessorMaxBatchSize"`
-	BatchProcessorExportTimeout  time.Duration `mapstructure:"BatchProcessorExportTimeout"`
-	BatchProcessorExportInterval time.Duration `mapstructure:"BatchProcessorExportInterval"`
+	BatchProcessorMaxQueueSize     int           `mapstructure:"BatchProcessorMaxQueueSize"`
+	BatchProcessorMaxBatchSize     int           `mapstructure:"BatchProcessorMaxBatchSize"`
+	BatchProcessorExportTimeout    time.Duration `mapstructure:"BatchProcessorExportTimeout"`
+	BatchProcessorExportInterval   time.Duration `mapstructure:"BatchProcessorExportInterval"`
+	BatchProcessorExportBufferSize int           `mapstructure:"BatchProcessorExportBufferSize"`
 
 	// Retry configuration fields
 	RetryEnabled         bool          `mapstructure:"RetryEnabled"`
@@ -108,8 +109,9 @@ var DefaultOTLPConfig = OTLPConfig{
 	TLSConfig:              nil,   // Will be built from other fields
 
 	// Batch Processor defaults - tuned to prevent OOM under high load
-	BatchProcessorMaxQueueSize:   512,              // Max records in queue before dropping
-	BatchProcessorMaxBatchSize:   256,              // Max records per export batch
-	BatchProcessorExportTimeout:  30 * time.Second, // Timeout for single export
-	BatchProcessorExportInterval: 1 * time.Second,  // Flush interval
+	BatchProcessorMaxQueueSize:     512,              // Max records in queue before dropping
+	BatchProcessorMaxBatchSize:     256,              // Max records per export batch
+	BatchProcessorExportTimeout:    30 * time.Second, // Timeout for single export
+	BatchProcessorExportInterval:   1 * time.Second,  // Flush interval
+	BatchProcessorExportBufferSize: 10,               // Default buffer size
 }

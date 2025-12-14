@@ -73,6 +73,13 @@ func dumpConfiguration(conf *config.Config) {
 	logger.V(1).Info("[flb-go]", "ThrottleEnabled", fmt.Sprintf("%+v", conf.OTLPConfig.ThrottleEnabled))
 	logger.V(1).Info("[flb-go]", "ThrottlePeriod", fmt.Sprintf("%+v", conf.OTLPConfig.ThrottleRequestsPerSec))
 
+	// Batch Processor configuration
+	logger.V(1).Info("[flb-go]", "BatchProcessorMaxQueueSize", fmt.Sprintf("%+v", conf.OTLPConfig.BatchProcessorMaxQueueSize))
+	logger.V(1).Info("[flb-go]", "BatchProcessorMaxBatchSize", fmt.Sprintf("%+v", conf.OTLPConfig.BatchProcessorMaxBatchSize))
+	logger.V(1).Info("[flb-go]", "BatchProcessorExportTimeout", fmt.Sprintf("%+v", conf.OTLPConfig.BatchProcessorExportTimeout))
+	logger.V(1).Info("[flb-go]", "BatchProcessorExportInterval", fmt.Sprintf("%+v", conf.OTLPConfig.BatchProcessorExportInterval))
+	logger.V(1).Info("[flb-go]", "BatchProcessorExportBufferSize", fmt.Sprintf("%+v", conf.OTLPConfig.BatchProcessorExportBufferSize))
+
 	// OTLP TLS configuration
 	logger.V(1).Info("[flb-go]", "TLSCertFile", fmt.Sprintf("%+v", conf.OTLPConfig.TLSCertFile))
 	logger.V(1).Info("[flb-go]", "TLSKeyFile", fmt.Sprintf("%+v", conf.OTLPConfig.TLSKeyFile))

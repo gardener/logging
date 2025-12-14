@@ -473,6 +473,17 @@ func processOTLPConfig(config *Config, configMap map[string]any) error {
 		config.OTLPConfig.BatchProcessorMaxBatchSize = val
 	}
 
+	if bufferSize, ok := configMap["batchprocessorbuffersize"].(string); ok && bufferSize != "" {
+		val, err := strconv.Atoi(bufferSize)
+		if err != nil {
+			return fmt.Errorf("failed to parse BatchProcessorBufferSize as integer: %w", err)
+		}
+		if val <= 0 {
+			return fmt.Errorf("BatchProcessorBufferSize must be positive, got %d", val)
+		}
+		config.OTLPConfig.BatchProcessorExportBufferSize = val
+	}
+
 	if err := processDurationField(configMap, "batchprocessorexporttimeout", func(d time.Duration) {
 		config.OTLPConfig.BatchProcessorExportTimeout = d
 	}); err != nil {
@@ -514,6 +525,7 @@ func processOTLPConfig(config *Config, configMap map[string]any) error {
 		}
 		config.OTLPConfig.ThrottleRequestsPerSec = val
 	}
+
 	return nil
 }
 

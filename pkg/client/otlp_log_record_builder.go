@@ -76,13 +76,14 @@ func extractBody(record map[string]any) string {
 				// take first 1024 bytes only
 				return fmt.Sprintf("%s... <truncated %d bytes>", string(v[:1024]), len(v)-1024)
 			}
-		case map[string]interface{}:
+		case map[string]any:
 			// For nested maps, avoid deep serialization that causes memory leaks
 			// Serialize the line and fetch 1024 bytes only
-			t := marshalMap(msg.(map[string]interface{}))
+			t := marshalMap(msg.(map[string]any))
 			if len(t) > 1024 {
 				return fmt.Sprintf("%s... <truncated %d bytes>", t[:1024], len(t)-1024)
 			}
+
 			return t
 		}
 	}
@@ -98,13 +99,14 @@ func extractBody(record map[string]any) string {
 				// take first 1024 bytes only
 				return fmt.Sprintf("%s... <truncated %d bytes>", string(v[:1024]), len(v)-1024)
 			}
-		case map[string]interface{}:
+		case map[string]any:
 			// For nested maps, avoid deep serialization that causes memory leaks
 			// Serialize the line and fetch 1024 bytes only
-			t := marshalMap(msg.(map[string]interface{}))
+			t := marshalMap(msg.(map[string]any))
 			if len(t) > 1024 {
 				return fmt.Sprintf("%s... <truncated %d bytes>", t[:1024], len(t)-1024)
 			}
+
 			return t
 		}
 	}
@@ -220,7 +222,7 @@ func convertToKeyValue(key string, value any) otlplog.KeyValue {
 	}
 }
 
-func marshalMap(m map[string]interface{}) string {
+func marshalMap(m map[string]any) string {
 	keys := make([]string, 0, len(m))
 	for k := range m {
 		keys = append(keys, k)
@@ -230,9 +232,10 @@ func marshalMap(m map[string]interface{}) string {
 	var b bytes.Buffer
 	for i, k := range keys {
 		if i > 0 {
-			b.WriteString(" ")
+			_, _ = b.WriteString(" ")
 		}
-		fmt.Fprintf(&b, "%s:%v", k, m[k])
+		_, _ = fmt.Fprintf(&b, "%s:%v", k, m[k])
 	}
+
 	return b.String()
 }

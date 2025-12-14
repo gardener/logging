@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"net/http"
 	_ "net/http/pprof"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -58,6 +59,8 @@ func init() {
 			logger.Error(err, "Fluent-bit-gardener-output-plugin")
 		}
 	}()
+
+	_ = os.Setenv("OTEL_GO_X_OBSERVABILITY", "true")
 }
 
 // FLBPluginRegister registers the plugin with fluent-bit
@@ -132,7 +135,7 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 // FLBPluginFlushCtx is called when the plugin is invoked to flush data
 //
 //export FLBPluginFlushCtx
-func FLBPluginFlushCtx(ctx, data unsafe.Pointer, length C.int, tag *C.char) int {
+func FLBPluginFlushCtx(ctx, data unsafe.Pointer, length C.int, _ *C.char) int {
 	var id string
 	var ok bool
 	if id, ok = output.FLBPluginGetContext(ctx).(string); !ok {

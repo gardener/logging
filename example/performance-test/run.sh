@@ -55,7 +55,7 @@ metadata:
 spec:
   parallelism: $JOBS
   completions: $JOBS
-  ttlSecondsAfterFinished: 600
+  ttlSecondsAfterFinished: 1000
   template:
     spec:
       containers:
