@@ -247,18 +247,15 @@ func createPluginConfig(tmpDir string) *config.Config {
 		ClientConfig: config.ClientConfig{
 			SeedType:  types.NOOP.String(),
 			ShootType: types.NOOP.String(),
-			BufferConfig: config.BufferConfig{
-				Buffer: true,
-				DqueConfig: config.DqueConfig{
-					QueueDir:         tmpDir,
-					QueueSegmentSize: 500,
-					QueueSync:        false,
-					QueueName:        "dque",
-				},
-			},
 		},
 		OTLPConfig: config.OTLPConfig{
 			Endpoint: "http://test-seed-endpoint:4318/v1/logs",
+			DqueConfig: config.DqueConfig{
+				QueueDir:         tmpDir,
+				QueueSegmentSize: 500,
+				QueueSync:        false,
+				QueueName:        "dque",
+			},
 		},
 		PluginConfig: config.PluginConfig{
 			DynamicHostPath: map[string]any{

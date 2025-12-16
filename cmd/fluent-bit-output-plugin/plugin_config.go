@@ -52,8 +52,7 @@ func (c *pluginConfig) toStringMap() map[string]string {
 		"TagPrefix", "tagPrefix",
 		"TagExpression", "tagExpression",
 
-		// Buffer config
-		"Buffer", "buffer",
+		// Dque config
 		"QueueDir", "queueDir",
 		"QueueSegmentSize", "queueSegmentSize",
 		"QueueSync", "queueSync",

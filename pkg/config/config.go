@@ -323,9 +323,9 @@ func processQueueSyncConfig(config *Config, configMap map[string]any) error {
 	if queueSync, ok := configMap["queuesync"].(string); ok {
 		switch queueSync {
 		case "normal", "":
-			config.ClientConfig.BufferConfig.DqueConfig.QueueSync = false
+			config.OTLPConfig.DqueConfig.QueueSync = false
 		case "full":
-			config.ClientConfig.BufferConfig.DqueConfig.QueueSync = true
+			config.OTLPConfig.DqueConfig.QueueSync = true
 		default:
 			return fmt.Errorf("invalid string queueSync: %v", queueSync)
 		}
@@ -676,9 +676,8 @@ func defaultConfig() (*Config, error) {
 			CtlSyncTimeout:              60 * time.Second,
 		},
 		ClientConfig: ClientConfig{
-			SeedType:     types.NOOP.String(),
-			ShootType:    types.NOOP.String(),
-			BufferConfig: DefaultBufferConfig,
+			SeedType:  types.NOOP.String(),
+			ShootType: types.NOOP.String(),
 		},
 		PluginConfig: PluginConfig{
 			DynamicHostRegex: "*",

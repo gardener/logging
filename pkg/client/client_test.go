@@ -15,15 +15,13 @@ import (
 
 var _ = ginkgov2.Describe("Client", func() {
 	conf := config.Config{
-		ClientConfig: config.ClientConfig{
-			BufferConfig: config.BufferConfig{
-				Buffer: false,
-				DqueConfig: config.DqueConfig{
-					QueueDir:         config.DefaultDqueConfig.QueueDir,
-					QueueSegmentSize: config.DefaultDqueConfig.QueueSegmentSize,
-					QueueSync:        config.DefaultDqueConfig.QueueSync,
-					QueueName:        config.DefaultDqueConfig.QueueName,
-				},
+		ClientConfig: config.ClientConfig{},
+		OTLPConfig: config.OTLPConfig{
+			DqueConfig: config.DqueConfig{
+				QueueDir:         config.DefaultDqueConfig.QueueDir,
+				QueueSegmentSize: config.DefaultDqueConfig.QueueSegmentSize,
+				QueueSync:        config.DefaultDqueConfig.QueueSync,
+				QueueName:        config.DefaultDqueConfig.QueueName,
 			},
 		},
 		PluginConfig: config.PluginConfig{

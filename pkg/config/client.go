@@ -11,15 +11,6 @@ import (
 type ClientConfig struct {
 	SeedType  string `mapstructure:"SeedType"`  // e.g., "OTLPGRPC"
 	ShootType string `mapstructure:"ShootType"` // e.g., "STDOUT"
-
-	// BufferConfig holds the configuration for the buffered client
-	BufferConfig BufferConfig `mapstructure:",squash"`
-}
-
-// BufferConfig contains the buffer settings
-type BufferConfig struct {
-	Buffer     bool       `mapstructure:"Buffer"`
-	DqueConfig DqueConfig `mapstructure:",squash"`
 }
 
 // DqueConfig contains the dqueue settings
@@ -30,15 +21,9 @@ type DqueConfig struct {
 	QueueName        string `mapstructure:"QueueName"`
 }
 
-// DefaultBufferConfig holds the configurations for using output buffer
-var DefaultBufferConfig = BufferConfig{
-	Buffer:     false,
-	DqueConfig: DefaultDqueConfig,
-}
-
 // DefaultDqueConfig holds dque configurations for the buffer
 var DefaultDqueConfig = DqueConfig{
-	QueueDir:         "/tmp/flb-storage/vali",
+	QueueDir:         "/tmp/flb-storage",
 	QueueSegmentSize: 500,
 	QueueSync:        false,
 	QueueName:        "dque",
@@ -51,6 +36,8 @@ type OTLPConfig struct {
 	Compression int               `mapstructure:"Compression"`
 	Timeout     time.Duration     `mapstructure:"Timeout"`
 	Headers     map[string]string `mapstructure:"-"` // Handled manually in processOTLPConfig
+
+	DqueConfig DqueConfig `mapstructure:",squash"`
 
 	// Batch Processor configuration fields
 	BatchProcessorMaxQueueSize     int           `mapstructure:"BatchProcessorMaxQueueSize"`
@@ -108,10 +95,12 @@ var DefaultOTLPConfig = OTLPConfig{
 	TLSMaxVersion:          "",    // Use Go's default maximum
 	TLSConfig:              nil,   // Will be built from other fields
 
+	DqueConfig: DefaultDqueConfig, // Use default dque config
+
 	// Batch Processor defaults - tuned to prevent OOM under high load
 	BatchProcessorMaxQueueSize:     512,              // Max records in queue before dropping
 	BatchProcessorMaxBatchSize:     256,              // Max records per export batch
 	BatchProcessorExportTimeout:    30 * time.Second, // Timeout for single export
 	BatchProcessorExportInterval:   1 * time.Second,  // Flush interval
-	BatchProcessorExportBufferSize: 10,               // Default buffer size
+	BatchProcessorExportBufferSize: 10,
 }

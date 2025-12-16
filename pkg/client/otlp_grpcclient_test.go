@@ -24,23 +24,19 @@ var _ = Describe("OTLPGRPCClient", func() {
 	BeforeEach(func() {
 		logger = logr.Discard()
 		cfg = config.Config{
-			ClientConfig: config.ClientConfig{
-				BufferConfig: config.BufferConfig{
-					Buffer: false,
-					DqueConfig: config.DqueConfig{
-						QueueDir:         GetTestTempDir("otlp"),
-						QueueSegmentSize: config.DefaultDqueConfig.QueueSegmentSize,
-						QueueSync:        config.DefaultDqueConfig.QueueSync,
-						QueueName:        config.DefaultDqueConfig.QueueName,
-					},
-				},
-			},
+			ClientConfig: config.ClientConfig{},
 			OTLPConfig: config.OTLPConfig{
 				Endpoint:    "localhost:4317",
 				Insecure:    true,
 				Compression: 0,
 				Timeout:     30 * time.Second,
 				Headers:     make(map[string]string),
+				DqueConfig: config.DqueConfig{
+					QueueDir:         GetTestTempDir("otlp"),
+					QueueSegmentSize: config.DefaultDqueConfig.QueueSegmentSize,
+					QueueSync:        config.DefaultDqueConfig.QueueSync,
+					QueueName:        config.DefaultDqueConfig.QueueName,
+				},
 				// Batch processor configuration
 				BatchProcessorMaxQueueSize:     config.DefaultOTLPConfig.BatchProcessorMaxQueueSize,
 				BatchProcessorMaxBatchSize:     config.DefaultOTLPConfig.BatchProcessorMaxBatchSize,

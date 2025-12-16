@@ -49,6 +49,7 @@ type dqueBatchProcessorConfig struct {
 	dqueueDir         string
 	dqueueName        string
 	dqueueSegmentSize int
+	dqueueSync        bool
 	endpoint          string
 }
 
@@ -101,6 +102,13 @@ func WithDQueueName(name string) DQueBatchProcessorOption {
 func WithDQueueSegmentSize(size int) DQueBatchProcessorOption {
 	return func(c *dqueBatchProcessorConfig) {
 		c.dqueueSegmentSize = size
+	}
+}
+
+// WithDQueueSync sets whether dque uses synchronous writes
+func WithDQueueSync(snc bool) DQueBatchProcessorOption {
+	return func(c *dqueBatchProcessorConfig) {
+		c.dqueueSync = snc
 	}
 }
 
@@ -224,6 +232,13 @@ func NewDQueBatchProcessor(
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create dque: %w", err)
+	}
+
+	// Set turbo mode
+	if !config.dqueueSync {
+		if err = queue.TurboOn(); err != nil {
+			return nil, fmt.Errorf("cannot enable turbo mode for queue: %w", err)
+		}
 	}
 
 	processorCtx, cancel := context.WithCancel(ctx)
@@ -537,6 +552,11 @@ func (p *DQueBatchProcessor) processLoop() {
 			// Report queue size to metrics
 			queueSize := p.queue.Size()
 			metrics.DqueSize.WithLabelValues(p.queue.Name).Set(float64(queueSize))
+			if !p.config.dqueueSync {
+				if err := p.queue.TurboSync(); err != nil {
+					p.logger.Error(err, "error turbo sync")
+				}
+			}
 			p.logger.V(3).Info("queue size reported", "size", queueSize)
 
 		default:

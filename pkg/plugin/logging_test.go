@@ -45,11 +45,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 		logger = log.NewNopLogger()
 
 		cfg = &config.Config{
-			ClientConfig: config.ClientConfig{
-				BufferConfig: config.BufferConfig{
-					Buffer: false, // Disable buffer for tests
-				},
-			},
+			ClientConfig: config.ClientConfig{},
 			OTLPConfig: config.OTLPConfig{
 				Endpoint: "http://test-endpoint:3100",
 			},
@@ -541,7 +537,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 			plugin1.Close()
 
 			// Second run with new plugin instance
-			cfg.ClientConfig.BufferConfig.DqueConfig.QueueName = "test-queue-2"
+			cfg.OTLPConfig.DqueConfig.QueueName = "test-queue-2"
 			plugin2, err := NewPlugin(nil, cfg, logger)
 			Expect(err).NotTo(HaveOccurred())
 			defer plugin2.Close()
@@ -568,7 +564,6 @@ var _ = Describe("OutputPlugin plugin", func() {
 				},
 			}
 			cfg.PluginConfig.DynamicHostRegex = `^shoot--.*`
-			cfg.ClientConfig.BufferConfig.Buffer = false // Disable buffer for immediate processing
 			cfg.ControllerConfig = config.ControllerConfig{
 				CtlSyncTimeout:    5 * time.Second,
 				DynamicHostPrefix: "http://logging.",

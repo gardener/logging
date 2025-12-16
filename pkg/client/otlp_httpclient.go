@@ -64,8 +64,8 @@ func NewOTLPHTTPClient(ctx context.Context, cfg config.Config, logger logr.Logge
 
 	// Create DQue batch processor with blocking HTTP exporter
 	dQueueDir := filepath.Join(
-		cfg.ClientConfig.BufferConfig.DqueConfig.QueueDir,
-		cfg.ClientConfig.BufferConfig.DqueConfig.QueueName,
+		cfg.OTLPConfig.DqueConfig.QueueDir,
+		cfg.OTLPConfig.DqueConfig.QueueName,
 	)
 	batchProcessor, err := NewDQueBatchProcessor(
 		clientCtx,
@@ -74,7 +74,8 @@ func NewOTLPHTTPClient(ctx context.Context, cfg config.Config, logger logr.Logge
 		WithEndpoint(cfg.OTLPConfig.Endpoint),
 		WithDQueueDir(dQueueDir),
 		WithDQueueName("otlp-http"),
-		WithDQueueSegmentSize(cfg.ClientConfig.BufferConfig.DqueConfig.QueueSegmentSize),
+		WithDQueueSegmentSize(cfg.OTLPConfig.DqueConfig.QueueSegmentSize),
+		WithDQueueSync(cfg.OTLPConfig.DqueConfig.QueueSync),
 		WithMaxQueueSize(cfg.OTLPConfig.BatchProcessorMaxQueueSize),
 		WithMaxBatchSize(cfg.OTLPConfig.BatchProcessorMaxBatchSize),
 		WithExportTimeout(cfg.OTLPConfig.BatchProcessorExportTimeout),

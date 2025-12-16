@@ -31,12 +31,11 @@ var _ = Describe("Config", func() {
 			Expect(cfg.LogLevel).To(Equal("info"))
 			Expect(cfg.Pprof).To(BeFalse())
 
-			// Buffer config defaults
-			Expect(cfg.ClientConfig.BufferConfig.Buffer).To(BeFalse())
-			Expect(cfg.ClientConfig.BufferConfig.DqueConfig.QueueDir).To(Equal("/tmp/flb-storage/vali"))
-			Expect(cfg.ClientConfig.BufferConfig.DqueConfig.QueueSegmentSize).To(Equal(500))
-			Expect(cfg.ClientConfig.BufferConfig.DqueConfig.QueueSync).To(BeFalse())
-			Expect(cfg.ClientConfig.BufferConfig.DqueConfig.QueueName).To(Equal("dque"))
+			// Dque config defaults
+			Expect(cfg.OTLPConfig.DqueConfig.QueueDir).To(Equal("/tmp/flb-storage"))
+			Expect(cfg.OTLPConfig.DqueConfig.QueueSegmentSize).To(Equal(500))
+			Expect(cfg.OTLPConfig.DqueConfig.QueueSync).To(BeFalse())
+			Expect(cfg.OTLPConfig.DqueConfig.QueueName).To(Equal("dque"))
 
 			// Controller config defaults
 			Expect(cfg.ControllerConfig.CtlSyncTimeout).To(Equal(60 * time.Second))
@@ -110,8 +109,6 @@ var _ = Describe("Config", func() {
 
 		It("should parse config with buffer configuration", func() {
 			configMap := map[string]any{
-				"Buffer":           "true",
-				"BufferType":       "dque",
 				"QueueDir":         "/foo/bar",
 				"QueueSegmentSize": "600",
 				"QueueSync":        "full",
@@ -122,11 +119,10 @@ var _ = Describe("Config", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(cfg).ToNot(BeNil())
 
-			Expect(cfg.ClientConfig.BufferConfig.Buffer).To(BeTrue())
-			Expect(cfg.ClientConfig.BufferConfig.DqueConfig.QueueDir).To(Equal("/foo/bar"))
-			Expect(cfg.ClientConfig.BufferConfig.DqueConfig.QueueSegmentSize).To(Equal(600))
-			Expect(cfg.ClientConfig.BufferConfig.DqueConfig.QueueSync).To(BeTrue())
-			Expect(cfg.ClientConfig.BufferConfig.DqueConfig.QueueName).To(Equal("buzz"))
+			Expect(cfg.OTLPConfig.DqueConfig.QueueDir).To(Equal("/foo/bar"))
+			Expect(cfg.OTLPConfig.DqueConfig.QueueSegmentSize).To(Equal(600))
+			Expect(cfg.OTLPConfig.DqueConfig.QueueSync).To(BeTrue())
+			Expect(cfg.OTLPConfig.DqueConfig.QueueName).To(Equal("buzz"))
 		})
 
 		It("should parse config with hostname key value", func() {
@@ -407,15 +403,13 @@ var _ = Describe("Config", func() {
 
 			// Queue and buffer configuration
 			// "QueueDir": "/fluent-bit/buffers/seed"
-			Expect(cfg.ClientConfig.BufferConfig.DqueConfig.QueueDir).To(Equal("/fluent-bit/buffers/seed"))
+			Expect(cfg.OTLPConfig.DqueConfig.QueueDir).To(Equal("/fluent-bit/buffers/seed"))
 			// "QueueName": "seed-dynamic"
-			Expect(cfg.ClientConfig.BufferConfig.DqueConfig.QueueName).To(Equal("seed-dynamic"))
+			Expect(cfg.OTLPConfig.DqueConfig.QueueName).To(Equal("seed-dynamic"))
 			// "QueueSegmentSize": "300"
-			Expect(cfg.ClientConfig.BufferConfig.DqueConfig.QueueSegmentSize).To(Equal(300))
+			Expect(cfg.OTLPConfig.DqueConfig.QueueSegmentSize).To(Equal(300))
 			// "QueueSync": "normal"
-			Expect(cfg.ClientConfig.BufferConfig.DqueConfig.QueueSync).To(BeFalse())
-			// "Buffer": "true"
-			Expect(cfg.ClientConfig.BufferConfig.Buffer).To(BeTrue())
+			Expect(cfg.OTLPConfig.DqueConfig.QueueSync).To(BeFalse())
 
 			// Controller configuration
 			// "ControllerSyncTimeout": "120s"
@@ -454,7 +448,7 @@ var _ = Describe("Config", func() {
 			// Quotes should be stripped
 			Expect(cfg.OTLPConfig.Endpoint).To(Equal("localhost:4317"))
 			Expect(cfg.LogLevel).To(Equal("debug"))
-			Expect(cfg.ClientConfig.BufferConfig.DqueConfig.QueueName).To(Equal("my-queue"))
+			Expect(cfg.OTLPConfig.DqueConfig.QueueName).To(Equal("my-queue"))
 		})
 
 		It("should strip single quotes from string values", func() {
@@ -471,7 +465,7 @@ var _ = Describe("Config", func() {
 			// Quotes should be stripped
 			Expect(cfg.OTLPConfig.Endpoint).To(Equal("localhost:4317"))
 			Expect(cfg.LogLevel).To(Equal("warn"))
-			Expect(cfg.ClientConfig.BufferConfig.DqueConfig.QueueName).To(Equal("my-queue"))
+			Expect(cfg.OTLPConfig.DqueConfig.QueueName).To(Equal("my-queue"))
 		})
 
 		It("should handle values with quotes and whitespace", func() {
@@ -490,11 +484,11 @@ var _ = Describe("Config", func() {
 
 			// Quotes and whitespace should be stripped
 			Expect(cfg.OTLPConfig.Endpoint).To(Equal("localhost:4317"))
-			Expect(cfg.ClientConfig.BufferConfig.DqueConfig.QueueName).To(Equal("my-queue"))
+			Expect(cfg.OTLPConfig.DqueConfig.QueueName).To(Equal("my-queue"))
 			Expect(cfg.LogLevel).To(Equal("info"))
 			Expect(cfg.ClientConfig.SeedType).To(Equal("OTLPGRPC"))
 			Expect(cfg.ClientConfig.ShootType).To(Equal("STDOUT"))
-			Expect(cfg.ClientConfig.BufferConfig.DqueConfig.QueueDir).To(Equal("/tmp/queue"))
+			Expect(cfg.OTLPConfig.DqueConfig.QueueDir).To(Equal("/tmp/queue"))
 		})
 
 		It("should handle values without quotes", func() {
@@ -511,12 +505,11 @@ var _ = Describe("Config", func() {
 			// Values should remain unchanged
 			Expect(cfg.OTLPConfig.Endpoint).To(Equal("localhost:4317"))
 			Expect(cfg.LogLevel).To(Equal("error"))
-			Expect(cfg.ClientConfig.BufferConfig.DqueConfig.QueueName).To(Equal("my-queue"))
+			Expect(cfg.OTLPConfig.DqueConfig.QueueName).To(Equal("my-queue"))
 		})
 
 		It("should handle quoted boolean values", func() {
 			configMap := map[string]any{
-				"Buffer":                             `"true"`,
 				"Insecure":                           `"false"`,
 				"RetryEnabled":                       `'true'`,
 				"TLSInsecureSkipVerify":              `'false'`,
@@ -529,7 +522,6 @@ var _ = Describe("Config", func() {
 			Expect(cfg).ToNot(BeNil())
 
 			// Should parse booleans correctly after stripping quotes
-			Expect(cfg.ClientConfig.BufferConfig.Buffer).To(BeTrue())
 			Expect(cfg.OTLPConfig.Insecure).To(BeFalse())
 			Expect(cfg.OTLPConfig.RetryEnabled).To(BeTrue())
 			Expect(cfg.OTLPConfig.TLSInsecureSkipVerify).To(BeFalse())
@@ -548,7 +540,7 @@ var _ = Describe("Config", func() {
 			Expect(cfg).ToNot(BeNil())
 
 			// Should parse numbers correctly after stripping quotes
-			Expect(cfg.ClientConfig.BufferConfig.DqueConfig.QueueSegmentSize).To(Equal(500))
+			Expect(cfg.OTLPConfig.DqueConfig.QueueSegmentSize).To(Equal(500))
 			Expect(cfg.OTLPConfig.Compression).To(Equal(1))
 		})
 
@@ -608,8 +600,7 @@ var _ = Describe("Config", func() {
 			// All values should be parsed correctly regardless of quoting
 			Expect(cfg.OTLPConfig.Endpoint).To(Equal("localhost:4317"))
 			Expect(cfg.LogLevel).To(Equal("info"))
-			Expect(cfg.ClientConfig.BufferConfig.Buffer).To(BeTrue())
-			Expect(cfg.ClientConfig.BufferConfig.DqueConfig.QueueSegmentSize).To(Equal(500))
+			Expect(cfg.OTLPConfig.DqueConfig.QueueSegmentSize).To(Equal(500))
 			Expect(cfg.OTLPConfig.Timeout).To(Equal(30 * time.Second))
 			Expect(cfg.OTLPConfig.RetryEnabled).To(BeTrue())
 			Expect(cfg.ControllerConfig.DynamicHostPrefix).To(Equal("http://logging."))
