@@ -83,7 +83,7 @@ data:
         Hot_Reload                On
         Mem_Buf_Limit             100MB
         storage.path              /var/run/fluentbit/chunks
-        storage.sync              full
+        storage.sync              normal
         storage.metrics           on
         storage.checksum          off
         storage.max_chunks_up     200
@@ -91,30 +91,15 @@ data:
         storage.backlog.flush_on_shutdown true
 
     [Input]
-        Name                      systemd
-        Tag                       systemd.*
-        Path                      /var/log/journal
-        DB                        /var/run/fluentbit/systemd.db
-        DB.Sync                   normal
-        Mem_Buf_Limit             50MB
-        Systemd_Filter            _SYSTEMD_UNIT=containerd.service
-        Systemd_Filter            _SYSTEMD_UNIT=kubelet.service
-        Read_From_Tail            On
-        Strip_Underscores         Off
-
-    [Input]
         Name                      tail
         Tag                       kubernetes.*
         Path                      /var/log/containers/*.log
         Refresh_Interval          10
-        Ignore_Older              30m
-        Skip_Long_Lines           On
         DB                        /var/run/fluentbit/flb_kube.db
         DB.Sync                   normal
-        read_newly_discovered_files_from_head true
+        Read_From_Head            true
         storage.type              filesystem
         storage.pause_on_chunks_overlimit on
-
 
     [Filter]
         Name                      parser
@@ -148,34 +133,39 @@ data:
     [Output]
         Name                      gardener
         Match                     kubernetes.*
+        Retry_Limit               10
+
         SeedType                  otlpgrpc
-        ShootType                 otlpgrpc
+        ShootType                 otlphttp
+
         DynamicHostPath           {"kubernetes": {"namespace_name": "namespace"}}
         DynamicHostPrefix         logging.
-        DynamicHostSuffix         .svc.cluster.local:4317
+        DynamicHostSuffix         .svc.cluster.local:4318
         DynamicHostRegex          ^shoot-
+
+        Buffer                    false
         QueueDir                  /var/run/fluentbit/dque
         QueueName                 dynamic
         QueueSync                 normal
-        Buffer                    false
-        LogLevel                  info
+
+        LogLevel                  warning
+
         Endpoint                  logging-otel-collector-seed.fluent-bit.svc.cluster.local:4317
         Insecure                  true
+        Timeout                   15m
 
-        ThrottleEnabled           false
-        ThrottleRequestsPerSec    250
+        ThrottleEnabled           true
+        ThrottleRequestsPerSec    1000
 
-        BatchProcessorMaxQueueSize    1000
+        BatchProcessorMaxQueueSize    1500
         BatchProcessorMaxBatchSize    300
-        BatchProcessorExportInterval  3s
-        BatchProcessorExportTimeout   15s
-        BatchProcessorExportBufferSize 100
-
+        BatchProcessorExportInterval  1s
+        BatchProcessorExportTimeout   15m
 
         RetryEnabled              true
-        RetryInitialInterval      5s
-        RetryMaxInterval          300s
-        RetryMaxElapsedTime       10m
+        RetryInitialInterval      1s
+        RetryMaxInterval          5m
+        RetryMaxElapsedTime       15m
 
         HostnameKeyValue          nodename ${NODE_NAME}
         FallbackToTagWhenMetadataIsMissing true

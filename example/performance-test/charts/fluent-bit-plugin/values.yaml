@@ -25,10 +25,10 @@ fluentBit:
 
   resources:
     limits:
-      memory: 1Gi
+      memory: 600Mi
       ephemeral-storage: 10Gi
     requests:
-      memory: 400Mi
+      memory: 600Mi
 
   ports:
     - name: metrics
@@ -87,7 +87,7 @@ plutono:
   volumes: [] # additional volumes to add to the Deployment
 
 prometheus:
-  image: prom/prometheus:main
+  image: quay.io/prometheus/prometheus:v3.8.0
 
   livenessProbe:
     failureThreshold: 6
@@ -115,7 +115,7 @@ prometheus:
       path: /-/ready
       port: web
       scheme: HTTP
-    periodSeconds: 15
+    periodSeconds: 10
     successThreshold: 1
     timeoutSeconds: 3
 
@@ -146,7 +146,7 @@ prometheus:
   volumes: [] # additional volumes to add to the StatefulSet
 
 victorialogs:
-  image: victoriametrics/victoria-logs:v1.40.0
+  image: quay.io/victoriametrics/victoria-logs:v1.41.0
   livenessProbe:
     failureThreshold: 10
     initialDelaySeconds: 30

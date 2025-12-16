@@ -16,15 +16,15 @@ function fetch_logs {
       local i=${1:-1}
 
       # VictoriaLogs LogsQL query with count() pipe - efficient counting without fetching all logs
-      query="_time:24h k8s.namespace.name:shoot--logging--dev-${i} | count()"
+      query="_time:24h k8s.namespace.name:shoot--logging--dev-${i} | extract_regexp \".+id.: .(?P<id>([a-z]+|[0-9]+|-)+)\" from _msg | count_uniq(id)"
       echo "Querying logs for cluster dev-${i}..."
 
       # Query VictoriaLogs using curl with count() stats
       # count() returns: {"_time":"<timestamp>","count":"<number>"}
-      result=$(curl $VLOGS_ADDR -d query="$query" 2>/dev/null || echo "")
+      result=$(curl $VLOGS_ADDR --data-urlencode "query=$query" 2>/dev/null || echo "")
       if [[ -n "$result" ]]; then
           # Extract count from the stats result
-          count=$(printf '%s' "$result" | jq -r '."count(*)"' | head -1)
+          count=$(printf '%s' "$result" | jq -r '."count_uniq(id)"' | head -1)
       else
           count=0
       fi

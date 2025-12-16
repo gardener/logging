@@ -5,10 +5,10 @@ package controller
 
 import (
 	"context"
+	"errors"
 
 	gardenercorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	"github.com/go-logr/logr"
-	giterrors "github.com/pkg/errors"
 
 	"github.com/gardener/logging/v1/pkg/client"
 	"github.com/gardener/logging/v1/pkg/config"
@@ -190,12 +190,12 @@ func (c *controllerClient) Handle(log types.OutputEntry) error {
 		// we are not sure what kind of label set processing will be done in the corresponding
 		// client which can lead to "concurrent map iteration and map write error".
 		if err := c.shootTarget.client.Handle(log); err != nil {
-			combineErr = giterrors.Wrap(combineErr, err.Error())
+			combineErr = errors.Join(combineErr, err)
 		}
 	}
 	if sendToSeed {
 		if err := c.seedTarget.client.Handle(log); err != nil {
-			combineErr = giterrors.Wrap(combineErr, err.Error())
+			combineErr = errors.Join(combineErr, err)
 		}
 	}
 
