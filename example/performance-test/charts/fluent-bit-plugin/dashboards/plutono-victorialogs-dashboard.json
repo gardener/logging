@@ -15,7 +15,7 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "iteration": 1765701781853,
+  "iteration": 1765701781857,
   "links": [],
   "panels": [
     {
@@ -858,7 +858,7 @@
           "query": "label_values(vl_rows_ingested_total, pod)",
           "refId": "StandardVariableQuery"
         },
-        "refresh": 1,
+        "refresh": 2,
         "regex": "/logging-victorialogs-.+/",
         "skipUrlSync": false,
         "sort": 1,

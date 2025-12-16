@@ -29,8 +29,6 @@ data:
         limit_percentage: 85
         spike_limit_percentage: 10
     exporters:
-      debug:
-        verbosity: basic
       otlphttp/logs:
         # Resilience https://opentelemetry.io/docs/collector/resiliency/
         sending_queue:
@@ -49,7 +47,7 @@ data:
         logs:
           receivers: [otlp]
           processors: [memory_limiter,batch]
-          exporters: [debug, otlphttp/logs]
+          exporters: [otlphttp/logs]
       # Configure the collector own telemetry
       telemetry:
         # Emit collector logs to stdout

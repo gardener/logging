@@ -18,13 +18,13 @@ VLOGS_ADDR="${VLOGS_ADDR:-http://localhost:9428/select/logsql/query}"
 
 run_log_query() {
   # VictoriaLogs LogsQL query with count() pipe - efficient counting without fetching all logs
-  local q='_time:24h k8s.container.name:logger | count()'
+  local q="_time:24h k8s.container.name:logger | extract_regexp \".+id.: .(?P<id>([a-z]+|[0-9]+|-)+)\" from _msg | count_uniq(id)"
   local attempt=0
   while (( attempt < QUERY_RETRIES )); do
     # Query VictoriaLogs using curl with count() stats
     if result=$(curl -s --max-time 10 "${VLOGS_ADDR}" --data-urlencode "query=${q}"  2>/dev/null); then
       if [[ -n "$result" ]]; then
-        count=$(printf '%s' "$result" | jq -r '."count(*)"')
+        count=$(printf '%s' "$result" | jq -r '."count_uniq(id)"')
         echo "Total logs found: ${count}"
         exit 0
       fi

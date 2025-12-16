@@ -15,7 +15,7 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "iteration": 1765701457260,
+  "iteration": 1765781327778,
   "links": [],
   "panels": [
     {
@@ -100,33 +100,27 @@
     },
     {
       "datasource": "prometheus",
-      "description": "Success rate percentage",
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "thresholds"
+            "fixedColor": "green",
+            "mode": "fixed"
           },
           "mappings": [],
-          "max": 100,
-          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "red",
+                "color": "green",
                 "value": null
               },
               {
-                "color": "yellow",
-                "value": 95
-              },
-              {
-                "color": "green",
-                "value": 99
+                "color": "red",
+                "value": 80
               }
             ]
           },
-          "unit": "percent"
+          "unit": "none"
         },
         "overrides": []
       },
@@ -136,8 +130,11 @@
         "x": 8,
         "y": 1
       },
-      "id": 5,
+      "id": 46,
       "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
           "calcs": [
@@ -146,22 +143,22 @@
           "fields": "",
           "values": false
         },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
-        "text": {}
+        "text": {},
+        "textMode": "auto"
       },
       "pluginVersion": "7.5.42",
       "targets": [
         {
           "exemplar": true,
-          "expr": "sum(otelcol_exporter_sent_log_records_total{pod=~\"$pod\"}) / (sum(otelcol_exporter_sent_log_records_total{pod=~\"$pod\"}) + sum(otelcol_exporter_send_failed_log_records_total{pod=~\"$pod\"})) * 100",
+          "expr": "sum(otelcol_receiver_accepted_log_records_total{pod=~\"$pod\"}) by (receiver)",
           "interval": "",
-          "legendFormat": "Success rate",
+          "legendFormat": "",
+          "queryType": "randomWalk",
           "refId": "A"
         }
       ],
-      "title": "Export Success Rate",
-      "type": "gauge"
+      "title": "Receiver accepted logs",
+      "type": "stat"
     },
     {
       "datasource": "prometheus",
@@ -227,27 +224,33 @@
     },
     {
       "datasource": "prometheus",
+      "description": "Success rate percentage",
       "fieldConfig": {
         "defaults": {
           "color": {
-            "fixedColor": "green",
-            "mode": "fixed"
+            "mode": "thresholds"
           },
           "mappings": [],
+          "max": 100,
+          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "red",
                 "value": null
               },
               {
-                "color": "red",
-                "value": 80
+                "color": "yellow",
+                "value": 95
+              },
+              {
+                "color": "green",
+                "value": 99
               }
             ]
           },
-          "unit": "none"
+          "unit": "percent"
         },
         "overrides": []
       },
@@ -257,11 +260,8 @@
         "x": 0,
         "y": 6
       },
-      "id": 46,
+      "id": 5,
       "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
           "calcs": [
@@ -270,22 +270,22 @@
           "fields": "",
           "values": false
         },
-        "text": {},
-        "textMode": "auto"
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "text": {}
       },
       "pluginVersion": "7.5.42",
       "targets": [
         {
           "exemplar": true,
-          "expr": "sum(otelcol_receiver_accepted_log_records_total{pod=~\"$pod\"}) by (receiver)",
+          "expr": "sum(otelcol_exporter_sent_log_records_total{pod=~\"$pod\"}) / (sum(otelcol_exporter_sent_log_records_total{pod=~\"$pod\"}) + sum(otelcol_exporter_send_failed_log_records_total{pod=~\"$pod\"})) * 100",
           "interval": "",
-          "legendFormat": "",
-          "queryType": "randomWalk",
+          "legendFormat": "Success rate",
           "refId": "A"
         }
       ],
-      "title": "Receiver accepted logs",
-      "type": "stat"
+      "title": "Export Success Rate",
+      "type": "gauge"
     },
     {
       "datasource": "prometheus",
@@ -1888,7 +1888,7 @@
           "query": "label_values(otelcol_process_uptime_seconds_total, pod)",
           "refId": "StandardVariableQuery"
         },
-        "refresh": 1,
+        "refresh": 2,
         "regex": "/logging-otel-collector-.+/",
         "skipUrlSync": false,
         "sort": 1,
