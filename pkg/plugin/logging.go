@@ -68,9 +68,6 @@ func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger lo
 	}
 
 	opt := []client.Option{client.WithTarget(client.Seed), client.WithLogger(logger)}
-	if cfg.ClientConfig.BufferConfig.Buffer {
-		opt = append(opt, client.WithDque(true))
-	}
 
 	// Pass the plugin's context to the client
 	if l.seedClient, err = client.NewClient(ctx, *cfg, opt...); err != nil {
@@ -140,7 +137,7 @@ func (l *logging) SendRecord(log types.OutputEntry) error {
 	c := l.getClient(dynamicHostName)
 
 	if c == nil {
-		metrics.DroppedLogs.WithLabelValues(host).Inc()
+		metrics.DroppedLogs.WithLabelValues(host, "no_client").Inc()
 
 		return fmt.Errorf("no client found in controller for host: %v", dynamicHostName)
 	}

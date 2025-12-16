@@ -51,13 +51,20 @@ var (
 		Namespace: namespace,
 		Name:      "dropped_logs_total",
 		Help:      "Total number of dropped logs by the output plugin",
-	}, []string{"host"})
+	}, []string{"host", "reason"})
 
 	// ThrottledLogs is a prometheus metric which keeps the number of throttled logs by the output plugin
 	ThrottledLogs = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: namespace,
 		Name:      "throttled_logs_total",
 		Help:      "Total number of throttled logs by the output plugin",
+	}, []string{"host"})
+
+	// BufferedLogs is a prometheus metric which keeps the number of logs buffered in the batch processor queue
+	BufferedLogs = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: namespace,
+		Name:      "buffered_logs",
+		Help:      "Current number of logs buffered in the batch processor queue",
 	}, []string{"host"})
 
 	// DqueSize is a prometheus metric which keeps the current size of the dque queue

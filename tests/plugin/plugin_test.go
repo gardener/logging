@@ -158,7 +158,7 @@ var _ = Describe("Plugin Integration Test", Ordered, func() {
 		for i := 0; i < numberOfClusters; i++ {
 			clusterName := fmt.Sprintf("shoot--test--cluster-%03d", i)
 			endpoint := fmt.Sprintf("http://logging.%s.svc:4318/v1/logs", clusterName)
-			dropped := promtest.ToFloat64(metrics.DroppedLogs.WithLabelValues(endpoint))
+			dropped := promtest.ToFloat64(metrics.DroppedLogs.WithLabelValues(endpoint, "noop"))
 			totalDropped += dropped
 		}
 

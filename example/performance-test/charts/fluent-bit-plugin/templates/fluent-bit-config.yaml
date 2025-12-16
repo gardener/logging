@@ -136,11 +136,11 @@ data:
         Retry_Limit               10
 
         SeedType                  otlpgrpc
-        ShootType                 otlphttp
+        ShootType                 otlpgrpc
 
         DynamicHostPath           {"kubernetes": {"namespace_name": "namespace"}}
         DynamicHostPrefix         logging.
-        DynamicHostSuffix         .svc.cluster.local:4318
+        DynamicHostSuffix         .svc.cluster.local:4317
         DynamicHostRegex          ^shoot-
 
         Buffer                    false
@@ -154,10 +154,10 @@ data:
         Insecure                  true
         Timeout                   15m
 
-        ThrottleEnabled           true
+        ThrottleEnabled           false
         ThrottleRequestsPerSec    1000
 
-        BatchProcessorMaxQueueSize    1500
+        BatchProcessorMaxQueueSize    10000
         BatchProcessorMaxBatchSize    300
         BatchProcessorExportInterval  1s
         BatchProcessorExportTimeout   15m

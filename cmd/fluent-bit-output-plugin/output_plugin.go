@@ -117,7 +117,7 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 	outputPlugin, err := plugin.NewPlugin(informer, cfg, log.NewLogger(cfg.LogLevel))
 	if err != nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorNewPlugin).Inc()
-		logger.Error(err, "[flb-go]", "error creating outputPlugin")
+		logger.Error(err, "[flb-go] error creating output plugin", "id", id)
 
 		return output.FLB_ERROR
 	}

@@ -16,7 +16,6 @@ import (
 type clientOptions struct {
 	target Target
 	logger logr.Logger
-	dque   bool
 }
 
 // Option defines a functional option for configuring the client
@@ -26,16 +25,6 @@ type Option func(opts *clientOptions) error
 func WithLogger(logger logr.Logger) Option {
 	return func(opts *clientOptions) error {
 		opts.logger = logger
-
-		return nil
-	}
-}
-
-// WithDque creates a functional option for setting buffered mode of the client.
-// It prepends a dque if buffered is true.
-func WithDque(buffered bool) Option {
-	return func(opts *clientOptions) error {
-		opts.dque = buffered
 
 		return nil
 	}
@@ -82,10 +71,6 @@ func NewClient(ctx context.Context, cfg config.Config, opts ...Option) (OutputCl
 		}
 	default:
 		return nil, fmt.Errorf("unknown target type: %v", options.target)
-	}
-
-	if options.dque {
-		return NewDque(ctx, cfg, logger, nfc)
 	}
 
 	return nfc(ctx, cfg, logger)

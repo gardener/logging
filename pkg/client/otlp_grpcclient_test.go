@@ -28,7 +28,7 @@ var _ = Describe("OTLPGRPCClient", func() {
 				BufferConfig: config.BufferConfig{
 					Buffer: false,
 					DqueConfig: config.DqueConfig{
-						QueueDir:         config.DefaultDqueConfig.QueueDir,
+						QueueDir:         GetTestTempDir("otlp"),
 						QueueSegmentSize: config.DefaultDqueConfig.QueueSegmentSize,
 						QueueSync:        config.DefaultDqueConfig.QueueSync,
 						QueueName:        config.DefaultDqueConfig.QueueName,
@@ -41,6 +41,12 @@ var _ = Describe("OTLPGRPCClient", func() {
 				Compression: 0,
 				Timeout:     30 * time.Second,
 				Headers:     make(map[string]string),
+				// Batch processor configuration
+				BatchProcessorMaxQueueSize:     config.DefaultOTLPConfig.BatchProcessorMaxQueueSize,
+				BatchProcessorMaxBatchSize:     config.DefaultOTLPConfig.BatchProcessorMaxBatchSize,
+				BatchProcessorExportTimeout:    config.DefaultOTLPConfig.BatchProcessorExportTimeout,
+				BatchProcessorExportInterval:   config.DefaultOTLPConfig.BatchProcessorExportInterval,
+				BatchProcessorExportBufferSize: config.DefaultOTLPConfig.BatchProcessorExportBufferSize,
 			},
 		}
 	})

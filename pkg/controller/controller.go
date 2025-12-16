@@ -52,9 +52,7 @@ func NewController(ctx context.Context, informer cache.SharedIndexInformer, conf
 	cfgShallowCopy.ClientConfig.BufferConfig.DqueConfig.QueueName = conf.ClientConfig.BufferConfig.DqueConfig.
 		QueueName + "-controller"
 	opt := []client.Option{client.WithTarget(client.Seed), client.WithLogger(l)}
-	if cfgShallowCopy.ClientConfig.BufferConfig.Buffer {
-		opt = append(opt, client.WithDque(true))
-	}
+
 	// Pass the context when creating the seed client
 	if seedClient, err = client.NewClient(
 		ctx,
