@@ -15,18 +15,18 @@ type ClientConfig struct {
 
 // DqueConfig contains the dqueue settings
 type DqueConfig struct {
-	QueueDir         string `mapstructure:"QueueDir"`
-	QueueSegmentSize int    `mapstructure:"QueueSegmentSize"`
-	QueueSync        bool   `mapstructure:"-"` // Handled specially in postProcessConfig
-	QueueName        string `mapstructure:"QueueName"`
+	DqueDir         string `mapstructure:"DqueDir"`
+	DqueSegmentSize int    `mapstructure:"DqueSegmentSize"`
+	DqueSync        bool   `mapstructure:"-"` // Handled specially in postProcessConfig
+	DqueName        string `mapstructure:"DqueName"`
 }
 
 // DefaultDqueConfig holds dque configurations for the buffer
 var DefaultDqueConfig = DqueConfig{
-	QueueDir:         "/tmp/flb-storage",
-	QueueSegmentSize: 500,
-	QueueSync:        false,
-	QueueName:        "dque",
+	DqueDir:         "/tmp/flb-storage",
+	DqueSegmentSize: 500,
+	DqueSync:        false,
+	DqueName:        "dque",
 }
 
 // OTLPConfig holds configuration for otlp endpoint
@@ -40,11 +40,11 @@ type OTLPConfig struct {
 	DqueConfig DqueConfig `mapstructure:",squash"`
 
 	// Batch Processor configuration fields
-	BatchProcessorMaxQueueSize     int           `mapstructure:"BatchProcessorMaxQueueSize"`
-	BatchProcessorMaxBatchSize     int           `mapstructure:"BatchProcessorMaxBatchSize"`
-	BatchProcessorExportTimeout    time.Duration `mapstructure:"BatchProcessorExportTimeout"`
-	BatchProcessorExportInterval   time.Duration `mapstructure:"BatchProcessorExportInterval"`
-	BatchProcessorExportBufferSize int           `mapstructure:"BatchProcessorExportBufferSize"`
+	DqueBatchProcessorMaxQueueSize     int           `mapstructure:"DqueBatchProcessorMaxQueueSize"`
+	DqueBatchProcessorMaxBatchSize     int           `mapstructure:"DqueBatchProcessorMaxBatchSize"`
+	DqueBatchProcessorExportTimeout    time.Duration `mapstructure:"DqueBatchProcessorExportTimeout"`
+	DqueBatchProcessorExportInterval   time.Duration `mapstructure:"DqueBatchProcessorExportInterval"`
+	DqueBatchProcessorExportBufferSize int           `mapstructure:"DqueBatchProcessorExportBufferSize"`
 
 	// Retry configuration fields
 	RetryEnabled         bool          `mapstructure:"RetryEnabled"`
@@ -98,9 +98,9 @@ var DefaultOTLPConfig = OTLPConfig{
 	DqueConfig: DefaultDqueConfig, // Use default dque config
 
 	// Batch Processor defaults - tuned to prevent OOM under high load
-	BatchProcessorMaxQueueSize:     512,              // Max records in queue before dropping
-	BatchProcessorMaxBatchSize:     256,              // Max records per export batch
-	BatchProcessorExportTimeout:    30 * time.Second, // Timeout for single export
-	BatchProcessorExportInterval:   1 * time.Second,  // Flush interval
-	BatchProcessorExportBufferSize: 10,
+	DqueBatchProcessorMaxQueueSize:     512,              // Max records in queue before dropping
+	DqueBatchProcessorMaxBatchSize:     256,              // Max records per export batch
+	DqueBatchProcessorExportTimeout:    30 * time.Second, // Timeout for single export
+	DqueBatchProcessorExportInterval:   1 * time.Second,  // Flush interval
+	DqueBatchProcessorExportBufferSize: 10,
 }

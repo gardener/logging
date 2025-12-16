@@ -251,10 +251,10 @@ func createPluginConfig(tmpDir string) *config.Config {
 		OTLPConfig: config.OTLPConfig{
 			Endpoint: "http://test-seed-endpoint:4318/v1/logs",
 			DqueConfig: config.DqueConfig{
-				QueueDir:         tmpDir,
-				QueueSegmentSize: 500,
-				QueueSync:        false,
-				QueueName:        "dque",
+				DqueDir:         tmpDir,
+				DqueSegmentSize: 500,
+				DqueSync:        false,
+				DqueName:        "dque",
 			},
 		},
 		PluginConfig: config.PluginConfig{

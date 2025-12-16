@@ -537,7 +537,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 			plugin1.Close()
 
 			// Second run with new plugin instance
-			cfg.OTLPConfig.DqueConfig.QueueName = "test-queue-2"
+			cfg.OTLPConfig.DqueConfig.DqueName = "test-queue-2"
 			plugin2, err := NewPlugin(nil, cfg, logger)
 			Expect(err).NotTo(HaveOccurred())
 			defer plugin2.Close()

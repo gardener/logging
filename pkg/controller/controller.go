@@ -49,8 +49,8 @@ func NewController(ctx context.Context, informer cache.SharedIndexInformer, conf
 	var seedClient client.OutputClient
 
 	cfgShallowCopy := *conf
-	cfgShallowCopy.OTLPConfig.DqueConfig.QueueName = conf.OTLPConfig.DqueConfig.
-		QueueName + "-controller"
+	cfgShallowCopy.OTLPConfig.DqueConfig.DqueName = conf.OTLPConfig.DqueConfig.
+		DqueName + "-controller"
 	opt := []client.Option{client.WithTarget(client.Seed), client.WithLogger(l)}
 
 	// Pass the context when creating the seed client
@@ -216,7 +216,7 @@ func (ctl *controller) updateClientConfig(clusterName string) *config.Config {
 
 	conf := *ctl.conf
 	conf.OTLPConfig.Endpoint = urlstr
-	conf.OTLPConfig.DqueConfig.QueueName = clusterName // use clusterName as queue name
+	conf.OTLPConfig.DqueConfig.DqueName = clusterName // use clusterName as queue name
 
 	return &conf
 }

@@ -32,10 +32,10 @@ var _ = Describe("Config", func() {
 			Expect(cfg.Pprof).To(BeFalse())
 
 			// Dque config defaults
-			Expect(cfg.OTLPConfig.DqueConfig.QueueDir).To(Equal("/tmp/flb-storage"))
-			Expect(cfg.OTLPConfig.DqueConfig.QueueSegmentSize).To(Equal(500))
-			Expect(cfg.OTLPConfig.DqueConfig.QueueSync).To(BeFalse())
-			Expect(cfg.OTLPConfig.DqueConfig.QueueName).To(Equal("dque"))
+			Expect(cfg.OTLPConfig.DqueConfig.DqueDir).To(Equal("/tmp/flb-storage"))
+			Expect(cfg.OTLPConfig.DqueConfig.DqueSegmentSize).To(Equal(500))
+			Expect(cfg.OTLPConfig.DqueConfig.DqueSync).To(BeFalse())
+			Expect(cfg.OTLPConfig.DqueConfig.DqueName).To(Equal("dque"))
 
 			// Controller config defaults
 			Expect(cfg.ControllerConfig.CtlSyncTimeout).To(Equal(60 * time.Second))
@@ -109,20 +109,20 @@ var _ = Describe("Config", func() {
 
 		It("should parse config with buffer configuration", func() {
 			configMap := map[string]any{
-				"QueueDir":         "/foo/bar",
-				"QueueSegmentSize": "600",
-				"QueueSync":        "full",
-				"QueueName":        "buzz",
+				"DqueDir":         "/foo/bar",
+				"DqueSegmentSize": "600",
+				"DqueSync":        "full",
+				"DqueName":        "buzz",
 			}
 
 			cfg, err := config.ParseConfig(configMap)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(cfg).ToNot(BeNil())
 
-			Expect(cfg.OTLPConfig.DqueConfig.QueueDir).To(Equal("/foo/bar"))
-			Expect(cfg.OTLPConfig.DqueConfig.QueueSegmentSize).To(Equal(600))
-			Expect(cfg.OTLPConfig.DqueConfig.QueueSync).To(BeTrue())
-			Expect(cfg.OTLPConfig.DqueConfig.QueueName).To(Equal("buzz"))
+			Expect(cfg.OTLPConfig.DqueConfig.DqueDir).To(Equal("/foo/bar"))
+			Expect(cfg.OTLPConfig.DqueConfig.DqueSegmentSize).To(Equal(600))
+			Expect(cfg.OTLPConfig.DqueConfig.DqueSync).To(BeTrue())
+			Expect(cfg.OTLPConfig.DqueConfig.DqueName).To(Equal("buzz"))
 		})
 
 		It("should parse config with hostname key value", func() {
@@ -362,12 +362,12 @@ var _ = Describe("Config", func() {
 				"DynamicHostRegex":  "^shoot-",
 
 				// Queue and buffer configuration
-				"QueueDir":         "/fluent-bit/buffers/seed",
-				"QueueName":        "seed-dynamic",
-				"QueueSegmentSize": "300",
-				"QueueSync":        "normal",
-				"Buffer":           "true",
-				"BufferType":       "dque",
+				"DqueDir":         "/fluent-bit/buffers/seed",
+				"DqueName":        "seed-dynamic",
+				"DqueSegmentSize": "300",
+				"DqueSync":        "normal",
+				"Buffer":          "true",
+				"BufferType":      "dque",
 
 				// Controller configuration
 				"ControllerSyncTimeout": "120s",
@@ -402,14 +402,14 @@ var _ = Describe("Config", func() {
 			Expect(cfg.PluginConfig.DynamicHostRegex).To(Equal("^shoot-"))
 
 			// Queue and buffer configuration
-			// "QueueDir": "/fluent-bit/buffers/seed"
-			Expect(cfg.OTLPConfig.DqueConfig.QueueDir).To(Equal("/fluent-bit/buffers/seed"))
-			// "QueueName": "seed-dynamic"
-			Expect(cfg.OTLPConfig.DqueConfig.QueueName).To(Equal("seed-dynamic"))
-			// "QueueSegmentSize": "300"
-			Expect(cfg.OTLPConfig.DqueConfig.QueueSegmentSize).To(Equal(300))
-			// "QueueSync": "normal"
-			Expect(cfg.OTLPConfig.DqueConfig.QueueSync).To(BeFalse())
+			// "DqueDir": "/fluent-bit/buffers/seed"
+			Expect(cfg.OTLPConfig.DqueConfig.DqueDir).To(Equal("/fluent-bit/buffers/seed"))
+			// "DqueName": "seed-dynamic"
+			Expect(cfg.OTLPConfig.DqueConfig.DqueName).To(Equal("seed-dynamic"))
+			// "DqueSegmentSize": "300"
+			Expect(cfg.OTLPConfig.DqueConfig.DqueSegmentSize).To(Equal(300))
+			// "DqueSync": "normal"
+			Expect(cfg.OTLPConfig.DqueConfig.DqueSync).To(BeFalse())
 
 			// Controller configuration
 			// "ControllerSyncTimeout": "120s"
@@ -436,9 +436,9 @@ var _ = Describe("Config", func() {
 	Context("Quote Handling", func() {
 		It("should strip double quotes from string values", func() {
 			configMap := map[string]any{
-				"Endpoint":  `"localhost:4317"`,
-				"LogLevel":  `"debug"`,
-				"QueueName": `"my-queue"`,
+				"Endpoint": `"localhost:4317"`,
+				"LogLevel": `"debug"`,
+				"DqueName": `"my-queue"`,
 			}
 
 			cfg, err := config.ParseConfig(configMap)
@@ -448,14 +448,14 @@ var _ = Describe("Config", func() {
 			// Quotes should be stripped
 			Expect(cfg.OTLPConfig.Endpoint).To(Equal("localhost:4317"))
 			Expect(cfg.LogLevel).To(Equal("debug"))
-			Expect(cfg.OTLPConfig.DqueConfig.QueueName).To(Equal("my-queue"))
+			Expect(cfg.OTLPConfig.DqueConfig.DqueName).To(Equal("my-queue"))
 		})
 
 		It("should strip single quotes from string values", func() {
 			configMap := map[string]any{
-				"Endpoint":  `'localhost:4317'`,
-				"LogLevel":  `'warn'`,
-				"QueueName": `'my-queue'`,
+				"Endpoint": `'localhost:4317'`,
+				"LogLevel": `'warn'`,
+				"DqueName": `'my-queue'`,
 			}
 
 			cfg, err := config.ParseConfig(configMap)
@@ -465,17 +465,17 @@ var _ = Describe("Config", func() {
 			// Quotes should be stripped
 			Expect(cfg.OTLPConfig.Endpoint).To(Equal("localhost:4317"))
 			Expect(cfg.LogLevel).To(Equal("warn"))
-			Expect(cfg.OTLPConfig.DqueConfig.QueueName).To(Equal("my-queue"))
+			Expect(cfg.OTLPConfig.DqueConfig.DqueName).To(Equal("my-queue"))
 		})
 
 		It("should handle values with quotes and whitespace", func() {
 			configMap := map[string]any{
 				"Endpoint":  `  "localhost:4317"  `,
-				"QueueName": `  'my-queue'  `,
+				"DqueName":  `  'my-queue'  `,
 				"LogLevel":  `  "info"  `,
 				"SeedType":  `  "OTLPGRPC"  `,
 				"ShootType": `  'STDOUT'  `,
-				"QueueDir":  `  "/tmp/queue"  `,
+				"DqueDir":   `  "/tmp/queue"  `,
 			}
 
 			cfg, err := config.ParseConfig(configMap)
@@ -484,18 +484,18 @@ var _ = Describe("Config", func() {
 
 			// Quotes and whitespace should be stripped
 			Expect(cfg.OTLPConfig.Endpoint).To(Equal("localhost:4317"))
-			Expect(cfg.OTLPConfig.DqueConfig.QueueName).To(Equal("my-queue"))
+			Expect(cfg.OTLPConfig.DqueConfig.DqueName).To(Equal("my-queue"))
 			Expect(cfg.LogLevel).To(Equal("info"))
 			Expect(cfg.ClientConfig.SeedType).To(Equal("OTLPGRPC"))
 			Expect(cfg.ClientConfig.ShootType).To(Equal("STDOUT"))
-			Expect(cfg.OTLPConfig.DqueConfig.QueueDir).To(Equal("/tmp/queue"))
+			Expect(cfg.OTLPConfig.DqueConfig.DqueDir).To(Equal("/tmp/queue"))
 		})
 
 		It("should handle values without quotes", func() {
 			configMap := map[string]any{
-				"Endpoint":  "localhost:4317",
-				"LogLevel":  "error",
-				"QueueName": "my-queue",
+				"Endpoint": "localhost:4317",
+				"LogLevel": "error",
+				"DqueName": "my-queue",
 			}
 
 			cfg, err := config.ParseConfig(configMap)
@@ -505,7 +505,7 @@ var _ = Describe("Config", func() {
 			// Values should remain unchanged
 			Expect(cfg.OTLPConfig.Endpoint).To(Equal("localhost:4317"))
 			Expect(cfg.LogLevel).To(Equal("error"))
-			Expect(cfg.OTLPConfig.DqueConfig.QueueName).To(Equal("my-queue"))
+			Expect(cfg.OTLPConfig.DqueConfig.DqueName).To(Equal("my-queue"))
 		})
 
 		It("should handle quoted boolean values", func() {
@@ -531,8 +531,8 @@ var _ = Describe("Config", func() {
 
 		It("should handle quoted numeric values", func() {
 			configMap := map[string]any{
-				"QueueSegmentSize": `"500"`,
-				"Compression":      `'1'`,
+				"DqueSegmentSize": `"500"`,
+				"Compression":     `'1'`,
 			}
 
 			cfg, err := config.ParseConfig(configMap)
@@ -540,7 +540,7 @@ var _ = Describe("Config", func() {
 			Expect(cfg).ToNot(BeNil())
 
 			// Should parse numbers correctly after stripping quotes
-			Expect(cfg.OTLPConfig.DqueConfig.QueueSegmentSize).To(Equal(500))
+			Expect(cfg.OTLPConfig.DqueConfig.DqueSegmentSize).To(Equal(500))
 			Expect(cfg.OTLPConfig.Compression).To(Equal(1))
 		})
 
@@ -586,7 +586,7 @@ var _ = Describe("Config", func() {
 				"Endpoint":          `"localhost:4317"`,
 				"LogLevel":          "info",
 				"Buffer":            `'true'`,
-				"QueueSegmentSize":  500,
+				"DqueSegmentSize":   500,
 				"Timeout":           `"30s"`,
 				"RetryEnabled":      "true",
 				"DynamicHostPrefix": `"http://logging."`,
@@ -600,7 +600,7 @@ var _ = Describe("Config", func() {
 			// All values should be parsed correctly regardless of quoting
 			Expect(cfg.OTLPConfig.Endpoint).To(Equal("localhost:4317"))
 			Expect(cfg.LogLevel).To(Equal("info"))
-			Expect(cfg.OTLPConfig.DqueConfig.QueueSegmentSize).To(Equal(500))
+			Expect(cfg.OTLPConfig.DqueConfig.DqueSegmentSize).To(Equal(500))
 			Expect(cfg.OTLPConfig.Timeout).To(Equal(30 * time.Second))
 			Expect(cfg.OTLPConfig.RetryEnabled).To(BeTrue())
 			Expect(cfg.ControllerConfig.DynamicHostPrefix).To(Equal("http://logging."))

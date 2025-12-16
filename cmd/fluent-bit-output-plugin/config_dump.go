@@ -20,10 +20,10 @@ func dumpConfiguration(conf *config.Config) {
 	logger.V(1).Info("[flb-go]", "DynamicHostPrefix", fmt.Sprintf("%+v", conf.ControllerConfig.DynamicHostPrefix))
 	logger.V(1).Info("[flb-go]", "DynamicHostSuffix", fmt.Sprintf("%+v", conf.ControllerConfig.DynamicHostSuffix))
 	logger.V(1).Info("[flb-go]", "DynamicHostRegex", fmt.Sprintf("%+v", conf.PluginConfig.DynamicHostRegex))
-	logger.V(1).Info("[flb-go]", "QueueDir", fmt.Sprintf("%+v", conf.OTLPConfig.DqueConfig.QueueDir))
-	logger.V(1).Info("[flb-go]", "QueueSegmentSize", fmt.Sprintf("%+v", conf.OTLPConfig.DqueConfig.QueueSegmentSize))
-	logger.V(1).Info("[flb-go]", "QueueSync", fmt.Sprintf("%+v", conf.OTLPConfig.DqueConfig.QueueSync))
-	logger.V(1).Info("[flb-go]", "QueueName", fmt.Sprintf("%+v", conf.OTLPConfig.DqueConfig.QueueName))
+	logger.V(1).Info("[flb-go]", "DqueDir", fmt.Sprintf("%+v", conf.OTLPConfig.DqueConfig.DqueDir))
+	logger.V(1).Info("[flb-go]", "DqueSegmentSize", fmt.Sprintf("%+v", conf.OTLPConfig.DqueConfig.DqueSegmentSize))
+	logger.V(1).Info("[flb-go]", "DqueSync", fmt.Sprintf("%+v", conf.OTLPConfig.DqueConfig.DqueSync))
+	logger.V(1).Info("[flb-go]", "DqueName", fmt.Sprintf("%+v", conf.OTLPConfig.DqueConfig.DqueName))
 	logger.V(1).Info("[flb-go]", "FallbackToTagWhenMetadataIsMissing", fmt.Sprintf("%+v", conf.PluginConfig.KubernetesMetadata.FallbackToTagWhenMetadataIsMissing))
 	logger.V(1).Info("[flb-go]", "TagKey", fmt.Sprintf("%+v", conf.PluginConfig.KubernetesMetadata.TagKey))
 	logger.V(1).Info("[flb-go]", "TagPrefix", fmt.Sprintf("%+v", conf.PluginConfig.KubernetesMetadata.TagPrefix))
@@ -73,11 +73,11 @@ func dumpConfiguration(conf *config.Config) {
 	logger.V(1).Info("[flb-go]", "ThrottlePeriod", fmt.Sprintf("%+v", conf.OTLPConfig.ThrottleRequestsPerSec))
 
 	// Batch Processor configuration
-	logger.V(1).Info("[flb-go]", "BatchProcessorMaxQueueSize", fmt.Sprintf("%+v", conf.OTLPConfig.BatchProcessorMaxQueueSize))
-	logger.V(1).Info("[flb-go]", "BatchProcessorMaxBatchSize", fmt.Sprintf("%+v", conf.OTLPConfig.BatchProcessorMaxBatchSize))
-	logger.V(1).Info("[flb-go]", "BatchProcessorExportTimeout", fmt.Sprintf("%+v", conf.OTLPConfig.BatchProcessorExportTimeout))
-	logger.V(1).Info("[flb-go]", "BatchProcessorExportInterval", fmt.Sprintf("%+v", conf.OTLPConfig.BatchProcessorExportInterval))
-	logger.V(1).Info("[flb-go]", "BatchProcessorExportBufferSize", fmt.Sprintf("%+v", conf.OTLPConfig.BatchProcessorExportBufferSize))
+	logger.V(1).Info("[flb-go]", "DqueBatchProcessorMaxQueueSize", fmt.Sprintf("%+v", conf.OTLPConfig.DqueBatchProcessorMaxQueueSize))
+	logger.V(1).Info("[flb-go]", "DqueBatchProcessorMaxBatchSize", fmt.Sprintf("%+v", conf.OTLPConfig.DqueBatchProcessorMaxBatchSize))
+	logger.V(1).Info("[flb-go]", "DqueBatchProcessorExportTimeout", fmt.Sprintf("%+v", conf.OTLPConfig.DqueBatchProcessorExportTimeout))
+	logger.V(1).Info("[flb-go]", "DqueBatchProcessorExportInterval", fmt.Sprintf("%+v", conf.OTLPConfig.DqueBatchProcessorExportInterval))
+	logger.V(1).Info("[flb-go]", "DqueBatchProcessorExportBufferSize", fmt.Sprintf("%+v", conf.OTLPConfig.DqueBatchProcessorExportBufferSize))
 
 	// OTLP TLS configuration
 	logger.V(1).Info("[flb-go]", "TLSCertFile", fmt.Sprintf("%+v", conf.OTLPConfig.TLSCertFile))

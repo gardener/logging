@@ -53,10 +53,10 @@ func (c *pluginConfig) toStringMap() map[string]string {
 		"TagExpression", "tagExpression",
 
 		// Dque config
-		"QueueDir", "queueDir",
-		"QueueSegmentSize", "queueSegmentSize",
-		"QueueSync", "queueSync",
-		"QueueName", " queueName",
+		"DqueDir", "dqueDir",
+		"DqueSegmentSize", "dqueSegmentSize",
+		"DqueSync", "dqueSync",
+		"DqueName", " dqueName",
 
 		// Controller config
 		"DeletedClientTimeExpiration", "deletedClientTimeExpiration",
@@ -115,11 +115,11 @@ func (c *pluginConfig) toStringMap() map[string]string {
 		"ThrottleRequestsPerSec", "throttleRequestsPerSec",
 
 		// OTLP Batch Processor configs
-		"BatchProcessorMaxQueueSize", "batchProcessorMaxQueueSize",
-		"BatchProcessorMaxBatchSize", "batchProcessorMaxBatchSize",
-		"BatchProcessorExportTimeout", "batchProcessorExportTimeout",
-		"BatchProcessorExportInterval", "batchProcessorExportInterval",
-		"BatchProcessorExportBufferSize", "batchProcessorExportBufferSize",
+		"DqueBatchProcessorMaxQueueSize", "dqueBatchProcessorMaxQueueSize",
+		"DqueBatchProcessorMaxBatchSize", "dqueBatchProcessorMaxBatchSize",
+		"DqueBatchProcessorExportTimeout", "dqueBatchProcessorExportTimeout",
+		"DqueBatchProcessorExportInterval", "dqueBatchProcessorExportInterval",
+		"DqueBatchProcessorExportBufferSize", "dqueBatchProcessorExportBufferSize",
 
 		// General config
 		"LogLevel", "logLevel",

@@ -71,8 +71,8 @@ func NewOTLPGRPCClient(ctx context.Context, cfg config.Config, logger logr.Logge
 
 	// Create DQue batch processor with blocking exporter
 	dQueueDir := filepath.Join(
-		cfg.OTLPConfig.DqueConfig.QueueDir,
-		cfg.OTLPConfig.DqueConfig.QueueName,
+		cfg.OTLPConfig.DqueConfig.DqueDir,
+		cfg.OTLPConfig.DqueConfig.DqueName,
 	)
 
 	batchProcessor, err := NewDQueBatchProcessor(
@@ -82,12 +82,12 @@ func NewOTLPGRPCClient(ctx context.Context, cfg config.Config, logger logr.Logge
 		WithEndpoint(cfg.OTLPConfig.Endpoint),
 		WithDQueueDir(dQueueDir),
 		WithDQueueName("otlp-grpc"),
-		WithDQueueSegmentSize(cfg.OTLPConfig.DqueConfig.QueueSegmentSize),
-		WithDQueueSync(cfg.OTLPConfig.DqueConfig.QueueSync),
-		WithMaxQueueSize(cfg.OTLPConfig.BatchProcessorMaxQueueSize),
-		WithMaxBatchSize(cfg.OTLPConfig.BatchProcessorMaxBatchSize),
-		WithExportTimeout(cfg.OTLPConfig.BatchProcessorExportTimeout),
-		WithExportInterval(cfg.OTLPConfig.BatchProcessorExportInterval),
+		WithDQueueSegmentSize(cfg.OTLPConfig.DqueConfig.DqueSegmentSize),
+		WithDQueueSync(cfg.OTLPConfig.DqueConfig.DqueSync),
+		WithMaxQueueSize(cfg.OTLPConfig.DqueBatchProcessorMaxQueueSize),
+		WithMaxBatchSize(cfg.OTLPConfig.DqueBatchProcessorMaxBatchSize),
+		WithExportTimeout(cfg.OTLPConfig.DqueBatchProcessorExportTimeout),
+		WithExportInterval(cfg.OTLPConfig.DqueBatchProcessorExportInterval),
 	)
 	if err != nil {
 		cancel()

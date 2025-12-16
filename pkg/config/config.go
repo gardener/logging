@@ -317,15 +317,15 @@ func processDynamicHostPathConfig(config *Config, configMap map[string]any) erro
 	return processDynamicHostPath(configMap, config)
 }
 
-// processQueueSyncConfig handles QueueSync special conversion
+// processQueueSyncConfig handles DqueSync special conversion
 func processQueueSyncConfig(config *Config, configMap map[string]any) error {
 	// Keys are already normalized to lowercase by ParseConfig
-	if queueSync, ok := configMap["queuesync"].(string); ok {
+	if queueSync, ok := configMap["dquesync"].(string); ok {
 		switch queueSync {
 		case "normal", "":
-			config.OTLPConfig.DqueConfig.QueueSync = false
+			config.OTLPConfig.DqueConfig.DqueSync = false
 		case "full":
-			config.OTLPConfig.DqueConfig.QueueSync = true
+			config.OTLPConfig.DqueConfig.DqueSync = true
 		default:
 			return fmt.Errorf("invalid string queueSync: %v", queueSync)
 		}
@@ -454,23 +454,23 @@ func processOTLPConfig(config *Config, configMap map[string]any) error {
 	if maxQueueSize, ok := configMap["batchprocessormaxqueuesize"].(string); ok && maxQueueSize != "" {
 		val, err := strconv.Atoi(maxQueueSize)
 		if err != nil {
-			return fmt.Errorf("failed to parse BatchProcessorMaxQueueSize as integer: %w", err)
+			return fmt.Errorf("failed to parse DqueBatchProcessorMaxQueueSize as integer: %w", err)
 		}
 		if val <= 0 {
-			return fmt.Errorf("BatchProcessorMaxQueueSize must be positive, got %d", val)
+			return fmt.Errorf("DqueBatchProcessorMaxQueueSize must be positive, got %d", val)
 		}
-		config.OTLPConfig.BatchProcessorMaxQueueSize = val
+		config.OTLPConfig.DqueBatchProcessorMaxQueueSize = val
 	}
 
 	if maxBatchSize, ok := configMap["batchprocessormaxbatchsize"].(string); ok && maxBatchSize != "" {
 		val, err := strconv.Atoi(maxBatchSize)
 		if err != nil {
-			return fmt.Errorf("failed to parse BatchProcessorMaxBatchSize as integer: %w", err)
+			return fmt.Errorf("failed to parse DqueBatchProcessorMaxBatchSize as integer: %w", err)
 		}
 		if val <= 0 {
-			return fmt.Errorf("BatchProcessorMaxBatchSize must be positive, got %d", val)
+			return fmt.Errorf("DqueBatchProcessorMaxBatchSize must be positive, got %d", val)
 		}
-		config.OTLPConfig.BatchProcessorMaxBatchSize = val
+		config.OTLPConfig.DqueBatchProcessorMaxBatchSize = val
 	}
 
 	if bufferSize, ok := configMap["batchprocessorbuffersize"].(string); ok && bufferSize != "" {
@@ -481,17 +481,17 @@ func processOTLPConfig(config *Config, configMap map[string]any) error {
 		if val <= 0 {
 			return fmt.Errorf("BatchProcessorBufferSize must be positive, got %d", val)
 		}
-		config.OTLPConfig.BatchProcessorExportBufferSize = val
+		config.OTLPConfig.DqueBatchProcessorExportBufferSize = val
 	}
 
 	if err := processDurationField(configMap, "batchprocessorexporttimeout", func(d time.Duration) {
-		config.OTLPConfig.BatchProcessorExportTimeout = d
+		config.OTLPConfig.DqueBatchProcessorExportTimeout = d
 	}); err != nil {
 		return err
 	}
 
 	if err := processDurationField(configMap, "batchprocessorexportinterval", func(d time.Duration) {
-		config.OTLPConfig.BatchProcessorExportInterval = d
+		config.OTLPConfig.DqueBatchProcessorExportInterval = d
 	}); err != nil {
 		return err
 	}

@@ -79,7 +79,7 @@ func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger lo
 
 	logger.Info("logging plugin created",
 		"seed_client_url", l.seedClient.GetEndPoint(),
-		"seed_queue_name", cfg.OTLPConfig.DqueConfig.QueueName,
+		"seed_queue_name", cfg.OTLPConfig.DqueConfig.DqueName,
 	)
 
 	return l, nil
@@ -167,7 +167,7 @@ func (l *logging) Close() {
 	}
 	l.logger.Info("logging plugin stopped",
 		"seed_client_url", l.seedClient.GetEndPoint(),
-		"seed_queue_name", l.cfg.OTLPConfig.DqueConfig.QueueName,
+		"seed_queue_name", l.cfg.OTLPConfig.DqueConfig.DqueName,
 	)
 }
 

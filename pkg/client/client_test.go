@@ -18,10 +18,10 @@ var _ = ginkgov2.Describe("Client", func() {
 		ClientConfig: config.ClientConfig{},
 		OTLPConfig: config.OTLPConfig{
 			DqueConfig: config.DqueConfig{
-				QueueDir:         config.DefaultDqueConfig.QueueDir,
-				QueueSegmentSize: config.DefaultDqueConfig.QueueSegmentSize,
-				QueueSync:        config.DefaultDqueConfig.QueueSync,
-				QueueName:        config.DefaultDqueConfig.QueueName,
+				DqueDir:         config.DefaultDqueConfig.DqueDir,
+				DqueSegmentSize: config.DefaultDqueConfig.DqueSegmentSize,
+				DqueSync:        config.DefaultDqueConfig.DqueSync,
+				DqueName:        config.DefaultDqueConfig.DqueName,
 			},
 		},
 		PluginConfig: config.PluginConfig{
