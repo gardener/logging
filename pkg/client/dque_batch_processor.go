@@ -4,6 +4,7 @@
 package client
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -31,6 +32,21 @@ var (
 	ErrProcessorClosed = errors.New("batch processor is closed")
 	// ErrQueueFull indicates the queue is at capacity
 	ErrQueueFull = errors.New("queue is full")
+)
+
+// Pools for reusing JSON encoders/decoders and buffers to reduce GC pressure
+var (
+	bufferPool = sync.Pool{
+		New: func() any {
+			return new(bytes.Buffer)
+		},
+	}
+
+	jsonEncoderPool = sync.Pool{
+		New: func() any {
+			return json.NewEncoder(nil)
+		},
+	}
 )
 
 // Default configuration values
@@ -130,9 +146,10 @@ type DQueBatchProcessor struct {
 	queue    *dque.DQue
 	endpoint string
 
-	ctx    context.Context
-	cancel context.CancelFunc
-	wg     sync.WaitGroup
+	ctx           context.Context
+	cancel        context.CancelFunc
+	wg            sync.WaitGroup
+	newItemSignal chan struct{} // Signal channel for new items to reduce sleep time
 
 	mu     sync.Mutex
 	closed bool
@@ -247,13 +264,14 @@ func NewDQueBatchProcessor(
 	processorCtx, cancel := context.WithCancel(ctx)
 
 	processor := &DQueBatchProcessor{
-		logger:   logger.WithValues("component", "dque_batch_processor", "endpoint", config.endpoint),
-		config:   config,
-		exporter: exporter,
-		queue:    queue,
-		endpoint: config.endpoint,
-		ctx:      processorCtx,
-		cancel:   cancel,
+		logger:        logger.WithValues("component", "dque_batch_processor", "endpoint", config.endpoint),
+		config:        config,
+		exporter:      exporter,
+		queue:         queue,
+		endpoint:      config.endpoint,
+		ctx:           processorCtx,
+		cancel:        cancel,
+		newItemSignal: make(chan struct{}, 1), // Buffered channel to avoid blocking
 	}
 
 	// Start background worker for batch processing
@@ -326,13 +344,7 @@ func recordToItem(record sdklog.Record) *logRecordItem {
 		switch val.Kind() {
 		case otlplog.KindString:
 			attr.ValueType = "string"
-			// Work around OTEL SDK issue: use fmt.Sprintf to get the underlying value
-			// The String() method doesn't work in WalkAttributes, so we extract from KeyValue directly
-			strVal := fmt.Sprintf("%v", kv)
-			// KeyValue String() returns "key=value", so extract the value part
-			if idx := len(kv.Key) + 1; idx < len(strVal) {
-				attr.StrValue = strVal[idx:]
-			}
+			attr.StrValue = val.AsString()
 		case otlplog.KindInt64:
 			attr.ValueType = "int64"
 			attr.IntValue = val.AsInt64()
@@ -436,20 +448,20 @@ func itemToRecord(item *logRecordItem) sdklog.Record {
 	// Build resource attributes from item
 	var resource *sdkresource.Resource
 	if len(item.Resource) > 0 {
-		resAttrs := make([]attribute.KeyValue, 0, len(item.Resource))
-		for _, attr := range item.Resource {
+		resAttrs := make([]attribute.KeyValue, len(item.Resource))
+		for i, attr := range item.Resource {
 			//nolint:revive // identical-switch-branches: default fallback improves readability
 			switch attr.ValueType {
 			case "string":
-				resAttrs = append(resAttrs, attribute.String(attr.Key, attr.StrValue))
+				resAttrs[i] = attribute.String(attr.Key, attr.StrValue)
 			case "int64":
-				resAttrs = append(resAttrs, attribute.Int64(attr.Key, attr.IntValue))
+				resAttrs[i] = attribute.Int64(attr.Key, attr.IntValue)
 			case "float64":
-				resAttrs = append(resAttrs, attribute.Float64(attr.Key, attr.FltValue))
+				resAttrs[i] = attribute.Float64(attr.Key, attr.FltValue)
 			case "bool":
-				resAttrs = append(resAttrs, attribute.Bool(attr.Key, attr.BoolValue))
+				resAttrs[i] = attribute.Bool(attr.Key, attr.BoolValue)
 			default:
-				resAttrs = append(resAttrs, attribute.String(attr.Key, attr.StrValue))
+				resAttrs[i] = attribute.String(attr.Key, attr.StrValue)
 			}
 		}
 		resource = sdkresource.NewWithAttributes(semconv.SchemaURL, resAttrs...)
@@ -525,19 +537,32 @@ func (p *DQueBatchProcessor) OnEmit(_ context.Context, record *sdklog.Record) er
 		return ErrQueueFull
 	}
 
-	// Clone the record to avoid concurrent access issues
-	recordCopy := record.Clone()
+	// Convert to serializable item (no need to clone since we're only reading)
+	item := recordToItem(*record)
 
-	// Convert to serializable item
-	item := recordToItem(recordCopy)
+	// Get buffer from pool
+	buf := bufferPool.Get().(*bytes.Buffer) //nolint:revive //unchecked-type-assertion: always a *bytes.Buffer
+	buf.Reset()
 
-	// Serialize to JSON
-	jsonData, err := json.Marshal(item)
-	if err != nil {
+	bufferPool.Put(buf)
+
+	// Get encoder from pool and reset it with our buffer
+	encoder := jsonEncoderPool.Get().(*json.Encoder) //nolint:revive //unchecked-type-assertion: always a *json.Encoder
+	defer jsonEncoderPool.Put(encoder)
+
+	// Create a new encoder with our buffer (no Reset method in older Go versions)
+	encoder = json.NewEncoder(buf)
+
+	// Encode to JSON
+	if err := encoder.Encode(item); err != nil {
 		metrics.DroppedLogs.WithLabelValues(p.endpoint, "marshal_error").Inc()
 
 		return fmt.Errorf("failed to marshal record to JSON: %w", err)
 	}
+
+	// Copy buffer data (must copy since we're reusing the buffer)
+	jsonData := make([]byte, buf.Len())
+	copy(jsonData, buf.Bytes())
 
 	// Wrap in dque wrapper
 	wrapper := &dqueJSONWrapper{data: jsonData}
@@ -550,6 +575,12 @@ func (p *DQueBatchProcessor) OnEmit(_ context.Context, record *sdklog.Record) er
 	}
 
 	metrics.BufferedLogs.WithLabelValues(p.endpoint).Inc()
+
+	// Signal new item (non-blocking)
+	select {
+	case p.newItemSignal <- struct{}{}:
+	default: // Already signaled or full
+	}
 
 	return nil
 }
@@ -596,12 +627,28 @@ func (p *DQueBatchProcessor) processLoop() {
 			}
 			p.logger.V(3).Info("queue size reported", "size", queueSize)
 
+		case <-p.newItemSignal:
+			// New item available, try to dequeue immediately
+			record, err := p.dequeueWithTimeout(100 * time.Millisecond)
+			if err != nil {
+				// Queue became empty or error, continue
+				continue
+			}
+
+			batch = append(batch, record)
+
+			// Export when batch is full
+			if len(batch) >= p.config.maxBatchSize {
+				p.exportBatch(batch)
+				batch = batch[:0]
+			}
+
 		default:
 			// Try to dequeue a record (non-blocking with timeout)
 			record, err := p.dequeueWithTimeout(100 * time.Millisecond)
 			if err != nil {
-				// Queue empty or timeout, wait a bit
-				time.Sleep(10 * time.Millisecond)
+				// Queue empty or timeout, sleep longer since we have signal channel
+				time.Sleep(100 * time.Millisecond)
 
 				continue
 			}
