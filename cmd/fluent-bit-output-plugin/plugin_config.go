@@ -45,6 +45,8 @@ func (c *pluginConfig) toStringMap() map[string]string {
 		"HostnameValue", "hostnameValue",
 		"HostnameKeyValue", "hostnameKeyValue",
 
+		"Origin", "origin",
+
 		// Kubernetes metadata - TODO: revisit how to handle kubernetes metadata. Simplify?
 		"FallbackToTagWhenMetadataIsMissing", "fallbackToTagWhenMetadataIsMissing",
 		"DropLogEntryWithoutK8sMetadata", "dropLogEntryWithoutK8sMetadata",

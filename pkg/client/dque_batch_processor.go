@@ -528,7 +528,7 @@ func (p *DQueBatchProcessor) OnEmit(_ context.Context, record *sdklog.Record) er
 
 	// Convert to serializable item
 	item := recordToItem(recordCopy)
-	
+
 	// Serialize to JSON
 	jsonData, err := json.Marshal(item)
 	if err != nil {

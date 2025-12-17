@@ -34,16 +34,6 @@ func (b *ResourceAttributesBuilder) WithHostname(cfg config.Config) *ResourceAtt
 	return b
 }
 
-// WithOrigin adds origin attribute
-func (b *ResourceAttributesBuilder) WithOrigin(origin string) *ResourceAttributesBuilder {
-	b.attributes = append(b.attributes, attribute.KeyValue{
-		Key:   attribute.Key("origin"),
-		Value: attribute.StringValue(origin),
-	})
-
-	return b
-}
-
 // Build creates the resource with configured attributes
 func (b *ResourceAttributesBuilder) Build() *sdkresource.Resource {
 	return sdkresource.NewSchemaless(b.attributes...)

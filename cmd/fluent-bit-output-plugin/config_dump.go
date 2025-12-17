@@ -33,6 +33,7 @@ func dumpConfiguration(conf *config.Config) {
 	logger.V(1).Info("[flb-go]", "TagExpression", fmt.Sprintf("%+v", conf.PluginConfig.KubernetesMetadata.TagExpression))
 	logger.V(1).Info("[flb-go]", "TagKey", fmt.Sprintf("%+v", conf.PluginConfig.KubernetesMetadata.TagKey))
 	logger.V(1).Info("[flb-go]", "TagPrefix", fmt.Sprintf("%+v", conf.PluginConfig.KubernetesMetadata.TagPrefix))
+	logger.V(1).Info("[flb-go]", "Origin", fmt.Sprintf("%+v", conf.PluginConfig.Origin))
 	logger.V(1).Info("")
 	logger.V(1).Info("[flb-go] =====   Controller Config ===")
 	logger.V(1).Info("[flb-go]", "ControllerSyncTimeout", fmt.Sprintf("%+v", conf.ControllerConfig.CtlSyncTimeout.String()))

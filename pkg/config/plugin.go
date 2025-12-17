@@ -15,6 +15,7 @@ type PluginConfig struct {
 	// HostnameKeyValue specifies the hostname key value pair,
 	// it has higher priority than HostnameKey and HostnameValue
 	HostnameKeyValue *string `mapstructure:"-"`
+	Origin           string  `mapstructure:"Origin"`
 }
 
 // KubernetesMetadataExtraction holds kubernetes metadata extraction configuration

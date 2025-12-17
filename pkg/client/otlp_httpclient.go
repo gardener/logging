@@ -27,6 +27,7 @@ const componentOTLPHTTPName = "otlphttp"
 type OTLPHTTPClient struct {
 	logger         logr.Logger
 	endpoint       string
+	config         config.Config
 	loggerProvider *sdklog.LoggerProvider
 	meterProvider  *sdkmetric.MeterProvider
 	otlLogger      otlplog.Logger
@@ -90,7 +91,6 @@ func NewOTLPHTTPClient(ctx context.Context, cfg config.Config, logger logr.Logge
 	// Build resource attributes
 	resource := NewResourceAttributesBuilder().
 		WithHostname(cfg).
-		WithOrigin("seed").
 		Build()
 
 	// Create logger provider with DQue batch processor
@@ -119,6 +119,7 @@ func NewOTLPHTTPClient(ctx context.Context, cfg config.Config, logger logr.Logge
 	client := &OTLPHTTPClient{
 		logger:         logger.WithValues("endpoint", cfg.OTLPConfig.Endpoint, "component", componentOTLPHTTPName),
 		endpoint:       cfg.OTLPConfig.Endpoint,
+		config:         cfg,
 		loggerProvider: loggerProvider,
 		meterProvider:  metricsSetup.GetProvider(),
 		otlLogger:      loggerProvider.Logger(PluginName, scopeOptions...),
@@ -152,6 +153,7 @@ func (c *OTLPHTTPClient) Handle(entry types.OutputEntry) error {
 
 	// Build log record using builder pattern
 	logRecord := NewLogRecordBuilder().
+		WithConfig(c.config).
 		WithTimestamp(entry.Timestamp).
 		WithSeverity(entry.Record).
 		WithBody(entry.Record).
