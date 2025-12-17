@@ -56,6 +56,8 @@ func NewOTLPGRPCClient(ctx context.Context, cfg config.Config, logger logr.Logge
 
 	// Build blocking OTLP gRPC exporter configuration
 	configBuilder := NewOTLPGRPCConfigBuilder(cfg, logger)
+
+	// Applies TLS, headers, timeout, compression, and retry configurations
 	exporterOpts := configBuilder.Build()
 
 	// Add metrics instrumentation to gRPC dial options
@@ -107,6 +109,12 @@ func NewOTLPGRPCClient(ctx context.Context, cfg config.Config, logger logr.Logge
 		sdklog.WithProcessor(batchProcessor),
 	)
 
+	// Build instrumentation scope options
+	scopeOptions := NewScopeAttributesBuilder().
+		WithVersion(PluginVersion()).
+		WithSchemaURL(SchemaURL).
+		Build()
+
 	// Initialize rate limiter if throttling is enabled
 	var limiter *rate.Limiter
 	if cfg.OTLPConfig.ThrottleEnabled && cfg.OTLPConfig.ThrottleRequestsPerSec > 0 {
@@ -123,7 +131,7 @@ func NewOTLPGRPCClient(ctx context.Context, cfg config.Config, logger logr.Logge
 		endpoint:       cfg.OTLPConfig.Endpoint,
 		loggerProvider: loggerProvider,
 		meterProvider:  metricsSetup.GetProvider(),
-		otlLogger:      loggerProvider.Logger(componentOTLPGRPCName),
+		otlLogger:      loggerProvider.Logger(PluginName, scopeOptions...),
 		ctx:            clientCtx,
 		cancel:         cancel,
 		limiter:        limiter,

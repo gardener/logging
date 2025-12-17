@@ -87,7 +87,7 @@ plutono:
   volumes: [] # additional volumes to add to the Deployment
 
 prometheus:
-  image: quay.io/prometheus/prometheus:v3.8.0
+  image: quay.io/prometheus/prometheus:v3.8.1
 
   livenessProbe:
     failureThreshold: 6

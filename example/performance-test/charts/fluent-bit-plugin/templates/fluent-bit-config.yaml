@@ -155,7 +155,7 @@ data:
         DQueName                          dynamic
         DQueSync                          normal
         DQueBatchProcessorMaxQueueSize    10000
-        DQueBatchProcessorMaxBatchSize    300
+        DQueBatchProcessorMaxBatchSize    500
         DQueBatchProcessorExportInterval  1s
         DQueBatchProcessorExportTimeout   15m
 

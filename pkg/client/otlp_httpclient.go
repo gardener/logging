@@ -99,6 +99,12 @@ func NewOTLPHTTPClient(ctx context.Context, cfg config.Config, logger logr.Logge
 		sdklog.WithProcessor(batchProcessor),
 	)
 
+	// Build instrumentation scope options
+	scopeOptions := NewScopeAttributesBuilder().
+		WithVersion(PluginVersion()).
+		WithSchemaURL(SchemaURL).
+		Build()
+
 	// Initialize rate limiter if throttling is enabled
 	var limiter *rate.Limiter
 	if cfg.OTLPConfig.ThrottleEnabled && cfg.OTLPConfig.ThrottleRequestsPerSec > 0 {
@@ -115,7 +121,7 @@ func NewOTLPHTTPClient(ctx context.Context, cfg config.Config, logger logr.Logge
 		endpoint:       cfg.OTLPConfig.Endpoint,
 		loggerProvider: loggerProvider,
 		meterProvider:  metricsSetup.GetProvider(),
-		otlLogger:      loggerProvider.Logger(componentOTLPHTTPName),
+		otlLogger:      loggerProvider.Logger(PluginName, scopeOptions...),
 		ctx:            clientCtx,
 		cancel:         cancel,
 		limiter:        limiter,

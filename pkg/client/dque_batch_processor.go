@@ -16,8 +16,10 @@ import (
 	"github.com/joncrlsn/dque"
 	"go.opentelemetry.io/otel/attribute"
 	otlplog "go.opentelemetry.io/otel/log"
+	"go.opentelemetry.io/otel/sdk/instrumentation"
 	sdklog "go.opentelemetry.io/otel/sdk/log"
 	"go.opentelemetry.io/otel/sdk/log/logtest"
+	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/gardener/logging/v1/pkg/metrics"
@@ -430,14 +432,47 @@ func itemToRecord(item *logRecordItem) sdklog.Record {
 		}
 	}
 
+	// Build resource attributes from item
+	var resource *sdkresource.Resource
+	if len(item.Resource) > 0 {
+		resAttrs := make([]attribute.KeyValue, 0, len(item.Resource))
+		for _, attr := range item.Resource {
+			switch attr.ValueType {
+			case "string":
+				resAttrs = append(resAttrs, attribute.String(attr.Key, attr.StrValue))
+			case "int64":
+				resAttrs = append(resAttrs, attribute.Int64(attr.Key, attr.IntValue))
+			case "float64":
+				resAttrs = append(resAttrs, attribute.Float64(attr.Key, attr.FltValue))
+			case "bool":
+				resAttrs = append(resAttrs, attribute.Bool(attr.Key, attr.BoolValue))
+			default:
+				resAttrs = append(resAttrs, attribute.String(attr.Key, attr.StrValue))
+			}
+		}
+		resource = sdkresource.NewSchemaless(resAttrs...)
+	}
+
+	// Build instrumentation scope from item
+	var scope *instrumentation.Scope
+	if item.InstrumentationScope != nil && len(item.InstrumentationScope) > 0 {
+		scope = &instrumentation.Scope{
+			Name:      item.InstrumentationScope["name"],
+			Version:   item.InstrumentationScope["version"],
+			SchemaURL: item.InstrumentationScope["schemaURL"],
+		}
+	}
+
 	// Use RecordFactory to create a proper record (this ensures AsString() works correctly)
 	factory := logtest.RecordFactory{
-		Timestamp:         item.Timestamp,
-		ObservedTimestamp: item.ObservedTimestamp,
-		Severity:          otlplog.Severity(item.Severity),
-		SeverityText:      item.SeverityText,
-		Body:              otlplog.StringValue(item.Body),
-		Attributes:        attrs,
+		Timestamp:            item.Timestamp,
+		ObservedTimestamp:    item.ObservedTimestamp,
+		Severity:             otlplog.Severity(item.Severity),
+		SeverityText:         item.SeverityText,
+		Body:                 otlplog.StringValue(item.Body),
+		Attributes:           attrs,
+		Resource:             resource,
+		InstrumentationScope: scope,
 	}
 
 	// Set trace context if available
@@ -493,7 +528,7 @@ func (p *DQueBatchProcessor) OnEmit(_ context.Context, record *sdklog.Record) er
 
 	// Convert to serializable item
 	item := recordToItem(recordCopy)
-
+	
 	// Serialize to JSON
 	jsonData, err := json.Marshal(item)
 	if err != nil {
