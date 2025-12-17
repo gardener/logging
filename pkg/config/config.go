@@ -162,22 +162,6 @@ func processDurationField(configMap map[string]any, key string, setter func(time
 	return nil
 }
 
-func processHostnameKeyValue(configMap map[string]any, config *Config) error {
-	// Keys are already normalized to lowercase by ParseConfig
-	if hostnameKeyValue, ok := configMap["hostnamekeyvalue"].(string); ok && hostnameKeyValue != "" {
-		parts := strings.Fields(hostnameKeyValue)
-		if len(parts) < 2 {
-			return fmt.Errorf("HostnameKeyValue must have at least 2 parts (key value), got %d parts: %s", len(parts), hostnameKeyValue)
-		}
-		key := parts[0]
-		value := strings.Join(parts[1:], " ")
-		config.PluginConfig.HostnameKey = key
-		config.PluginConfig.HostnameValue = value
-	}
-
-	return nil
-}
-
 func processDynamicHostPath(configMap map[string]any, config *Config) error {
 	// Keys are already normalized to lowercase by ParseConfig
 	dynamicHostPath, ok := configMap["dynamichostpath"].(string)
@@ -303,8 +287,8 @@ func processClientTypes(config *Config, configMap map[string]any) error {
 }
 
 // processComplexStringConfigs handles complex string parsing fields
-func processComplexStringConfigs(config *Config, configMap map[string]any) error {
-	return processHostnameKeyValue(configMap, config)
+func processComplexStringConfigs(_ *Config, _ map[string]any) error {
+	return nil
 }
 
 // processDynamicHostPathConfig handles DynamicHostPath processing

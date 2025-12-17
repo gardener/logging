@@ -10,12 +10,8 @@ type PluginConfig struct {
 	LogLevel           string                       `mapstructure:"LogLevel"`
 	Pprof              bool                         `mapstructure:"Pprof"`
 	KubernetesMetadata KubernetesMetadataExtraction `mapstructure:",squash"`
-	HostnameKey        string                       `mapstructure:"HostnameKey"`
 	HostnameValue      string                       `mapstructure:"HostnameValue"`
-	// HostnameKeyValue specifies the hostname key value pair,
-	// it has higher priority than HostnameKey and HostnameValue
-	HostnameKeyValue *string `mapstructure:"-"`
-	Origin           string  `mapstructure:"Origin"`
+	Origin             string                       `mapstructure:"Origin"`
 }
 
 // KubernetesMetadataExtraction holds kubernetes metadata extraction configuration

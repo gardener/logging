@@ -6,6 +6,7 @@ package client
 import (
 	"go.opentelemetry.io/otel/attribute"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
+	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 
 	"github.com/gardener/logging/v1/pkg/config"
 )
@@ -13,28 +14,28 @@ import (
 // ResourceAttributesBuilder builds OpenTelemetry resource attributes
 type ResourceAttributesBuilder struct {
 	attributes []attribute.KeyValue
+	schemaURL  string
 }
 
 // NewResourceAttributesBuilder creates a new builder
 func NewResourceAttributesBuilder() *ResourceAttributesBuilder {
 	return &ResourceAttributesBuilder{
 		attributes: make([]attribute.KeyValue, 0, 2),
+		schemaURL:  semconv.SchemaURL,
 	}
 }
 
-// WithHostname adds hostname attribute if configured
+// WithHostname adds host.name attribute using OpenTelemetry semantic conventions
+// See: https://opentelemetry.io/docs/specs/semconv/resource/host/
 func (b *ResourceAttributesBuilder) WithHostname(cfg config.Config) *ResourceAttributesBuilder {
-	if cfg.PluginConfig.HostnameKey != "" {
-		b.attributes = append(b.attributes, attribute.KeyValue{
-			Key:   attribute.Key(cfg.PluginConfig.HostnameKey),
-			Value: attribute.StringValue(cfg.PluginConfig.HostnameValue),
-		})
+	if cfg.PluginConfig.HostnameValue != "" {
+		b.attributes = append(b.attributes, semconv.HostName(cfg.PluginConfig.HostnameValue))
 	}
 
 	return b
 }
 
-// Build creates the resource with configured attributes
+// Build creates the resource with configured attributes and schema URL
 func (b *ResourceAttributesBuilder) Build() *sdkresource.Resource {
-	return sdkresource.NewSchemaless(b.attributes...)
+	return sdkresource.NewWithAttributes(b.schemaURL, b.attributes...)
 }

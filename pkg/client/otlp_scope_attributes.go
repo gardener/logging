@@ -34,8 +34,8 @@ func NewScopeAttributesBuilder() *ScopeAttributesBuilder {
 }
 
 // WithVersion adds the instrumentation version to the scope
-func (b *ScopeAttributesBuilder) WithVersion(version string) *ScopeAttributesBuilder {
-	b.options = append(b.options, otlplog.WithInstrumentationVersion(version))
+func (b *ScopeAttributesBuilder) WithVersion(ver string) *ScopeAttributesBuilder {
+	b.options = append(b.options, otlplog.WithInstrumentationVersion(ver))
 
 	return b
 }

@@ -20,6 +20,7 @@ import (
 	sdklog "go.opentelemetry.io/otel/sdk/log"
 	"go.opentelemetry.io/otel/sdk/log/logtest"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
+	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/gardener/logging/v1/pkg/metrics"
@@ -437,6 +438,7 @@ func itemToRecord(item *logRecordItem) sdklog.Record {
 	if len(item.Resource) > 0 {
 		resAttrs := make([]attribute.KeyValue, 0, len(item.Resource))
 		for _, attr := range item.Resource {
+			//nolint:revive // identical-switch-branches: default fallback improves readability
 			switch attr.ValueType {
 			case "string":
 				resAttrs = append(resAttrs, attribute.String(attr.Key, attr.StrValue))
@@ -450,12 +452,12 @@ func itemToRecord(item *logRecordItem) sdklog.Record {
 				resAttrs = append(resAttrs, attribute.String(attr.Key, attr.StrValue))
 			}
 		}
-		resource = sdkresource.NewSchemaless(resAttrs...)
+		resource = sdkresource.NewWithAttributes(semconv.SchemaURL, resAttrs...)
 	}
 
 	// Build instrumentation scope from item
 	var scope *instrumentation.Scope
-	if item.InstrumentationScope != nil && len(item.InstrumentationScope) > 0 {
+	if len(item.InstrumentationScope) > 0 {
 		scope = &instrumentation.Scope{
 			Name:      item.InstrumentationScope["name"],
 			Version:   item.InstrumentationScope["version"],

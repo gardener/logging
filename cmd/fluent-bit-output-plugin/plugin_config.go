@@ -40,11 +40,7 @@ func (c *pluginConfig) toStringMap() map[string]string {
 		"DynamicHostSuffix", "dynamicHostSuffix",
 		"DynamicHostRegex", "dynamicHostRegex",
 
-		// Hostname config TODO: revisit if we really need this
-		"HostnameKey", "hostnameKey",
 		"HostnameValue", "hostnameValue",
-		"HostnameKeyValue", "hostnameKeyValue",
-
 		"Origin", "origin",
 
 		// Kubernetes metadata - TODO: revisit how to handle kubernetes metadata. Simplify?

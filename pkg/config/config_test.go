@@ -67,7 +67,6 @@ var _ = Describe("Config", func() {
 
 			// Plugin config defaults
 
-			Expect(cfg.PluginConfig.HostnameKey).To(BeEmpty())
 			Expect(cfg.PluginConfig.HostnameValue).To(BeEmpty())
 
 			// Kubernetes metadata defaults
@@ -125,16 +124,15 @@ var _ = Describe("Config", func() {
 			Expect(cfg.OTLPConfig.DQueConfig.DQueName).To(Equal("buzz"))
 		})
 
-		It("should parse config with hostname key value", func() {
+		It("should parse config with hostname value", func() {
 			configMap := map[string]any{
-				"HostnameKeyValue": "hostname ${HOST}",
+				"HostnameValue": "${HOST}",
 			}
 
 			cfg, err := config.ParseConfig(configMap)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(cfg).ToNot(BeNil())
 
-			Expect(cfg.PluginConfig.HostnameKey).To(Equal("hostname"))
 			Expect(cfg.PluginConfig.HostnameValue).To(Equal("${HOST}"))
 		})
 
@@ -375,7 +373,7 @@ var _ = Describe("Config", func() {
 				// Logging configuration
 				"LogLevel": "info",
 
-				"HostnameKeyValue": "nodename ${NODE_NAME}",
+				"HostnameValue": "${NODE_NAME}",
 
 				// Kubernetes metadata extraction
 				"FallbackToTagWhenMetadataIsMissing": "true",
@@ -419,8 +417,7 @@ var _ = Describe("Config", func() {
 			// "LogLevel": "info"
 			Expect(cfg.PluginConfig.LogLevel).To(Equal("info"))
 
-			// "HostnameKeyValue": "nodename ${NODE_NAME}"
-			Expect(cfg.PluginConfig.HostnameKey).To(Equal("nodename"))
+			// "HostnameValue": "${NODE_NAME}"
 			Expect(cfg.PluginConfig.HostnameValue).To(Equal("${NODE_NAME}"))
 
 			// Kubernetes metadata extraction

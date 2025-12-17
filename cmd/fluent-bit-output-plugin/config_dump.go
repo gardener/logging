@@ -17,12 +17,6 @@ func dumpConfiguration(conf *config.Config) {
 
 	logger.V(1).Info("[flb-go]", "DropLogEntryWithoutK8sMetadata", fmt.Sprintf("%+v", conf.PluginConfig.KubernetesMetadata.DropLogEntryWithoutK8sMetadata))
 	logger.V(1).Info("[flb-go]", "FallbackToTagWhenMetadataIsMissing", fmt.Sprintf("%+v", conf.PluginConfig.KubernetesMetadata.FallbackToTagWhenMetadataIsMissing))
-	if len(conf.PluginConfig.HostnameKey) > 0 {
-		logger.V(1).Info("[flb-go]", "HostnameKey", conf.PluginConfig.HostnameKey)
-	}
-	if conf.PluginConfig.HostnameKeyValue != nil {
-		logger.V(1).Info("[flb-go]", "HostnameKeyValue", *conf.PluginConfig.HostnameKeyValue)
-	}
 	if len(conf.PluginConfig.HostnameValue) > 0 {
 		logger.V(1).Info("[flb-go]", "HostnameValue", conf.PluginConfig.HostnameValue)
 	}
