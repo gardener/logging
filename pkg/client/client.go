@@ -58,13 +58,13 @@ func NewClient(ctx context.Context, cfg config.Config, opts ...Option) (OutputCl
 	var err error
 	switch options.target {
 	case Seed:
-		t := types.GetClientTypeFromString(cfg.ClientConfig.SeedType)
+		t := types.GetClientTypeFromString(cfg.PluginConfig.SeedType)
 		nfc, err = getNewClientFunc(t)
 		if err != nil {
 			return nil, err
 		}
 	case Shoot:
-		t := types.GetClientTypeFromString(cfg.ClientConfig.ShootType)
+		t := types.GetClientTypeFromString(cfg.PluginConfig.ShootType)
 		nfc, err = getNewClientFunc(t)
 		if err != nil {
 			return nil, err

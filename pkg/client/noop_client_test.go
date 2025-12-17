@@ -26,9 +26,7 @@ var _ = Describe("NoopClient", func() {
 	)
 
 	BeforeEach(func() {
-		cfg = config.Config{
-			ClientConfig: config.ClientConfig{},
-		}
+		cfg = config.Config{}
 
 		logger = log.NewNopLogger()
 		outputClient, _ = NewNoopClient(

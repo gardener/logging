@@ -95,17 +95,17 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 		return output.FLB_ERROR
 	}
 
-	if cfg.LogLevel != "info" {
-		logger = log.NewLogger(cfg.LogLevel)
+	if cfg.PluginConfig.LogLevel != "info" {
+		logger = log.NewLogger(cfg.PluginConfig.LogLevel)
 	}
 
 	dumpConfiguration(cfg)
 
-	if cfg.Pprof {
+	if cfg.PluginConfig.Pprof {
 		setPprofProfile()
 	}
 
-	if len(cfg.PluginConfig.DynamicHostPath) > 0 {
+	if len(cfg.ControllerConfig.DynamicHostPath) > 0 {
 		initClusterInformer()
 	}
 
@@ -114,7 +114,7 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 	// dump the complete configuration at debug level
 	// dumpConfiguration(cfg)
 
-	outputPlugin, err := plugin.NewPlugin(informer, cfg, log.NewLogger(cfg.LogLevel))
+	outputPlugin, err := plugin.NewPlugin(informer, cfg, log.NewLogger(cfg.PluginConfig.LogLevel))
 	if err != nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorNewPlugin).Inc()
 		logger.Error(err, "[flb-go] error creating output plugin", "id", id)

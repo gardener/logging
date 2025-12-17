@@ -52,8 +52,8 @@ func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger lo
 
 	// TODO(nickytd): Remove this magic check and introduce an Id field in the plugin output configuration
 	// If the plugin ID is "shoot" then we shall have a dynamic host and a default "controller" client
-	if len(cfg.PluginConfig.DynamicHostPath) > 0 {
-		l.dynamicHostRegexp = regexp.MustCompile(cfg.PluginConfig.DynamicHostRegex)
+	if len(cfg.ControllerConfig.DynamicHostPath) > 0 {
+		l.dynamicHostRegexp = regexp.MustCompile(cfg.ControllerConfig.DynamicHostRegex)
 
 		// Pass the plugin's context to the controller
 		if l.controller, err = controller.NewController(ctx, informer, cfg, logger); err != nil {
@@ -79,7 +79,7 @@ func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger lo
 
 	logger.Info("logging plugin created",
 		"seed_client_url", l.seedClient.GetEndPoint(),
-		"seed_queue_name", cfg.OTLPConfig.DqueConfig.DqueName,
+		"seed_queue_name", cfg.OTLPConfig.DQueConfig.DQueName,
 	)
 
 	return l, nil
@@ -114,7 +114,7 @@ func (l *logging) SendRecord(log types.OutputEntry) error {
 		}
 	}
 
-	dynamicHostName := getDynamicHostName(record, l.cfg.PluginConfig.DynamicHostPath)
+	dynamicHostName := getDynamicHostName(record, l.cfg.ControllerConfig.DynamicHostPath)
 	host := dynamicHostName
 	if !l.isDynamicHost(host) {
 		host = "garden" // the record needs to go to the seed client (in garden namespace)
@@ -167,7 +167,7 @@ func (l *logging) Close() {
 	}
 	l.logger.Info("logging plugin stopped",
 		"seed_client_url", l.seedClient.GetEndPoint(),
-		"seed_queue_name", l.cfg.OTLPConfig.DqueConfig.DqueName,
+		"seed_queue_name", l.cfg.OTLPConfig.DQueConfig.DQueName,
 	)
 }
 

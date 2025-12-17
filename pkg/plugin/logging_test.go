@@ -45,7 +45,6 @@ var _ = Describe("OutputPlugin plugin", func() {
 		logger = log.NewNopLogger()
 
 		cfg = &config.Config{
-			ClientConfig: config.ClientConfig{},
 			OTLPConfig: config.OTLPConfig{
 				Endpoint: "http://test-endpoint:3100",
 			},
@@ -537,7 +536,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 			plugin1.Close()
 
 			// Second run with new plugin instance
-			cfg.OTLPConfig.DqueConfig.DqueName = "test-queue-2"
+			cfg.OTLPConfig.DQueConfig.DQueName = "test-queue-2"
 			plugin2, err := NewPlugin(nil, cfg, logger)
 			Expect(err).NotTo(HaveOccurred())
 			defer plugin2.Close()
@@ -556,18 +555,19 @@ var _ = Describe("OutputPlugin plugin", func() {
 	})
 
 	Describe("Dynamic Host Routing with Controller", func() {
-		It("should route logs to shoot client when cluster resource matches namespace", func() {
+		It("should route logs to shoot when cluster resource matches namespace", func() {
 			// Setup configuration with dynamic host routing
-			cfg.PluginConfig.DynamicHostPath = map[string]any{
-				"kubernetes": map[string]any{
-					"namespace_name": "namespace",
-				},
-			}
-			cfg.PluginConfig.DynamicHostRegex = `^shoot--.*`
+			cfg.ControllerConfig.DynamicHostRegex = `^shoot--.*`
 			cfg.ControllerConfig = config.ControllerConfig{
 				CtlSyncTimeout:    5 * time.Second,
 				DynamicHostPrefix: "http://logging.",
 				DynamicHostSuffix: ".svc:4318/v1/logs",
+				DynamicHostRegex:  `^shoot--.*`,
+				DynamicHostPath: map[string]any{
+					"kubernetes": map[string]any{
+						"namespace_name": "namespace",
+					},
+				},
 				ShootControllerClientConfig: config.ControllerClientConfiguration{
 					SendLogsWhenIsInCreationState:   true,
 					SendLogsWhenIsInReadyState:      true,
@@ -634,7 +634,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 			}
 
 			GinkgoWriter.Printf("Sending record with namespace: %s\n", shootNamespace)
-			GinkgoWriter.Printf("Dynamic host should match regex: %s\n", cfg.PluginConfig.DynamicHostRegex)
+			GinkgoWriter.Printf("Dynamic host should match regex: %s\n", cfg.ControllerConfig.DynamicHostRegex)
 
 			initialShootDropped := promtest.ToFloat64(metrics.DroppedLogs.WithLabelValues(
 				cfg.ControllerConfig.DynamicHostPrefix+shootNamespace+cfg.ControllerConfig.DynamicHostSuffix, "noop"))
@@ -695,13 +695,13 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 		It("should handle multiple shoot clusters and route logs correctly", func() {
 			// Setup configuration with dynamic host routing
-			cfg.PluginConfig.DynamicHostPath = map[string]any{
-				"kubernetes": map[string]any{
-					"namespace_name": "namespace",
-				},
-			}
-			cfg.PluginConfig.DynamicHostRegex = `^shoot--.*`
 			cfg.ControllerConfig = config.ControllerConfig{
+				DynamicHostPath: map[string]any{
+					"kubernetes": map[string]any{
+						"namespace_name": "namespace",
+					},
+				},
+				DynamicHostRegex:  `^shoot--.*`,
 				CtlSyncTimeout:    5 * time.Second,
 				DynamicHostPrefix: "http://logging.",
 				DynamicHostSuffix: ".svc:4318/v1/logs",
@@ -742,6 +742,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 			defer plugin.Close()
 
 			l, ok := plugin.(*logging)
+			Expect(l).NotTo(BeNil())
 			Expect(ok).To(BeTrue())
 
 			time.Sleep(100 * time.Millisecond)
@@ -784,12 +785,12 @@ var _ = Describe("OutputPlugin plugin", func() {
 		})
 
 		It("should not route logs to hibernated cluster", func() {
-			cfg.PluginConfig.DynamicHostPath = map[string]any{
+			cfg.ControllerConfig.DynamicHostPath = map[string]any{
 				"kubernetes": map[string]any{
 					"namespace_name": "namespace",
 				},
 			}
-			cfg.PluginConfig.DynamicHostRegex = `^shoot--.*`
+			cfg.ControllerConfig.DynamicHostRegex = `^shoot--.*`
 			cfg.ControllerConfig = config.ControllerConfig{
 				CtlSyncTimeout:    5 * time.Second,
 				DynamicHostPrefix: "http://logging.",

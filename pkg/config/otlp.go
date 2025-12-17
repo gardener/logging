@@ -7,26 +7,20 @@ import (
 	"time"
 )
 
-// ClientConfig holds configuration for the chain of clients.
-type ClientConfig struct {
-	SeedType  string `mapstructure:"SeedType"`  // e.g., "OTLPGRPC"
-	ShootType string `mapstructure:"ShootType"` // e.g., "STDOUT"
+// DQueConfig contains the dqueue settings
+type DQueConfig struct {
+	DQueDir         string `mapstructure:"DQueDir"`
+	DQueSegmentSize int    `mapstructure:"DQueSegmentSize"`
+	DQueSync        bool   `mapstructure:"-"` // Handled specially in postProcessConfig
+	DQueName        string `mapstructure:"DQueName"`
 }
 
-// DqueConfig contains the dqueue settings
-type DqueConfig struct {
-	DqueDir         string `mapstructure:"DqueDir"`
-	DqueSegmentSize int    `mapstructure:"DqueSegmentSize"`
-	DqueSync        bool   `mapstructure:"-"` // Handled specially in postProcessConfig
-	DqueName        string `mapstructure:"DqueName"`
-}
-
-// DefaultDqueConfig holds dque configurations for the buffer
-var DefaultDqueConfig = DqueConfig{
-	DqueDir:         "/tmp/flb-storage",
-	DqueSegmentSize: 500,
-	DqueSync:        false,
-	DqueName:        "dque",
+// DefaultDQueConfig holds dque configurations for the buffer
+var DefaultDQueConfig = DQueConfig{
+	DQueDir:         "/tmp/flb-storage",
+	DQueSegmentSize: 500,
+	DQueSync:        false,
+	DQueName:        "dque",
 }
 
 // OTLPConfig holds configuration for otlp endpoint
@@ -37,14 +31,14 @@ type OTLPConfig struct {
 	Timeout     time.Duration     `mapstructure:"Timeout"`
 	Headers     map[string]string `mapstructure:"-"` // Handled manually in processOTLPConfig
 
-	DqueConfig DqueConfig `mapstructure:",squash"`
+	DQueConfig DQueConfig `mapstructure:",squash"`
 
 	// Batch Processor configuration fields
-	DqueBatchProcessorMaxQueueSize     int           `mapstructure:"DqueBatchProcessorMaxQueueSize"`
-	DqueBatchProcessorMaxBatchSize     int           `mapstructure:"DqueBatchProcessorMaxBatchSize"`
-	DqueBatchProcessorExportTimeout    time.Duration `mapstructure:"DqueBatchProcessorExportTimeout"`
-	DqueBatchProcessorExportInterval   time.Duration `mapstructure:"DqueBatchProcessorExportInterval"`
-	DqueBatchProcessorExportBufferSize int           `mapstructure:"DqueBatchProcessorExportBufferSize"`
+	DQueBatchProcessorMaxQueueSize     int           `mapstructure:"DQueBatchProcessorMaxQueueSize"`
+	DQueBatchProcessorMaxBatchSize     int           `mapstructure:"DQueBatchProcessorMaxBatchSize"`
+	DQueBatchProcessorExportTimeout    time.Duration `mapstructure:"DQueBatchProcessorExportTimeout"`
+	DQueBatchProcessorExportInterval   time.Duration `mapstructure:"DQueBatchProcessorExportInterval"`
+	DQueBatchProcessorExportBufferSize int           `mapstructure:"DQueBatchProcessorExportBufferSize"`
 
 	// Retry configuration fields
 	RetryEnabled         bool          `mapstructure:"RetryEnabled"`
@@ -95,12 +89,12 @@ var DefaultOTLPConfig = OTLPConfig{
 	TLSMaxVersion:          "",    // Use Go's default maximum
 	TLSConfig:              nil,   // Will be built from other fields
 
-	DqueConfig: DefaultDqueConfig, // Use default dque config
+	DQueConfig: DefaultDQueConfig, // Use default dque config
 
 	// Batch Processor defaults - tuned to prevent OOM under high load
-	DqueBatchProcessorMaxQueueSize:     512,              // Max records in queue before dropping
-	DqueBatchProcessorMaxBatchSize:     256,              // Max records per export batch
-	DqueBatchProcessorExportTimeout:    30 * time.Second, // Timeout for single export
-	DqueBatchProcessorExportInterval:   1 * time.Second,  // Flush interval
-	DqueBatchProcessorExportBufferSize: 10,
+	DQueBatchProcessorMaxQueueSize:     512,              // Max records in queue before dropping
+	DQueBatchProcessorMaxBatchSize:     256,              // Max records per export batch
+	DQueBatchProcessorExportTimeout:    30 * time.Second, // Timeout for single export
+	DQueBatchProcessorExportInterval:   1 * time.Second,  // Flush interval
+	DQueBatchProcessorExportBufferSize: 10,
 }

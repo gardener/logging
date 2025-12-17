@@ -243,27 +243,20 @@ func cleanup(ctx *testContext) {
 // createPluginConfig creates a test configuration for the plugin
 func createPluginConfig(tmpDir string) *config.Config {
 	return &config.Config{
-		LogLevel: "info", // Can be changed to "debug" for verbose testing
-		ClientConfig: config.ClientConfig{
-			SeedType:  types.NOOP.String(),
-			ShootType: types.NOOP.String(),
-		},
+
 		OTLPConfig: config.OTLPConfig{
 			Endpoint: "http://test-seed-endpoint:4318/v1/logs",
-			DqueConfig: config.DqueConfig{
-				DqueDir:         tmpDir,
-				DqueSegmentSize: 500,
-				DqueSync:        false,
-				DqueName:        "dque",
+			DQueConfig: config.DQueConfig{
+				DQueDir:         tmpDir,
+				DQueSegmentSize: 500,
+				DQueSync:        false,
+				DQueName:        "dque",
 			},
 		},
 		PluginConfig: config.PluginConfig{
-			DynamicHostPath: map[string]any{
-				"kubernetes": map[string]any{
-					"namespace_name": "",
-				},
-			},
-			DynamicHostRegex: `^shoot--[a-z]+--.+$`,
+			SeedType:  types.NOOP.String(),
+			ShootType: types.NOOP.String(),
+			LogLevel:  "info", // Can be changed to "debug" for verbose testing
 			KubernetesMetadata: config.KubernetesMetadataExtraction{
 				FallbackToTagWhenMetadataIsMissing: false,
 				DropLogEntryWithoutK8sMetadata:     false,
@@ -273,10 +266,15 @@ func createPluginConfig(tmpDir string) *config.Config {
 			},
 		},
 		ControllerConfig: config.ControllerConfig{
-			CtlSyncTimeout:              10 * time.Second,
-			DynamicHostPrefix:           "http://logging.",
-			DynamicHostSuffix:           ".svc:4318/v1/logs",
-			DeletedClientTimeExpiration: 5 * time.Minute,
+			CtlSyncTimeout:    10 * time.Second,
+			DynamicHostPrefix: "http://logging.",
+			DynamicHostSuffix: ".svc:4318/v1/logs",
+			DynamicHostPath: map[string]any{
+				"kubernetes": map[string]any{
+					"namespace_name": "",
+				},
+			},
+			DynamicHostRegex:            `^shoot--[a-z]+--.+$`,
 			ShootControllerClientConfig: config.ShootControllerClientConfig,
 			SeedControllerClientConfig:  config.SeedControllerClientConfig,
 		},

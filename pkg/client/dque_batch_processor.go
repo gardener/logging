@@ -628,7 +628,7 @@ func (p *DQueBatchProcessor) exportBatch(batch []sdklog.Record) {
 		return
 	}
 
-	metrics.OutputClientLogs.WithLabelValues(p.endpoint).Add(float64(len(batch)))
+	metrics.ExportedClientLogs.WithLabelValues(p.endpoint).Add(float64(len(batch)))
 	p.logger.V(3).Info("batch exported successfully", "size", len(batch))
 }
 

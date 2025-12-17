@@ -46,6 +46,13 @@ var (
 		Help:      "Total number of the forwarded logs to the output client",
 	}, []string{"host"})
 
+	// ExportedClientLogs is a prometheus metric which keeps logs to the Output Client
+	ExportedClientLogs = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: namespace,
+		Name:      "exported_client_logs_total",
+		Help:      "Total number of the exported logs to the output client",
+	}, []string{"host"})
+
 	// DroppedLogs is a prometheus metric which keeps the number of dropped logs by the output plugin
 	DroppedLogs = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: namespace,

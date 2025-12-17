@@ -31,18 +31,13 @@ const (
 
 	// MaxJSONSize parsing size limits
 	MaxJSONSize = 1 * 1024 * 1024 // 1MB limit for JSON parsing operations
-	// MaxConfigSize config size limits
-	MaxConfigSize = 512 * 1024 // 512KB limit for configuration JSON files
 )
 
 // Config holds the needed properties of the vali output plugin
 type Config struct {
-	ClientConfig     ClientConfig     `mapstructure:",squash"`
 	ControllerConfig ControllerConfig `mapstructure:",squash"`
 	PluginConfig     PluginConfig     `mapstructure:",squash"`
 	OTLPConfig       OTLPConfig       `mapstructure:",squash"`
-	LogLevel         string           `mapstructure:"LogLevel"` // "debug", "info", "warn", "error"
-	Pprof            bool             `mapstructure:"Pprof"`
 }
 
 // sanitizeConfigString removes surrounding quotes (" or ') from configuration string values
@@ -197,7 +192,7 @@ func processDynamicHostPath(configMap map[string]any, config *Config) error {
 		if err := json.Unmarshal([]byte(dynamicHostPath), &parsedMap); err != nil {
 			return fmt.Errorf("failed to parse DynamicHostPath JSON: %w", err)
 		}
-		config.PluginConfig.DynamicHostPath = parsedMap
+		config.ControllerConfig.DynamicHostPath = parsedMap
 	}
 
 	return nil
@@ -293,7 +288,7 @@ func processClientTypes(config *Config, configMap map[string]any) error {
 		if t == types.UNKNOWN {
 			return fmt.Errorf("invalid SeedType: %s", seedType)
 		}
-		config.ClientConfig.SeedType = t.String()
+		config.PluginConfig.SeedType = t.String()
 	}
 
 	if shootType, ok := configMap["shoottype"].(string); ok && shootType != "" {
@@ -301,7 +296,7 @@ func processClientTypes(config *Config, configMap map[string]any) error {
 		if t == types.UNKNOWN {
 			return fmt.Errorf("invalid ShootType: %s", shootType)
 		}
-		config.ClientConfig.ShootType = t.String()
+		config.PluginConfig.ShootType = t.String()
 	}
 
 	return nil
@@ -317,15 +312,15 @@ func processDynamicHostPathConfig(config *Config, configMap map[string]any) erro
 	return processDynamicHostPath(configMap, config)
 }
 
-// processQueueSyncConfig handles DqueSync special conversion
+// processQueueSyncConfig handles DQueSync special conversion
 func processQueueSyncConfig(config *Config, configMap map[string]any) error {
 	// Keys are already normalized to lowercase by ParseConfig
 	if queueSync, ok := configMap["dquesync"].(string); ok {
 		switch queueSync {
 		case "normal", "":
-			config.OTLPConfig.DqueConfig.DqueSync = false
+			config.OTLPConfig.DQueConfig.DQueSync = false
 		case "full":
-			config.OTLPConfig.DqueConfig.DqueSync = true
+			config.OTLPConfig.DQueConfig.DQueSync = true
 		default:
 			return fmt.Errorf("invalid string queueSync: %v", queueSync)
 		}
@@ -451,47 +446,47 @@ func processOTLPConfig(config *Config, configMap map[string]any) error {
 	}
 
 	// Process Batch Processor configuration fields
-	if maxQueueSize, ok := configMap["batchprocessormaxqueuesize"].(string); ok && maxQueueSize != "" {
+	if maxQueueSize, ok := configMap["dquebatchprocessormaxqueuesize"].(string); ok && maxQueueSize != "" {
 		val, err := strconv.Atoi(maxQueueSize)
 		if err != nil {
-			return fmt.Errorf("failed to parse DqueBatchProcessorMaxQueueSize as integer: %w", err)
+			return fmt.Errorf("failed to parse DQueBatchProcessorMaxQueueSize as integer: %w", err)
 		}
 		if val <= 0 {
-			return fmt.Errorf("DqueBatchProcessorMaxQueueSize must be positive, got %d", val)
+			return fmt.Errorf("DQueBatchProcessorMaxQueueSize must be positive, got %d", val)
 		}
-		config.OTLPConfig.DqueBatchProcessorMaxQueueSize = val
+		config.OTLPConfig.DQueBatchProcessorMaxQueueSize = val
 	}
 
-	if maxBatchSize, ok := configMap["batchprocessormaxbatchsize"].(string); ok && maxBatchSize != "" {
+	if maxBatchSize, ok := configMap["dquebatchprocessormaxbatchsize"].(string); ok && maxBatchSize != "" {
 		val, err := strconv.Atoi(maxBatchSize)
 		if err != nil {
-			return fmt.Errorf("failed to parse DqueBatchProcessorMaxBatchSize as integer: %w", err)
+			return fmt.Errorf("failed to parse DQueBatchProcessorMaxBatchSize as integer: %w", err)
 		}
 		if val <= 0 {
-			return fmt.Errorf("DqueBatchProcessorMaxBatchSize must be positive, got %d", val)
+			return fmt.Errorf("DQueBatchProcessorMaxBatchSize must be positive, got %d", val)
 		}
-		config.OTLPConfig.DqueBatchProcessorMaxBatchSize = val
+		config.OTLPConfig.DQueBatchProcessorMaxBatchSize = val
 	}
 
-	if bufferSize, ok := configMap["batchprocessorbuffersize"].(string); ok && bufferSize != "" {
+	if bufferSize, ok := configMap["dquebatchprocessorbuffersize"].(string); ok && bufferSize != "" {
 		val, err := strconv.Atoi(bufferSize)
 		if err != nil {
 			return fmt.Errorf("failed to parse BatchProcessorBufferSize as integer: %w", err)
 		}
 		if val <= 0 {
-			return fmt.Errorf("BatchProcessorBufferSize must be positive, got %d", val)
+			return fmt.Errorf("DQueBatchProcessorBufferSize must be positive, got %d", val)
 		}
-		config.OTLPConfig.DqueBatchProcessorExportBufferSize = val
+		config.OTLPConfig.DQueBatchProcessorExportBufferSize = val
 	}
 
-	if err := processDurationField(configMap, "batchprocessorexporttimeout", func(d time.Duration) {
-		config.OTLPConfig.DqueBatchProcessorExportTimeout = d
+	if err := processDurationField(configMap, "dquebatchprocessorexporttimeout", func(d time.Duration) {
+		config.OTLPConfig.DQueBatchProcessorExportTimeout = d
 	}); err != nil {
 		return err
 	}
 
-	if err := processDurationField(configMap, "batchprocessorexportinterval", func(d time.Duration) {
-		config.OTLPConfig.DqueBatchProcessorExportInterval = d
+	if err := processDurationField(configMap, "dquebatchprocessorexportinterval", func(d time.Duration) {
+		config.OTLPConfig.DQueBatchProcessorExportInterval = d
 	}); err != nil {
 		return err
 	}
@@ -672,15 +667,15 @@ func defaultConfig() (*Config, error) {
 		ControllerConfig: ControllerConfig{
 			ShootControllerClientConfig: ShootControllerClientConfig,
 			SeedControllerClientConfig:  SeedControllerClientConfig,
-			DeletedClientTimeExpiration: time.Hour,
 			CtlSyncTimeout:              60 * time.Second,
-		},
-		ClientConfig: ClientConfig{
-			SeedType:  types.NOOP.String(),
-			ShootType: types.NOOP.String(),
+			DynamicHostRegex:            "*",
 		},
 		PluginConfig: PluginConfig{
-			DynamicHostRegex: "*",
+			SeedType:  types.NOOP.String(),
+			ShootType: types.NOOP.String(),
+			LogLevel:  defaultLevel,
+			Pprof:     false,
+
 			KubernetesMetadata: KubernetesMetadataExtraction{
 				TagKey:        DefaultKubernetesMetadataTagKey,
 				TagPrefix:     DefaultKubernetesMetadataTagPrefix,
@@ -688,8 +683,6 @@ func defaultConfig() (*Config, error) {
 			},
 		},
 		OTLPConfig: DefaultOTLPConfig,
-		LogLevel:   defaultLevel,
-		Pprof:      false,
 	}
 
 	return config, nil
