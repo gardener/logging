@@ -518,18 +518,52 @@ func (p *DQueBatchProcessor) Enabled(_ context.Context, _ sdklog.EnabledParamete
 // OnEmit implements sdklog.Processor
 func (p *DQueBatchProcessor) OnEmit(_ context.Context, record *sdklog.Record) error {
 	p.mu.Lock()
-	defer p.mu.Unlock()
 
 	if p.closed {
+		p.mu.Unlock()
+
 		return ErrProcessorClosed
 	}
 
-	// Check queue size limit
-	queueSize := p.queue.Size()
-	if queueSize >= p.config.maxQueueSize {
-		metrics.DroppedLogs.WithLabelValues(p.endpoint, "queue_full").Inc()
+	// Check queue size limit with retry logic
+	const maxRetries = 5
+	const base = 10 // base wait time in milliseconds
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		queueSize := p.queue.Size()
+		if queueSize < p.config.maxQueueSize {
+			// Queue has space, proceed with enqueue
+			break
+		}
 
-		return ErrQueueFull
+		// Queue is full
+		if attempt == maxRetries {
+			// Final attempt failed
+			metrics.DroppedLogs.WithLabelValues(p.endpoint, "queue_full").Inc()
+			p.mu.Unlock()
+
+			return ErrQueueFull
+		}
+
+		// Retry with exponential backoff: 10ms, 20ms
+		waitTime := time.Duration(base*(1<<(attempt-1))) * time.Millisecond
+		p.logger.V(2).Info("queue full, retrying",
+			"attempt", attempt,
+			"wait_ms", waitTime.Milliseconds(),
+			"queue_size", queueSize,
+			"max_queue_size", p.config.maxQueueSize,
+		)
+
+		// Release lock during wait to allow processLoop to drain queue
+		p.mu.Unlock()
+		time.Sleep(waitTime)
+		p.mu.Lock()
+
+		// Check if processor was closed during wait
+		if p.closed {
+			p.mu.Unlock()
+
+			return ErrProcessorClosed
+		}
 	}
 
 	// Convert to serializable item (no need to clone since we're only reading)
@@ -539,6 +573,7 @@ func (p *DQueBatchProcessor) OnEmit(_ context.Context, record *sdklog.Record) er
 	jsonData, err := json.Marshal(item)
 	if err != nil {
 		metrics.DroppedLogs.WithLabelValues(p.endpoint, "marshal_error").Inc()
+		p.mu.Unlock()
 
 		return fmt.Errorf("failed to marshal record to JSON: %w", err)
 	}
@@ -549,6 +584,7 @@ func (p *DQueBatchProcessor) OnEmit(_ context.Context, record *sdklog.Record) er
 	// Enqueue to dque (persistent, blocking)
 	if err := p.queue.Enqueue(wrapper); err != nil {
 		metrics.DroppedLogs.WithLabelValues(p.endpoint, "enqueue_error").Inc()
+		p.mu.Unlock()
 
 		return fmt.Errorf("failed to enqueue record: %w", err)
 	}
@@ -561,6 +597,8 @@ func (p *DQueBatchProcessor) OnEmit(_ context.Context, record *sdklog.Record) er
 	default:
 		// Channel already has a signal, no need to send another
 	}
+
+	p.mu.Unlock()
 
 	return nil
 }
@@ -626,6 +664,7 @@ func (p *DQueBatchProcessor) processLoop() {
 					p.exportBatch(batch)
 					batch = batch[:0]
 				}
+
 				continue
 			}
 
@@ -657,6 +696,7 @@ func (p *DQueBatchProcessor) processLoop() {
 					p.exportBatch(batch)
 					batch = batch[:0]
 				}
+
 				continue
 			}
 
