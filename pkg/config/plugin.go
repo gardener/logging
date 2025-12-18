@@ -5,19 +5,13 @@ package config
 
 // PluginConfig holds configuration for the plugin
 type PluginConfig struct {
-	// DynamicHostPath provides dynamic host path configuration
-	DynamicHostPath map[string]any `mapstructure:"-"`
-	// DynamicHostRegex specifies regex for dynamic host matching
-	DynamicHostRegex string `mapstructure:"DynamicHostRegex"`
-	// KubernetesMetadata holds kubernetes metadata extraction configuration
+	SeedType           string                       `mapstructure:"SeedType"`
+	ShootType          string                       `mapstructure:"ShootType"`
+	LogLevel           string                       `mapstructure:"LogLevel"`
+	Pprof              bool                         `mapstructure:"Pprof"`
 	KubernetesMetadata KubernetesMetadataExtraction `mapstructure:",squash"`
-	// HostnameKey specifies the hostname key
-	HostnameKey string `mapstructure:"HostnameKey"`
-	// HostnameValue specifies the hostname value
-	HostnameValue string `mapstructure:"HostnameValue"`
-	// HostnameKeyValue specifies the hostname key value pair,
-	// it has higher priority than HostnameKey and HostnameValue
-	HostnameKeyValue *string `mapstructure:"-"`
+	HostnameValue      string                       `mapstructure:"HostnameValue"`
+	Origin             string                       `mapstructure:"Origin"`
 }
 
 // KubernetesMetadataExtraction holds kubernetes metadata extraction configuration

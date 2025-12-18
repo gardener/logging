@@ -158,7 +158,7 @@ var _ = Describe("Plugin Integration Test", Ordered, func() {
 		for i := 0; i < numberOfClusters; i++ {
 			clusterName := fmt.Sprintf("shoot--test--cluster-%03d", i)
 			endpoint := fmt.Sprintf("http://logging.%s.svc:4318/v1/logs", clusterName)
-			dropped := promtest.ToFloat64(metrics.DroppedLogs.WithLabelValues(endpoint))
+			dropped := promtest.ToFloat64(metrics.DroppedLogs.WithLabelValues(endpoint, "noop"))
 			totalDropped += dropped
 		}
 
@@ -243,30 +243,20 @@ func cleanup(ctx *testContext) {
 // createPluginConfig creates a test configuration for the plugin
 func createPluginConfig(tmpDir string) *config.Config {
 	return &config.Config{
-		LogLevel: "info", // Can be changed to "debug" for verbose testing
-		ClientConfig: config.ClientConfig{
-			SeedType:  types.NOOP.String(),
-			ShootType: types.NOOP.String(),
-			BufferConfig: config.BufferConfig{
-				Buffer: true,
-				DqueConfig: config.DqueConfig{
-					QueueDir:         tmpDir,
-					QueueSegmentSize: 500,
-					QueueSync:        false,
-					QueueName:        "dque",
-				},
-			},
-		},
+
 		OTLPConfig: config.OTLPConfig{
 			Endpoint: "http://test-seed-endpoint:4318/v1/logs",
+			DQueConfig: config.DQueConfig{
+				DQueDir:         tmpDir,
+				DQueSegmentSize: 500,
+				DQueSync:        false,
+				DQueName:        "dque",
+			},
 		},
 		PluginConfig: config.PluginConfig{
-			DynamicHostPath: map[string]any{
-				"kubernetes": map[string]any{
-					"namespace_name": "",
-				},
-			},
-			DynamicHostRegex: `^shoot--[a-z]+--.+$`,
+			SeedType:  types.NOOP.String(),
+			ShootType: types.NOOP.String(),
+			LogLevel:  "info", // Can be changed to "debug" for verbose testing
 			KubernetesMetadata: config.KubernetesMetadataExtraction{
 				FallbackToTagWhenMetadataIsMissing: false,
 				DropLogEntryWithoutK8sMetadata:     false,
@@ -276,10 +266,15 @@ func createPluginConfig(tmpDir string) *config.Config {
 			},
 		},
 		ControllerConfig: config.ControllerConfig{
-			CtlSyncTimeout:              10 * time.Second,
-			DynamicHostPrefix:           "http://logging.",
-			DynamicHostSuffix:           ".svc:4318/v1/logs",
-			DeletedClientTimeExpiration: 5 * time.Minute,
+			CtlSyncTimeout:    10 * time.Second,
+			DynamicHostPrefix: "http://logging.",
+			DynamicHostSuffix: ".svc:4318/v1/logs",
+			DynamicHostPath: map[string]any{
+				"kubernetes": map[string]any{
+					"namespace_name": "",
+				},
+			},
+			DynamicHostRegex:            `^shoot--[a-z]+--.+$`,
 			ShootControllerClientConfig: config.ShootControllerClientConfig,
 			SeedControllerClientConfig:  config.SeedControllerClientConfig,
 		},

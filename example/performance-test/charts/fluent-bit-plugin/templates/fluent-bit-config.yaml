@@ -133,34 +133,31 @@ data:
     [Output]
         Name                      gardener
         Match                     kubernetes.*
+        LogLevel                  warning
         Retry_Limit               10
 
         SeedType                  otlpgrpc
-        ShootType                 otlphttp
-
-        DynamicHostPath           {"kubernetes": {"namespace_name": "namespace"}}
-        DynamicHostPrefix         logging.
-        DynamicHostSuffix         .svc.cluster.local:4318
-        DynamicHostRegex          ^shoot-
-
-        Buffer                    false
-        QueueDir                  /var/run/fluentbit/dque
-        QueueName                 dynamic
-        QueueSync                 normal
-
-        LogLevel                  warning
+        ShootType                 otlpgrpc
 
         Endpoint                  logging-otel-collector-seed.fluent-bit.svc.cluster.local:4317
         Insecure                  true
         Timeout                   15m
 
-        ThrottleEnabled           true
+        ThrottleEnabled           false
         ThrottleRequestsPerSec    1000
 
-        BatchProcessorMaxQueueSize    1500
-        BatchProcessorMaxBatchSize    300
-        BatchProcessorExportInterval  1s
-        BatchProcessorExportTimeout   15m
+        DynamicHostPath           {"kubernetes": {"namespace_name": "namespace"}}
+        DynamicHostPrefix         logging.
+        DynamicHostSuffix         .svc.cluster.local:4317
+        DynamicHostRegex          ^shoot-
+
+        DQueDir                           /var/run/fluentbit/dque
+        DQueName                          dynamic
+        DQueSync                          normal
+        DQueBatchProcessorMaxQueueSize    10000
+        DQueBatchProcessorMaxBatchSize    500
+        DQueBatchProcessorExportInterval  1s
+        DQueBatchProcessorExportTimeout   15m
 
         RetryEnabled              true
         RetryInitialInterval      1s

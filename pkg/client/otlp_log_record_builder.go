@@ -11,6 +11,7 @@ import (
 
 	otlplog "go.opentelemetry.io/otel/log"
 
+	"github.com/gardener/logging/v1/pkg/config"
 	"github.com/gardener/logging/v1/pkg/types"
 )
 
@@ -18,11 +19,19 @@ import (
 type LogRecordBuilder struct {
 	record       otlplog.Record
 	severityText string
+	config       config.Config
 }
 
 // NewLogRecordBuilder creates a new log record builder
 func NewLogRecordBuilder() *LogRecordBuilder {
 	return &LogRecordBuilder{}
+}
+
+// WithConfig sets the configuration
+func (b *LogRecordBuilder) WithConfig(cfg config.Config) *LogRecordBuilder {
+	b.config = cfg
+
+	return b
 }
 
 // WithTimestamp sets the timestamp
@@ -116,10 +125,15 @@ func extractBody(record map[string]any) string {
 
 func (b *LogRecordBuilder) buildAttributes(entry types.OutputEntry) []otlplog.KeyValue {
 	k8sAttrs := extractK8sResourceAttributes(entry)
-	attrs := make([]otlplog.KeyValue, 0, len(entry.Record)+len(k8sAttrs))
+	attrs := make([]otlplog.KeyValue, 0, len(entry.Record)+len(k8sAttrs)+1)
 
 	// Add Kubernetes resource attributes first
 	attrs = append(attrs, k8sAttrs...)
+
+	// Add origin attribute if configured
+	if b.config.PluginConfig.Origin != "" {
+		attrs = append(attrs, otlplog.String("origin", b.config.PluginConfig.Origin))
+	}
 
 	// Add other record fields
 	for k, v := range entry.Record {

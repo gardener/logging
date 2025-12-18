@@ -162,8 +162,8 @@ var _ = Describe("Controller", func() {
 
 		BeforeEach(func() {
 			conf = &config.Config{
-				ClientConfig: config.ClientConfig{
-					BufferConfig: config.DefaultBufferConfig,
+				OTLPConfig: config.OTLPConfig{
+					DQueConfig: config.DefaultDQueConfig,
 				},
 				ControllerConfig: config.ControllerConfig{
 					DynamicHostPrefix: dynamicHostPrefix,

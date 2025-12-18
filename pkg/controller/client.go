@@ -79,9 +79,7 @@ func (ctl *controller) newControllerClient(clusterName string, clientConf *confi
 	)
 
 	opt := []client.Option{client.WithTarget(client.Shoot), client.WithLogger(ctl.logger)}
-	if clientConf.ClientConfig.BufferConfig.Buffer {
-		opt = append(opt, client.WithDque(true))
-	}
+
 	// Pass the controller's context to the shoot client
 	shootClient, err := client.NewClient(ctl.ctx, *clientConf, opt...)
 	if err != nil {

@@ -33,9 +33,7 @@ var _ = Describe("StdoutClient", func() {
 	)
 
 	BeforeEach(func() {
-		cfg = config.Config{
-			ClientConfig: config.ClientConfig{},
-		}
+		cfg = config.Config{}
 
 		logger = log.NewNopLogger()
 

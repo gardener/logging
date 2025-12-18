@@ -20,7 +20,7 @@ var _ = Describe("Simple Plugin Test", func() {
 	It("should create a NoopClient with logr logger", func() {
 		logger := log.NewNopLogger()
 		cfg := config.Config{
-			ClientConfig: config.ClientConfig{
+			PluginConfig: config.PluginConfig{
 				SeedType: types.NOOP.String(),
 			},
 			OTLPConfig: config.OTLPConfig{

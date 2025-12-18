@@ -15,29 +15,26 @@ import (
 
 var _ = ginkgov2.Describe("Client", func() {
 	conf := config.Config{
-		ClientConfig: config.ClientConfig{
-			BufferConfig: config.BufferConfig{
-				Buffer: false,
-				DqueConfig: config.DqueConfig{
-					QueueDir:         config.DefaultDqueConfig.QueueDir,
-					QueueSegmentSize: config.DefaultDqueConfig.QueueSegmentSize,
-					QueueSync:        config.DefaultDqueConfig.QueueSync,
-					QueueName:        config.DefaultDqueConfig.QueueName,
-				},
+		OTLPConfig: config.OTLPConfig{
+			DQueConfig: config.DQueConfig{
+				DQueDir:         config.DefaultDQueConfig.DQueDir,
+				DQueSegmentSize: config.DefaultDQueConfig.DQueSegmentSize,
+				DQueSync:        config.DefaultDQueConfig.DQueSync,
+				DQueName:        config.DefaultDQueConfig.DQueName,
 			},
 		},
 		PluginConfig: config.PluginConfig{
+			LogLevel: "info",
+		},
+		ControllerConfig: config.ControllerConfig{
+			DynamicHostPrefix: "localhost",
+			DynamicHostSuffix: ":4317",
 			DynamicHostPath: map[string]any{
 				"kubernetes": map[string]any{
 					"namespace_name": "namespace",
 				},
 			},
 			DynamicHostRegex: "shoot--",
-		},
-		LogLevel: "info",
-		ControllerConfig: config.ControllerConfig{
-			DynamicHostPrefix: "localhost",
-			DynamicHostSuffix: ":4317",
 		},
 	}
 
