@@ -78,7 +78,7 @@ data:
         Http_Listen               0.0.0.0
         Http_Port                 2020
         Http_Server               true
-        Log_Level                 info
+        Log_Level                 warn
         Parsers_File              /fluent-bit/config/parsers.conf
         Hot_Reload                On
         Mem_Buf_Limit             100MB
@@ -86,7 +86,7 @@ data:
         storage.sync              normal
         storage.metrics           on
         storage.checksum          off
-        storage.max_chunks_up     200
+        storage.max_chunks_up     500
         storage.backlog.mem_limit 50M
         storage.backlog.flush_on_shutdown true
 
@@ -133,7 +133,7 @@ data:
     [Output]
         Name                      gardener
         Match                     kubernetes.*
-        LogLevel                  warning
+        LogLevel                  info
         Retry_Limit               10
 
         SeedType                  otlpgrpc

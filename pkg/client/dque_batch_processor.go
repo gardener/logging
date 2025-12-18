@@ -138,8 +138,9 @@ type DQueBatchProcessor struct {
 	cancel context.CancelFunc
 	wg     sync.WaitGroup
 
-	mu     sync.Mutex
-	closed bool
+	mu          sync.Mutex
+	closed      bool
+	newRecordCh chan struct{}
 }
 
 // logRecordItem wraps a log record for JSON serialization in dque
@@ -244,31 +245,34 @@ func NewDQueBatchProcessor(
 	// Set turbo mode
 	if !config.dqueueSync {
 		if err = queue.TurboOn(); err != nil {
-			return nil, fmt.Errorf("cannot enable turbo mode for queue: %w", err)
+			return nil, fmt.Errorf("cannot enable turbo mode for dque: %w", err)
 		}
 	}
 
 	processorCtx, cancel := context.WithCancel(ctx)
 
 	processor := &DQueBatchProcessor{
-		logger:   logger.WithValues("component", "dque_batch_processor", "endpoint", config.endpoint),
-		config:   config,
-		exporter: exporter,
-		queue:    queue,
-		endpoint: config.endpoint,
-		ctx:      processorCtx,
-		cancel:   cancel,
+		logger:      logger.WithValues("component", "dque_batch_processor", "endpoint", config.endpoint),
+		config:      config,
+		exporter:    exporter,
+		queue:       queue,
+		endpoint:    config.endpoint,
+		ctx:         processorCtx,
+		cancel:      cancel,
+		newRecordCh: make(chan struct{}, 1), // buffered to avoid blocking OnEmit
 	}
 
 	// Start background worker for batch processing
 	processor.wg.Add(1)
 	go processor.processLoop()
 
-	logger.V(1).Info("DQue batch processor started",
-		"max_queue_size", config.maxQueueSize,
-		"max_batch_size", config.maxBatchSize,
-		"export_interval", config.exportInterval,
-		"dqueue_dir", config.dqueueDir)
+	logger.Info("DQue batch processor started",
+		"dque_max_queue_size", config.maxQueueSize,
+		"dque_max_batch_size", config.maxBatchSize,
+		"dque_export_interval", config.exportInterval,
+		"dque_dir", config.dqueueDir,
+		"dque_sync", config.dqueueSync,
+	)
 
 	return processor, nil
 }
@@ -551,6 +555,13 @@ func (p *DQueBatchProcessor) OnEmit(_ context.Context, record *sdklog.Record) er
 
 	metrics.BufferedLogs.WithLabelValues(p.endpoint).Inc()
 
+	// Signal processLoop that a new record is available (non-blocking)
+	select {
+	case p.newRecordCh <- struct{}{}:
+	default:
+		// Channel already has a signal, no need to send another
+	}
+
 	return nil
 }
 
@@ -596,10 +607,10 @@ func (p *DQueBatchProcessor) processLoop() {
 			}
 			p.logger.V(3).Info("queue size reported", "size", queueSize)
 
-		default:
-			// Try to dequeue a record (blocking with timeout)
+		case <-p.newRecordCh:
+			// New record signal received, try to dequeue immediately
 			record, err := p.dequeue()
-			if err != nil {
+			if err != nil && !errors.Is(err, dque.ErrEmpty) {
 				// increase error count
 				wrapped := errors.Unwrap(err)
 				if wrapped != nil {
@@ -608,6 +619,44 @@ func (p *DQueBatchProcessor) processLoop() {
 					metrics.Errors.WithLabelValues(err.Error()).Inc()
 				}
 
+				continue
+			}
+			if errors.Is(err, dque.ErrEmpty) {
+				if len(batch) > 0 {
+					p.exportBatch(batch)
+					batch = batch[:0]
+				}
+				continue
+			}
+
+			batch = append(batch, record)
+
+			// Export when batch is full
+			if len(batch) >= p.config.maxBatchSize {
+				p.exportBatch(batch)
+				batch = batch[:0]
+			}
+
+		default:
+			// Try to dequeue a record (blocking with timeout)
+			record, err := p.dequeue()
+			if err != nil && !errors.Is(err, dque.ErrEmpty) {
+				// increase error count
+				wrapped := errors.Unwrap(err)
+				if wrapped != nil {
+					metrics.Errors.WithLabelValues(wrapped.Error()).Inc()
+				} else {
+					metrics.Errors.WithLabelValues(err.Error()).Inc()
+				}
+
+				continue
+			}
+			if errors.Is(err, dque.ErrEmpty) {
+				time.Sleep(100 * time.Millisecond)
+				if len(batch) > 0 {
+					p.exportBatch(batch)
+					batch = batch[:0]
+				}
 				continue
 			}
 
