@@ -16,7 +16,7 @@
   "editable": true,
   "gnetId": 7752,
   "graphTooltip": 1,
-  "iteration": 1765781322526,
+  "iteration": 1766076503629,
   "links": [],
   "panels": [
     {
@@ -1592,8 +1592,168 @@
       ],
       "timeFrom": null,
       "timeShift": null,
-      "title": "[Output Plugin] Output Clients logs Total",
+      "title": "[Output Plugin] Output Logs Rate",
       "transformations": [],
+      "type": "timeseries"
+    },
+    {
+      "datasource": "prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "graph": false,
+              "legend": false,
+              "tooltip": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": true
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 56
+      },
+      "id": 136,
+      "options": {
+        "graph": {},
+        "legend": {
+          "calcs": [
+            "last"
+          ],
+          "displayMode": "table",
+          "placement": "right"
+        },
+        "tooltipOptions": {
+          "mode": "single"
+        }
+      },
+      "pluginVersion": "7.5.42",
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "sum by (host)(rate(fluentbit_gardener_exported_client_logs_total{pod=~\"$pod\",host=~\"$host\"}[$__rate_interval]))",
+          "interval": "",
+          "legendFormat": "{{host}}",
+          "queryType": "randomWalk",
+          "refId": "A"
+        }
+      ],
+      "title": "[Output Plugin] Exported Logs Rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "graph": false,
+              "legend": false,
+              "tooltip": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": true
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 56
+      },
+      "id": 138,
+      "options": {
+        "graph": {},
+        "legend": {
+          "calcs": [
+            "last"
+          ],
+          "displayMode": "list",
+          "placement": "right"
+        },
+        "tooltipOptions": {
+          "mode": "single"
+        }
+      },
+      "pluginVersion": "7.5.42",
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "sum by (host)(fluentbit_gardener_buffered_logs{pod=~\"$pod\",host=~\"$host\"})",
+          "interval": "",
+          "legendFormat": "",
+          "queryType": "randomWalk",
+          "refId": "A"
+        }
+      ],
+      "title": "[Output Plugin] Buffered Logs",
       "type": "timeseries"
     },
     {
@@ -1647,7 +1807,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 56
+        "y": 64
       },
       "id": 118,
       "options": {
@@ -1708,7 +1868,7 @@
         "h": 6,
         "w": 4,
         "x": 0,
-        "y": 64
+        "y": 72
       },
       "id": 134,
       "options": {
@@ -1791,7 +1951,7 @@
         "h": 6,
         "w": 20,
         "x": 4,
-        "y": 64
+        "y": 72
       },
       "id": 124,
       "options": {
@@ -1872,7 +2032,7 @@
         "h": 7,
         "w": 24,
         "x": 0,
-        "y": 70
+        "y": 78
       },
       "id": 130,
       "options": {
@@ -1917,7 +2077,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 77
+        "y": 85
       },
       "id": 100,
       "panels": [
@@ -2553,7 +2713,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 78
+        "y": 86
       },
       "id": 110,
       "panels": [
@@ -3185,7 +3345,11 @@
         "datasource": "prometheus",
         "definition": "label_values(pod)",
         "description": null,
-        "error": null,
+        "error": {
+          "data": {
+            "message": "Unexpected error"
+          }
+        },
         "hide": 0,
         "includeAll": true,
         "label": "Pod",
@@ -3216,7 +3380,11 @@
         "datasource": "prometheus",
         "definition": "label_values(fluentbit_gardener_incoming_logs_total,host)",
         "description": "Output plugin host target",
-        "error": null,
+        "error": {
+          "data": {
+            "message": "Unexpected error"
+          }
+        },
         "hide": 0,
         "includeAll": true,
         "label": "Host",
