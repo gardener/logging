@@ -24,23 +24,24 @@ var _ = Describe("OTLPHTTPClient", func() {
 	BeforeEach(func() {
 		logger = logr.Discard()
 		cfg = config.Config{
-			ClientConfig: config.ClientConfig{
-				BufferConfig: config.BufferConfig{
-					Buffer: false,
-					DqueConfig: config.DqueConfig{
-						QueueDir:         config.DefaultDqueConfig.QueueDir,
-						QueueSegmentSize: config.DefaultDqueConfig.QueueSegmentSize,
-						QueueSync:        config.DefaultDqueConfig.QueueSync,
-						QueueName:        config.DefaultDqueConfig.QueueName,
-					},
-				},
-			},
 			OTLPConfig: config.OTLPConfig{
 				Endpoint:    "localhost:4318",
 				Insecure:    true,
 				Compression: 0,
 				Timeout:     30 * time.Second,
 				Headers:     make(map[string]string),
+				DQueConfig: config.DQueConfig{
+					DQueDir:         GetTestTempDir("otlp"),
+					DQueSegmentSize: config.DefaultDQueConfig.DQueSegmentSize,
+					DQueSync:        config.DefaultDQueConfig.DQueSync,
+					DQueName:        config.DefaultDQueConfig.DQueName,
+				},
+				// Batch processor configuration
+				DQueBatchProcessorMaxQueueSize:     config.DefaultOTLPConfig.DQueBatchProcessorMaxQueueSize,
+				DQueBatchProcessorMaxBatchSize:     config.DefaultOTLPConfig.DQueBatchProcessorMaxBatchSize,
+				DQueBatchProcessorExportTimeout:    config.DefaultOTLPConfig.DQueBatchProcessorExportTimeout,
+				DQueBatchProcessorExportInterval:   config.DefaultOTLPConfig.DQueBatchProcessorExportInterval,
+				DQueBatchProcessorExportBufferSize: config.DefaultOTLPConfig.DQueBatchProcessorExportBufferSize,
 			},
 		}
 	})
@@ -399,6 +400,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 			// First client
 			cfg1 := cfg
 			cfg1.OTLPConfig.Endpoint = "otlp-collector-1:4318"
+			cfg1.OTLPConfig.DQueConfig.DQueDir = GetTestTempDir("otlp-test-1")
 			client1, err := NewOTLPHTTPClient(context.Background(), cfg1, logger)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(client1.GetEndPoint()).To(Equal("otlp-collector-1:4318"))
@@ -406,6 +408,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 			// Second client
 			cfg2 := cfg
 			cfg2.OTLPConfig.Endpoint = "otlp-collector-2:4318"
+			cfg2.OTLPConfig.DQueConfig.DQueDir = GetTestTempDir("otlp-test-2")
 			client2, err := NewOTLPHTTPClient(context.Background(), cfg2, logger)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(client2.GetEndPoint()).To(Equal("otlp-collector-2:4318"))
@@ -493,7 +496,9 @@ var _ = Describe("OTLPHTTPClient", func() {
 
 	Describe("Integration scenarios", func() {
 		It("should handle fluent-bit typical log format", func() {
-			client, err := NewOTLPHTTPClient(context.Background(), cfg, logger)
+			testCfg := cfg
+			testCfg.OTLPConfig.DQueConfig.DQueDir = GetTestTempDir("otlp-test-fb")
+			client, err := NewOTLPHTTPClient(context.Background(), testCfg, logger)
 			Expect(err).ToNot(HaveOccurred())
 			defer client.Stop()
 
@@ -516,7 +521,9 @@ var _ = Describe("OTLPHTTPClient", func() {
 		})
 
 		It("should handle gardener shoot log format", func() {
-			client, err := NewOTLPHTTPClient(context.Background(), cfg, logger)
+			testCfg := cfg
+			testCfg.OTLPConfig.DQueConfig.DQueDir = GetTestTempDir("otlp-test-gs")
+			client, err := NewOTLPHTTPClient(context.Background(), testCfg, logger)
 			Expect(err).ToNot(HaveOccurred())
 			defer client.Stop()
 

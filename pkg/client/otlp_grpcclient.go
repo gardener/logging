@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -30,6 +31,7 @@ var ErrThrottled = errors.New("client throttled: rate limit exceeded")
 type OTLPGRPCClient struct {
 	logger         logr.Logger
 	endpoint       string
+	config         config.Config
 	loggerProvider *sdklog.LoggerProvider
 	meterProvider  *sdkmetric.MeterProvider
 	otlLogger      otlplog.Logger
@@ -40,7 +42,7 @@ type OTLPGRPCClient struct {
 
 var _ OutputClient = &OTLPGRPCClient{}
 
-// NewOTLPGRPCClient creates a new OTLP gRPC client
+// NewOTLPGRPCClient creates a new OTLP gRPC client with dque batch processor
 func NewOTLPGRPCClient(ctx context.Context, cfg config.Config, logger logr.Logger) (OutputClient, error) {
 	// Use the provided context with cancel capability
 	clientCtx, cancel := context.WithCancel(ctx)
@@ -50,17 +52,19 @@ func NewOTLPGRPCClient(ctx context.Context, cfg config.Config, logger logr.Logge
 	if err != nil {
 		cancel()
 
-		return nil, err
+		return nil, fmt.Errorf("failed to setup metrics: %w", err)
 	}
 
-	// Build exporter configuration
+	// Build blocking OTLP gRPC exporter configuration
 	configBuilder := NewOTLPGRPCConfigBuilder(cfg, logger)
+
+	// Applies TLS, headers, timeout, compression, and retry configurations
 	exporterOpts := configBuilder.Build()
 
 	// Add metrics instrumentation to gRPC dial options
 	exporterOpts = append(exporterOpts, otlploggrpc.WithDialOption(metricsSetup.GetGRPCStatsHandler()))
 
-	// Create exporter using the client context
+	// Create blocking OTLP gRPC exporter
 	exporter, err := otlploggrpc.New(clientCtx, exporterOpts...)
 	if err != nil {
 		cancel()
@@ -68,37 +72,48 @@ func NewOTLPGRPCClient(ctx context.Context, cfg config.Config, logger logr.Logge
 		return nil, fmt.Errorf("failed to create OTLP gRPC exporter: %w", err)
 	}
 
+	// Create DQue batch processor with blocking exporter
+	dQueueDir := filepath.Join(
+		cfg.OTLPConfig.DQueConfig.DQueDir,
+		cfg.OTLPConfig.DQueConfig.DQueName,
+	)
+
+	batchProcessor, err := NewDQueBatchProcessor(
+		clientCtx,
+		exporter,
+		logger,
+		WithEndpoint(cfg.OTLPConfig.Endpoint),
+		WithDQueueDir(dQueueDir),
+		WithDQueueName("otlp-grpc"),
+		WithDQueueSegmentSize(cfg.OTLPConfig.DQueConfig.DQueSegmentSize),
+		WithDQueueSync(cfg.OTLPConfig.DQueConfig.DQueSync),
+		WithMaxQueueSize(cfg.OTLPConfig.DQueBatchProcessorMaxQueueSize),
+		WithMaxBatchSize(cfg.OTLPConfig.DQueBatchProcessorMaxBatchSize),
+		WithExportTimeout(cfg.OTLPConfig.DQueBatchProcessorExportTimeout),
+		WithExportInterval(cfg.OTLPConfig.DQueBatchProcessorExportInterval),
+	)
+	if err != nil {
+		cancel()
+
+		return nil, fmt.Errorf("failed to create batch processor: %w", err)
+	}
+
 	// Build resource attributes
 	resource := NewResourceAttributesBuilder().
 		WithHostname(cfg).
-		WithOrigin("seed").
 		Build()
 
-	// Configure batch processor with limits from configuration to prevent OOM under high load
-	batchProcessorOpts := []sdklog.BatchProcessorOption{
-		// Maximum queue size - if queue is full, records are dropped
-		// This prevents unbounded memory growth under high load
-		sdklog.WithMaxQueueSize(cfg.OTLPConfig.BatchProcessorMaxQueueSize),
-
-		// Maximum batch size - number of records per export
-		// Larger batches are more efficient but use more memory
-		sdklog.WithExportMaxBatchSize(cfg.OTLPConfig.BatchProcessorMaxBatchSize),
-
-		// Export timeout - maximum time for a single export attempt
-		sdklog.WithExportTimeout(cfg.OTLPConfig.BatchProcessorExportTimeout),
-
-		// Batch timeout - maximum time to wait before exporting a partial batch
-		// This ensures logs don't sit in memory too long
-		sdklog.WithExportInterval(cfg.OTLPConfig.BatchProcessorExportInterval),
-		// Export buffer size - number of log records to buffer before processing
-		sdklog.WithExportBufferSize(cfg.OTLPConfig.BatchProcessorExportBufferSize),
-	}
-
-	// Create logger provider with configured batch processor
+	// Create logger provider with DQue batch processor
 	loggerProvider := sdklog.NewLoggerProvider(
 		sdklog.WithResource(resource),
-		sdklog.WithProcessor(sdklog.NewBatchProcessor(exporter, batchProcessorOpts...)),
+		sdklog.WithProcessor(batchProcessor),
 	)
+
+	// Build instrumentation scope options
+	scopeOptions := NewScopeAttributesBuilder().
+		WithVersion(PluginVersion()).
+		WithSchemaURL(SchemaURL).
+		Build()
 
 	// Initialize rate limiter if throttling is enabled
 	var limiter *rate.Limiter
@@ -114,15 +129,16 @@ func NewOTLPGRPCClient(ctx context.Context, cfg config.Config, logger logr.Logge
 	client := &OTLPGRPCClient{
 		logger:         logger.WithValues("endpoint", cfg.OTLPConfig.Endpoint, "component", componentOTLPGRPCName),
 		endpoint:       cfg.OTLPConfig.Endpoint,
+		config:         cfg,
 		loggerProvider: loggerProvider,
 		meterProvider:  metricsSetup.GetProvider(),
-		otlLogger:      loggerProvider.Logger(componentOTLPGRPCName),
+		otlLogger:      loggerProvider.Logger(PluginName, scopeOptions...),
 		ctx:            clientCtx,
 		cancel:         cancel,
 		limiter:        limiter,
 	}
 
-	logger.V(1).Info(fmt.Sprintf("%s created", componentOTLPGRPCName), "endpoint", cfg.OTLPConfig.Endpoint)
+	logger.V(1).Info("OTLP gRPC client created with dque persistence", "endpoint", cfg.OTLPConfig.Endpoint)
 
 	return client, nil
 }
@@ -147,6 +163,7 @@ func (c *OTLPGRPCClient) Handle(entry types.OutputEntry) error {
 
 	// Build log record using builder pattern
 	logRecord := NewLogRecordBuilder().
+		WithConfig(c.config).
 		WithTimestamp(entry.Timestamp).
 		WithSeverity(entry.Record).
 		WithBody(entry.Record).

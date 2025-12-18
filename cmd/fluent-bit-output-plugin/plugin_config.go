@@ -40,10 +40,8 @@ func (c *pluginConfig) toStringMap() map[string]string {
 		"DynamicHostSuffix", "dynamicHostSuffix",
 		"DynamicHostRegex", "dynamicHostRegex",
 
-		// Hostname config TODO: revisit if we really need this
-		"HostnameKey", "hostnameKey",
 		"HostnameValue", "hostnameValue",
-		"HostnameKeyValue", "hostnameKeyValue",
+		"Origin", "origin",
 
 		// Kubernetes metadata - TODO: revisit how to handle kubernetes metadata. Simplify?
 		"FallbackToTagWhenMetadataIsMissing", "fallbackToTagWhenMetadataIsMissing",
@@ -52,12 +50,11 @@ func (c *pluginConfig) toStringMap() map[string]string {
 		"TagPrefix", "tagPrefix",
 		"TagExpression", "tagExpression",
 
-		// Buffer config
-		"Buffer", "buffer",
-		"QueueDir", "queueDir",
-		"QueueSegmentSize", "queueSegmentSize",
-		"QueueSync", "queueSync",
-		"QueueName", " queueName",
+		// Dque config
+		"DQueDir", "dqueDir",
+		"DQueSegmentSize", "dqueSegmentSize",
+		"DQueSync", "dqueSync",
+		"DQueName", " dqueName",
 
 		// Controller config
 		"DeletedClientTimeExpiration", "deletedClientTimeExpiration",
@@ -116,11 +113,11 @@ func (c *pluginConfig) toStringMap() map[string]string {
 		"ThrottleRequestsPerSec", "throttleRequestsPerSec",
 
 		// OTLP Batch Processor configs
-		"BatchProcessorMaxQueueSize", "batchProcessorMaxQueueSize",
-		"BatchProcessorMaxBatchSize", "batchProcessorMaxBatchSize",
-		"BatchProcessorExportTimeout", "batchProcessorExportTimeout",
-		"BatchProcessorExportInterval", "batchProcessorExportInterval",
-		"BatchProcessorExportBufferSize", "batchProcessorExportBufferSize",
+		"DQueBatchProcessorMaxQueueSize", "dqueBatchProcessorMaxQueueSize",
+		"DQueBatchProcessorMaxBatchSize", "dqueBatchProcessorMaxBatchSize",
+		"DQueBatchProcessorExportTimeout", "dqueBatchProcessorExportTimeout",
+		"DQueBatchProcessorExportInterval", "dqueBatchProcessorExportInterval",
+		"DQueBatchProcessorExportBufferSize", "dqueBatchProcessorExportBufferSize",
 
 		// General config
 		"LogLevel", "logLevel",

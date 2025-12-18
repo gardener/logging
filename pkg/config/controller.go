@@ -9,20 +9,16 @@ import (
 
 // ControllerConfig hold the configuration fot the Vali client controller
 type ControllerConfig struct {
-	// CtlSyncTimeout for resource synchronization
-	CtlSyncTimeout time.Duration `mapstructure:"ControllerSyncTimeout"`
+	CtlSyncTimeout   time.Duration  `mapstructure:"ControllerSyncTimeout"`
+	DynamicHostPath  map[string]any `mapstructure:"-"`
+	DynamicHostRegex string         `mapstructure:"DynamicHostRegex"`
 	// DynamicHostPrefix is the prefix of the dynamic host endpoint
 	DynamicHostPrefix string `mapstructure:"DynamicHostPrefix"`
 	// DynamicHostSuffix is the suffix of the dynamic host endpoint
 	DynamicHostSuffix string `mapstructure:"DynamicHostSuffix"`
-	// DeletedClientTimeExpiration is the time after a client for
-	// deleted shoot should be cosidered for removal
-	DeletedClientTimeExpiration time.Duration `mapstructure:"DeletedClientTimeExpiration"`
-	// ShootControllerClientConfig configure to whether to send or not the log to the shoot
-	// Vali for a particular shoot state.
+	// ShootControllerClientConfig configure to whether to send or not the log to the shoot backend for a particular shoot state.
 	ShootControllerClientConfig ControllerClientConfiguration `mapstructure:"-"`
-	// SeedControllerClientConfig configure to whether to send or not the log to the shoot
-	// Vali for a particular shoot state.
+	// SeedControllerClientConfig configure to whether to send or not the log to the seed backend for a particular shoot state.
 	SeedControllerClientConfig ControllerClientConfiguration `mapstructure:"-"`
 }
 

@@ -45,11 +45,6 @@ var _ = Describe("OutputPlugin plugin", func() {
 		logger = log.NewNopLogger()
 
 		cfg = &config.Config{
-			ClientConfig: config.ClientConfig{
-				BufferConfig: config.BufferConfig{
-					Buffer: false, // Disable buffer for tests
-				},
-			},
 			OTLPConfig: config.OTLPConfig{
 				Endpoint: "http://test-endpoint:3100",
 			},
@@ -306,7 +301,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 			})
 
 			It("should track DroppedLogs metric via NoopClient", func() {
-				initialCount := promtest.ToFloat64(metrics.DroppedLogs.WithLabelValues(cfg.OTLPConfig.Endpoint))
+				initialCount := promtest.ToFloat64(metrics.DroppedLogs.WithLabelValues(cfg.OTLPConfig.Endpoint, "noop"))
 
 				entry := types.OutputEntry{
 					Timestamp: time.Now(),
@@ -320,7 +315,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 				// NoopClient increments DroppedLogs in Handle
 				Eventually(func() float64 {
-					return promtest.ToFloat64(metrics.DroppedLogs.WithLabelValues(cfg.OTLPConfig.Endpoint))
+					return promtest.ToFloat64(metrics.DroppedLogs.WithLabelValues(cfg.OTLPConfig.Endpoint, "noop"))
 				}, "5s", "100ms").Should(BeNumerically(">", initialCount))
 			})
 		})
@@ -474,7 +469,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 			const messageCount = 100
 
 			initialIncoming := promtest.ToFloat64(metrics.IncomingLogs.WithLabelValues("garden"))
-			initialDropped := promtest.ToFloat64(metrics.DroppedLogs.WithLabelValues(cfg.OTLPConfig.Endpoint))
+			initialDropped := promtest.ToFloat64(metrics.DroppedLogs.WithLabelValues(cfg.OTLPConfig.Endpoint, "noop"))
 
 			for i := 0; i < messageCount; i++ {
 				entry := types.OutputEntry{
@@ -495,7 +490,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 			// Verify dropped logs (from NoopClient)
 			Eventually(func() float64 {
-				return promtest.ToFloat64(metrics.DroppedLogs.WithLabelValues(cfg.OTLPConfig.Endpoint))
+				return promtest.ToFloat64(metrics.DroppedLogs.WithLabelValues(cfg.OTLPConfig.Endpoint, "noop"))
 			}, "10s", "100ms").Should(BeNumerically(">=", initialDropped+messageCount))
 		})
 
@@ -541,7 +536,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 			plugin1.Close()
 
 			// Second run with new plugin instance
-			cfg.ClientConfig.BufferConfig.DqueConfig.QueueName = "test-queue-2"
+			cfg.OTLPConfig.DQueConfig.DQueName = "test-queue-2"
 			plugin2, err := NewPlugin(nil, cfg, logger)
 			Expect(err).NotTo(HaveOccurred())
 			defer plugin2.Close()
@@ -560,19 +555,19 @@ var _ = Describe("OutputPlugin plugin", func() {
 	})
 
 	Describe("Dynamic Host Routing with Controller", func() {
-		It("should route logs to shoot client when cluster resource matches namespace", func() {
+		It("should route logs to shoot when cluster resource matches namespace", func() {
 			// Setup configuration with dynamic host routing
-			cfg.PluginConfig.DynamicHostPath = map[string]any{
-				"kubernetes": map[string]any{
-					"namespace_name": "namespace",
-				},
-			}
-			cfg.PluginConfig.DynamicHostRegex = `^shoot--.*`
-			cfg.ClientConfig.BufferConfig.Buffer = false // Disable buffer for immediate processing
+			cfg.ControllerConfig.DynamicHostRegex = `^shoot--.*`
 			cfg.ControllerConfig = config.ControllerConfig{
 				CtlSyncTimeout:    5 * time.Second,
 				DynamicHostPrefix: "http://logging.",
 				DynamicHostSuffix: ".svc:4318/v1/logs",
+				DynamicHostRegex:  `^shoot--.*`,
+				DynamicHostPath: map[string]any{
+					"kubernetes": map[string]any{
+						"namespace_name": "namespace",
+					},
+				},
 				ShootControllerClientConfig: config.ControllerClientConfiguration{
 					SendLogsWhenIsInCreationState:   true,
 					SendLogsWhenIsInReadyState:      true,
@@ -639,11 +634,11 @@ var _ = Describe("OutputPlugin plugin", func() {
 			}
 
 			GinkgoWriter.Printf("Sending record with namespace: %s\n", shootNamespace)
-			GinkgoWriter.Printf("Dynamic host should match regex: %s\n", cfg.PluginConfig.DynamicHostRegex)
+			GinkgoWriter.Printf("Dynamic host should match regex: %s\n", cfg.ControllerConfig.DynamicHostRegex)
 
 			initialShootDropped := promtest.ToFloat64(metrics.DroppedLogs.WithLabelValues(
-				cfg.ControllerConfig.DynamicHostPrefix + shootNamespace + cfg.ControllerConfig.DynamicHostSuffix))
-			initialSeedDropped := promtest.ToFloat64(metrics.DroppedLogs.WithLabelValues(cfg.OTLPConfig.Endpoint))
+				cfg.ControllerConfig.DynamicHostPrefix+shootNamespace+cfg.ControllerConfig.DynamicHostSuffix, "noop"))
+			initialSeedDropped := promtest.ToFloat64(metrics.DroppedLogs.WithLabelValues(cfg.OTLPConfig.Endpoint, "noop"))
 			initialIncoming := promtest.ToFloat64(metrics.IncomingLogs.WithLabelValues(shootNamespace))
 
 			GinkgoWriter.Printf("Initial metrics - Incoming: %f, ShootDropped: %f, SeedDropped: %f\n",
@@ -657,8 +652,8 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 			finalIncoming := promtest.ToFloat64(metrics.IncomingLogs.WithLabelValues(shootNamespace))
 			finalShootDropped := promtest.ToFloat64(metrics.DroppedLogs.WithLabelValues(
-				cfg.ControllerConfig.DynamicHostPrefix + shootNamespace + cfg.ControllerConfig.DynamicHostSuffix))
-			finalSeedDropped := promtest.ToFloat64(metrics.DroppedLogs.WithLabelValues(cfg.OTLPConfig.Endpoint))
+				cfg.ControllerConfig.DynamicHostPrefix+shootNamespace+cfg.ControllerConfig.DynamicHostSuffix, "noop"))
+			finalSeedDropped := promtest.ToFloat64(metrics.DroppedLogs.WithLabelValues(cfg.OTLPConfig.Endpoint, "noop"))
 
 			GinkgoWriter.Printf("Final metrics - Incoming: %f, ShootDropped: %f, SeedDropped: %f\n",
 				finalIncoming, finalShootDropped, finalSeedDropped)
@@ -669,7 +664,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 			// Verify dropped logs increased for shoot endpoint (NoopClient drops all)
 			Eventually(func() float64 {
 				return promtest.ToFloat64(metrics.DroppedLogs.WithLabelValues(
-					cfg.ControllerConfig.DynamicHostPrefix + shootNamespace + cfg.ControllerConfig.DynamicHostSuffix))
+					cfg.ControllerConfig.DynamicHostPrefix+shootNamespace+cfg.ControllerConfig.DynamicHostSuffix, "noop"))
 			}, "2s", "100ms").Should(BeNumerically(">", initialShootDropped))
 
 			// Verify seed endpoint did not receive the log
@@ -700,13 +695,13 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 		It("should handle multiple shoot clusters and route logs correctly", func() {
 			// Setup configuration with dynamic host routing
-			cfg.PluginConfig.DynamicHostPath = map[string]any{
-				"kubernetes": map[string]any{
-					"namespace_name": "namespace",
-				},
-			}
-			cfg.PluginConfig.DynamicHostRegex = `^shoot--.*`
 			cfg.ControllerConfig = config.ControllerConfig{
+				DynamicHostPath: map[string]any{
+					"kubernetes": map[string]any{
+						"namespace_name": "namespace",
+					},
+				},
+				DynamicHostRegex:  `^shoot--.*`,
 				CtlSyncTimeout:    5 * time.Second,
 				DynamicHostPrefix: "http://logging.",
 				DynamicHostSuffix: ".svc:4318/v1/logs",
@@ -747,6 +742,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 			defer plugin.Close()
 
 			l, ok := plugin.(*logging)
+			Expect(l).NotTo(BeNil())
 			Expect(ok).To(BeTrue())
 
 			time.Sleep(100 * time.Millisecond)
@@ -789,12 +785,12 @@ var _ = Describe("OutputPlugin plugin", func() {
 		})
 
 		It("should not route logs to hibernated cluster", func() {
-			cfg.PluginConfig.DynamicHostPath = map[string]any{
+			cfg.ControllerConfig.DynamicHostPath = map[string]any{
 				"kubernetes": map[string]any{
 					"namespace_name": "namespace",
 				},
 			}
-			cfg.PluginConfig.DynamicHostRegex = `^shoot--.*`
+			cfg.ControllerConfig.DynamicHostRegex = `^shoot--.*`
 			cfg.ControllerConfig = config.ControllerConfig{
 				CtlSyncTimeout:    5 * time.Second,
 				DynamicHostPrefix: "http://logging.",

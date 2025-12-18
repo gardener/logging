@@ -46,18 +46,32 @@ var (
 		Help:      "Total number of the forwarded logs to the output client",
 	}, []string{"host"})
 
+	// ExportedClientLogs is a prometheus metric which keeps logs to the Output Client
+	ExportedClientLogs = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: namespace,
+		Name:      "exported_client_logs_total",
+		Help:      "Total number of the exported logs to the output client",
+	}, []string{"host"})
+
 	// DroppedLogs is a prometheus metric which keeps the number of dropped logs by the output plugin
 	DroppedLogs = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: namespace,
 		Name:      "dropped_logs_total",
 		Help:      "Total number of dropped logs by the output plugin",
-	}, []string{"host"})
+	}, []string{"host", "reason"})
 
 	// ThrottledLogs is a prometheus metric which keeps the number of throttled logs by the output plugin
 	ThrottledLogs = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: namespace,
 		Name:      "throttled_logs_total",
 		Help:      "Total number of throttled logs by the output plugin",
+	}, []string{"host"})
+
+	// BufferedLogs is a prometheus metric which keeps the number of logs buffered in the batch processor queue
+	BufferedLogs = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: namespace,
+		Name:      "buffered_logs",
+		Help:      "Current number of logs buffered in the batch processor queue",
 	}, []string{"host"})
 
 	// DqueSize is a prometheus metric which keeps the current size of the dque queue

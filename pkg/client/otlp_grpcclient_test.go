@@ -24,23 +24,24 @@ var _ = Describe("OTLPGRPCClient", func() {
 	BeforeEach(func() {
 		logger = logr.Discard()
 		cfg = config.Config{
-			ClientConfig: config.ClientConfig{
-				BufferConfig: config.BufferConfig{
-					Buffer: false,
-					DqueConfig: config.DqueConfig{
-						QueueDir:         config.DefaultDqueConfig.QueueDir,
-						QueueSegmentSize: config.DefaultDqueConfig.QueueSegmentSize,
-						QueueSync:        config.DefaultDqueConfig.QueueSync,
-						QueueName:        config.DefaultDqueConfig.QueueName,
-					},
-				},
-			},
 			OTLPConfig: config.OTLPConfig{
 				Endpoint:    "localhost:4317",
 				Insecure:    true,
 				Compression: 0,
 				Timeout:     30 * time.Second,
 				Headers:     make(map[string]string),
+				DQueConfig: config.DQueConfig{
+					DQueDir:         GetTestTempDir("otlp"),
+					DQueSegmentSize: config.DefaultDQueConfig.DQueSegmentSize,
+					DQueSync:        config.DefaultDQueConfig.DQueSync,
+					DQueName:        config.DefaultDQueConfig.DQueName,
+				},
+				// Batch processor configuration
+				DQueBatchProcessorMaxQueueSize:     config.DefaultOTLPConfig.DQueBatchProcessorMaxQueueSize,
+				DQueBatchProcessorMaxBatchSize:     config.DefaultOTLPConfig.DQueBatchProcessorMaxBatchSize,
+				DQueBatchProcessorExportTimeout:    config.DefaultOTLPConfig.DQueBatchProcessorExportTimeout,
+				DQueBatchProcessorExportInterval:   config.DefaultOTLPConfig.DQueBatchProcessorExportInterval,
+				DQueBatchProcessorExportBufferSize: config.DefaultOTLPConfig.DQueBatchProcessorExportBufferSize,
 			},
 		}
 	})

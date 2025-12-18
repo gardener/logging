@@ -87,9 +87,9 @@ var _ = Describe("Controller Client", func() {
 	// revive:enable:nested-structs
 
 	DescribeTable("#Handle", func(args handleArgs) {
-		// Get initial metrics
-		initialShootDropped := testutil.ToFloat64(metrics.DroppedLogs.WithLabelValues("shoot-endpoint:4317"))
-		initialSeedDropped := testutil.ToFloat64(metrics.DroppedLogs.WithLabelValues("seed-endpoint:4317"))
+		// Get initial metrics (noop client drops all logs)
+		initialShootDropped := testutil.ToFloat64(metrics.DroppedLogs.WithLabelValues("shoot-endpoint:4317", "noop"))
+		initialSeedDropped := testutil.ToFloat64(metrics.DroppedLogs.WithLabelValues("seed-endpoint:4317", "noop"))
 
 		ctlClient.seedTarget.mute = args.config.muteSeedClient
 		ctlClient.shootTarget.mute = args.config.muteShootClient
@@ -99,8 +99,8 @@ var _ = Describe("Controller Client", func() {
 		}
 
 		// Get final metrics
-		finalShootDropped := testutil.ToFloat64(metrics.DroppedLogs.WithLabelValues("shoot-endpoint:4317"))
-		finalSeedDropped := testutil.ToFloat64(metrics.DroppedLogs.WithLabelValues("seed-endpoint:4317"))
+		finalShootDropped := testutil.ToFloat64(metrics.DroppedLogs.WithLabelValues("shoot-endpoint:4317", "noop"))
+		finalSeedDropped := testutil.ToFloat64(metrics.DroppedLogs.WithLabelValues("seed-endpoint:4317", "noop"))
 
 		// Calculate actual counts
 		shootCount := int(finalShootDropped - initialShootDropped)
@@ -259,8 +259,8 @@ var _ = Describe("Controller Client", func() {
 
 		It("Should stop gracefully and wait for processing", func() {
 			// Send some logs first
-			initialShootDropped := testutil.ToFloat64(metrics.DroppedLogs.WithLabelValues("shoot-endpoint:4317"))
-			initialSeedDropped := testutil.ToFloat64(metrics.DroppedLogs.WithLabelValues("seed-endpoint:4317"))
+			initialShootDropped := testutil.ToFloat64(metrics.DroppedLogs.WithLabelValues("shoot-endpoint:4317", "noop"))
+			initialSeedDropped := testutil.ToFloat64(metrics.DroppedLogs.WithLabelValues("seed-endpoint:4317", "noop"))
 
 			entry := types.OutputEntry{
 				Timestamp: time.Now(),
@@ -273,8 +273,8 @@ var _ = Describe("Controller Client", func() {
 			ctlClient.StopWait()
 
 			// Verify the log was processed
-			finalShootDropped := testutil.ToFloat64(metrics.DroppedLogs.WithLabelValues("shoot-endpoint:4317"))
-			finalSeedDropped := testutil.ToFloat64(metrics.DroppedLogs.WithLabelValues("seed-endpoint:4317"))
+			finalShootDropped := testutil.ToFloat64(metrics.DroppedLogs.WithLabelValues("shoot-endpoint:4317", "noop"))
+			finalSeedDropped := testutil.ToFloat64(metrics.DroppedLogs.WithLabelValues("seed-endpoint:4317", "noop"))
 			shootCount := int(finalShootDropped - initialShootDropped)
 			seedCount := int(finalSeedDropped - initialSeedDropped)
 			Expect(shootCount).To(Equal(1), "Shoot client should have processed log before stopping")
@@ -285,8 +285,8 @@ var _ = Describe("Controller Client", func() {
 	Describe("#ConcurrentAccess", func() {
 		It("Should handle concurrent log writes safely", func() {
 			// Get initial metrics
-			initialShootDropped := testutil.ToFloat64(metrics.DroppedLogs.WithLabelValues("shoot-endpoint:4317"))
-			initialSeedDropped := testutil.ToFloat64(metrics.DroppedLogs.WithLabelValues("seed-endpoint:4317"))
+			initialShootDropped := testutil.ToFloat64(metrics.DroppedLogs.WithLabelValues("shoot-endpoint:4317", "noop"))
+			initialSeedDropped := testutil.ToFloat64(metrics.DroppedLogs.WithLabelValues("seed-endpoint:4317", "noop"))
 
 			// Send logs concurrently from multiple goroutines
 			numGoroutines := 10
@@ -311,8 +311,8 @@ var _ = Describe("Controller Client", func() {
 			wg.Wait()
 
 			// Get final metrics
-			finalShootDropped := testutil.ToFloat64(metrics.DroppedLogs.WithLabelValues("shoot-endpoint:4317"))
-			finalSeedDropped := testutil.ToFloat64(metrics.DroppedLogs.WithLabelValues("seed-endpoint:4317"))
+			finalShootDropped := testutil.ToFloat64(metrics.DroppedLogs.WithLabelValues("shoot-endpoint:4317", "noop"))
+			finalSeedDropped := testutil.ToFloat64(metrics.DroppedLogs.WithLabelValues("seed-endpoint:4317", "noop"))
 
 			// Verify all logs were processed
 			shootCount := int(finalShootDropped - initialShootDropped)
@@ -324,8 +324,8 @@ var _ = Describe("Controller Client", func() {
 
 		It("Should handle concurrent state changes safely", func() {
 			// Get initial metrics
-			initialShootDropped := testutil.ToFloat64(metrics.DroppedLogs.WithLabelValues("shoot-endpoint:4317"))
-			initialSeedDropped := testutil.ToFloat64(metrics.DroppedLogs.WithLabelValues("seed-endpoint:4317"))
+			initialShootDropped := testutil.ToFloat64(metrics.DroppedLogs.WithLabelValues("shoot-endpoint:4317", "noop"))
+			initialSeedDropped := testutil.ToFloat64(metrics.DroppedLogs.WithLabelValues("seed-endpoint:4317", "noop"))
 
 			// Set up config for state changes
 			ctlClient.seedTarget.conf = &config.SeedControllerClientConfig
@@ -364,8 +364,8 @@ var _ = Describe("Controller Client", func() {
 
 			// Get final metrics - we don't know exact count due to muting during state changes
 			// but we verify no panics occurred and some logs were processed
-			finalShootDropped := testutil.ToFloat64(metrics.DroppedLogs.WithLabelValues("shoot-endpoint:4317"))
-			finalSeedDropped := testutil.ToFloat64(metrics.DroppedLogs.WithLabelValues("seed-endpoint:4317"))
+			finalShootDropped := testutil.ToFloat64(metrics.DroppedLogs.WithLabelValues("shoot-endpoint:4317", "noop"))
+			finalSeedDropped := testutil.ToFloat64(metrics.DroppedLogs.WithLabelValues("seed-endpoint:4317", "noop"))
 
 			shootCount := int(finalShootDropped - initialShootDropped)
 			seedCount := int(finalSeedDropped - initialSeedDropped)
@@ -376,7 +376,7 @@ var _ = Describe("Controller Client", func() {
 
 		It("Should handle concurrent writes with stop", func() {
 			// Get initial metrics
-			initialSeedDropped := testutil.ToFloat64(metrics.DroppedLogs.WithLabelValues("seed-endpoint:4317"))
+			initialSeedDropped := testutil.ToFloat64(metrics.DroppedLogs.WithLabelValues("seed-endpoint:4317", "noop"))
 
 			var wg sync.WaitGroup
 			numGoroutines := 5
@@ -407,7 +407,7 @@ var _ = Describe("Controller Client", func() {
 			wg.Wait()
 
 			// Verify seed client still processed logs (only shoot was stopped)
-			finalSeedDropped := testutil.ToFloat64(metrics.DroppedLogs.WithLabelValues("seed-endpoint:4317"))
+			finalSeedDropped := testutil.ToFloat64(metrics.DroppedLogs.WithLabelValues("seed-endpoint:4317", "noop"))
 			seedCount := int(finalSeedDropped - initialSeedDropped)
 			Expect(seedCount).To(BeNumerically(">", 0), "Seed client should have processed logs")
 		})

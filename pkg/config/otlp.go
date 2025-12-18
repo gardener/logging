@@ -7,41 +7,20 @@ import (
 	"time"
 )
 
-// ClientConfig holds configuration for the chain of clients.
-type ClientConfig struct {
-	SeedType  string `mapstructure:"SeedType"`  // e.g., "OTLPGRPC"
-	ShootType string `mapstructure:"ShootType"` // e.g., "STDOUT"
-
-	// BufferConfig holds the configuration for the buffered client
-	BufferConfig BufferConfig `mapstructure:",squash"`
+// DQueConfig contains the dqueue settings
+type DQueConfig struct {
+	DQueDir         string `mapstructure:"DQueDir"`
+	DQueSegmentSize int    `mapstructure:"DQueSegmentSize"`
+	DQueSync        bool   `mapstructure:"-"` // Handled specially in postProcessConfig
+	DQueName        string `mapstructure:"DQueName"`
 }
 
-// BufferConfig contains the buffer settings
-type BufferConfig struct {
-	Buffer     bool       `mapstructure:"Buffer"`
-	DqueConfig DqueConfig `mapstructure:",squash"`
-}
-
-// DqueConfig contains the dqueue settings
-type DqueConfig struct {
-	QueueDir         string `mapstructure:"QueueDir"`
-	QueueSegmentSize int    `mapstructure:"QueueSegmentSize"`
-	QueueSync        bool   `mapstructure:"-"` // Handled specially in postProcessConfig
-	QueueName        string `mapstructure:"QueueName"`
-}
-
-// DefaultBufferConfig holds the configurations for using output buffer
-var DefaultBufferConfig = BufferConfig{
-	Buffer:     false,
-	DqueConfig: DefaultDqueConfig,
-}
-
-// DefaultDqueConfig holds dque configurations for the buffer
-var DefaultDqueConfig = DqueConfig{
-	QueueDir:         "/tmp/flb-storage/vali",
-	QueueSegmentSize: 500,
-	QueueSync:        false,
-	QueueName:        "dque",
+// DefaultDQueConfig holds dque configurations for the buffer
+var DefaultDQueConfig = DQueConfig{
+	DQueDir:         "/tmp/flb-storage",
+	DQueSegmentSize: 500,
+	DQueSync:        false,
+	DQueName:        "dque",
 }
 
 // OTLPConfig holds configuration for otlp endpoint
@@ -52,12 +31,14 @@ type OTLPConfig struct {
 	Timeout     time.Duration     `mapstructure:"Timeout"`
 	Headers     map[string]string `mapstructure:"-"` // Handled manually in processOTLPConfig
 
+	DQueConfig DQueConfig `mapstructure:",squash"`
+
 	// Batch Processor configuration fields
-	BatchProcessorMaxQueueSize     int           `mapstructure:"BatchProcessorMaxQueueSize"`
-	BatchProcessorMaxBatchSize     int           `mapstructure:"BatchProcessorMaxBatchSize"`
-	BatchProcessorExportTimeout    time.Duration `mapstructure:"BatchProcessorExportTimeout"`
-	BatchProcessorExportInterval   time.Duration `mapstructure:"BatchProcessorExportInterval"`
-	BatchProcessorExportBufferSize int           `mapstructure:"BatchProcessorExportBufferSize"`
+	DQueBatchProcessorMaxQueueSize     int           `mapstructure:"DQueBatchProcessorMaxQueueSize"`
+	DQueBatchProcessorMaxBatchSize     int           `mapstructure:"DQueBatchProcessorMaxBatchSize"`
+	DQueBatchProcessorExportTimeout    time.Duration `mapstructure:"DQueBatchProcessorExportTimeout"`
+	DQueBatchProcessorExportInterval   time.Duration `mapstructure:"DQueBatchProcessorExportInterval"`
+	DQueBatchProcessorExportBufferSize int           `mapstructure:"DQueBatchProcessorExportBufferSize"`
 
 	// Retry configuration fields
 	RetryEnabled         bool          `mapstructure:"RetryEnabled"`
@@ -108,10 +89,12 @@ var DefaultOTLPConfig = OTLPConfig{
 	TLSMaxVersion:          "",    // Use Go's default maximum
 	TLSConfig:              nil,   // Will be built from other fields
 
+	DQueConfig: DefaultDQueConfig, // Use default dque config
+
 	// Batch Processor defaults - tuned to prevent OOM under high load
-	BatchProcessorMaxQueueSize:     512,              // Max records in queue before dropping
-	BatchProcessorMaxBatchSize:     256,              // Max records per export batch
-	BatchProcessorExportTimeout:    30 * time.Second, // Timeout for single export
-	BatchProcessorExportInterval:   1 * time.Second,  // Flush interval
-	BatchProcessorExportBufferSize: 10,               // Default buffer size
+	DQueBatchProcessorMaxQueueSize:     512,              // Max records in queue before dropping
+	DQueBatchProcessorMaxBatchSize:     256,              // Max records per export batch
+	DQueBatchProcessorExportTimeout:    30 * time.Second, // Timeout for single export
+	DQueBatchProcessorExportInterval:   1 * time.Second,  // Flush interval
+	DQueBatchProcessorExportBufferSize: 10,
 }
