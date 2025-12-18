@@ -606,7 +606,7 @@ func (p *DQueBatchProcessor) processLoop() {
 
 		case <-p.newItemSignal:
 			// New item available, try to dequeue immediately
-			record, err := p.dequeueWithTimeout(100 * time.Millisecond)
+			record, err := p.dequeue()
 			if err != nil {
 				// Queue became empty or error, continue
 				continue
@@ -621,11 +621,16 @@ func (p *DQueBatchProcessor) processLoop() {
 			}
 
 		default:
-			// Try to dequeue a record (non-blocking with timeout)
-			record, err := p.dequeueWithTimeout(100 * time.Millisecond)
+			// Try to dequeue a record (blocking with timeout)
+			record, err := p.dequeue()
 			if err != nil {
-				// Queue empty or timeout, sleep longer since we have signal channel
-				time.Sleep(100 * time.Millisecond)
+				// increase error count
+				wrapped := errors.Unwrap(err)
+				if wrapped != nil {
+					metrics.Errors.WithLabelValues(wrapped.Error()).Inc()
+				} else {
+					metrics.Errors.WithLabelValues(err.Error()).Inc()
+				}
 
 				continue
 			}
@@ -641,8 +646,8 @@ func (p *DQueBatchProcessor) processLoop() {
 	}
 }
 
-// dequeueWithTimeout attempts to dequeue a record with timeout
-func (p *DQueBatchProcessor) dequeueWithTimeout(_ time.Duration) (sdklog.Record, error) {
+// dequeue attempts to dequeue a record with timeout
+func (p *DQueBatchProcessor) dequeue() (sdklog.Record, error) {
 	// Use Dequeue (non-blocking) instead of DequeueBlock
 	iface, err := p.queue.Dequeue()
 	if err != nil {
@@ -651,7 +656,7 @@ func (p *DQueBatchProcessor) dequeueWithTimeout(_ time.Duration) (sdklog.Record,
 
 	wrapper, ok := iface.(*dqueJSONWrapper)
 	if !ok {
-		return sdklog.Record{}, errors.New("invalid item type: expected dqueJSONWrapper")
+		return sdklog.Record{}, fmt.Errorf("invalid item type: %w", errors.New("expected type dqueJSONWrapper"))
 	}
 
 	// Deserialize from JSON
@@ -746,7 +751,7 @@ func (p *DQueBatchProcessor) ForceFlush(ctx context.Context) error {
 				return nil
 			}
 
-			record, err := p.dequeueWithTimeout(100 * time.Millisecond)
+			record, err := p.dequeue()
 			if err != nil {
 				// Queue is empty
 				if len(batch) > 0 {
