@@ -4,7 +4,6 @@
 package client
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -34,20 +33,9 @@ var (
 	ErrQueueFull = errors.New("queue is full")
 )
 
-// Pools for reusing JSON encoders/decoders and buffers to reduce GC pressure
-var (
-	bufferPool = sync.Pool{
-		New: func() any {
-			return new(bytes.Buffer)
-		},
-	}
-
-	jsonEncoderPool = sync.Pool{
-		New: func() any {
-			return json.NewEncoder(nil)
-		},
-	}
-)
+// Note: We use json.Marshal directly instead of pooling encoders
+// because json.Encoder doesn't have a Reset() method in older Go versions,
+// making encoder pooling ineffective.
 
 // Default configuration values
 const (
@@ -507,6 +495,11 @@ func itemToRecord(item *logRecordItem) sdklog.Record {
 	return factory.NewRecord()
 }
 
+// Race condition between Enabled check and OnEmit
+// Here we check p.closed and queue size in Enabled(), but in OnEmit() we check again.
+// Between these calls, the processor could be closed or the queue could fill up,
+// making the Enabled() check unreliable as a gate before calling OnEmit().
+
 // Enabled implements sdklog.Processor
 func (p *DQueBatchProcessor) Enabled(_ context.Context, _ sdklog.EnabledParameters) bool {
 	p.mu.Lock()
@@ -540,29 +533,13 @@ func (p *DQueBatchProcessor) OnEmit(_ context.Context, record *sdklog.Record) er
 	// Convert to serializable item (no need to clone since we're only reading)
 	item := recordToItem(*record)
 
-	// Get buffer from pool
-	buf := bufferPool.Get().(*bytes.Buffer) //nolint:revive //unchecked-type-assertion: always a *bytes.Buffer
-	buf.Reset()
-
-	bufferPool.Put(buf)
-
-	// Get encoder from pool and reset it with our buffer
-	encoder := jsonEncoderPool.Get().(*json.Encoder) //nolint:revive //unchecked-type-assertion: always a *json.Encoder
-	defer jsonEncoderPool.Put(encoder)
-
-	// Create a new encoder with our buffer (no Reset method in older Go versions)
-	encoder = json.NewEncoder(buf)
-
 	// Encode to JSON
-	if err := encoder.Encode(item); err != nil {
+	jsonData, err := json.Marshal(item)
+	if err != nil {
 		metrics.DroppedLogs.WithLabelValues(p.endpoint, "marshal_error").Inc()
 
 		return fmt.Errorf("failed to marshal record to JSON: %w", err)
 	}
-
-	// Copy buffer data (must copy since we're reusing the buffer)
-	jsonData := make([]byte, buf.Len())
-	copy(jsonData, buf.Bytes())
 
 	// Wrap in dque wrapper
 	wrapper := &dqueJSONWrapper{data: jsonData}
