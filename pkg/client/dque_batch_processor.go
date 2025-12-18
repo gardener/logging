@@ -134,10 +134,9 @@ type DQueBatchProcessor struct {
 	queue    *dque.DQue
 	endpoint string
 
-	ctx           context.Context
-	cancel        context.CancelFunc
-	wg            sync.WaitGroup
-	newItemSignal chan struct{} // Signal channel for new items to reduce sleep time
+	ctx    context.Context
+	cancel context.CancelFunc
+	wg     sync.WaitGroup
 
 	mu     sync.Mutex
 	closed bool
@@ -252,14 +251,13 @@ func NewDQueBatchProcessor(
 	processorCtx, cancel := context.WithCancel(ctx)
 
 	processor := &DQueBatchProcessor{
-		logger:        logger.WithValues("component", "dque_batch_processor", "endpoint", config.endpoint),
-		config:        config,
-		exporter:      exporter,
-		queue:         queue,
-		endpoint:      config.endpoint,
-		ctx:           processorCtx,
-		cancel:        cancel,
-		newItemSignal: make(chan struct{}, 1), // Buffered channel to avoid blocking
+		logger:   logger.WithValues("component", "dque_batch_processor", "endpoint", config.endpoint),
+		config:   config,
+		exporter: exporter,
+		queue:    queue,
+		endpoint: config.endpoint,
+		ctx:      processorCtx,
+		cancel:   cancel,
 	}
 
 	// Start background worker for batch processing
@@ -553,12 +551,6 @@ func (p *DQueBatchProcessor) OnEmit(_ context.Context, record *sdklog.Record) er
 
 	metrics.BufferedLogs.WithLabelValues(p.endpoint).Inc()
 
-	// Signal new item (non-blocking)
-	select {
-	case p.newItemSignal <- struct{}{}:
-	default: // Already signaled or full
-	}
-
 	return nil
 }
 
@@ -603,22 +595,6 @@ func (p *DQueBatchProcessor) processLoop() {
 				}
 			}
 			p.logger.V(3).Info("queue size reported", "size", queueSize)
-
-		case <-p.newItemSignal:
-			// New item available, try to dequeue immediately
-			record, err := p.dequeue()
-			if err != nil {
-				// Queue became empty or error, continue
-				continue
-			}
-
-			batch = append(batch, record)
-
-			// Export when batch is full
-			if len(batch) >= p.config.maxBatchSize {
-				p.exportBatch(batch)
-				batch = batch[:0]
-			}
 
 		default:
 			// Try to dequeue a record (blocking with timeout)
