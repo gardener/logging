@@ -15,7 +15,7 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "iteration": 1765701781857,
+  "iteration": 1766091411295,
   "links": [],
   "panels": [
     {
@@ -378,7 +378,7 @@
                 "max"
               ],
               "displayMode": "table",
-              "placement": "right"
+              "placement": "bottom"
             },
             "tooltip": {
               "mode": "multi"
@@ -458,7 +458,7 @@
                 "max"
               ],
               "displayMode": "table",
-              "placement": "right"
+              "placement": "bottom"
             },
             "tooltip": {
               "mode": "multi"
@@ -633,7 +633,7 @@
                 "max"
               ],
               "displayMode": "table",
-              "placement": "right"
+              "placement": "bottom"
             },
             "tooltip": {
               "mode": "multi"
@@ -717,7 +717,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 26
+            "y": 10
           },
           "id": 31,
           "options": {
@@ -726,7 +726,7 @@
                 "last"
               ],
               "displayMode": "table",
-              "placement": "right"
+              "placement": "bottom"
             },
             "tooltip": {
               "mode": "multi"
@@ -795,7 +795,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 26
+            "y": 10
           },
           "id": 32,
           "options": {
@@ -804,7 +804,7 @@
                 "last"
               ],
               "displayMode": "table",
-              "placement": "right"
+              "placement": "bottom"
             },
             "tooltip": {
               "mode": "multi"
@@ -903,4 +903,4 @@
   "title": "VictoriaLogs",
   "uid": "victorialogs",
   "version": 1
-}
+}VictoriaLogs - single-node.json
