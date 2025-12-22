@@ -16,7 +16,7 @@
   "editable": true,
   "gnetId": 7752,
   "graphTooltip": 1,
-  "iteration": 1766089464588,
+  "iteration": 1766128205437,
   "links": [],
   "panels": [
     {
@@ -92,7 +92,7 @@
           "refId": "A"
         }
       ],
-      "title": "[Fluentbit] Input Plugin Total Records",
+      "title": "Input plugin total records",
       "type": "stat"
     },
     {
@@ -153,7 +153,7 @@
       ],
       "timeFrom": null,
       "timeShift": null,
-      "title": "[Fluentbit] Input Plugin Avg Bytes",
+      "title": "Input Plugin bytes/s",
       "type": "gauge"
     },
     {
@@ -214,7 +214,7 @@
       ],
       "timeFrom": null,
       "timeShift": null,
-      "title": "[Fluentbit] Output Plugin Avg Bytes",
+      "title": "Output Plugin bytes/s",
       "type": "gauge"
     },
     {
@@ -275,7 +275,7 @@
       ],
       "timeFrom": null,
       "timeShift": null,
-      "title": "[Fluentbit] Output Errors",
+      "title": "Output Plugin errors",
       "type": "gauge"
     },
     {
@@ -336,7 +336,7 @@
       ],
       "timeFrom": null,
       "timeShift": null,
-      "title": "[Fluentbit] Output Dropped Records",
+      "title": "Output Plugin dropped records",
       "type": "gauge"
     },
     {
@@ -397,7 +397,7 @@
           "refId": "A"
         }
       ],
-      "title": "[Fluentbit] Output Plugin Total Records",
+      "title": "Output Plugin total records",
       "type": "stat"
     },
     {
@@ -447,7 +447,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 7,
+        "h": 6,
         "w": 12,
         "x": 0,
         "y": 7
@@ -489,7 +489,7 @@
       ],
       "timeFrom": null,
       "timeShift": null,
-      "title": "[Fluentbit] Rate Input Plugin Records ",
+      "title": "Input Plugin records/s",
       "type": "timeseries"
     },
     {
@@ -542,7 +542,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 7,
+        "h": 6,
         "w": 12,
         "x": 12,
         "y": 7
@@ -574,7 +574,7 @@
           "refId": "A"
         }
       ],
-      "title": "[Fluentbit] Output Plugin Records",
+      "title": "Output Plugin records/s",
       "type": "timeseries"
     },
     {
@@ -624,7 +624,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 14
+        "y": 13
       },
       "id": 40,
       "links": [],
@@ -657,7 +657,7 @@
       ],
       "timeFrom": null,
       "timeShift": null,
-      "title": "[Fluentbit] Input Records Per Second",
+      "title": "Input Plugin pods records/s",
       "type": "timeseries"
     },
     {
@@ -709,7 +709,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 14
+        "y": 13
       },
       "id": 41,
       "links": [],
@@ -742,7 +742,7 @@
       ],
       "timeFrom": null,
       "timeShift": null,
-      "title": "[Fluentbit] Output Records Per Second",
+      "title": "Output Plugin pods records/s",
       "type": "timeseries"
     },
     {
@@ -796,7 +796,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 22
+        "y": 21
       },
       "id": 122,
       "options": {
@@ -816,14 +816,6 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "fluentbit_storage_chunks{pod=~\"$pod\"}",
-          "interval": "",
-          "legendFormat": "{{pod}}",
-          "queryType": "randomWalk",
-          "refId": "A"
-        },
-        {
-          "exemplar": true,
           "expr": "fluentbit_storage_mem_chunks{pod=~\"$pod\"}",
           "hide": false,
           "interval": "",
@@ -832,7 +824,7 @@
           "refId": "B"
         }
       ],
-      "title": "[Fluentbit] Chunks",
+      "title": "Chunks in memory",
       "type": "timeseries"
     },
     {
@@ -885,9 +877,9 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 22
+        "y": 21
       },
-      "id": 120,
+      "id": 139,
       "options": {
         "graph": {},
         "legend": {
@@ -910,96 +902,13 @@
           "legendFormat": "{{pod}}",
           "queryType": "randomWalk",
           "refId": "A"
-        },
-        {
-          "exemplar": true,
-          "expr": "fluentbit_storage_fs_chunks_up{pod=~\"$pod\"}",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "up-{{pod}}",
-          "queryType": "randomWalk",
-          "refId": "B"
-        },
-        {
-          "exemplar": true,
-          "expr": "fluentbit_storage_fs_chunks_down{pod=~\"$pod\"}",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "down-{{pod}}",
-          "queryType": "randomWalk",
-          "refId": "C"
         }
       ],
-      "title": "[Fluentbit] FS Chunks",
+      "title": "Chunks on filesystem",
       "type": "timeseries"
     },
     {
       "datasource": "prometheus",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "fixedColor": "green",
-            "mode": "fixed"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 6,
-        "w": 4,
-        "x": 0,
-        "y": 30
-      },
-      "id": 132,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "text": {},
-        "textMode": "auto"
-      },
-      "pluginVersion": "7.5.42",
-      "targets": [
-        {
-          "exemplar": true,
-          "expr": "sum(output_plugin_otel_sdk_log_created_total{pod=~\"$pod\"})",
-          "interval": "",
-          "legendFormat": "{{pod}}",
-          "queryType": "randomWalk",
-          "refId": "A"
-        }
-      ],
-      "timeFrom": null,
-      "timeShift": null,
-      "title": "Otel SDK logs created",
-      "type": "stat"
-    },
-    {
-      "datasource": "prometheus",
-      "description": "The number of logs submitted to enabled SDK Loggers.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1010,7 +919,7 @@
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
-            "fillOpacity": 1,
+            "fillOpacity": 0,
             "gradientMode": "none",
             "hideFrom": {
               "graph": false,
@@ -1045,12 +954,12 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 6,
-        "w": 20,
-        "x": 4,
-        "y": 30
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 29
       },
-      "id": 126,
+      "id": 120,
       "options": {
         "graph": {},
         "legend": {
@@ -1068,14 +977,96 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "sum by (pod) (rate(output_plugin_otel_sdk_log_created_total{pod=~\"$pod\"}[$__rate_interval]))",
+          "expr": "fluentbit_storage_fs_chunks_up{pod=~\"$pod\"}",
+          "hide": false,
           "interval": "",
-          "legendFormat": "{{pod}}",
+          "legendFormat": "up-{{pod}}",
           "queryType": "randomWalk",
-          "refId": "A"
+          "refId": "B"
         }
       ],
-      "title": "Otel SDK create logs rate",
+      "title": "Chunks on filesystem - up",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "graph": false,
+              "legend": false,
+              "tooltip": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": true
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 29
+      },
+      "id": 140,
+      "options": {
+        "graph": {},
+        "legend": {
+          "calcs": [
+            "last"
+          ],
+          "displayMode": "table",
+          "placement": "right"
+        },
+        "tooltipOptions": {
+          "mode": "single"
+        }
+      },
+      "pluginVersion": "7.5.42",
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "fluentbit_storage_fs_chunks_down{pod=~\"$pod\"}",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "down-{{pod}}",
+          "queryType": "randomWalk",
+          "refId": "B"
+        }
+      ],
+      "title": "Chunks on filesystem - down",
       "type": "timeseries"
     },
     {
@@ -1085,7 +1076,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 36
+        "y": 37
       },
       "id": 86,
       "panels": [
@@ -1116,9 +1107,9 @@
           },
           "gridPos": {
             "h": 5,
-            "w": 3,
+            "w": 4,
             "x": 0,
-            "y": 37
+            "y": 2
           },
           "id": 75,
           "options": {
@@ -1147,7 +1138,7 @@
               "refId": "A"
             }
           ],
-          "title": "Input Records Total",
+          "title": "Total incoming records",
           "type": "stat"
         },
         {
@@ -1177,9 +1168,9 @@
           },
           "gridPos": {
             "h": 5,
-            "w": 3,
-            "x": 3,
-            "y": 37
+            "w": 4,
+            "x": 4,
+            "y": 2
           },
           "id": 76,
           "options": {
@@ -1208,7 +1199,69 @@
               "refId": "A"
             }
           ],
-          "title": "Clients Records Total",
+          "title": "Total output records",
+          "type": "stat"
+        },
+        {
+          "datasource": "prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "fixedColor": "blue",
+                "mode": "fixed"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 5,
+            "w": 6,
+            "x": 8,
+            "y": 2
+          },
+          "id": 142,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "text": {},
+            "textMode": "auto"
+          },
+          "pluginVersion": "7.5.42",
+          "targets": [
+            {
+              "exemplar": true,
+              "expr": "sum by (type)(fluentbit_gardener_clients_total{pod=~\"$pod\"})",
+              "interval": "",
+              "legendFormat": "{{type}}",
+              "queryType": "randomWalk",
+              "refId": "A"
+            }
+          ],
+          "title": "Total sending clients",
           "type": "stat"
         },
         {
@@ -1254,9 +1307,9 @@
           },
           "gridPos": {
             "h": 5,
-            "w": 2,
-            "x": 6,
-            "y": 37
+            "w": 3,
+            "x": 14,
+            "y": 2
           },
           "id": 78,
           "options": {
@@ -1285,7 +1338,7 @@
               "refId": "A"
             }
           ],
-          "title": "Errors Total",
+          "title": "Total errors",
           "type": "stat"
         },
         {
@@ -1315,9 +1368,9 @@
           },
           "gridPos": {
             "h": 5,
-            "w": 2,
-            "x": 8,
-            "y": 37
+            "w": 3,
+            "x": 17,
+            "y": 2
           },
           "id": 77,
           "options": {
@@ -1346,8 +1399,233 @@
               "refId": "A"
             }
           ],
-          "title": "Dropped Records Total",
+          "title": "Total dropped records",
           "type": "stat"
+        },
+        {
+          "datasource": "prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "fixedColor": "green",
+                "mode": "fixed"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 5,
+            "w": 4,
+            "x": 20,
+            "y": 2
+          },
+          "id": 134,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "text": {},
+            "textMode": "auto"
+          },
+          "pluginVersion": "7.5.42",
+          "targets": [
+            {
+              "exemplar": true,
+              "expr": "sum(output_plugin_otel_sdk_exporter_log_exported_total{server_address=~\".+$host.svc.cluster.local\"})",
+              "interval": "",
+              "legendFormat": "",
+              "queryType": "randomWalk",
+              "refId": "A"
+            }
+          ],
+          "title": "Total OTel SDK exports",
+          "type": "stat"
+        },
+        {
+          "datasource": "prometheus",
+          "description": "Output plugin total logs",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "graph": false,
+                  "legend": false,
+                  "tooltip": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": true
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "rps"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 13,
+            "x": 0,
+            "y": 7
+          },
+          "id": 56,
+          "options": {
+            "graph": {},
+            "legend": {
+              "calcs": [
+                "last",
+                "mean",
+                "max"
+              ],
+              "displayMode": "table",
+              "placement": "right"
+            },
+            "tooltipOptions": {
+              "mode": "single"
+            }
+          },
+          "pluginVersion": "7.5.42",
+          "targets": [
+            {
+              "exemplar": true,
+              "expr": "sum(rate(fluentbit_gardener_incoming_logs_total{pod=~\"$pod\",host=~\"$host\"}[$__rate_interval])) by (host)",
+              "instant": false,
+              "interval": "",
+              "legendFormat": "{{host}}",
+              "refId": "A"
+            }
+          ],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "Incoming records/s",
+          "transformations": [],
+          "type": "timeseries"
+        },
+        {
+          "datasource": "prometheus",
+          "description": "Output plugin total logs",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "graph": false,
+                  "legend": false,
+                  "tooltip": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": true
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "rps"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 11,
+            "x": 13,
+            "y": 7
+          },
+          "id": 80,
+          "options": {
+            "graph": {},
+            "legend": {
+              "calcs": [
+                "last",
+                "mean",
+                "max"
+              ],
+              "displayMode": "table",
+              "placement": "right"
+            },
+            "tooltipOptions": {
+              "mode": "single"
+            }
+          },
+          "pluginVersion": "7.5.42",
+          "targets": [
+            {
+              "exemplar": true,
+              "expr": "sum(rate(fluentbit_gardener_output_client_logs_total{pod=~\"$pod\",host=~\".+$host.svc.cluster.local.*\"}[$__rate_interval])) by (host)",
+              "instant": false,
+              "interval": "",
+              "legendFormat": "{{host}}",
+              "refId": "A"
+            }
+          ],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "Output records/s",
+          "transformations": [],
+          "type": "timeseries"
         },
         {
           "datasource": "prometheus",
@@ -1394,10 +1672,10 @@
             "overrides": []
           },
           "gridPos": {
-            "h": 5,
-            "w": 14,
-            "x": 10,
-            "y": 37
+            "h": 8,
+            "w": 13,
+            "x": 0,
+            "y": 15
           },
           "id": 95,
           "options": {
@@ -1426,171 +1704,7 @@
               "refId": "A"
             }
           ],
-          "title": "[Output Plugin] DQue Current Size",
-          "type": "timeseries"
-        },
-        {
-          "datasource": "prometheus",
-          "description": "Output plugin total logs",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "drawStyle": "line",
-                "fillOpacity": 0,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "graph": false,
-                  "legend": false,
-                  "tooltip": false
-                },
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": true
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  }
-                ]
-              },
-              "unit": "rps"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 24,
-            "x": 0,
-            "y": 42
-          },
-          "id": 56,
-          "options": {
-            "graph": {},
-            "legend": {
-              "calcs": [
-                "last",
-                "mean",
-                "max"
-              ],
-              "displayMode": "table",
-              "placement": "right"
-            },
-            "tooltipOptions": {
-              "mode": "single"
-            }
-          },
-          "pluginVersion": "7.5.42",
-          "targets": [
-            {
-              "exemplar": true,
-              "expr": "sum(rate(fluentbit_gardener_incoming_logs_total{pod=~\"$pod\",host=~\"$host\"}[$__rate_interval])) by (host)",
-              "instant": false,
-              "interval": "",
-              "legendFormat": "{{host}}",
-              "refId": "A"
-            }
-          ],
-          "timeFrom": null,
-          "timeShift": null,
-          "title": "[Output Plugin] Incoming Logs Rate",
-          "transformations": [],
-          "type": "timeseries"
-        },
-        {
-          "datasource": "prometheus",
-          "description": "Output plugin total logs",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "drawStyle": "line",
-                "fillOpacity": 0,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "graph": false,
-                  "legend": false,
-                  "tooltip": false
-                },
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": true
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  }
-                ]
-              },
-              "unit": "rps"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 24,
-            "x": 0,
-            "y": 49
-          },
-          "id": 80,
-          "options": {
-            "graph": {},
-            "legend": {
-              "calcs": [
-                "last",
-                "mean",
-                "max"
-              ],
-              "displayMode": "table",
-              "placement": "right"
-            },
-            "tooltipOptions": {
-              "mode": "single"
-            }
-          },
-          "pluginVersion": "7.5.42",
-          "targets": [
-            {
-              "exemplar": true,
-              "expr": "sum(rate(fluentbit_gardener_output_client_logs_total{pod=~\"$pod\",host=~\".+$host.svc.cluster.local.*\"}[$__rate_interval])) by (host)",
-              "instant": false,
-              "interval": "",
-              "legendFormat": "{{host}}",
-              "refId": "A"
-            }
-          ],
-          "timeFrom": null,
-          "timeShift": null,
-          "title": "[Output Plugin] Output Logs Rate",
-          "transformations": [],
+          "title": "DQue current size",
           "type": "timeseries"
         },
         {
@@ -1641,89 +1755,9 @@
           },
           "gridPos": {
             "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 56
-          },
-          "id": 136,
-          "options": {
-            "graph": {},
-            "legend": {
-              "calcs": [
-                "last"
-              ],
-              "displayMode": "table",
-              "placement": "right"
-            },
-            "tooltipOptions": {
-              "mode": "single"
-            }
-          },
-          "pluginVersion": "7.5.42",
-          "targets": [
-            {
-              "exemplar": true,
-              "expr": "sum by (host)(rate(fluentbit_gardener_exported_client_logs_total{pod=~\"$pod\",host=~\"$host\"}[$__rate_interval]))",
-              "interval": "",
-              "legendFormat": "{{host}}",
-              "queryType": "randomWalk",
-              "refId": "A"
-            }
-          ],
-          "title": "[Output Plugin] Exported Logs Rate",
-          "type": "timeseries"
-        },
-        {
-          "datasource": "prometheus",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "drawStyle": "line",
-                "fillOpacity": 0,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "graph": false,
-                  "legend": false,
-                  "tooltip": false
-                },
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": true
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "short"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 56
+            "w": 11,
+            "x": 13,
+            "y": 15
           },
           "id": 138,
           "options": {
@@ -1750,7 +1784,87 @@
               "refId": "A"
             }
           ],
-          "title": "[Output Plugin] Buffered Logs",
+          "title": "DQue Buffered records",
+          "type": "timeseries"
+        },
+        {
+          "datasource": "prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "graph": false,
+                  "legend": false,
+                  "tooltip": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": true
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 13,
+            "x": 0,
+            "y": 23
+          },
+          "id": 136,
+          "options": {
+            "graph": {},
+            "legend": {
+              "calcs": [
+                "last"
+              ],
+              "displayMode": "table",
+              "placement": "right"
+            },
+            "tooltipOptions": {
+              "mode": "single"
+            }
+          },
+          "pluginVersion": "7.5.42",
+          "targets": [
+            {
+              "exemplar": true,
+              "expr": "sum by (host)(rate(fluentbit_gardener_exported_client_logs_total{pod=~\"$pod\",host=~\"$host\"}[$__rate_interval]))",
+              "interval": "",
+              "legendFormat": "{{host}}",
+              "queryType": "randomWalk",
+              "refId": "A"
+            }
+          ],
+          "title": "Exported records/s",
           "type": "timeseries"
         },
         {
@@ -1802,9 +1916,9 @@
           },
           "gridPos": {
             "h": 8,
-            "w": 24,
-            "x": 0,
-            "y": 64
+            "w": 11,
+            "x": 13,
+            "y": 23
           },
           "id": 118,
           "options": {
@@ -1833,238 +1947,7 @@
               "refId": "A"
             }
           ],
-          "title": "[Output Plugin] Throttled logs ",
-          "type": "timeseries"
-        },
-        {
-          "datasource": "prometheus",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "fixedColor": "green",
-                "mode": "fixed"
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 6,
-            "w": 4,
-            "x": 0,
-            "y": 72
-          },
-          "id": 134,
-          "options": {
-            "colorMode": "value",
-            "graphMode": "none",
-            "justifyMode": "auto",
-            "orientation": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "text": {},
-            "textMode": "auto"
-          },
-          "pluginVersion": "7.5.42",
-          "targets": [
-            {
-              "exemplar": true,
-              "expr": "sum(output_plugin_otel_sdk_exporter_log_exported_total{server_address=~\".+$host.svc.cluster.local\"})",
-              "interval": "",
-              "legendFormat": "",
-              "queryType": "randomWalk",
-              "refId": "A"
-            }
-          ],
-          "title": "OTel SDK Exports total",
-          "type": "stat"
-        },
-        {
-          "datasource": "prometheus",
-          "description": "",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "drawStyle": "line",
-                "fillOpacity": 0,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "graph": false,
-                  "legend": false,
-                  "tooltip": false
-                },
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": true
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "short"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 6,
-            "w": 20,
-            "x": 4,
-            "y": 72
-          },
-          "id": 124,
-          "options": {
-            "graph": {},
-            "legend": {
-              "calcs": [
-                "last"
-              ],
-              "displayMode": "table",
-              "placement": "right"
-            },
-            "tooltipOptions": {
-              "mode": "single"
-            }
-          },
-          "pluginVersion": "7.5.42",
-          "targets": [
-            {
-              "exemplar": true,
-              "expr": "sum(rate(output_plugin_otel_sdk_exporter_log_exported_total{server_address=~\".+$host.svc.cluster.local\"}[$__rate_interval])) by (server_address)",
-              "interval": "",
-              "legendFormat": "{{host}}",
-              "queryType": "randomWalk",
-              "refId": "A"
-            }
-          ],
-          "title": "Otel SDK exported logs rate",
-          "type": "timeseries"
-        },
-        {
-          "datasource": "prometheus",
-          "description": "",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "drawStyle": "line",
-                "fillOpacity": 0,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "graph": false,
-                  "legend": false,
-                  "tooltip": false
-                },
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": true
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "short"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 24,
-            "x": 0,
-            "y": 78
-          },
-          "id": 130,
-          "options": {
-            "graph": {},
-            "legend": {
-              "calcs": [
-                "last"
-              ],
-              "displayMode": "table",
-              "placement": "right"
-            },
-            "tooltipOptions": {
-              "mode": "single"
-            }
-          },
-          "pluginVersion": "7.5.42",
-          "targets": [
-            {
-              "exemplar": true,
-              "expr": "histogram_quantile(\n  0.90,\n  sum by (pod, le) (\n    rate(output_plugin_otel_sdk_exporter_operation_duration_seconds_bucket{pod=~\"$pod\" }[$__rate_interval])\n  )\n)",
-              "interval": "",
-              "legendFormat": "p90 {{pod}}",
-              "queryType": "randomWalk",
-              "refId": "A"
-            },
-            {
-              "exemplar": true,
-              "expr": "histogram_quantile(\n  0.50,\n  sum by (pod, le) (\n    rate(output_plugin_otel_sdk_exporter_operation_duration_seconds_bucket{pod=~\"$pod\" }[$__rate_interval])\n  )\n)",
-              "hide": false,
-              "interval": "",
-              "legendFormat": "p50 {{pod}}",
-              "refId": "B"
-            }
-          ],
-          "title": "OTel SDK Exporter Histogram Duration",
+          "title": "Throttled records/s",
           "type": "timeseries"
         }
       ],
@@ -2078,7 +1961,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 37
+        "y": 38
       },
       "id": 100,
       "panels": [
@@ -2713,7 +2596,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 38
+        "y": 39
       },
       "id": 110,
       "panels": [
