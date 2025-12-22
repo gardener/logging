@@ -7,6 +7,43 @@ metadata:
   labels:
     {{- include "fluent-bit-plugin.labels" . | nindent 4 }}
 data:
+  systemd.lua: |
+    function set_systemd_record(tag, timestamp, record)
+        new_record = {}
+        timeStr = os.date("!*t", timestamp["sec"])
+        t = string.format("%4d-%02d-%02dT%02d:%02d:%02d.%sZ",
+        timeStr["year"], timeStr["month"], timeStr["day"],
+        timeStr["hour"], timeStr["min"], timeStr["sec"],
+        timestamp["nsec"])
+
+        new_record["time"] = t
+        new_record["log"] = record["MESSAGE"]
+        new_record["process.command"] = record["_EXE"]
+        new_record["process.command_line"] = record["_CMDLINE"]
+        new_record["process.pid"] = record["_PID"]
+        new_record["host.id"] = record["_MACHINE_ID"]
+        new_record["service.name"] = record["_SYSTEMD_UNIT"]
+        new_record["service.namespace"] = record["_SYSTEMD_SLICE"]
+
+        return 1, timestamp, new_record
+    end
+
+  set_time_to_record.lua: |
+    function set_time_to_record(tag, timestamp, record)
+        if(record["logtag"]~=nil) then
+            timeStr = os.date("!*t",  timestamp["sec"])
+            t = string.format("%4d-%02d-%02dT%02d:%02d:%02d.%sZ",
+            timeStr["year"], timeStr["month"], timeStr["day"],
+            timeStr["hour"], timeStr["min"], timeStr["sec"],
+            timestamp["nsec"]);
+            record["time"] = t;
+
+            return 1, timestamp, record
+        else
+            return 0,timestamp,record
+        end
+    end
+
   add_tag_to_record.lua: |
     function add_tag_to_record(tag, timestamp, record)
         record["tag"] = tag
@@ -65,7 +102,7 @@ data:
     [PARSER]
         Name                containerd-parser
         Format              regex
-        Regex               ^(?<time>[^ ]+) (stdout|stderr) ([^ ]*) (?<log>.*)$
+        Regex               ^(?<time>[^ ]+) (?<stream>stdout|stderr) (?<logtag>[^ ]*) (?<message>.*)$
         Time_Key            time
         Time_Format         %Y-%m-%dT%H:%M:%S.%L%z
         Time_Keep           true
@@ -100,13 +137,21 @@ data:
         Read_From_Head            true
         storage.type              filesystem
         storage.pause_on_chunks_overlimit on
-
-    [Filter]
-        Name                      parser
-        Match                     kubernetes.*
-        Key_Name                  log
         Parser                    containerd-parser
-        Reserve_Data              true
+        Multiline.Parser          go
+
+    [Input]
+        Name                      systemd
+        Tag                       systemd.*
+        Path                      /var/log/journal
+        Systemd_Filter            _SYSTEMD_UNIT=containerd.service
+        Systemd_Filter            _SYSTEMD_UNIT=kubelet.service
+        Systemd_Filter            _SYSTEMD_UNIT=gardener-node-agent.service
+        DB                        /var/run/fluentbit/flb_systemd.db
+        DB.Sync                   normal
+        Read_From_Tail            true
+        storage.type              memory
+
     [Filter]
         Name                      lua
         Match                     kubernetes.*
@@ -115,19 +160,34 @@ data:
     [Filter]
         Name                      lua
         Match                     kubernetes.*
+        script                    /fluent-bit/config/set_time_to_record.lua
+        call                      set_time_to_record
+        Time_As_Table             true
+    [Filter]
+        Name                      lua
+        Match                     kubernetes.*
         script                    /fluent-bit/config/modify_severity.lua
         call                      cb_modify
 
     [Filter]
+        Name                      lua
+        Match                     systemd.*
+        script                    /fluent-bit/config/systemd.lua
+        call                      set_systemd_record
+        Time_As_Table             true
+    [Filter]
         Name                      record_modifier
         Match                     systemd.containerd.*
-        Record                    hostname ${NODE_NAME}
-        Record                    unit containerd
+        Record                    unit containerd.service
     [Filter]
         Name                      record_modifier
         Match                     systemd.kubelet.*
-        Record                    hostname ${NODE_NAME}
-        Record                    unit kubelet
+        Record                    unit kubelet.service
+    [Filter]
+        Name                      record_modifier
+        Match                     systemd.gardener-node-agent.*
+        Record                    unit gardener-node-agent.service
+
 
 
     [Output]
@@ -170,10 +230,11 @@ data:
 
     [Output]
         Name                      gardener
-        Match
+        Match                     systemd.*
         SeedType                  otlpgrpc
         LogLevel                  error
         Endpoint                  logging-otel-collector-seed.fluent-bit.svc.cluster.local:4317
         Insecure                  true
-        HostnameKeyValue          nodename ${NODE_NAME}
+        Origin                    systemd_journal
+        HostnameValue             ${NODE_NAME}
         FallbackToTagWhenMetadataIsMissing false

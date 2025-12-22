@@ -30,7 +30,7 @@ data:
       otlphttp/logs:
         logs_endpoint: http://{{ include "fluent-bit-plugin.victorialogsName" . }}-seed.{{ .Release.Namespace }}.svc.cluster.local:9428/insert/opentelemetry/v1/logs
         headers:
-          VL-Stream-Fields: "k8s.event.reason,k8s.node.name,k8s.namespace.name,k8s.object.name,k8s.pods.name,k8s.container.name,severity,k8s.object.name,k8s.object.kind,origin"
+          VL-Stream-Fields: "k8s.event.reason,k8s.node.name,k8s.namespace.name,k8s.object.name,k8s.pods.name,k8s.container.name,severity,k8s.object.name,k8s.object.kind,origin,unit,host.id,host.name,process.pid"
     service:
       extensions: [health_check]
       pipelines:
