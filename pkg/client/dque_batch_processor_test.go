@@ -193,7 +193,9 @@ var _ = Describe("DQue Batch Processor with Functional Options", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		// Wait for batch to be exported
-		time.Sleep(200 * time.Millisecond)
+		Eventually(func() int {
+			return len(exportedRecords)
+		}, "10s", "100ms").Should(BeNumerically(">", 0))
 
 		// Verify export
 		Expect(exportedRecords).NotTo(BeEmpty())
