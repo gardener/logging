@@ -322,12 +322,12 @@ func processControllerBoolConfigs(config *Config, configMap map[string]any) erro
 func processOTLPConfig(config *Config, configMap map[string]any) error {
 	// Keys are already normalized to lowercase by ParseConfig
 
-	// Process OTLPEndpoint
+	// Process Endpoint
 	if endpoint, ok := configMap["endpoint"].(string); ok && endpoint != "" {
 		config.OTLPConfig.Endpoint = endpoint
 	}
 
-	// Process OTLPInsecure
+	// Process Insecure
 	if insecure, ok := configMap["insecure"].(string); ok && insecure != "" {
 		boolVal, err := strconv.ParseBool(insecure)
 		if err != nil {
@@ -336,7 +336,7 @@ func processOTLPConfig(config *Config, configMap map[string]any) error {
 		config.OTLPConfig.Insecure = boolVal
 	}
 
-	// Process OTLPCompression
+	// Process Compression
 	if compression, ok := configMap["compression"].(string); ok && compression != "" {
 		compVal, err := strconv.Atoi(compression)
 		if err != nil {
@@ -348,14 +348,14 @@ func processOTLPConfig(config *Config, configMap map[string]any) error {
 		config.OTLPConfig.Compression = compVal
 	}
 
-	// Process OTLPTimeout
+	// Process Timeout
 	if err := processDurationField(configMap, "timeout", func(d time.Duration) {
 		config.OTLPConfig.Timeout = d
 	}); err != nil {
 		return err
 	}
 
-	// Process OTLPHeaders - parse JSON string into map
+	// Process Headers - parse JSON string into map
 	if headers, ok := configMap["headers"].(string); ok && headers != "" {
 		// Check size limit before parsing to prevent memory exhaustion
 		if len(headers) > MaxJSONSize {
