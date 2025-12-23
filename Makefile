@@ -157,24 +157,3 @@ add-license-headers: tidy
 .PHONY: clean
 clean:
 	@rm -rf $(REPO_ROOT)/build
-
-#########################################
-# Tools                                 #
-#########################################
-.PHONY: kind-up
-kind-up: tidy $(KUBECTL)
-	@$(REPO_ROOT)/hack/kind-up.sh
-
-#########################################
-# skaffold pipeline scenarios           #
-#########################################
-skaffold-%: export KUBECONFIG = $(REPO_ROOT)/example/kind/kubeconfig
-
-.PHONY: skaffold-run
-skaffold-run: $(SKAFFOLD)
-	@$(SKAFFOLD) run --kubeconfig=$(KUBECONFIG)
-
-# skaffold-dev target requires that skaffold run has been run
-.PHONY: skaffold-dev
-skaffold-dev: $(SKAFFOLD)
-	@$(SKAFFOLD) dev --kubeconfig=$(KUBECONFIG)
