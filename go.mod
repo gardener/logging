@@ -41,6 +41,7 @@ require (
 	k8s.io/component-base v0.34.3
 	k8s.io/utils v0.0.0-20251002143259-bc988d571ff4
 	sigs.k8s.io/controller-runtime v0.22.4
+	sigs.k8s.io/e2e-framework v0.6.0
 )
 
 require (
@@ -82,6 +83,7 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bitfield/gotestdox v0.2.2 // indirect
 	github.com/bkielbasa/cyclop v1.2.3 // indirect
+	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/blizzy78/varnamelen v0.8.0 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.8.1 // indirect
 	github.com/bombsimon/wsl/v4 v4.7.0 // indirect
@@ -293,6 +295,7 @@ require (
 	github.com/uudashr/iface v1.4.1 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
+	github.com/vladimirvivien/gexe v0.4.1 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/xen0n/gosmopolitan v1.3.0 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
