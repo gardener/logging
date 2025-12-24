@@ -1,0 +1,89 @@
+service:
+  log_level: info
+  http_server: true
+  parsers_file: parsers.yaml
+
+pipeline:
+  inputs:
+    - name: tail
+      tag: kubernetes.*
+      path: "/var/log/containers/*.log"
+      readFromHead: true
+      parser: "containerd-parser"
+      processors:
+        logs:
+          - name: lua
+            code: |
+              function add_kubernetes_metadata(tag, timestamp, record)
+                -- Split the tag into its components
+                local stripped_tag = tag:match("kubernetes%.var%.log%.containers%.(.*)%.log")
+              
+                if stripped_tag == nil then
+                  return 0, timestamp, record
+                end
+              
+                local podName, namespaceName, containerName, containerID = stripped_tag:match("([^_]+)_([^_]+)_(.*)%-(.*)")
+
+                record["kubernetes"] = {}
+                record["kubernetes"]["pod_name"] = podName
+                record["kubernetes"]["namespace_name"] = namespaceName
+                record["kubernetes"]["container_name"] = containerName
+                record["kubernetes"]["container_id"] = containerID
+
+                -- Add the original tag to the record
+                record["tag"] = tag
+
+                return 1, timestamp, record
+              end
+            call: add_kubernetes_metadata
+
+    - name: systemd
+      tag: systemd.*
+      path: /run/log/journal
+      systemd_filter:
+        - _SYSTEMD_UNIT=containerd.service
+        - _SYSTEMD_UNIT=kubelet.service
+      db:   /var/run/fluentbit/flb_systemd.db
+      db.sync: normal
+      read_from_tail: true
+      processors:
+        logs:
+          - name: lua
+            code: |
+              function set_systemd_record(tag, timestamp, record)
+                new_record = {}
+                timeStr = os.date("!*t", timestamp["sec"])
+                t = string.format("%4d-%02d-%02dT%02d:%02d:%02d.%sZ",
+                timeStr["year"], timeStr["month"], timeStr["day"],
+                timeStr["hour"], timeStr["min"], timeStr["sec"],
+                timestamp["nsec"])
+        
+                new_record["time"] = t
+                new_record["log"] = record["MESSAGE"]
+                new_record["process.command"] = record["_EXE"]
+                new_record["process.command_line"] = record["_CMDLINE"]
+                new_record["process.pid"] = record["_PID"]
+                new_record["host.id"] = record["_MACHINE_ID"]
+                new_record["service.name"] = record["_SYSTEMD_UNIT"]
+                new_record["service.namespace"] = record["_SYSTEMD_SLICE"]
+        
+                return 1, timestamp, new_record
+              end
+            call: set_systemd_record
+            time_as_table: true
+              
+
+  filters:
+    - name: record_modifier
+      match: "systemd.containerd.*"
+      record:
+        - unit containerd.service
+    - name: record_modifier
+      match: "systemd.kubelete.*"
+      record:
+        - unit kubelet.service
+
+  outputs:
+    - name: stdout
+      match: "systemd.*"
+      format: json_lines
