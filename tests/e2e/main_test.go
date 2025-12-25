@@ -45,7 +45,7 @@ func TestMain(m *testing.M) {
 			"./config/kind-config.yaml",
 			kind.WithImage("kindest/node:v1.35.0"),
 		),
-		
+
 		envfuncs.SetupCRDs("./config", "*-crd.yaml"),
 		envfuncs.CreateNamespace(namespace),
 		loadContainerImage(logger, kindClusterName, fluentBitImage),
@@ -65,8 +65,7 @@ func TestMain(m *testing.M) {
 	// Use pre-defined environment funcs to teardown kind cluster after tests
 	testenv.Finish(
 		envfuncs.ExportClusterLogs(kindClusterName, "./logs"),
-		//envfuncs.DeleteNamespace(namespace),
-		//envfuncs.DestroyCluster(kindClusterName),
+		envfuncs.DestroyCluster(kindClusterName),
 	)
 
 	testenv.BeforeEachFeature(func(ctx context.Context, cfg *envconf.Config, t *testing.T, f features.Feature) (context.Context, error) {

@@ -46,8 +46,6 @@ func TestSystemdLogs(t *testing.T) {
 				logs, err := getLogsFromFetcherPod(ctx, t, namespace, kubeconfigPath)
 				g.Expect(err).NotTo(HaveOccurred(), "Failed to get logs from fetcher pod")
 
-				t.Logf("Retrieved %d bytes of logs from fetcher pod", len(logs))
-
 				// Parse the JSON logs and extract query results
 				kubelet, containerd, err := parseAndExtractCounts(logs)
 				g.Expect(err).NotTo(HaveOccurred(), "Failed to parse fetcher logs")
@@ -74,8 +72,6 @@ func TestSystemdLogs(t *testing.T) {
 
 // getLogsFromFetcherPod retrieves logs from the log-fetcher pod using kubectl
 func getLogsFromFetcherPod(ctx context.Context, t *testing.T, namespace, kubeconfigPath string) (string, error) {
-	t.Log("Executing kubectl logs command to fetch logs from log-fetcher pod")
-
 	// Get the pod name first
 	getPodCmd := fmt.Sprintf("kubectl --kubeconfig=%s get pods -n %s -l app=log-fetcher -o jsonpath='{.items[0].metadata.name}'", kubeconfigPath, namespace)
 	podNameBytes, err := execCommand(ctx, "sh", "-c", getPodCmd)
@@ -87,8 +83,6 @@ func getLogsFromFetcherPod(ctx context.Context, t *testing.T, namespace, kubecon
 	if podName == "" {
 		return "", fmt.Errorf("log-fetcher pod not found")
 	}
-
-	t.Logf("Found fetcher pod: %s", podName)
 
 	// Get logs from the pod (last 100 lines to avoid too much data)
 	getLogsCmd := fmt.Sprintf("kubectl --kubeconfig=%s logs -n %s %s --tail=4", kubeconfigPath, namespace, podName)
