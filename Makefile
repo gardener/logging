@@ -28,7 +28,7 @@ include hack/tools.mk
 export PATH := $(abspath $(TOOLS_DIR)):$(PATH)
 
 .DEFAULT_GOAL := all
-all: verify plugin event-logger
+all: tidy fmt gci plugin event-logger lint
 
 #################################################################
 # Build targets                                                 #
@@ -107,7 +107,7 @@ tidy:
 	@go mod tidy
 
 .PHONY: check
-check: tidy fmt gci lint
+check: tidy fmt gci
 
 .PHONY: fmt
 fmt: tidy
@@ -122,7 +122,7 @@ gci: tidy
 	@go tool gci write $(GCI_OPT) $(SRC_DIRS)
 
 .PHONY: lint
-check: tidy
+lint: tidy
 	@echo "Running lint..."
 	 @go tool golangci-lint run \
 	 	--config=$(REPO_ROOT)/.golangci.yaml \

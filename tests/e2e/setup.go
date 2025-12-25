@@ -34,7 +34,7 @@ var fluentBitParsers string
 
 // buildFluentBitImages builds the container images for fluent-bit-plugin and event-logger
 func buildFluentBitImages(logger logr.Logger, fluentBitPluginImage, eventLoggerImage string) env.Func {
-	return func(ctx context.Context, cfg *envconf.Config) (context.Context, error) {
+	return func(ctx context.Context, _ *envconf.Config) (context.Context, error) {
 		projectRoot, err := filepath.Abs("../..")
 		if err != nil {
 			return ctx, fmt.Errorf("failed to get project root: %w", err)
@@ -54,7 +54,7 @@ func buildFluentBitImages(logger logr.Logger, fluentBitPluginImage, eventLoggerI
 
 // buildFetcherImage builds the fetcher container image
 func buildFetcherImage(logger logr.Logger, fetcherImage string) env.Func {
-	return func(ctx context.Context, cfg *envconf.Config) (context.Context, error) {
+	return func(ctx context.Context, _ *envconf.Config) (context.Context, error) {
 		fetcherDir, err := filepath.Abs("fetcher")
 		if err != nil {
 			return ctx, fmt.Errorf("failed to get fetcher directory: %w", err)
@@ -64,7 +64,7 @@ func buildFetcherImage(logger logr.Logger, fetcherImage string) env.Func {
 			"-t", fetcherImage,
 			"-f", filepath.Join(fetcherDir, "Dockerfile"),
 			fetcherDir,
-		)
+		) // #nosec G204 -- fetcherImage, fetcherDir are controlled inputs from test setup
 		cmd.Stdout = io.Discard
 		cmd.Stderr = io.Discard
 
@@ -80,7 +80,7 @@ func buildFetcherImage(logger logr.Logger, fetcherImage string) env.Func {
 
 // loadContainerImage loads a container image to all nodes in the kind cluster
 func loadContainerImage(logger logr.Logger, clusterName, imageName string) env.Func {
-	return func(ctx context.Context, cfg *envconf.Config) (context.Context, error) {
+	return func(ctx context.Context, _ *envconf.Config) (context.Context, error) {
 		// Get list of nodes in the kind cluster
 		listNodesCmd := exec.Command("kind", "get", "nodes", "--name", clusterName)
 		output, err := listNodesCmd.Output()
@@ -166,7 +166,7 @@ func buildDockerImage(logger logr.Logger, projectRoot, imageName, target string)
 		"--target", target,
 		"-f", filepath.Join(projectRoot, "Dockerfile"),
 		projectRoot,
-	)
+	) // #nosec G204 -- projectRoot, imageName, and target are controlled inputs from test setup
 	cmd.Stdout = io.Discard
 	cmd.Stderr = io.Discard
 
@@ -589,7 +589,7 @@ func createFetcherDeployment(logger logr.Logger, namespace, fetcherImage, victor
 }
 
 // waitForDaemonSetReady waits for the fluent-bit DaemonSet to be ready using e2e-framework wait utilities
-func waitForDaemonSetReady(ctx context.Context, cfg *envconf.Config, namespace, name string) error {
+func waitForDaemonSetReady(_ context.Context, cfg *envconf.Config, namespace, name string) error {
 	client := cfg.Client().Resources()
 
 	daemonSet := &appsv1.DaemonSet{
@@ -602,7 +602,11 @@ func waitForDaemonSetReady(ctx context.Context, cfg *envconf.Config, namespace, 
 	// Wait for DaemonSet to be ready with timeout
 	return wait.For(
 		conditions.New(client).ResourceMatch(daemonSet, func(object k8s.Object) bool {
-			ds := object.(*appsv1.DaemonSet)
+			ds, ok := object.(*appsv1.DaemonSet)
+			if !ok {
+				return false
+			}
+
 			return ds.Status.DesiredNumberScheduled > 0 &&
 				ds.Status.NumberReady == ds.Status.DesiredNumberScheduled &&
 				ds.Status.NumberAvailable == ds.Status.DesiredNumberScheduled
@@ -613,7 +617,7 @@ func waitForDaemonSetReady(ctx context.Context, cfg *envconf.Config, namespace, 
 }
 
 // waitForStatefulSetReady waits for a StatefulSet to be ready using e2e-framework wait utilities
-func waitForStatefulSetReady(ctx context.Context, cfg *envconf.Config, namespace, name string) error {
+func waitForStatefulSetReady(_ context.Context, cfg *envconf.Config, namespace, name string) error {
 	client := cfg.Client().Resources()
 
 	statefulSet := &appsv1.StatefulSet{
@@ -626,11 +630,15 @@ func waitForStatefulSetReady(ctx context.Context, cfg *envconf.Config, namespace
 	// Wait for StatefulSet to be ready with timeout
 	return wait.For(
 		conditions.New(client).ResourceMatch(statefulSet, func(object k8s.Object) bool {
-			sts := object.(*appsv1.StatefulSet)
+			sts, ok := object.(*appsv1.StatefulSet)
+			if !ok {
+				return false
+			}
 			replicas := int32(1)
 			if sts.Spec.Replicas != nil {
 				replicas = *sts.Spec.Replicas
 			}
+
 			return sts.Status.ReadyReplicas == replicas &&
 				sts.Status.CurrentReplicas == replicas &&
 				sts.Status.UpdatedReplicas == replicas
@@ -641,7 +649,7 @@ func waitForStatefulSetReady(ctx context.Context, cfg *envconf.Config, namespace
 }
 
 // waitForDeploymentReady waits for a Deployment to be ready using e2e-framework wait utilities
-func waitForDeploymentReady(ctx context.Context, cfg *envconf.Config, namespace string, name string) error {
+func waitForDeploymentReady(_ context.Context, cfg *envconf.Config, namespace string, name string) error {
 	client := cfg.Client().Resources()
 
 	deployment := &appsv1.Deployment{
@@ -654,11 +662,15 @@ func waitForDeploymentReady(ctx context.Context, cfg *envconf.Config, namespace 
 	// Wait for Deployment to be ready with timeout
 	return wait.For(
 		conditions.New(client).ResourceMatch(deployment, func(object k8s.Object) bool {
-			dep := object.(*appsv1.Deployment)
+			dep, ok := object.(*appsv1.Deployment)
+			if !ok {
+				return false
+			}
 			replicas := int32(1)
 			if dep.Spec.Replicas != nil {
 				replicas = *dep.Spec.Replicas
 			}
+
 			return dep.Status.ReadyReplicas == replicas &&
 				dep.Status.AvailableReplicas == replicas &&
 				dep.Status.UpdatedReplicas == replicas

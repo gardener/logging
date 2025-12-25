@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os/exec"
 	"strconv"
@@ -81,7 +82,7 @@ func getLogsFromFetcherPod(ctx context.Context, t *testing.T, namespace, kubecon
 
 	podName := strings.Trim(string(podNameBytes), "'")
 	if podName == "" {
-		return "", fmt.Errorf("log-fetcher pod not found")
+		return "", errors.New("log-fetcher pod not found")
 	}
 
 	// Get logs from the pod (last 100 lines to avoid too much data)
@@ -131,6 +132,7 @@ func parseAndExtractCounts(logs string) (kubeletCount, containerdCount int, err 
 			kubeletCount = count
 		case "containerd-service":
 			containerdCount = count
+		default:
 		}
 	}
 
@@ -139,7 +141,7 @@ func parseAndExtractCounts(logs string) (kubeletCount, containerdCount int, err 
 	}
 
 	if kubeletCount == -1 || containerdCount == -1 {
-		return 0, 0, fmt.Errorf("could not find both kubelet and containerd counts in logs")
+		return 0, 0, errors.New("could not find both kubelet and containerd counts in logs")
 	}
 
 	return kubeletCount, containerdCount, nil
