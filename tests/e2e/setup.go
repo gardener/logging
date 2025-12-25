@@ -19,6 +19,9 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/e2e-framework/klient/k8s"
+	"sigs.k8s.io/e2e-framework/klient/wait"
+	"sigs.k8s.io/e2e-framework/klient/wait/conditions"
 	"sigs.k8s.io/e2e-framework/pkg/env"
 	"sigs.k8s.io/e2e-framework/pkg/envconf"
 )
@@ -56,8 +59,6 @@ func buildFetcherImage(logger logr.Logger, fetcherImage string) env.Func {
 		if err != nil {
 			return ctx, fmt.Errorf("failed to get fetcher directory: %w", err)
 		}
-
-		logger.Info("Building fetcher image", "image", fetcherImage, "directory", fetcherDir)
 
 		cmd := exec.Command("docker", "build",
 			"-t", fetcherImage,
@@ -426,8 +427,6 @@ func createFluentBitServiceAccount(ctx context.Context, logger logr.Logger, cfg 
 // createVictoriaLogsStatefulSet creates a victoria-logs StatefulSet and Service in the specified namespace
 func createVictoriaLogsStatefulSet(logger logr.Logger, namespace, victoriaLogsImage string) env.Func {
 	return func(ctx context.Context, cfg *envconf.Config) (context.Context, error) {
-		logger.Info("Creating victoria-logs StatefulSet", "namespace", namespace)
-
 		// Create Service first
 		service := &corev1.Service{
 			ObjectMeta: metav1.ObjectMeta{
@@ -524,8 +523,6 @@ func createVictoriaLogsStatefulSet(logger logr.Logger, namespace, victoriaLogsIm
 // createFetcherDeployment creates a fetcher deployment in the specified namespace
 func createFetcherDeployment(logger logr.Logger, namespace, fetcherImage, victoriaLogsAddr string) env.Func {
 	return func(ctx context.Context, cfg *envconf.Config) (context.Context, error) {
-		logger.Info("Creating fetcher deployment", "namespace", namespace, "image", fetcherImage)
-
 		replicas := int32(1)
 		deployment := &appsv1.Deployment{
 			ObjectMeta: metav1.ObjectMeta{
@@ -591,147 +588,82 @@ func createFetcherDeployment(logger logr.Logger, namespace, fetcherImage, victor
 	}
 }
 
-// waitForDaemonSetReady waits for the fluent-bit DaemonSet to be ready with exponential backoff
+// waitForDaemonSetReady waits for the fluent-bit DaemonSet to be ready using e2e-framework wait utilities
 func waitForDaemonSetReady(ctx context.Context, cfg *envconf.Config, namespace, name string) error {
-	const (
-		maxRetryDuration = 5 * time.Minute
-		initialBackoff   = 1 * time.Second
-		maxBackoff       = 30 * time.Second
-		backoffFactor    = 2.0
-	)
+	client := cfg.Client().Resources()
 
-	r := cfg.Client().Resources(namespace)
-	startTime := time.Now()
-	backoff := initialBackoff
-
-	for {
-		// Check if we've exceeded the maximum retry duration
-		if time.Since(startTime) > maxRetryDuration {
-			return fmt.Errorf("timeout waiting for DaemonSet to be ready after %v", maxRetryDuration)
-		}
-
-		daemonSet := &appsv1.DaemonSet{}
-		if err := r.Get(ctx, name, namespace, daemonSet); err != nil {
-			return fmt.Errorf("failed to get DaemonSet: %w", err)
-		}
-
-		// Check if the DaemonSet is ready
-		if daemonSet.Status.DesiredNumberScheduled > 0 &&
-			daemonSet.Status.NumberReady == daemonSet.Status.DesiredNumberScheduled &&
-			daemonSet.Status.NumberAvailable == daemonSet.Status.DesiredNumberScheduled {
-			return nil
-		}
-
-		// Wait before retrying with exponential backoff
-		select {
-		case <-ctx.Done():
-			return fmt.Errorf("context cancelled while waiting for DaemonSet: %w", ctx.Err())
-		case <-time.After(backoff):
-			// Calculate next backoff duration
-			backoff = time.Duration(float64(backoff) * backoffFactor)
-			if backoff > maxBackoff {
-				backoff = maxBackoff
-			}
-		}
+	daemonSet := &appsv1.DaemonSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
 	}
+
+	// Wait for DaemonSet to be ready with timeout
+	return wait.For(
+		conditions.New(client).ResourceMatch(daemonSet, func(object k8s.Object) bool {
+			ds := object.(*appsv1.DaemonSet)
+			return ds.Status.DesiredNumberScheduled > 0 &&
+				ds.Status.NumberReady == ds.Status.DesiredNumberScheduled &&
+				ds.Status.NumberAvailable == ds.Status.DesiredNumberScheduled
+		}),
+		wait.WithTimeout(5*time.Minute),
+		wait.WithInterval(2*time.Second),
+	)
 }
 
-// waitForStatefulSetReady waits for a StatefulSet to be ready with exponential backoff
+// waitForStatefulSetReady waits for a StatefulSet to be ready using e2e-framework wait utilities
 func waitForStatefulSetReady(ctx context.Context, cfg *envconf.Config, namespace, name string) error {
-	const (
-		maxRetryDuration = 5 * time.Minute
-		initialBackoff   = 1 * time.Second
-		maxBackoff       = 30 * time.Second
-		backoffFactor    = 2.0
-	)
+	client := cfg.Client().Resources()
 
-	r := cfg.Client().Resources(namespace)
-	startTime := time.Now()
-	backoff := initialBackoff
-
-	for {
-		// Check if we've exceeded the maximum retry duration
-		if time.Since(startTime) > maxRetryDuration {
-			return fmt.Errorf("timeout waiting for StatefulSet to be ready after %v", maxRetryDuration)
-		}
-
-		statefulSet := &appsv1.StatefulSet{}
-		if err := r.Get(ctx, name, namespace, statefulSet); err != nil {
-			return fmt.Errorf("failed to get StatefulSet: %w", err)
-		}
-
-		// Check if the StatefulSet is ready
-		replicas := int32(1)
-		if statefulSet.Spec.Replicas != nil {
-			replicas = *statefulSet.Spec.Replicas
-		}
-
-		if statefulSet.Status.ReadyReplicas == replicas &&
-			statefulSet.Status.CurrentReplicas == replicas &&
-			statefulSet.Status.UpdatedReplicas == replicas {
-			return nil
-		}
-
-		// Wait before retrying with exponential backoff
-		select {
-		case <-ctx.Done():
-			return fmt.Errorf("context cancelled while waiting for StatefulSet: %w", ctx.Err())
-		case <-time.After(backoff):
-			// Calculate next backoff duration
-			backoff = time.Duration(float64(backoff) * backoffFactor)
-			if backoff > maxBackoff {
-				backoff = maxBackoff
-			}
-		}
+	statefulSet := &appsv1.StatefulSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
 	}
+
+	// Wait for StatefulSet to be ready with timeout
+	return wait.For(
+		conditions.New(client).ResourceMatch(statefulSet, func(object k8s.Object) bool {
+			sts := object.(*appsv1.StatefulSet)
+			replicas := int32(1)
+			if sts.Spec.Replicas != nil {
+				replicas = *sts.Spec.Replicas
+			}
+			return sts.Status.ReadyReplicas == replicas &&
+				sts.Status.CurrentReplicas == replicas &&
+				sts.Status.UpdatedReplicas == replicas
+		}),
+		wait.WithTimeout(5*time.Minute),
+		wait.WithInterval(2*time.Second),
+	)
 }
 
-// waitForDeploymentReady waits for a Deployment to be ready with exponential backoff
+// waitForDeploymentReady waits for a Deployment to be ready using e2e-framework wait utilities
 func waitForDeploymentReady(ctx context.Context, cfg *envconf.Config, namespace string, name string) error {
-	const (
-		maxRetryDuration = 5 * time.Minute
-		initialBackoff   = 1 * time.Second
-		maxBackoff       = 30 * time.Second
-		backoffFactor    = 2.0
-	)
+	client := cfg.Client().Resources()
 
-	r := cfg.Client().Resources(namespace)
-	startTime := time.Now()
-	backoff := initialBackoff
-
-	for {
-		// Check if we've exceeded the maximum retry duration
-		if time.Since(startTime) > maxRetryDuration {
-			return fmt.Errorf("timeout waiting for Deployment to be ready after %v", maxRetryDuration)
-		}
-
-		deployment := &appsv1.Deployment{}
-		if err := r.Get(ctx, name, namespace, deployment); err != nil {
-			return fmt.Errorf("failed to get Deployment: %w", err)
-		}
-
-		// Check if the Deployment is ready
-		replicas := int32(1)
-		if deployment.Spec.Replicas != nil {
-			replicas = *deployment.Spec.Replicas
-		}
-
-		if deployment.Status.ReadyReplicas == replicas &&
-			deployment.Status.AvailableReplicas == replicas &&
-			deployment.Status.UpdatedReplicas == replicas {
-			return nil
-		}
-
-		// Wait before retrying with exponential backoff
-		select {
-		case <-ctx.Done():
-			return fmt.Errorf("context cancelled while waiting for Deployment: %w", ctx.Err())
-		case <-time.After(backoff):
-			// Calculate next backoff duration
-			backoff = time.Duration(float64(backoff) * backoffFactor)
-			if backoff > maxBackoff {
-				backoff = maxBackoff
-			}
-		}
+	deployment := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
 	}
+
+	// Wait for Deployment to be ready with timeout
+	return wait.For(
+		conditions.New(client).ResourceMatch(deployment, func(object k8s.Object) bool {
+			dep := object.(*appsv1.Deployment)
+			replicas := int32(1)
+			if dep.Spec.Replicas != nil {
+				replicas = *dep.Spec.Replicas
+			}
+			return dep.Status.ReadyReplicas == replicas &&
+				dep.Status.AvailableReplicas == replicas &&
+				dep.Status.UpdatedReplicas == replicas
+		}),
+		wait.WithTimeout(5*time.Minute),
+		wait.WithInterval(2*time.Second),
+	)
 }
