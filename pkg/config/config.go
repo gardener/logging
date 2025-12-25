@@ -327,6 +327,22 @@ func processOTLPConfig(config *Config, configMap map[string]any) error {
 		config.OTLPConfig.Endpoint = endpoint
 	}
 
+	if endpointURL, ok := configMap["endpointurl"].(string); ok && endpointURL != "" {
+		// check that it starts with http:// or https://
+		if !strings.HasPrefix(endpointURL, "http://") && !strings.HasPrefix(endpointURL, "https://") {
+			return fmt.Errorf("invalid EndpointURL: %s", endpointURL)
+		}
+		config.OTLPConfig.EndpointURL = endpointURL
+	}
+
+	if endpointURLPath, ok := configMap["endpointurlpath"].(string); ok && endpointURLPath != "" {
+		// check that it starts with a slash and there is no whitespace or colon
+		if !strings.HasPrefix(endpointURLPath, "/") || strings.ContainsAny(endpointURLPath, " :") {
+			return fmt.Errorf("invalid EndpointURLPath: %s", endpointURLPath)
+		}
+		config.OTLPConfig.EndpointURLPath = endpointURLPath
+	}
+
 	// Process Insecure
 	if insecure, ok := configMap["insecure"].(string); ok && insecure != "" {
 		boolVal, err := strconv.ParseBool(insecure)

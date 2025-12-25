@@ -8,6 +8,8 @@ pipeline:
     - name: tail
       tag: kubernetes.*
       path: "/var/log/containers/*.log"
+      exclude_path:
+        - "/var/log/containers/fluent-bit-*.log"
       readFromHead: true
       parser: "containerd-parser"
       processors:
@@ -45,7 +47,7 @@ pipeline:
         - _SYSTEMD_UNIT=kubelet.service
       db:   /var/run/fluentbit/flb_systemd.db
       db.sync: normal
-      read_from_tail: true
+      read_from_tail: false
       processors:
         logs:
           - name: lua
@@ -79,11 +81,18 @@ pipeline:
       record:
         - unit containerd.service
     - name: record_modifier
-      match: "systemd.kubelete.*"
+      match: "systemd.kubelet.*"
       record:
         - unit kubelet.service
 
   outputs:
-    - name: stdout
+    - name: gardener
       match: "systemd.*"
-      format: json_lines
+      seed_type: "otlphttp"
+      log_level: "debug"
+      endpoint: "victoria-logs-0.victoria-logs.fluent-bit.svc.cluster.local:9428"
+      endpoint_url_path: "/insert/opentelemetry/v1/logs"
+      insecure: true
+      origin: "systemd_journal"
+      hostname_value: "${NODE_NAME}"
+      fallback_to_tag_when_metadata_is_missing: false

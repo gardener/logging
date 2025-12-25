@@ -89,10 +89,9 @@ func NewOTLPHTTPConfigBuilder(cfg config.Config) *OTLPHTTPConfigBuilder {
 
 // Build constructs the exporter options
 func (b *OTLPHTTPConfigBuilder) Build() []otlploghttp.Option {
-	opts := []otlploghttp.Option{
-		otlploghttp.WithEndpoint(b.cfg.OTLPConfig.Endpoint),
-	}
+	opts := []otlploghttp.Option{}
 
+	b.configureEndpoint(&opts)
 	b.configureTLS(&opts)
 	b.configureHeaders(&opts)
 	b.configureTimeout(&opts)
@@ -103,7 +102,7 @@ func (b *OTLPHTTPConfigBuilder) Build() []otlploghttp.Option {
 }
 
 func (b *OTLPHTTPConfigBuilder) configureTLS(opts *[]otlploghttp.Option) {
-	if b.cfg.OTLPConfig.Insecure {
+	if b.cfg.OTLPConfig.Insecure && b.cfg.OTLPConfig.EndpointURL == "" {
 		*opts = append(*opts, otlploghttp.WithInsecure())
 	} else if b.cfg.OTLPConfig.TLSConfig != nil {
 		*opts = append(*opts, otlploghttp.WithTLSClientConfig(b.cfg.OTLPConfig.TLSConfig))
@@ -136,6 +135,17 @@ func (b *OTLPHTTPConfigBuilder) configureRetry(opts *[]otlploghttp.Option) {
 			MaxInterval:     b.cfg.OTLPConfig.RetryMaxInterval,
 			MaxElapsedTime:  b.cfg.OTLPConfig.RetryMaxElapsedTime,
 		}))
+	}
+}
+
+func (b *OTLPHTTPConfigBuilder) configureEndpoint(opts *[]otlploghttp.Option) {
+	// TODO: check the correct order of precedence for EndpointURL vs Endpoint
+	*opts = append(*opts, otlploghttp.WithURLPath(b.cfg.OTLPConfig.EndpointURLPath))
+
+	if b.cfg.OTLPConfig.EndpointURL != "" {
+		*opts = append(*opts, otlploghttp.WithEndpointURL(b.cfg.OTLPConfig.EndpointURL))
+	} else {
+		*opts = append(*opts, otlploghttp.WithEndpoint(b.cfg.OTLPConfig.Endpoint))
 	}
 }
 

@@ -31,103 +31,105 @@ func (c *pluginConfig) toStringMap() map[string]string {
 	// Define all possible configuration keys based on the structs and documentation
 	configKeys := []string{
 		// Client types
-		"SeedType", "seedType",
-		"ShootType", "shootType",
+		"SeedType", "seedType", "seed_type",
+		"ShootType", "shootType", "shoot_type",
 
 		// Plugin config
-		"DynamicHostPath", "dynamicHostPath",
-		"DynamicHostPrefix", "dynamicHostPrefix",
-		"DynamicHostSuffix", "dynamicHostSuffix",
-		"DynamicHostRegex", "dynamicHostRegex",
+		"DynamicHostPath", "dynamicHostPath", "dynamic_host_path",
+		"DynamicHostPrefix", "dynamicHostPrefix", "dynamic_host_prefix",
+		"DynamicHostSuffix", "dynamicHostSuffix", "dynamic_host_suffix",
+		"DynamicHostRegex", "dynamicHostRegex", "dynamic_host_regex",
 
-		"HostnameValue", "hostnameValue",
+		"HostnameValue", "hostnameValue", "hostname_value",
 		"Origin", "origin",
 
 		// Kubernetes metadata - TODO: revisit how to handle kubernetes metadata. Simplify?
-		"FallbackToTagWhenMetadataIsMissing", "fallbackToTagWhenMetadataIsMissing",
-		"DropLogEntryWithoutK8sMetadata", "dropLogEntryWithoutK8sMetadata",
-		"TagKey", "tagKey",
-		"TagPrefix", "tagPrefix",
-		"TagExpression", "tagExpression",
+		"FallbackToTagWhenMetadataIsMissing", "fallbackToTagWhenMetadataIsMissing", "fallback_to_tag_when_metadata_is_missing",
+		"DropLogEntryWithoutK8sMetadata", "dropLogEntryWithoutK8sMetadata", "drop_log_entry_without_k8s_metadata",
+		"TagKey", "tagKey", "tag_key",
+		"TagPrefix", "tagPrefix", "tag_prefix",
+		"TagExpression", "tagExpression", "tag_expression",
 
 		// Dque config
-		"DQueDir", "dqueDir",
-		"DQueSegmentSize", "dqueSegmentSize",
-		"DQueSync", "dqueSync",
-		"DQueName", " dqueName",
+		"DQueDir", "dqueDir", "dque_dir",
+		"DQueSegmentSize", "dqueSegmentSize", "dque_segment_size",
+		"DQueSync", "dqueSync", "dque_sync",
+		"DQueName", " dqueName", "dque_name",
 
 		// Controller config
-		"DeletedClientTimeExpiration", "deletedClientTimeExpiration",
-		"ControllerSyncTimeout", "controllerSyncTimeout",
+		"DeletedClientTimeExpiration", "deletedClientTimeExpiration", "deleted_client_time_expiration",
+		"ControllerSyncTimeout", "controllerSyncTimeout", "controller_sync_timeout",
 
 		// Log flows depending on cluster state
 		// Shoot client config
-		"SendLogsToShootWhenIsInCreationState", "sendLogsToShootWhenIsInCreationState",
-		"SendLogsToShootWhenIsInReadyState", "sendLogsToShootWhenIsInReadyState",
-		"SendLogsToShootWhenIsInHibernatingState", "sendLogsToShootWhenIsInHibernatingState",
-		"SendLogsToShootWhenIsInHibernatedState", "sendLogsToShootWhenIsInHibernatedState",
-		"SendLogsToShootWhenIsInWakingState", "sendLogsToShootWhenIsInWakingState",
-		"SendLogsToShootWhenIsInDeletionState", "sendLogsToShootWhenIsInDeletionState",
-		"SendLogsToShootWhenIsInDeletedState", "sendLogsToShootWhenIsInDeletedState",
-		"SendLogsToShootWhenIsInRestoreState", "sendLogsToShootWhenIsInRestoreState",
-		"SendLogsToShootWhenIsInMigrationState", "sendLogsToShootWhenIsInMigrationState",
+		"SendLogsToShootWhenIsInCreationState", "sendLogsToShootWhenIsInCreationState", "send_logs_to_shoot_when_is_in_creation_state",
+		"SendLogsToShootWhenIsInReadyState", "sendLogsToShootWhenIsInReadyState", "send_logs_to_shoot_when_is_in_ready_state",
+		"SendLogsToShootWhenIsInHibernatingState", "sendLogsToShootWhenIsInHibernatingState", "send_logs_to_shoot_when_is_in_hibernating_state",
+		"SendLogsToShootWhenIsInHibernatedState", "sendLogsToShootWhenIsInHibernatedState", "send_logs_to_shoot_when_is_in_hibernated_state",
+		"SendLogsToShootWhenIsInWakingState", "sendLogsToShootWhenIsInWakingState", "send_logs_to_shoot_when_is_in_waking_state",
+		"SendLogsToShootWhenIsInDeletionState", "sendLogsToShootWhenIsInDeletionState", "send_logs_to_shoot_when_is_in_deletion_state",
+		"SendLogsToShootWhenIsInDeletedState", "sendLogsToShootWhenIsInDeletedState", "send_logs_to_shoot_when_is_in_deleted_state",
+		"SendLogsToShootWhenIsInRestoreState", "sendLogsToShootWhenIsInRestoreState", "send_logs_to_shoot_when_is_in_restore_state",
+		"SendLogsToShootWhenIsInMigrationState", "sendLogsToShootWhenIsInMigrationState", "send_logs_to_shoot_when_is_in_migration_state",
 
 		// Seed client config for shoots with dynamic hostnames
-		"SendLogsToSeedWhenShootIsInCreationState", "sendLogsToSeedWhenShootIsInCreationState",
-		"SendLogsToSeedWhenShootIsInReadyState", "sendLogsToSeedWhenShootIsInReadyState",
-		"SendLogsToSeedWhenShootIsInHibernatingState", "sendLogsToSeedWhenShootIsInHibernatingState",
-		"SendLogsToSeedWhenShootIsInHibernatedState", "sendLogsToSeedWhenShootIsInHibernatedState",
-		"SendLogsToSeedWhenShootIsInWakingState", "sendLogsToSeedWhenShootIsInWakingState",
-		"SendLogsToSeedWhenShootIsInDeletionState", "sendLogsToSeedWhenShootIsInDeletionState",
-		"SendLogsToSeedWhenShootIsInDeletedState", "sendLogsToSeedWhenShootIsInDeletedState",
-		"SendLogsToSeedWhenShootIsInRestoreState", "sendLogsToSeedWhenShootIsInRestoreState",
-		"SendLogsToSeedWhenShootIsInMigrationState", "sendLogsToSeedWhenShootIsInMigrationState",
+		"SendLogsToSeedWhenShootIsInCreationState", "sendLogsToSeedWhenShootIsInCreationState", "send_logs_to_seed_when_shoot_is_in_creation_state",
+		"SendLogsToSeedWhenShootIsInReadyState", "sendLogsToSeedWhenShootIsInReadyState", "send_logs_to_seed_when_shoot_is_in_ready_state",
+		"SendLogsToSeedWhenShootIsInHibernatingState", "sendLogsToSeedWhenShootIsInHibernatingState", "send_logs_to_seed_when_shoot_is_in_hibernating_state",
+		"SendLogsToSeedWhenShootIsInHibernatedState", "sendLogsToSeedWhenShootIsInHibernatedState", "send_logs_to_seed_when_shoot_is_in_hibernated_state",
+		"SendLogsToSeedWhenShootIsInWakingState", "sendLogsToSeedWhenShootIsInWakingState", "send_logs_to_seed_when_shoot_is_in_waking_state",
+		"SendLogsToSeedWhenShootIsInDeletionState", "sendLogsToSeedWhenShootIsInDeletionState", "send_logs_to_seed_when_shoot_is_in_deletion_state",
+		"SendLogsToSeedWhenShootIsInDeletedState", "sendLogsToSeedWhenShootIsInDeletedState", "send_logs_to_seed_when_shoot_is_in_deleted_state",
+		"SendLogsToSeedWhenShootIsInRestoreState", "sendLogsToSeedWhenShootIsInRestoreState", "send_logs_to_seed_when_shoot_is_in_restore_state",
+		"SendLogsToSeedWhenShootIsInMigrationState", "sendLogsToSeedWhenShootIsInMigrationState", "send_logs_to_seed_when_shoot_is_in_migration_state",
 
 		// Common OTLP configs
 		"Endpoint", "endpoint",
+		"EndpointUrl", "endpointUrl", "endpoint_url",
+		"EndpointUrlPath:", "endpointUrlPath", "endpoint_url_path",
 		"Insecure", "insecure",
 		"Compression", "compression",
 		"Timeout", "timeout",
 		"Headers", "headers",
 
 		// OTLP Retry configs
-		"RetryEnabled", "retryEnabled",
-		"RetryInitialInterval", "retryInitialInterval",
-		"RetryMaxInterval", "retryMaxInterval",
-		"RetryMaxElapsedTime", "retryMaxElapsedTime",
+		"RetryEnabled", "retryEnabled", "retry_enabled",
+		"RetryInitialInterval", "retryInitialInterval", "retry_initial_interval",
+		"RetryMaxInterval", "retryMaxInterval", "retry_max_interval",
+		"RetryMaxElapsedTime", "retryMaxElapsedTime", "retry_max_elapsed_time",
 
 		// OTLP HTTP specific configs
-		"HTTPPath", "httpPath",
-		"HTTPProxy", "httpProxy",
+		"HTTPPath", "httpPath", "http_path",
+		"HTTPProxy", "httpProxy", "http_proxy",
 
 		// OTLP TLS configs
-		"TLSCertFile", "tlsCertFile",
-		"TLSKeyFile", "tlsKeyFile",
-		"TLSCAFile", "tlsCAFile",
-		"TLSServerName", "tlsServerName",
-		"TLSInsecureSkipVerify", "tlsInsecureSkipVerify",
-		"TLSMinVersion", "tlsMinVersion",
-		"TLSMaxVersion", "tlsMaxVersion",
+		"TLSCertFile", "tlsCertFile", "tls_cert_file",
+		"TLSKeyFile", "tlsKeyFile", "tls_key_file",
+		"TLSCAFile", "tlsCAFile", "tls_ca_file",
+		"TLSServerName", "tlsServerName", "tls_server_name",
+		"TLSInsecureSkipVerify", "tlsInsecureSkipVerify", "tls_insecure_skip_verify",
+		"TLSMinVersion", "tlsMinVersion", "tls_min_version",
+		"TLSMaxVersion", "tlsMaxVersion", "tls_max_version",
 
-		"ThrottleEnabled", "throttleEnabled",
-		"ThrottleRequestsPerSec", "throttleRequestsPerSec",
+		"ThrottleEnabled", "throttleEnabled", "throttle_enabled",
+		"ThrottleRequestsPerSec", "throttleRequestsPerSec", "throttle_requests_per_sec",
 
 		// OTLP Batch Processor configs
-		"DQueBatchProcessorMaxQueueSize", "dqueBatchProcessorMaxQueueSize",
-		"DQueBatchProcessorMaxBatchSize", "dqueBatchProcessorMaxBatchSize",
-		"DQueBatchProcessorExportTimeout", "dqueBatchProcessorExportTimeout",
-		"DQueBatchProcessorExportInterval", "dqueBatchProcessorExportInterval",
-		"DQueBatchProcessorExportBufferSize", "dqueBatchProcessorExportBufferSize",
+		"DQueBatchProcessorMaxQueueSize", "dqueBatchProcessorMaxQueueSize", "dque_batch_processor_max_queue_size",
+		"DQueBatchProcessorMaxBatchSize", "dqueBatchProcessorMaxBatchSize", "dque_batch_processor_max_batch_size",
+		"DQueBatchProcessorExportTimeout", "dqueBatchProcessorExportTimeout", "dque_batch_processor_export_timeout",
+		"DQueBatchProcessorExportInterval", "dqueBatchProcessorExportInterval", "dque_batch_processor_export_interval",
+		"DQueBatchProcessorExportBufferSize", "dqueBatchProcessorExportBufferSize", "dque_batch_processor_export_buffer_size",
 
 		// General config
-		"LogLevel", "logLevel",
+		"LogLevel", "logLevel", "log_level",
 		"Pprof", "pprof",
 	}
 
 	// Extract values for all known keys
 	for _, key := range configKeys {
 		if value := c.Get(key); value != "" {
-			configMap[strings.ToLower(key)] = value
+			configMap[strings.ToLower(strings.ReplaceAll(key, "_", ""))] = value
 		}
 	}
 

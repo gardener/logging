@@ -7,9 +7,10 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"os"
+	"io"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -48,6 +49,117 @@ func buildFluentBitImages(logger logr.Logger, fluentBitPluginImage, eventLoggerI
 	}
 }
 
+// buildFetcherImage builds the fetcher container image
+func buildFetcherImage(logger logr.Logger, fetcherImage string) env.Func {
+	return func(ctx context.Context, cfg *envconf.Config) (context.Context, error) {
+		fetcherDir, err := filepath.Abs("fetcher")
+		if err != nil {
+			return ctx, fmt.Errorf("failed to get fetcher directory: %w", err)
+		}
+
+		logger.Info("Building fetcher image", "image", fetcherImage, "directory", fetcherDir)
+
+		cmd := exec.Command("docker", "build",
+			"-t", fetcherImage,
+			"-f", filepath.Join(fetcherDir, "Dockerfile"),
+			fetcherDir,
+		)
+		cmd.Stdout = io.Discard
+		cmd.Stderr = io.Discard
+
+		if err := cmd.Run(); err != nil {
+			return ctx, fmt.Errorf("docker build failed for fetcher: %w", err)
+		}
+
+		logger.Info("Successfully built fetcher image", "image", fetcherImage)
+
+		return ctx, nil
+	}
+}
+
+// loadContainerImage loads a container image to all nodes in the kind cluster
+func loadContainerImage(logger logr.Logger, clusterName, imageName string) env.Func {
+	return func(ctx context.Context, cfg *envconf.Config) (context.Context, error) {
+		logger.Info("Loading image to all kind cluster nodes", "cluster", clusterName, "image", imageName)
+
+		// Get list of nodes in the kind cluster
+		listNodesCmd := exec.Command("kind", "get", "nodes", "--name", clusterName)
+		output, err := listNodesCmd.Output()
+		if err != nil {
+			return ctx, fmt.Errorf("failed to list kind nodes: %w", err)
+		}
+
+		// Parse node names (one per line)
+		nodeNames := []string{}
+		lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+		for _, line := range lines {
+			nodeName := strings.TrimSpace(line)
+			if nodeName != "" {
+				nodeNames = append(nodeNames, nodeName)
+			}
+		}
+
+		// Pull image on each node
+		for _, nodeName := range nodeNames {
+			if err := loadImageOnNode(ctx, logger, nodeName, imageName); err != nil {
+				return ctx, fmt.Errorf("failed to load image on node %s: %w", nodeName, err)
+			}
+		}
+
+		logger.Info("Successfully loaded image", "cluster", clusterName, "image", imageName)
+
+		return ctx, nil
+	}
+}
+
+// loadImageOnNode loads an image on a specific kind cluster node with retry logic
+func loadImageOnNode(ctx context.Context, logger logr.Logger, nodeName, imageName string) error {
+	const (
+		maxRetryDuration = 5 * time.Minute
+		initialBackoff   = 1 * time.Second
+		maxBackoff       = 30 * time.Second
+		backoffFactor    = 2.0
+	)
+
+	startTime := time.Now()
+	backoff := initialBackoff
+
+	for {
+		// Check if we've exceeded the maximum retry duration
+		if time.Since(startTime) > maxRetryDuration {
+			return fmt.Errorf("timeout pulling image after %v on node %s: %s", maxRetryDuration, nodeName, imageName)
+		}
+
+		// Pull image using ctr inside the kind node container
+		pullCmd := exec.Command(
+			"docker", "exec", nodeName,
+			"ctr", "-n", "k8s.io", "images", "pull", imageName,
+		)
+		pullCmd.Stdout = io.Discard
+		pullCmd.Stderr = io.Discard
+
+		if err := pullCmd.Run(); err != nil {
+			logger.Info("Failed to pull image on node, retrying...", "node", nodeName, "image", imageName, "error", err, "backoff", backoff)
+
+			// Wait before retrying with exponential backoff
+			select {
+			case <-ctx.Done():
+				return fmt.Errorf("context cancelled while pulling image on node %s: %w", nodeName, ctx.Err())
+			case <-time.After(backoff):
+				// Calculate next backoff duration
+				backoff = time.Duration(float64(backoff) * backoffFactor)
+				if backoff > maxBackoff {
+					backoff = maxBackoff
+				}
+
+				continue
+			}
+		}
+
+		return nil
+	}
+}
+
 // buildDockerImage builds a Docker image using the specified target
 func buildDockerImage(logger logr.Logger, projectRoot, imageName, target string) error {
 	cmd := exec.Command("docker", "build",
@@ -56,8 +168,8 @@ func buildDockerImage(logger logr.Logger, projectRoot, imageName, target string)
 		"-f", filepath.Join(projectRoot, "Dockerfile"),
 		projectRoot,
 	)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd.Stdout = io.Discard
+	cmd.Stderr = io.Discard
 
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("docker build failed for %s: %w", target, err)
@@ -66,76 +178,6 @@ func buildDockerImage(logger logr.Logger, projectRoot, imageName, target string)
 	logger.Info("Successfully built image", "image", imageName)
 
 	return nil
-}
-
-// pullFluentBitImage pulls the fluent-bit image to local Docker cache with retry and exponential backoff
-func pullFluentBitImage(logger logr.Logger, imageName string) env.Func {
-	return func(ctx context.Context, cfg *envconf.Config) (context.Context, error) {
-		const (
-			maxRetryDuration = 5 * time.Minute
-			initialBackoff   = 1 * time.Second
-			maxBackoff       = 30 * time.Second
-			backoffFactor    = 2.0
-		)
-
-		logger.Info("Pulling image to local Docker cache", "image", imageName)
-
-		startTime := time.Now()
-		backoff := initialBackoff
-
-		for {
-			// Check if we've exceeded the maximum retry duration
-			if time.Since(startTime) > maxRetryDuration {
-				return ctx, fmt.Errorf("timeout pulling image after %v: %s", maxRetryDuration, imageName)
-			}
-
-			pullCmd := exec.Command("docker", "pull", "--platform", "linux/arm64", "--platform", "linux/amd64", "-q", imageName)
-			pullCmd.Stdout = os.Stdout
-			pullCmd.Stderr = os.Stderr
-
-			if err := pullCmd.Run(); err != nil {
-				logger.Info("Failed to pull image, retrying...", "image", imageName, "error", err, "backoff", backoff)
-
-				// Wait before retrying with exponential backoff
-				select {
-				case <-ctx.Done():
-					return ctx, fmt.Errorf("context cancelled while pulling image: %w", ctx.Err())
-				case <-time.After(backoff):
-					// Calculate next backoff duration
-					backoff = time.Duration(float64(backoff) * backoffFactor)
-					if backoff > maxBackoff {
-						backoff = maxBackoff
-					}
-
-					continue
-				}
-			}
-
-			// Verify the image was successfully pulled by inspecting it
-			inspectCmd := exec.Command("docker", "inspect", "--type=image", imageName)
-			if err := inspectCmd.Run(); err != nil {
-				logger.Info("Image pull reported success but inspection failed, retrying...", "image", imageName, "error", err)
-
-				// Wait before retrying
-				select {
-				case <-ctx.Done():
-					return ctx, fmt.Errorf("context cancelled while verifying image: %w", ctx.Err())
-				case <-time.After(backoff):
-					backoff = time.Duration(float64(backoff) * backoffFactor)
-					if backoff > maxBackoff {
-						backoff = maxBackoff
-					}
-
-					continue
-				}
-			}
-
-			// Success - image pulled and verified
-			logger.Info("Successfully pulled and verified image in local cache", "image", imageName)
-
-			return ctx, nil
-		}
-	}
 }
 
 // createFluentBitDaemonSet creates a fluent-bit DaemonSet in the specified namespace
@@ -383,6 +425,174 @@ func createFluentBitServiceAccount(ctx context.Context, logger logr.Logger, cfg 
 	return nil
 }
 
+// createVictoriaLogsStatefulSet creates a victoria-logs StatefulSet and Service in the specified namespace
+func createVictoriaLogsStatefulSet(logger logr.Logger, namespace, victoriaLogsImage string) env.Func {
+	return func(ctx context.Context, cfg *envconf.Config) (context.Context, error) {
+		logger.Info("Creating victoria-logs StatefulSet", "namespace", namespace)
+
+		// Create Service first
+		service := &corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "victoria-logs",
+				Namespace: namespace,
+			},
+			Spec: corev1.ServiceSpec{
+				Selector: map[string]string{
+					"app": "victoria-logs",
+				},
+				Ports: []corev1.ServicePort{
+					{
+						Name:     "http",
+						Port:     9428,
+						Protocol: corev1.ProtocolTCP,
+					},
+				},
+			},
+		}
+
+		r := cfg.Client().Resources(namespace)
+		if err := r.Create(ctx, service); err != nil {
+			return ctx, fmt.Errorf("failed to create victoria-logs Service: %w", err)
+		}
+
+		logger.Info("Successfully created victoria-logs Service", "namespace", namespace)
+
+		// Create StatefulSet
+		replicas := int32(1)
+		statefulSet := &appsv1.StatefulSet{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "victoria-logs",
+				Namespace: namespace,
+				Labels: map[string]string{
+					"app": "victoria-logs",
+				},
+			},
+			Spec: appsv1.StatefulSetSpec{
+				ServiceName: "victoria-logs",
+				Replicas:    &replicas,
+				Selector: &metav1.LabelSelector{
+					MatchLabels: map[string]string{
+						"app": "victoria-logs",
+					},
+				},
+				Template: corev1.PodTemplateSpec{
+					ObjectMeta: metav1.ObjectMeta{
+						Labels: map[string]string{
+							"app": "victoria-logs",
+						},
+					},
+					Spec: corev1.PodSpec{
+						Containers: []corev1.Container{
+							{
+								Name:            "victoria-logs",
+								Image:           victoriaLogsImage,
+								ImagePullPolicy: corev1.PullNever,
+								Args: []string{
+									"-storageDataPath=/victoria-logs-data",
+									"-httpListenAddr=:9428",
+								},
+								Ports: []corev1.ContainerPort{
+									{
+										Name:          "http",
+										ContainerPort: 9428,
+										Protocol:      corev1.ProtocolTCP,
+									},
+								},
+								Resources: corev1.ResourceRequirements{
+									Limits: corev1.ResourceList{
+										corev1.ResourceMemory: resource.MustParse("512Mi"),
+									},
+									Requests: corev1.ResourceList{
+										corev1.ResourceMemory: resource.MustParse("256Mi"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+
+		if err := r.Create(ctx, statefulSet); err != nil {
+			return ctx, fmt.Errorf("failed to create victoria-logs StatefulSet: %w", err)
+		}
+
+		logger.Info("Successfully created victoria-logs StatefulSet", "namespace", namespace)
+
+		return ctx, nil
+	}
+}
+
+// createFetcherDeployment creates a fetcher deployment in the specified namespace
+func createFetcherDeployment(logger logr.Logger, namespace, fetcherImage, victoriaLogsAddr string) env.Func {
+	return func(ctx context.Context, cfg *envconf.Config) (context.Context, error) {
+		logger.Info("Creating fetcher deployment", "namespace", namespace, "image", fetcherImage)
+
+		replicas := int32(1)
+		deployment := &appsv1.Deployment{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "log-fetcher",
+				Namespace: namespace,
+				Labels: map[string]string{
+					"app": "log-fetcher",
+				},
+			},
+			Spec: appsv1.DeploymentSpec{
+				Replicas: &replicas,
+				Selector: &metav1.LabelSelector{
+					MatchLabels: map[string]string{
+						"app": "log-fetcher",
+					},
+				},
+				Template: corev1.PodTemplateSpec{
+					ObjectMeta: metav1.ObjectMeta{
+						Labels: map[string]string{
+							"app": "log-fetcher",
+						},
+					},
+					Spec: corev1.PodSpec{
+						Containers: []corev1.Container{
+							{
+								Name:            "fetcher",
+								Image:           fetcherImage,
+								ImagePullPolicy: corev1.PullNever,
+								Env: []corev1.EnvVar{
+									{
+										Name:  "VLOGS_ADDR",
+										Value: victoriaLogsAddr,
+									},
+									{
+										Name:  "INTERVAL",
+										Value: "30s",
+									},
+								},
+								Resources: corev1.ResourceRequirements{
+									Limits: corev1.ResourceList{
+										corev1.ResourceMemory: resource.MustParse("64Mi"),
+									},
+									Requests: corev1.ResourceList{
+										corev1.ResourceMemory: resource.MustParse("32Mi"),
+										corev1.ResourceCPU:    resource.MustParse("50m"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+
+		r := cfg.Client().Resources(namespace)
+		if err := r.Create(ctx, deployment); err != nil {
+			return ctx, fmt.Errorf("failed to create fetcher Deployment: %w", err)
+		}
+
+		logger.Info("Successfully created fetcher deployment", "namespace", namespace)
+
+		return ctx, nil
+	}
+}
+
 // waitForDaemonSetReady waits for the fluent-bit DaemonSet to be ready with exponential backoff
 func waitForDaemonSetReady(ctx context.Context, cfg *envconf.Config, namespace, name string) error {
 	const (
@@ -418,6 +628,106 @@ func waitForDaemonSetReady(ctx context.Context, cfg *envconf.Config, namespace, 
 		select {
 		case <-ctx.Done():
 			return fmt.Errorf("context cancelled while waiting for DaemonSet: %w", ctx.Err())
+		case <-time.After(backoff):
+			// Calculate next backoff duration
+			backoff = time.Duration(float64(backoff) * backoffFactor)
+			if backoff > maxBackoff {
+				backoff = maxBackoff
+			}
+		}
+	}
+}
+
+// waitForStatefulSetReady waits for a StatefulSet to be ready with exponential backoff
+func waitForStatefulSetReady(ctx context.Context, cfg *envconf.Config, namespace, name string) error {
+	const (
+		maxRetryDuration = 5 * time.Minute
+		initialBackoff   = 1 * time.Second
+		maxBackoff       = 30 * time.Second
+		backoffFactor    = 2.0
+	)
+
+	r := cfg.Client().Resources(namespace)
+	startTime := time.Now()
+	backoff := initialBackoff
+
+	for {
+		// Check if we've exceeded the maximum retry duration
+		if time.Since(startTime) > maxRetryDuration {
+			return fmt.Errorf("timeout waiting for StatefulSet to be ready after %v", maxRetryDuration)
+		}
+
+		statefulSet := &appsv1.StatefulSet{}
+		if err := r.Get(ctx, name, namespace, statefulSet); err != nil {
+			return fmt.Errorf("failed to get StatefulSet: %w", err)
+		}
+
+		// Check if the StatefulSet is ready
+		replicas := int32(1)
+		if statefulSet.Spec.Replicas != nil {
+			replicas = *statefulSet.Spec.Replicas
+		}
+
+		if statefulSet.Status.ReadyReplicas == replicas &&
+			statefulSet.Status.CurrentReplicas == replicas &&
+			statefulSet.Status.UpdatedReplicas == replicas {
+			return nil
+		}
+
+		// Wait before retrying with exponential backoff
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("context cancelled while waiting for StatefulSet: %w", ctx.Err())
+		case <-time.After(backoff):
+			// Calculate next backoff duration
+			backoff = time.Duration(float64(backoff) * backoffFactor)
+			if backoff > maxBackoff {
+				backoff = maxBackoff
+			}
+		}
+	}
+}
+
+// waitForDeploymentReady waits for a Deployment to be ready with exponential backoff
+func waitForDeploymentReady(ctx context.Context, cfg *envconf.Config, namespace string, name string) error {
+	const (
+		maxRetryDuration = 5 * time.Minute
+		initialBackoff   = 1 * time.Second
+		maxBackoff       = 30 * time.Second
+		backoffFactor    = 2.0
+	)
+
+	r := cfg.Client().Resources(namespace)
+	startTime := time.Now()
+	backoff := initialBackoff
+
+	for {
+		// Check if we've exceeded the maximum retry duration
+		if time.Since(startTime) > maxRetryDuration {
+			return fmt.Errorf("timeout waiting for Deployment to be ready after %v", maxRetryDuration)
+		}
+
+		deployment := &appsv1.Deployment{}
+		if err := r.Get(ctx, name, namespace, deployment); err != nil {
+			return fmt.Errorf("failed to get Deployment: %w", err)
+		}
+
+		// Check if the Deployment is ready
+		replicas := int32(1)
+		if deployment.Spec.Replicas != nil {
+			replicas = *deployment.Spec.Replicas
+		}
+
+		if deployment.Status.ReadyReplicas == replicas &&
+			deployment.Status.AvailableReplicas == replicas &&
+			deployment.Status.UpdatedReplicas == replicas {
+			return nil
+		}
+
+		// Wait before retrying with exponential backoff
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("context cancelled while waiting for Deployment: %w", ctx.Err())
 		case <-time.After(backoff):
 			// Calculate next backoff duration
 			backoff = time.Duration(float64(backoff) * backoffFactor)

@@ -25,11 +25,13 @@ var DefaultDQueConfig = DQueConfig{
 
 // OTLPConfig holds configuration for otlp endpoint
 type OTLPConfig struct {
-	Endpoint    string            `mapstructure:"Endpoint"`
-	Insecure    bool              `mapstructure:"Insecure"`
-	Compression int               `mapstructure:"Compression"`
-	Timeout     time.Duration     `mapstructure:"Timeout"`
-	Headers     map[string]string `mapstructure:"-"` // Handled manually in processOTLPConfig
+	Endpoint        string            `mapstructure:"Endpoint"`
+	EndpointURL     string            `mapstructure:"EndpointURL"`
+	EndpointURLPath string            `mapstructure:"EndpointURLPath"`
+	Insecure        bool              `mapstructure:"Insecure"`
+	Compression     int               `mapstructure:"Compression"`
+	Timeout         time.Duration     `mapstructure:"Timeout"`
+	Headers         map[string]string `mapstructure:"-"` // Handled manually in processOTLPConfig
 
 	DQueConfig DQueConfig `mapstructure:",squash"`
 
@@ -69,6 +71,8 @@ type OTLPConfig struct {
 // DefaultOTLPConfig holds the default configuration for OTLP
 var DefaultOTLPConfig = OTLPConfig{
 	Endpoint:               "localhost:4317",
+	EndpointURL: "",
+	EndpointURLPath:        "/v1/logs",
 	Insecure:               false,
 	Compression:            0, // No compression by default
 	Timeout:                30 * time.Second,

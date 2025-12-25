@@ -63,15 +63,3 @@ func TestEventLogger(t *testing.T) {
 	// test feature
 	testenv.Test(t, f1)
 }
-
-func TestSystemdLogs(t *testing.T) {
-	f1 := features.New("systemd/logs").
-		WithLabel("type", "systemd-logs").
-		Assess("system logs", func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-			// check systemd logs exist in victoria-logs-seed instance
-			return ctx
-		}).Feature()
-
-	// test feature
-	testenv.Test(t, f1)
-}
