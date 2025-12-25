@@ -3,7 +3,6 @@ package e2e
 import (
 	"context"
 	"fmt"
-	"os"
 	"testing"
 
 	"sigs.k8s.io/e2e-framework/pkg/env"
@@ -14,8 +13,6 @@ import (
 
 	"github.com/gardener/logging/v1/pkg/log"
 )
-
-type contextKey string
 
 const (
 	victoriaLogsImage    = "quay.io/victoriametrics/victoria-logs:v1.43.0"
@@ -68,7 +65,7 @@ func TestMain(m *testing.M) {
 		envfuncs.DestroyCluster(kindClusterName),
 	)
 
-	testenv.BeforeEachFeature(func(ctx context.Context, cfg *envconf.Config, t *testing.T, f features.Feature) (context.Context, error) {
+	testenv.BeforeEachFeature(func(ctx context.Context, cfg *envconf.Config, _ *testing.T, _ features.Feature) (context.Context, error) {
 		// ensure fluent-bit is running before each feature
 		if err := waitForDaemonSetReady(ctx, cfg, namespace, "fluent-bit"); err != nil {
 			return ctx, fmt.Errorf("fluent-bit DaemonSet is not ready: %w", err)
@@ -88,5 +85,5 @@ func TestMain(m *testing.M) {
 	})
 
 	// launch package tests
-	os.Exit(testenv.Run(m))
+	testenv.Run(m)
 }

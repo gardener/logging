@@ -71,7 +71,7 @@ type OTLPConfig struct {
 // DefaultOTLPConfig holds the default configuration for OTLP
 var DefaultOTLPConfig = OTLPConfig{
 	Endpoint:               "localhost:4317",
-	EndpointURL: "",
+	EndpointURL:            "",
 	EndpointURLPath:        "/v1/logs",
 	Insecure:               false,
 	Compression:            0, // No compression by default
