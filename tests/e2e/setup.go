@@ -80,8 +80,6 @@ func buildFetcherImage(logger logr.Logger, fetcherImage string) env.Func {
 // loadContainerImage loads a container image to all nodes in the kind cluster
 func loadContainerImage(logger logr.Logger, clusterName, imageName string) env.Func {
 	return func(ctx context.Context, cfg *envconf.Config) (context.Context, error) {
-		logger.Info("Loading image to all kind cluster nodes", "cluster", clusterName, "image", imageName)
-
 		// Get list of nodes in the kind cluster
 		listNodesCmd := exec.Command("kind", "get", "nodes", "--name", clusterName)
 		output, err := listNodesCmd.Output()
@@ -563,7 +561,7 @@ func createFetcherDeployment(logger logr.Logger, namespace, fetcherImage, victor
 									},
 									{
 										Name:  "INTERVAL",
-										Value: "30s",
+										Value: "10s",
 									},
 								},
 								Resources: corev1.ResourceRequirements{
