@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -50,7 +51,11 @@ var queries = []Query{
 	},
 }
 
+var logger *slog.Logger
+
 func main() {
+	logger = slog.New(slog.NewJSONHandler(os.Stdout, nil))
+
 	victoriaLogsAddr := os.Getenv("VLOGS_ADDR")
 	if victoriaLogsAddr == "" {
 		victoriaLogsAddr = defaultVictoriaLogsAddr
@@ -64,9 +69,7 @@ func main() {
 		}
 	}
 
-	fmt.Printf("Starting Victoria Logs fetcher...\n")
-	fmt.Printf("Endpoint: %s\n", victoriaLogsAddr)
-	fmt.Printf("Query interval: %v\n\n", interval)
+	logger.Info("Starting Victoria Logs fetcher..", "endpoint", victoriaLogsAddr, "interval", interval.String())
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -77,7 +80,7 @@ func main() {
 
 	go func() {
 		<-sigCh
-		fmt.Println("\nShutting down fetcher...")
+		logger.Info("Shutting down fetcher...")
 		cancel()
 	}()
 
@@ -103,20 +106,14 @@ func main() {
 }
 
 func fetchAllQueries(ctx context.Context, client *http.Client, victoriaLogsAddr string) {
-	fmt.Println("==========================================")
-	fmt.Printf("Victoria Logs Query Results - %s\n", time.Now().UTC().Format(time.RFC3339))
-	fmt.Println("==========================================")
-
 	for _, q := range queries {
 		count, err := queryVictoriaLogs(ctx, client, victoriaLogsAddr, q.Query)
 		if err != nil {
-			fmt.Printf("%-25s | ERROR: %v\n", q.Name, err)
+			logger.Info("failed", "query", q.Name, "error", err.Error())
 			continue
 		}
-		fmt.Printf("%-25s | count: %s\n", q.Name, count)
+		logger.Info("result", "query", q.Name, "count", count)
 	}
-
-	fmt.Println()
 }
 
 func queryVictoriaLogs(ctx context.Context, client *http.Client, victoriaLogsAddr, query string) (string, error) {

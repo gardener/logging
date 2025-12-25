@@ -45,6 +45,7 @@ func TestMain(m *testing.M) {
 			"./config/kind-config.yaml",
 			kind.WithImage("kindest/node:v1.35.0"),
 		),
+		
 		envfuncs.SetupCRDs("./config", "*-crd.yaml"),
 		envfuncs.CreateNamespace(namespace),
 		loadContainerImage(logger, kindClusterName, fluentBitImage),
