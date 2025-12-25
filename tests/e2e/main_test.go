@@ -18,10 +18,12 @@ import (
 type contextKey string
 
 const (
-	fluentBitImage       = "ghcr.io/fluent/fluent-operator/fluent-bit:4.2.0"
+	victoriaLogsImage    = "quay.io/victoriametrics/victoria-logs:v1.43.0"
+	fluentBitImage       = "ghcr.io/fluent/fluent-operator/fluent-bit:v4.2.0"
 	fluentBitPluginImage = "fluent-bit-plugin:e2e"
 	eventLoggerImage     = "event-logger:e2e"
-	namespaceKey         = contextKey("namespace")
+	fetcherImage         = "fetcher:e2e"
+	namespace            = "fluent-bit"
 )
 
 var (
@@ -34,30 +36,27 @@ func TestMain(m *testing.M) {
 	logger := log.NewLogger("debug")
 
 	kindClusterName := envconf.RandomName("logging", 16)
-	namespace := envconf.RandomName("fluent-bit", 16)
 
 	// Use pre-defined environment funcs to create a kind cluster prior to test run
 	testenv.Setup(
-		envfuncs.CreateClusterWithConfig(kind.NewProvider(), kindClusterName, "./config/kind-config.yaml"),
+		envfuncs.CreateClusterWithConfig(
+			kind.NewProvider(),
+			kindClusterName,
+			"./config/kind-config.yaml",
+			kind.WithImage("kindest/node:v1.35.0"),
+		),
 		envfuncs.SetupCRDs("./config", "*-crd.yaml"),
 		envfuncs.CreateNamespace(namespace),
-		pullFluentBitImage(logger, fluentBitImage),
-		envfuncs.LoadImageToCluster(kindClusterName, fluentBitImage),
+		loadContainerImage(logger, kindClusterName, fluentBitImage),
+		loadContainerImage(logger, kindClusterName, victoriaLogsImage),
 		buildFluentBitImages(logger, fluentBitPluginImage, eventLoggerImage),
+		buildFetcherImage(logger, fetcherImage),
 		envfuncs.LoadImageToCluster(kindClusterName, fluentBitPluginImage),
 		envfuncs.LoadImageToCluster(kindClusterName, eventLoggerImage),
+		envfuncs.LoadImageToCluster(kindClusterName, fetcherImage),
 		createFluentBitDaemonSet(logger, namespace, fluentBitPluginImage, fluentBitImage),
-
-		// create single victoria-logs-seed statefulset in the namespace
-		// create single victoria-logs-shoot statefulset in the namespace
-		// create otel-collector-shoot deployment in the namespace
-		// link otel-collector-shoot exporter to victoria-logs-shoot
-		// create otel-collector-seed deployment in the namespace
-		// link otel-collector-seed exporter to victoria-logs-seed
-		// create event-logger deployment in the namespace
-		// create 100 cluster resources
-		// create 100 namespaces (shoots)
-		// create single external service per shoot namespace to link to otel-collector-shoot
+		createVictoriaLogsStatefulSet(logger, namespace, victoriaLogsImage),
+		createFetcherDeployment(logger, namespace, fetcherImage, "http://victoria-logs-0.victoria-logs.fluent-bit.svc.cluster.local:9428"),
 
 		// with this environment we can run e2e tests against the setup
 	)
@@ -65,14 +64,24 @@ func TestMain(m *testing.M) {
 	// Use pre-defined environment funcs to teardown kind cluster after tests
 	testenv.Finish(
 		envfuncs.ExportClusterLogs(kindClusterName, "./logs"),
-		envfuncs.DeleteNamespace(namespace),
-		envfuncs.DestroyCluster(kindClusterName),
+		//envfuncs.DeleteNamespace(namespace),
+		//envfuncs.DestroyCluster(kindClusterName),
 	)
 
 	testenv.BeforeEachFeature(func(ctx context.Context, cfg *envconf.Config, t *testing.T, f features.Feature) (context.Context, error) {
 		// ensure fluent-bit is running before each feature
 		if err := waitForDaemonSetReady(ctx, cfg, namespace, "fluent-bit"); err != nil {
 			return ctx, fmt.Errorf("fluent-bit DaemonSet is not ready: %w", err)
+		}
+
+		// ensure victoria-logs is up and running before each feature
+		if err := waitForStatefulSetReady(ctx, cfg, namespace, "victoria-logs"); err != nil {
+			return ctx, fmt.Errorf("victoria-logs StatefulSet is not ready: %w", err)
+		}
+
+		// ensure fetcher deployment is up and running before each feature
+		if err := waitForDeploymentReady(ctx, cfg, namespace, "log-fetcher"); err != nil {
+			return ctx, fmt.Errorf("log-fetcher Deployment is not ready: %w", err)
 		}
 
 		return ctx, nil

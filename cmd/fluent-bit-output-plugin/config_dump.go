@@ -62,6 +62,9 @@ func dumpConfiguration(conf *config.Config) {
 	logger.V(1).Info("[flb-go]", "DQueBatchProcessorExportBufferSize", fmt.Sprintf("%+v", conf.OTLPConfig.DQueBatchProcessorExportBufferSize))
 	// OTLP general configuration
 	logger.V(1).Info("[flb-go]", "Endpoint", fmt.Sprintf("%+v", conf.OTLPConfig.Endpoint))
+	logger.V(1).Info("[flb-go]", "EndpointUrl", fmt.Sprintf("%+v", conf.OTLPConfig.EndpointURL))
+	logger.V(1).Info("[flb-go]", "EndpointUrlPath", fmt.Sprintf("%+v", conf.OTLPConfig.EndpointURLPath))
+
 	logger.V(1).Info("[flb-go]", "Insecure", fmt.Sprintf("%+v", conf.OTLPConfig.Insecure))
 	logger.V(1).Info("[flb-go]", "Compression", fmt.Sprintf("%+v", conf.OTLPConfig.Compression))
 	logger.V(1).Info("[flb-go]", "Timeout", fmt.Sprintf("%+v", conf.OTLPConfig.Timeout))
