@@ -19,6 +19,7 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/e2e-framework/klient/k8s"
 	"sigs.k8s.io/e2e-framework/klient/wait"
 	"sigs.k8s.io/e2e-framework/klient/wait/conditions"
@@ -583,6 +584,107 @@ func createFetcherDeployment(logger logr.Logger, namespace, fetcherImage, victor
 		}
 
 		logger.Info("Successfully created fetcher deployment", "namespace", namespace)
+
+		return ctx, nil
+	}
+}
+
+// createShootEnvironments creates 100 shoot namespaces, logging services, and Cluster resources
+func createShootEnvironments(logger logr.Logger, fluentBitNamespace string) env.Func {
+	return func(ctx context.Context, cfg *envconf.Config) (context.Context, error) {
+		// Create 100 shoot namespaces and resources
+		for i := 1; i <= 100; i++ {
+			shootName := fmt.Sprintf("dev-%02d", i)
+			namespaceName := fmt.Sprintf("shoot--logging--%s", shootName)
+			clusterName := namespaceName
+
+			// Create namespace
+			ns := &corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: namespaceName,
+				},
+			}
+
+			if err := cfg.Client().Resources().Create(ctx, ns); err != nil {
+				return ctx, fmt.Errorf("failed to create namespace %s: %w", namespaceName, err)
+			}
+
+			// Create ExternalName service pointing to victoria-logs
+			service := &corev1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "logging",
+					Namespace: namespaceName,
+				},
+				Spec: corev1.ServiceSpec{
+					Type:         corev1.ServiceTypeExternalName,
+					ExternalName: fmt.Sprintf("victoria-logs-0.victoria-logs.%s.svc.cluster.local", fluentBitNamespace),
+				},
+			}
+
+			if err := cfg.Client().Resources(namespaceName).Create(ctx, service); err != nil {
+				return ctx, fmt.Errorf("failed to create logging service in namespace %s: %w", namespaceName, err)
+			}
+
+			// Create Cluster resource
+			cluster := &unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"apiVersion": "extensions.gardener.cloud/v1alpha1",
+					"kind":       "Cluster",
+					"metadata": map[string]interface{}{
+						"name": clusterName,
+					},
+					"spec": map[string]interface{}{
+						"shoot": map[string]interface{}{
+							"apiVersion": "core.gardener.cloud/v1beta1",
+							"kind":       "Shoot",
+							"metadata": map[string]interface{}{
+								"name":      shootName,
+								"namespace": "logging",
+							},
+							"spec": map[string]interface{}{
+								"purpose": "development",
+								"hibernation": map[string]interface{}{
+									"enabled": false,
+								},
+							},
+							"status": map[string]interface{}{
+								"lastOperation": map[string]interface{}{
+									"description":    "Shoot cluster has been successfully reconciled.",
+									"lastUpdateTime": "2025-10-04T01:25:47Z",
+									"progress":       100,
+									"state":          "Succeeded",
+									"type":           "Reconcile",
+								},
+							},
+						},
+						"cloudProfile": map[string]interface{}{
+							"apiVersion": "core.gardener.cloud/v1beta1",
+							"kind":       "CloudProfile",
+							"metadata": map[string]interface{}{
+								"name": "aws",
+							},
+						},
+						"seed": map[string]interface{}{
+							"apiVersion": "core.gardener.cloud/v1beta1",
+							"kind":       "Seed",
+							"metadata": map[string]interface{}{
+								"name": "testing",
+							},
+						},
+					},
+				},
+			}
+
+			if err := cfg.Client().Resources().Create(ctx, cluster); err != nil {
+				return ctx, fmt.Errorf("failed to create Cluster resource %s: %w", clusterName, err)
+			}
+
+			if i%10 == 0 {
+				logger.Info("Created shoot environment", "count", i, "namespace", namespaceName)
+			}
+		}
+
+		logger.Info("Successfully created all 100 shoot environments")
 
 		return ctx, nil
 	}

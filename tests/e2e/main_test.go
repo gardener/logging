@@ -55,8 +55,7 @@ func TestMain(m *testing.M) {
 		createFluentBitDaemonSet(logger, namespace, fluentBitPluginImage, fluentBitImage),
 		createVictoriaLogsStatefulSet(logger, namespace, victoriaLogsImage),
 		createFetcherDeployment(logger, namespace, fetcherImage, "http://victoria-logs-0.victoria-logs.fluent-bit.svc.cluster.local:9428"),
-
-		// with this environment we can run e2e tests against the setup
+		createShootEnvironments(logger, namespace),
 	)
 
 	// Use pre-defined environment funcs to teardown kind cluster after tests
