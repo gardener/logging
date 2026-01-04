@@ -285,6 +285,11 @@ func createFluentBitDaemonSet(logger logr.Logger, namespace, fluentBitPluginImag
 								},
 							},
 						},
+						Tolerations: []corev1.Toleration{
+							{
+								Operator: corev1.TolerationOpExists,
+							},
+						},
 						Volumes: []corev1.Volume{
 							{
 								Name: "config",
@@ -389,6 +394,11 @@ func createFluentBitServiceAccount(ctx context.Context, logger logr.Logger, cfg 
 			{
 				APIGroups: []string{""},
 				Resources: []string{"pods", "namespaces"},
+				Verbs:     []string{"get", "list", "watch"},
+			},
+			{
+				APIGroups: []string{"extensions.gardener.cloud"},
+				Resources: []string{"clusters"},
 				Verbs:     []string{"get", "list", "watch"},
 			},
 		},
