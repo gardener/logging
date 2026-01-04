@@ -531,8 +531,8 @@ func createVictoriaLogsStatefulSet(logger logr.Logger, namespace, victoriaLogsIm
 	}
 }
 
-// createFetcherDeployment creates a fetcher deployment in the specified namespace
-func createFetcherDeployment(logger logr.Logger, namespace, fetcherImage, victoriaLogsAddr string) env.Func {
+// createFetcherDeployment creates a simple curl-based deployment for querying victoria-logs
+func createFetcherDeployment(logger logr.Logger, namespace string) env.Func {
 	return func(ctx context.Context, cfg *envconf.Config) (context.Context, error) {
 		replicas := int32(1)
 		deployment := &appsv1.Deployment{
@@ -559,18 +559,12 @@ func createFetcherDeployment(logger logr.Logger, namespace, fetcherImage, victor
 					Spec: corev1.PodSpec{
 						Containers: []corev1.Container{
 							{
-								Name:            "fetcher",
-								Image:           fetcherImage,
-								ImagePullPolicy: corev1.PullNever,
-								Env: []corev1.EnvVar{
-									{
-										Name:  "VLOGS_ADDR",
-										Value: victoriaLogsAddr,
-									},
-									{
-										Name:  "INTERVAL",
-										Value: "10s",
-									},
+								Name:            "curl",
+								Image:           "curlimages/curl:latest",
+								ImagePullPolicy: corev1.PullIfNotPresent,
+								Command: []string{
+									"sleep",
+									"infinity",
 								},
 								Resources: corev1.ResourceRequirements{
 									Limits: corev1.ResourceList{
@@ -593,7 +587,7 @@ func createFetcherDeployment(logger logr.Logger, namespace, fetcherImage, victor
 			return ctx, fmt.Errorf("failed to create fetcher Deployment: %w", err)
 		}
 
-		logger.Info("Successfully created fetcher deployment", "namespace", namespace)
+		logger.Info("Successfully created curl-based fetcher deployment", "namespace", namespace)
 
 		return ctx, nil
 	}

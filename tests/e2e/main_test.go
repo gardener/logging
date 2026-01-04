@@ -19,7 +19,6 @@ const (
 	fluentBitImage       = "ghcr.io/fluent/fluent-operator/fluent-bit:v4.2.0"
 	fluentBitPluginImage = "fluent-bit-plugin:e2e"
 	eventLoggerImage     = "event-logger:e2e"
-	fetcherImage         = "fetcher:e2e"
 	namespace            = "fluent-bit"
 )
 
@@ -48,13 +47,11 @@ func TestMain(m *testing.M) {
 		loadContainerImage(logger, kindClusterName, fluentBitImage),
 		loadContainerImage(logger, kindClusterName, victoriaLogsImage),
 		buildFluentBitImages(logger, fluentBitPluginImage, eventLoggerImage),
-		buildFetcherImage(logger, fetcherImage),
 		envfuncs.LoadImageToCluster(kindClusterName, fluentBitPluginImage),
 		envfuncs.LoadImageToCluster(kindClusterName, eventLoggerImage),
-		envfuncs.LoadImageToCluster(kindClusterName, fetcherImage),
 		createFluentBitDaemonSet(logger, namespace, fluentBitPluginImage, fluentBitImage),
 		createVictoriaLogsStatefulSet(logger, namespace, victoriaLogsImage),
-		createFetcherDeployment(logger, namespace, fetcherImage, "http://victoria-logs-0.victoria-logs.fluent-bit.svc.cluster.local:9428"),
+		createFetcherDeployment(logger, namespace),
 		createShootEnvironments(logger, namespace),
 	)
 

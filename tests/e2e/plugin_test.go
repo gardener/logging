@@ -1,12 +1,8 @@
 package e2e
 
 import (
-	"bufio"
 	"context"
-	"encoding/json"
 	"fmt"
-	"strconv"
-	"strings"
 	"testing"
 	"time"
 
@@ -74,6 +70,75 @@ func TestOutputPlugin(t *testing.T) {
 		Assess("logs per shoot namespace", func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 			// check collected logs for all namespaces in victoria-logs instance
 			// use gomega eventually to regularly check logs count until timeout
+			t.Log("Checking logs for each individual shoot namespace (parallel)")
+
+			expectedLogsPerNamespace := 1000
+
+			// Use channels for parallel processing
+			type namespaceResult struct {
+				namespace string
+				count     int
+				err       error
+			}
+
+			results := make(chan namespaceResult, 100)
+
+			// Use a worker pool to limit concurrency (10 workers to avoid overwhelming victoria-logs)
+			maxWorkers := 10
+			semaphore := make(chan struct{}, maxWorkers)
+
+			// Launch goroutines for all namespaces
+			for i := 1; i <= 100; i++ {
+				i := i // capture loop variable
+				go func() {
+					semaphore <- struct{}{}        // acquire
+					defer func() { <-semaphore }() // release
+
+					shootName := fmt.Sprintf("dev-%02d", i)
+					namespaceName := fmt.Sprintf("shoot--logging--%s", shootName)
+
+					t.Logf("Checking logs for namespace: %s", namespaceName)
+
+					count, err := getLogsCountForNamespace(ctx, t, cfg, namespaceName, 3*time.Minute, 10*time.Second)
+
+					results <- namespaceResult{
+						namespace: namespaceName,
+						count:     count,
+						err:       err,
+					}
+				}()
+			}
+
+			// Collect results
+			failedNamespaces := make([]string, 0)
+			namespaceCounts := make(map[string]int)
+
+			for i := 0; i < 100; i++ {
+				result := <-results
+
+				if result.err != nil {
+					t.Logf("Failed to get logs for namespace %s: %v", result.namespace, result.err)
+					failedNamespaces = append(failedNamespaces, result.namespace)
+
+					continue
+				}
+
+				namespaceCounts[result.namespace] = result.count
+				t.Logf("Namespace %s has %d logs", result.namespace, result.count)
+
+				if result.count < expectedLogsPerNamespace {
+					t.Logf("Warning: Namespace %s has fewer logs than expected (%d < %d)", result.namespace, result.count, expectedLogsPerNamespace)
+					failedNamespaces = append(failedNamespaces, result.namespace)
+				}
+			}
+
+			close(results)
+
+			if len(failedNamespaces) > 0 {
+				t.Fatalf("Failed to find sufficient logs in %d namespaces: %v", len(failedNamespaces), failedNamespaces)
+			}
+
+			t.Logf("Successfully verified logs in all 100 shoot namespaces")
 
 			return ctx
 		}).
@@ -81,26 +146,28 @@ func TestOutputPlugin(t *testing.T) {
 			// check total logs count in victoria-logs-shoot instance
 			g := NewWithT(t)
 
-			kubeconfigPath := cfg.KubeconfigFile()
 			var totalCount int
 
 			// Use Eventually to poll for positive total log counts
 			g.Eventually(func(g Gomega) {
-				// Fetch logs from the fetcher pod
-				logs, err := getLogsFromFetcherPod(ctx, t, namespace, kubeconfigPath)
-				g.Expect(err).NotTo(HaveOccurred(), "Failed to get logs from fetcher pod")
+				// Query victoria-logs directly using curl
+				query := `_time:24h k8s.container.name:"logger" k8s.namespace.name:~"shoot-*" | count()`
 
-				// Parse the JSON logs and extract logger container count
-				count, err := parseLoggerCount(logs)
-				g.Expect(err).NotTo(HaveOccurred(), "Failed to parse fetcher logs")
+				// Execute curl query in the fetcher deployment
+				output, err := queryCurl(ctx, cfg, namespace, query)
+				g.Expect(err).NotTo(HaveOccurred(), "Failed to query victoria-logs")
+
+				// Parse the response
+				count, parseErr := parseQueryResponse(output)
+				g.Expect(parseErr).NotTo(HaveOccurred(), "Failed to parse query response")
 
 				t.Logf("Total log count: %d", count)
 
-				// Expect total count to be positive and growing
-				g.Expect(count).To(BeNumerically(">=", 100000), "total log count should be positive")
+				// Expect total count to be at least 100,000
+				g.Expect(count).To(BeNumerically(">=", 100000), "total log count should be at least 100,000")
 
 				totalCount = count
-			}).WithTimeout(3 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
+			}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
 
 			t.Logf("Successfully verified total logs: %d", totalCount)
 
@@ -179,18 +246,20 @@ func TestOutputPlugin(t *testing.T) {
 			// check total logs count in victoria-logs-seed instance
 			g := NewWithT(t)
 
-			kubeconfigPath := cfg.KubeconfigFile()
 			var seedLogCount int
 
 			// Use Eventually to poll for seed logs
 			g.Eventually(func(g Gomega) {
-				// Fetch logs from the fetcher pod
-				logs, err := getLogsFromFetcherPod(ctx, t, namespace, kubeconfigPath)
-				g.Expect(err).NotTo(HaveOccurred(), "Failed to get logs from fetcher pod")
+				// Query victoria-logs directly using curl
+				query := `_time:24h k8s.container.name:"logger" k8s.namespace.name:"fluent-bit" | count()`
 
-				// Parse the JSON logs and extract logger container count (includes seed logs)
-				count, err := parseSeedLoggerCount(logs)
-				g.Expect(err).NotTo(HaveOccurred(), "Failed to parse fetcher logs")
+				// Execute curl query in the fetcher deployment
+				output, err := queryCurl(ctx, cfg, namespace, query)
+				g.Expect(err).NotTo(HaveOccurred(), "Failed to query victoria-logs")
+
+				// Parse the response
+				count, parseErr := parseQueryResponse(output)
+				g.Expect(parseErr).NotTo(HaveOccurred(), "Failed to parse query response")
 
 				t.Logf("Seed logger container log count: %d", count)
 
@@ -198,7 +267,7 @@ func TestOutputPlugin(t *testing.T) {
 				g.Expect(count).To(BeNumerically(">=", 1000), "seed logger container log count should be at least 1,000")
 
 				seedLogCount = count
-			}).WithTimeout(3 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
+			}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
 
 			t.Logf("Successfully verified seed logs: logger-container=%d", seedLogCount)
 
@@ -242,96 +311,26 @@ func TestEventLogger(t *testing.T) {
 	testenv.Test(t, f1)
 }
 
-// parseLoggerCount parses JSON logs and extracts the most recent count for logger container
-func parseLoggerCount(logs string) (int, error) {
-	scanner := bufio.NewScanner(strings.NewReader(logs))
+// getLogsCountForNamespace queries victoria-logs for log count in a specific namespace
+func getLogsCountForNamespace(ctx context.Context, t *testing.T, cfg *envconf.Config, ns string, timeout, interval time.Duration) (int, error) {
+	g := NewWithT(t)
+	var count int
 
-	loggerCount := -1
+	g.Eventually(func(g Gomega) {
+		// Query victoria-logs directly for the specific namespace
+		query := fmt.Sprintf(`_time:24h k8s.namespace.name:"%s" k8s.container.name:"logger" | count()`, ns)
 
-	for scanner.Scan() {
-		line := scanner.Text()
-		if line == "" {
-			continue
-		}
+		// Execute curl query in the fetcher deployment
+		output, err := queryCurl(ctx, cfg, namespace, query)
+		g.Expect(err).NotTo(HaveOccurred(), "failed to query victoria-logs for namespace %s", ns)
 
-		var entry FetcherLogEntry
-		if err := json.Unmarshal([]byte(line), &entry); err != nil {
-			// Skip lines that aren't valid JSON
-			continue
-		}
+		// Parse the response
+		parsedCount, parseErr := parseQueryResponse(output)
+		g.Expect(parseErr).NotTo(HaveOccurred(), "failed to parse query response for namespace %s", ns)
 
-		// Only process successful query results
-		if entry.Msg != "result" || entry.Count == "" {
-			continue
-		}
+		count = parsedCount
+		g.Expect(count).To(BeNumerically(">=", 1000), "expected at least 1000 logs for namespace %s", ns)
+	}).WithTimeout(timeout).WithPolling(interval).Should(Succeed())
 
-		// Parse the count value
-		count, err := strconv.Atoi(entry.Count)
-		if err != nil {
-			// Skip if count is not a valid integer
-			continue
-		}
-
-		// Update the count if it's the logger-container query
-		if entry.Query == "logger-container" {
-			loggerCount = count
-		}
-	}
-
-	if err := scanner.Err(); err != nil {
-		return 0, fmt.Errorf("error reading logs: %w", err)
-	}
-
-	if loggerCount == -1 {
-		return 0, fmt.Errorf("could not find logger-container count in logs")
-	}
-
-	return loggerCount, nil
-}
-
-// parseLoggerCount parses JSON logs and extracts the most recent count for logger container
-func parseSeedLoggerCount(logs string) (int, error) {
-	scanner := bufio.NewScanner(strings.NewReader(logs))
-
-	loggerCount := -1
-
-	for scanner.Scan() {
-		line := scanner.Text()
-		if line == "" {
-			continue
-		}
-
-		var entry FetcherLogEntry
-		if err := json.Unmarshal([]byte(line), &entry); err != nil {
-			// Skip lines that aren't valid JSON
-			continue
-		}
-
-		// Only process successful query results
-		if entry.Msg != "result" || entry.Count == "" {
-			continue
-		}
-
-		// Parse the count value
-		count, err := strconv.Atoi(entry.Count)
-		if err != nil {
-			// Skip if count is not a valid integer
-			continue
-		}
-
-		// Update the count if it's the logger-container query
-		if entry.Query == "seed-logger-container" {
-			loggerCount = count
-		}
-	}
-
-	if err := scanner.Err(); err != nil {
-		return 0, fmt.Errorf("error reading logs: %w", err)
-	}
-
-	if loggerCount == -1 {
-		return 0, fmt.Errorf("could not find logger-container count in logs")
-	}
-
-	return loggerCount, nil
+	return count, nil
 }
