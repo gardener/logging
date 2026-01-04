@@ -86,7 +86,7 @@ func getLogsFromFetcherPod(ctx context.Context, t *testing.T, namespace, kubecon
 	}
 
 	// Get logs from the pod (last 100 lines to avoid too much data)
-	getLogsCmd := fmt.Sprintf("kubectl --kubeconfig=%s logs -n %s %s --tail=4", kubeconfigPath, namespace, podName)
+	getLogsCmd := fmt.Sprintf("kubectl --kubeconfig=%s logs -n %s %s --tail=5", kubeconfigPath, namespace, podName)
 	logs, err := execCommand(ctx, "sh", "-c", getLogsCmd)
 	if err != nil {
 		return "", fmt.Errorf("failed to get logs from pod %s: %w", podName, err)
