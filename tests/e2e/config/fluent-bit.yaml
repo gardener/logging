@@ -96,3 +96,20 @@ pipeline:
       origin: "systemd_journal"
       hostname_value: "${NODE_NAME}"
       fallback_to_tag_when_metadata_is_missing: false
+
+    - name: gardener
+      match: "kubernetes.*"
+      seed_type: "otlphttp"
+      shoot_type: "otlphttp"
+      log_level: "debug"
+      endpoint: "victoria-logs-0.victoria-logs.fluent-bit.svc.cluster.local:9428"
+      endpoint_url_path: "/insert/opentelemetry/v1/logs"
+      insecure: true
+      origin: "seed"
+      hostname_value: "${NODE_NAME}"
+      fallback_to_tag_when_metadata_is_missing: false
+      dynamic_host_path: '{"kubernetes": {"namespace_name": "namespace"}}'
+      dynamic_host_prefix: 'logging.'
+      dynamic_host_suffix: '.svc.cluster.local:9428'
+      dynamic_host_regex: '^shoot-'
+      dque_dir: '/var/run/fluentbit/dque'
