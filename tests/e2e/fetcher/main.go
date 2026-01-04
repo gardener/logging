@@ -43,7 +43,11 @@ var queries = []Query{
 	},
 	{
 		Name:  "logger-container",
-		Query: `_time:24h k8s.container.name:"logger" | count()`,
+		Query: `_time:24h k8s.container.name:"logger" k8s.namespace.name:~"shoot-*"| count()`,
+	},
+	{
+		Name:  "seed-logger-container",
+		Query: `_time:24h k8s.container.name:"logger" k8s.namespace.name:"fluent-bit" | count()`,
 	},
 	{
 		Name:  "event-logger-container",
