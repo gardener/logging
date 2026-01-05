@@ -3,32 +3,51 @@
 E2E tests are based on [kubernetes-sigs/e2e-framework](https://github.com/kubernetes-sigs/e2e-framework).
 The test suite builds the plugin container image and spins up a `kind` cluster with following components:
 
-- Built fluent-bit container image with dockerfile target `fluent-bit-output`
-- Victoria-Logs as Logging backends for shoot and seed logs
-  - one instance for all shoot logs
-  - one instance for seed logs
-- otel-collector instances in for shoots and seed, otel-collector pushes logs to victoria-logs
- - one instance for all shoot logs
- - one instance for seed logs
+- Built fluent-bit-plugin container image with dockerfile target `fluent-bit-plugin`
+- Built event-logger container image with dockerfile target `event-logger`
+- Victoria-Logs as the logging backend (single instance for all logs)
 - Fluent-bit with the plugin under test deployed as DaemonSet
-- use fluent-bit.yaml configuration to configure the fluent-bit
-- Fluent-bit plugins sent logs to the respective otel-collectors
+- Fluent-bit configuration (`fluent-bit.yaml`) with:
+  - Tail input for container logs
+  - Systemd input for kubelet and containerd logs
+  - Gardener output plugin sending logs directly to Victoria-Logs via OTLP HTTP
 - Simulate 100 shoots, where each shoot has:
-  - a logger producing 1000 logs
-  - a logging service pointing to the otel-collector for shoot
-- A logger producing logs in the seed cluster
-- A check counting the logs received in the victoria-logs instances
+  - A namespace `shoot--logging--dev-XX`
+  - A logging service (ExternalName) pointing to Victoria-Logs
+  - A Cluster custom resource
+  - A log-generator job producing 1000 logs
+- A log-generator job producing 1000 logs in the seed (fluent-bit) namespace
+- A curl-based fetcher deployment for querying Victoria-Logs
 
 Following test cases are covered by E2E tests:
 
-## seed-logs
+## shoot/logs
 
-Verifies that log volumes produced by the workloads outside the shoot control plane namespaces
-are correctly send to the backend storage in the seed namespace.
+Verifies that log volumes produced by the workloads in the shoot control planes are correctly sent to the backend storage.
+- Creates 100 shoot namespaces with log-generator jobs (1000 logs each)
+- Validates per-namespace log counts (>=1000 logs per namespace)
+- Validates total shoot log count (>=100,000 logs)
 
-## shoot-logs
+## seed/logs
 
-Verifies that log volumes produced by the workloads in the shoot control planes are correctly send to the backend storage in the same namespace.
+Verifies that log volumes produced by the workloads in the seed cluster (outside shoot control plane namespaces)
+are correctly sent to the backend storage.
+- Creates a log-generator job in the fluent-bit namespace (1000 logs)
+- Validates seed log count (>=1000 logs)
+
+## systemd/logs
+
+Verifies that systemd journal logs from kubelet and containerd services are correctly captured and sent to the backend storage.
+- Queries Victoria-Logs for kubelet.service logs
+- Queries Victoria-Logs for containerd.service logs
+- Validates both services have log entries
+
+## event-logger/basic
+
+Verifies that the event-logger component correctly captures Kubernetes events and forwards them to Victoria-Logs.
+- Deploys event-logger in the fluent-bit namespace with proper RBAC
+- Creates a test Kubernetes event in the fluent-bit namespace
+- Validates the event appears in Victoria-Logs
 
 ## Dependencies
 
@@ -45,9 +64,11 @@ To run all tests, execute the following command:
 go test -v ./tests/e2e/...
 ```
 
-Or to execute a given feature, run one of the following commands:
+Or to execute a specific feature, run one of the following commands:
 
 ```bash
 go test -v ./tests/e2e/... -args --feature "seed/logs"
 go test -v ./tests/e2e/... -args --feature "shoot/logs"
+go test -v ./tests/e2e/... -args --feature "systemd/logs"
+go test -v ./tests/e2e/... -args --feature "event-logger/basic"
 ```
