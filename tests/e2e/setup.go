@@ -33,8 +33,8 @@ var fluentBitConfig string
 //go:embed config/parsers.yaml
 var fluentBitParsers string
 
-// buildFluentBitImages builds the container images for fluent-bit-plugin and event-logger
-func buildFluentBitImages(logger logr.Logger, fluentBitPluginImage, eventLoggerImage string) env.Func {
+// buildTestImages builds the container images for fluent-bit-plugin and event-logger
+func buildTestImages(logger logr.Logger, fluentBitPluginImage, eventLoggerImage string) env.Func {
 	return func(ctx context.Context, _ *envconf.Config) (context.Context, error) {
 		projectRoot, err := filepath.Abs("../..")
 		if err != nil {

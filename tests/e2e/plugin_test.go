@@ -151,7 +151,7 @@ func TestOutputPlugin(t *testing.T) {
 			// Use Eventually to poll for positive total log counts
 			g.Eventually(func(g Gomega) {
 				// Query victoria-logs directly using curl
-				query := `_time:24h k8s.container.name:"logger" k8s.namespace.name:~"shoot-*" | count()`
+				query := `_time:24h k8s.container.name:="logger" k8s.namespace.name:~"shoot-*" | count()`
 
 				// Execute curl query in the fetcher deployment
 				output, err := queryCurl(ctx, cfg, namespace, query)
@@ -251,7 +251,7 @@ func TestOutputPlugin(t *testing.T) {
 			// Use Eventually to poll for seed logs
 			g.Eventually(func(g Gomega) {
 				// Query victoria-logs directly using curl
-				query := `_time:24h k8s.container.name:"logger" k8s.namespace.name:"fluent-bit" | count()`
+				query := `_time:24h k8s.container.name:="logger" k8s.namespace.name:="fluent-bit" | count()`
 
 				// Execute curl query in the fetcher deployment
 				output, err := queryCurl(ctx, cfg, namespace, query)
@@ -295,22 +295,6 @@ func TestOutputPlugin(t *testing.T) {
 	testenv.Test(t, f1, f2)
 }
 
-func TestEventLogger(t *testing.T) {
-	f1 := features.New("shoot/events").
-		WithLabel("type", "event-logger").
-		Setup(func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-			// create single namespace k8s event in each shoot namespace
-			return ctx
-		}).
-		Assess("events per shoot namespace", func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-			// check created event in victoria-logs-shoot instance per shoot namespace
-			return ctx
-		}).Feature()
-
-	// test feature
-	testenv.Test(t, f1)
-}
-
 // getLogsCountForNamespace queries victoria-logs for log count in a specific namespace
 func getLogsCountForNamespace(ctx context.Context, t *testing.T, cfg *envconf.Config, ns string, timeout, interval time.Duration) (int, error) {
 	g := NewWithT(t)
@@ -318,7 +302,7 @@ func getLogsCountForNamespace(ctx context.Context, t *testing.T, cfg *envconf.Co
 
 	g.Eventually(func(g Gomega) {
 		// Query victoria-logs directly for the specific namespace
-		query := fmt.Sprintf(`_time:24h k8s.namespace.name:"%s" k8s.container.name:"logger" | count()`, ns)
+		query := fmt.Sprintf(`_time:24h k8s.namespace.name:="%s" k8s.container.name:="logger" | count()`, ns)
 
 		// Execute curl query in the fetcher deployment
 		output, err := queryCurl(ctx, cfg, namespace, query)

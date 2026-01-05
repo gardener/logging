@@ -24,7 +24,7 @@ func TestSystemdLogs(t *testing.T) {
 			// Use Eventually to poll for positive counts with timeout
 			g.Eventually(func(g Gomega) {
 				// Query kubelet logs
-				kubeletQuery := `_time:24h unit:"kubelet.service" | count()`
+				kubeletQuery := `_time:24h unit:="kubelet.service" | count()`
 				kubeletOutput, err := queryCurl(ctx, cfg, namespace, kubeletQuery)
 				g.Expect(err).NotTo(HaveOccurred(), "Failed to query kubelet logs")
 
@@ -32,7 +32,7 @@ func TestSystemdLogs(t *testing.T) {
 				g.Expect(err).NotTo(HaveOccurred(), "Failed to parse kubelet query response")
 
 				// Query containerd logs
-				containerdQuery := `_time:24h unit:"containerd.service" | count()`
+				containerdQuery := `_time:24h unit:="containerd.service" | count()`
 				containerdOutput, err := queryCurl(ctx, cfg, namespace, containerdQuery)
 				g.Expect(err).NotTo(HaveOccurred(), "Failed to query containerd logs")
 
