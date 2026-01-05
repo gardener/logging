@@ -79,7 +79,7 @@ func TestEventLogger(t *testing.T) {
 			for {
 				select {
 				case <-timeout:
-					t.Fatalf("timeout waiting for event to appear in victoria-logs")
+					t.Fatal("timeout waiting for event to appear in victoria-logs")
 				case <-ticker.C:
 					response, err := queryCurl(ctx, cfg, namespace, query)
 					if err != nil {
