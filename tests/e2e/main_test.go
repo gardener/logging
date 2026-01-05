@@ -46,7 +46,7 @@ func TestMain(m *testing.M) {
 		envfuncs.CreateNamespace(namespace),
 		loadContainerImage(logger, kindClusterName, fluentBitImage),
 		loadContainerImage(logger, kindClusterName, victoriaLogsImage),
-		buildFluentBitImages(logger, fluentBitPluginImage, eventLoggerImage),
+		buildTestImages(logger, fluentBitPluginImage, eventLoggerImage),
 		envfuncs.LoadImageToCluster(kindClusterName, fluentBitPluginImage),
 		envfuncs.LoadImageToCluster(kindClusterName, eventLoggerImage),
 		createFluentBitDaemonSet(logger, namespace, fluentBitPluginImage, fluentBitImage),
