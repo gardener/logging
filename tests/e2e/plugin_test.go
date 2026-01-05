@@ -138,7 +138,7 @@ func TestOutputPlugin(t *testing.T) {
 				t.Fatalf("Failed to find sufficient logs in %d namespaces: %v", len(failedNamespaces), failedNamespaces)
 			}
 
-			t.Logf("Successfully verified logs in all 100 shoot namespaces")
+			t.Log("Successfully verified logs in all 100 shoot namespaces")
 
 			return ctx
 		}).

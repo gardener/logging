@@ -53,32 +53,6 @@ func buildTestImages(logger logr.Logger, fluentBitPluginImage, eventLoggerImage 
 	}
 }
 
-// buildFetcherImage builds the fetcher container image
-func buildFetcherImage(logger logr.Logger, fetcherImage string) env.Func {
-	return func(ctx context.Context, _ *envconf.Config) (context.Context, error) {
-		fetcherDir, err := filepath.Abs("fetcher")
-		if err != nil {
-			return ctx, fmt.Errorf("failed to get fetcher directory: %w", err)
-		}
-
-		cmd := exec.Command("docker", "build",
-			"-t", fetcherImage,
-			"-f", filepath.Join(fetcherDir, "Dockerfile"),
-			fetcherDir,
-		) // #nosec G204 -- fetcherImage, fetcherDir are controlled inputs from test setup
-		cmd.Stdout = io.Discard
-		cmd.Stderr = io.Discard
-
-		if err := cmd.Run(); err != nil {
-			return ctx, fmt.Errorf("docker build failed for fetcher: %w", err)
-		}
-
-		logger.Info("Successfully built fetcher image", "image", fetcherImage)
-
-		return ctx, nil
-	}
-}
-
 // loadContainerImage loads a container image to all nodes in the kind cluster
 func loadContainerImage(logger logr.Logger, clusterName, imageName string) env.Func {
 	return func(ctx context.Context, _ *envconf.Config) (context.Context, error) {
@@ -631,28 +605,28 @@ func createShootEnvironments(logger logr.Logger, fluentBitNamespace string) env.
 
 			// Create Cluster resource
 			cluster := &unstructured.Unstructured{
-				Object: map[string]interface{}{
+				Object: map[string]any{
 					"apiVersion": "extensions.gardener.cloud/v1alpha1",
 					"kind":       "Cluster",
-					"metadata": map[string]interface{}{
+					"metadata": map[string]any{
 						"name": clusterName,
 					},
-					"spec": map[string]interface{}{
-						"shoot": map[string]interface{}{
+					"spec": map[string]any{
+						"shoot": map[string]any{
 							"apiVersion": "core.gardener.cloud/v1beta1",
 							"kind":       "Shoot",
-							"metadata": map[string]interface{}{
+							"metadata": map[string]any{
 								"name":      shootName,
 								"namespace": "logging",
 							},
-							"spec": map[string]interface{}{
+							"spec": map[string]any{
 								"purpose": "development",
-								"hibernation": map[string]interface{}{
+								"hibernation": map[string]any{
 									"enabled": false,
 								},
 							},
-							"status": map[string]interface{}{
-								"lastOperation": map[string]interface{}{
+							"status": map[string]any{
+								"lastOperation": map[string]any{
 									"description":    "Shoot cluster has been successfully reconciled.",
 									"lastUpdateTime": "2025-10-04T01:25:47Z",
 									"progress":       100,
@@ -661,17 +635,17 @@ func createShootEnvironments(logger logr.Logger, fluentBitNamespace string) env.
 								},
 							},
 						},
-						"cloudProfile": map[string]interface{}{
+						"cloudProfile": map[string]any{
 							"apiVersion": "core.gardener.cloud/v1beta1",
 							"kind":       "CloudProfile",
-							"metadata": map[string]interface{}{
+							"metadata": map[string]any{
 								"name": "aws",
 							},
 						},
-						"seed": map[string]interface{}{
+						"seed": map[string]any{
 							"apiVersion": "core.gardener.cloud/v1beta1",
 							"kind":       "Seed",
-							"metadata": map[string]interface{}{
+							"metadata": map[string]any{
 								"name": "testing",
 							},
 						},

@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -34,11 +35,13 @@ func queryCurl(ctx context.Context, cfg *envconf.Config, namespace, query string
 	}
 
 	if pod == nil {
-		return "", fmt.Errorf("no pods found for log-fetcher deployment")
+		return "", errors.New("no pods found for log-fetcher deployment")
 	}
 
 	// Execute curl command in the pod
 	var stdout, stderr bytes.Buffer
+
+	//nolint:revive // unsecure-url-scheme: using http as victoria-logs does not have TLS enabled in e2e tests
 	command := []string{
 		"curl", "-s",
 		"http://victoria-logs-0.victoria-logs.fluent-bit.svc.cluster.local:9428/select/logsql/query",
@@ -55,17 +58,17 @@ func queryCurl(ctx context.Context, cfg *envconf.Config, namespace, query string
 // parseQueryResponse parses the victoria-logs query response and extracts the count
 func parseQueryResponse(response string) (int, error) {
 	if response == "" {
-		return 0, fmt.Errorf("empty response from victoria-logs")
+		return 0, errors.New("empty response from victoria-logs")
 	}
 
 	// Parse NDJSON response - each line is a separate JSON object
 	lines := strings.Split(strings.TrimSpace(response), "\n")
 	if len(lines) == 0 {
-		return 0, fmt.Errorf("no data in response")
+		return 0, errors.New("no data in response")
 	}
 
 	// Try to parse the first line as JSON
-	var result map[string]interface{}
+	var result map[string]any
 	if err := json.Unmarshal([]byte(lines[0]), &result); err != nil {
 		return 0, fmt.Errorf("failed to parse response as JSON: %w", err)
 	}
@@ -87,5 +90,5 @@ func parseQueryResponse(response string) (int, error) {
 		}
 	}
 
-	return 0, fmt.Errorf("count field not found in response")
+	return 0, errors.New("count field not found in response")
 }
