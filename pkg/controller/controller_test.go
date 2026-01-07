@@ -1,5 +1,4 @@
-// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
-//
+// Copyright 2025 SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
 // SPDX-License-Identifier: Apache-2.0
 
 package controller
@@ -7,37 +6,32 @@ package controller
 import (
 	"encoding/json"
 	"errors"
-	"os"
-	"time"
 
-	"github.com/cortexproject/cortex/pkg/util/flagext"
-	valiclient "github.com/credativ/vali/pkg/valitail/client"
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
-	"github.com/go-kit/log"
-	"github.com/go-kit/log/level"
-	ginkgov2 "github.com/onsi/ginkgo/v2"
-	"github.com/onsi/gomega"
-	"github.com/weaveworks/common/logging"
+	"github.com/go-logr/logr"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
 
-	"github.com/gardener/logging/pkg/client"
-	"github.com/gardener/logging/pkg/config"
+	"github.com/gardener/logging/v1/pkg/client"
+	"github.com/gardener/logging/v1/pkg/config"
+	"github.com/gardener/logging/v1/pkg/types"
 )
 
-var _ client.OutputClient = &fakeValiClient{}
+var _ client.OutputClient = &fakeOutputClient{}
 
-type fakeValiClient struct {
+type fakeOutputClient struct {
 	isStopped bool
 }
 
-func (*fakeValiClient) GetEndPoint() string {
+func (*fakeOutputClient) GetEndPoint() string {
 	return "http://localhost"
 }
 
-func (c *fakeValiClient) Handle(_ any, _ time.Time, _ string) error {
+func (c *fakeOutputClient) Handle(_ types.OutputEntry) error {
 	if c.isStopped {
 		return errors.New("client has been stopped")
 	}
@@ -45,47 +39,47 @@ func (c *fakeValiClient) Handle(_ any, _ time.Time, _ string) error {
 	return nil
 }
 
-func (c *fakeValiClient) Stop() {
+func (c *fakeOutputClient) Stop() {
 	c.isStopped = true
 }
 
-func (c *fakeValiClient) StopWait() {
+func (c *fakeOutputClient) StopWait() {
 	c.isStopped = true
 }
 
-func (*fakeValiClient) SetState(_ clusterState) {}
+func (*fakeOutputClient) SetState(_ clusterState) {}
 
-func (*fakeValiClient) GetState() clusterState {
+func (*fakeOutputClient) GetState() clusterState {
 	return clusterStateReady
 }
 
-var _ = ginkgov2.Describe("Controller", func() {
-	ginkgov2.Describe("#GetClient", func() {
+var _ = Describe("Controller", func() {
+	Describe("#GetClient", func() {
 		ctl := &controller{
 			clients: map[string]Client{
-				"shoot--dev--test1": &fakeValiClient{},
+				"shoot--dev--test1": &fakeOutputClient{},
 			},
 		}
 
-		ginkgov2.It("Should return existing client", func() {
+		It("Should return existing client", func() {
 			c, _ := ctl.GetClient("shoot--dev--test1")
-			gomega.Expect(c).ToNot(gomega.BeNil())
+			Expect(c).ToNot(BeNil())
 		})
 
-		ginkgov2.It("Should return nil when client name is empty", func() {
+		It("Should return nil when client name is empty", func() {
 			c, _ := ctl.GetClient("")
-			gomega.Expect(c).To(gomega.BeNil())
+			Expect(c).To(BeNil())
 		})
 
-		ginkgov2.It("Should not return client for not existing one", func() {
+		It("Should not return client for not existing one", func() {
 			c, _ := ctl.GetClient("shoot--dev--notexists")
-			gomega.Expect(c).To(gomega.BeNil())
+			Expect(c).To(BeNil())
 		})
 	})
 
-	ginkgov2.Describe("#Stop", func() {
-		shootDevTest1 := &fakeValiClient{}
-		shootDevTest2 := &fakeValiClient{}
+	Describe("#Stop", func() {
+		shootDevTest1 := &fakeOutputClient{}
+		shootDevTest2 := &fakeOutputClient{}
 		ctl := &controller{
 			clients: map[string]Client{
 				"shoot--dev--test1": shootDevTest1,
@@ -93,26 +87,21 @@ var _ = ginkgov2.Describe("Controller", func() {
 			},
 		}
 
-		ginkgov2.It("Should stops propperly ", func() {
+		It("Should stops propperly ", func() {
 			ctl.Stop()
-			gomega.Expect(ctl.clients).To(gomega.BeNil())
-			gomega.Expect(shootDevTest1.isStopped).To(gomega.BeTrue())
-			gomega.Expect(shootDevTest2.isStopped).To(gomega.BeTrue())
+			Expect(ctl.clients).To(BeNil())
+			Expect(shootDevTest1.isStopped).To(BeTrue())
+			Expect(shootDevTest2.isStopped).To(BeTrue())
 		})
 	})
-	ginkgov2.Describe("Event functions", func() {
+	Describe("Event functions", func() {
 		var (
-			conf     *config.Config
-			ctl      *controller
-			logLevel logging.Level
+			conf *config.Config
+			ctl  *controller
 		)
-		defaultURL := flagext.URLValue{}
-		_ = defaultURL.Set("http://vali.garden.svc:3100/vali/api/v1/push")
-		dynamicHostPrefix := "http://vali."
-		dynamicHostSulfix := ".svc:3100/vali/api/v1/push"
-		_ = logLevel.Set("error")
-		logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
-		logger = level.NewFilter(logger, logLevel.Gokit)
+		dynamicHostPrefix := "http://logging."
+		dynamicHostSuffix := ".svc:4318/v1/logs"
+		logger := logr.Discard() // Use nop logger for tests
 		shootName := "shoot--dev--logging"
 
 		testingPurpuse := gardencorev1beta1.ShootPurpose("testing")
@@ -171,19 +160,14 @@ var _ = ginkgov2.Describe("Controller", func() {
 			},
 		}
 
-		ginkgov2.BeforeEach(func() {
+		BeforeEach(func() {
 			conf = &config.Config{
-				ClientConfig: config.ClientConfig{
-					CredativValiConfig: valiclient.Config{
-						URL:       defaultURL,
-						BatchWait: 5 * time.Second,
-						BatchSize: 1024 * 1024,
-					},
-					BufferConfig: config.DefaultBufferConfig,
+				OTLPConfig: config.OTLPConfig{
+					DQueConfig: config.DefaultDQueConfig,
 				},
 				ControllerConfig: config.ControllerConfig{
 					DynamicHostPrefix: dynamicHostPrefix,
-					DynamicHostSuffix: dynamicHostSulfix,
+					DynamicHostSuffix: dynamicHostSuffix,
 				},
 			}
 			ctl = &controller{
@@ -193,31 +177,39 @@ var _ = ginkgov2.Describe("Controller", func() {
 			}
 		})
 
-		ginkgov2.Context("#addFunc", func() {
-			ginkgov2.It("Should add new client for a cluster with evaluation purpose", func() {
+		Context("#addFunc", func() {
+			It("Should add new client for a cluster with evaluation purpose", func() {
 				ctl.addFunc(developmentCluster)
 				c, ok := ctl.clients[shootName]
-				gomega.Expect(c).ToNot(gomega.BeNil())
-				gomega.Expect(ok).To(gomega.BeTrue())
+				Expect(c).ToNot(BeNil())
+				Expect(ok).To(BeTrue())
 			})
-			ginkgov2.It("Should not add new client for a cluster with testing purpose", func() {
+			It("Should not add new client for a cluster with testing purpose", func() {
 				ctl.addFunc(testingCluster)
 				c, ok := ctl.clients[shootName]
-				gomega.Expect(c).To(gomega.BeNil())
-				gomega.Expect(ok).To(gomega.BeFalse())
+				Expect(c).To(BeNil())
+				Expect(ok).To(BeFalse())
 			})
-			ginkgov2.It("Should not overwrite new client for a cluster in hibernation", func() {
+			It("Should not overwrite new client for a cluster in hibernation", func() {
 				name := "new-shoot-name"
 				newNameCluster := hibernatedCluster.DeepCopy()
 				newNameCluster.Name = name
 				ctl.addFunc(hibernatedCluster)
 				ctl.addFunc(newNameCluster)
-				gomega.Expect(ctl.conf.ClientConfig.CredativValiConfig.URL.String()).ToNot(gomega.Equal(ctl.conf.ControllerConfig.DynamicHostPrefix + name + ctl.conf.ControllerConfig.DynamicHostSuffix))
-				gomega.Expect(ctl.conf.ClientConfig.CredativValiConfig.URL.String()).ToNot(gomega.Equal(ctl.conf.ControllerConfig.DynamicHostPrefix + hibernatedCluster.Name + ctl.conf.ControllerConfig.DynamicHostSuffix))
+				Expect(ctl.conf.OTLPConfig.Endpoint).ToNot(
+					Equal(
+						ctl.conf.ControllerConfig.
+							DynamicHostPrefix + name + ctl.conf.ControllerConfig.DynamicHostSuffix,
+					))
+				Expect(ctl.conf.OTLPConfig.Endpoint).ToNot(
+					Equal(
+						ctl.conf.ControllerConfig.
+							DynamicHostPrefix + hibernatedCluster.Name + ctl.conf.ControllerConfig.DynamicHostSuffix,
+					))
 			})
 		})
 
-		ginkgov2.Context("#updateFunc", func() {
+		Context("#updateFunc", func() {
 			type args struct {
 				oldCluster         *extensionsv1alpha1.Cluster
 				newCluster         *extensionsv1alpha1.Cluster
@@ -225,39 +217,39 @@ var _ = ginkgov2.Describe("Controller", func() {
 				shouldClientExists bool
 			}
 
-			ginkgov2.DescribeTable("#updateFunc", func(a args) {
+			DescribeTable("#updateFunc", func(a args) {
 				ctl.clients = a.clients
 				ctl.updateFunc(a.oldCluster, a.newCluster)
 				c, ok := ctl.clients[a.newCluster.Name]
 				if a.shouldClientExists {
-					gomega.Expect(c).ToNot(gomega.BeNil())
-					gomega.Expect(ok).To(gomega.BeTrue())
+					Expect(c).ToNot(BeNil())
+					Expect(ok).To(BeTrue())
 				} else {
-					gomega.Expect(c).To(gomega.BeNil())
-					gomega.Expect(ok).To(gomega.BeFalse())
+					Expect(c).To(BeNil())
+					Expect(ok).To(BeFalse())
 				}
 			},
-				ginkgov2.Entry("client exists and after update cluster is hibernated",
+				Entry("client exists and after update cluster is hibernated",
 					args{
 						oldCluster: developmentCluster,
 						newCluster: hibernatedCluster,
 						clients: map[string]Client{
-							shootName: &fakeValiClient{},
+							shootName: &fakeOutputClient{},
 						},
 						shouldClientExists: true,
 					},
 				),
-				ginkgov2.Entry("client exists and after update cluster has no changes",
+				Entry("client exists and after update cluster has no changes",
 					args{
 						oldCluster: testingCluster,
 						newCluster: testingCluster,
 						clients: map[string]Client{
-							shootName: &fakeValiClient{},
+							shootName: &fakeOutputClient{},
 						},
 						shouldClientExists: true,
 					},
 				),
-				ginkgov2.Entry("client does not exist and after update cluster has no changes",
+				Entry("client does not exist and after update cluster has no changes",
 					args{
 						oldCluster:         testingCluster,
 						newCluster:         testingCluster,
@@ -265,7 +257,7 @@ var _ = ginkgov2.Describe("Controller", func() {
 						shouldClientExists: false,
 					},
 				),
-				ginkgov2.Entry("client does not exist and after update cluster is awake ",
+				Entry("client does not exist and after update cluster is awake ",
 					args{
 						oldCluster:         hibernatedCluster,
 						newCluster:         developmentCluster,
@@ -273,14 +265,14 @@ var _ = ginkgov2.Describe("Controller", func() {
 						shouldClientExists: true,
 					},
 				),
-				ginkgov2.Entry("client does not exist and after update cluster has evaluation purpose ",
+				Entry("client does not exist and after update cluster has evaluation purpose ",
 					args{
 						oldCluster:         testingCluster,
 						newCluster:         developmentCluster,
 						clients:            map[string]Client{},
 						shouldClientExists: true,
 					}),
-				ginkgov2.Entry("client exists and after update cluster has testing purpose ",
+				Entry("client exists and after update cluster has testing purpose ",
 					args{
 						oldCluster:         developmentCluster,
 						newCluster:         testingCluster,
@@ -290,13 +282,13 @@ var _ = ginkgov2.Describe("Controller", func() {
 			)
 		})
 
-		ginkgov2.Context("#deleteFunc", func() {
-			ginkgov2.It("should delete cluster client when cluster is deleted", func() {
-				ctl.clients[shootName] = &fakeValiClient{}
+		Context("#deleteFunc", func() {
+			It("should delete cluster client when cluster is deleted", func() {
+				ctl.clients[shootName] = &fakeOutputClient{}
 				ctl.delFunc(developmentCluster)
 				c, ok := ctl.clients[shootName]
-				gomega.Expect(c).To(gomega.BeNil())
-				gomega.Expect(ok).To(gomega.BeFalse())
+				Expect(c).To(BeNil())
+				Expect(ok).To(BeFalse())
 			})
 		})
 	})

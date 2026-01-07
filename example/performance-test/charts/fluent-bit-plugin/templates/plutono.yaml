@@ -86,6 +86,12 @@ spec:
             - mountPath: /var/lib/plutono/dashboards/plutono-fluent-bit-dashboard.json
               name: dashboards
               subPath: plutono-fluent-bit-dashboard.json
+            - mountPath: /var/lib/plutono/dashboards/plutono-otel-collector-dashboard.json
+              name: dashboards
+              subPath: plutono-otel-collector-dashboard.json
+            - mountPath: /var/lib/plutono/dashboards/plutono-victorialogs-dashboard.json
+              name: dashboards
+              subPath: plutono-victorialogs-dashboard.json
           {{- with .Values.plutono.volumeMounts }}
             {{- toYaml . | nindent 12 }}
           {{- end }}

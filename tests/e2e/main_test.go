@@ -1,63 +1,85 @@
-// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
-//
-// SPDX-License-Identifier: Apache-2.0
-
 package e2e
 
 import (
-	_ "embed"
-	"log/slog"
-	"os"
+	"context"
+	"fmt"
 	"testing"
 
 	"sigs.k8s.io/e2e-framework/pkg/env"
 	"sigs.k8s.io/e2e-framework/pkg/envconf"
 	"sigs.k8s.io/e2e-framework/pkg/envfuncs"
+	"sigs.k8s.io/e2e-framework/pkg/features"
 	"sigs.k8s.io/e2e-framework/support/kind"
+
+	"github.com/gardener/logging/v1/pkg/log"
 )
 
-var testenv env.Environment
+const (
+	victoriaLogsImage    = "quay.io/victoriametrics/victoria-logs:v1.43.0"
+	fluentBitImage       = "ghcr.io/fluent/fluent-operator/fluent-bit:v4.2.0"
+	fluentBitPluginImage = "fluent-bit-plugin:e2e"
+	eventLoggerImage     = "event-logger:e2e"
+	namespace            = "fluent-bit"
+)
 
-//go:embed config/fluent-bit.conf
-var config string
-
-//go:embed config/add_tag_to_record.lua
-var lua string
+var (
+	testenv env.Environment
+)
 
 func TestMain(m *testing.M) {
-	testenv, _ = env.NewFromFlags()
-	kindClusterName := envconf.RandomName("kind-local", 16)
-	pluginUnderTest := envconf.RandomName("e2e/fluent-bit-vali:test", 30)
-	eventLoggerUnderTest := envconf.RandomName("e2e/event-logger:test", 30)
-	slog.Info("Running e2e tests", "pluginUnderTest", pluginUnderTest, "KIND_PATH", os.Getenv("KIND_PATH"))
+	testenv = env.New()
 
+	logger := log.NewLogger("debug")
+
+	kindClusterName := envconf.RandomName("logging", 16)
+
+	// Use pre-defined environment funcs to create a kind cluster prior to test run
 	testenv.Setup(
-
 		envfuncs.CreateClusterWithConfig(
-			kind.NewProvider().WithPath(os.Getenv("KIND_PATH")),
+			kind.NewProvider(),
 			kindClusterName,
 			"./config/kind-config.yaml",
+			kind.WithImage("kindest/node:v1.35.0"),
 		),
-		envfuncs.CreateNamespace(shootNamespace),
-		envfuncs.CreateNamespace(seedNamespace),
+
 		envfuncs.SetupCRDs("./config", "*-crd.yaml"),
-		createContainerImage(pluginUnderTest, "fluent-bit-output"),
-		createContainerImage(eventLoggerUnderTest, "event-logger"),
-		envfuncs.LoadImageToCluster(kindClusterName, pluginUnderTest),
-		envfuncs.LoadImageToCluster(kindClusterName, eventLoggerUnderTest),
-		pullAndLoadContainerImage(kindClusterName, backendContainerImage),
-		pullAndLoadContainerImage(kindClusterName, logGeneratorContainerImage),
-		envfuncs.LoadImageToCluster(kindClusterName, backendContainerImage),
-		createBackend(seedNamespace, seedBackendName, backendContainerImage),
-		createBackend(shootNamespace, shootBackendName, backendContainerImage),
-		createFluentBitDaemonSet(seedNamespace, daemonSetName, pluginUnderTest, config, lua),
-		createEventLoggerDeployment(shootNamespace, eventLoggerName, eventLoggerUnderTest),
-		createExtensionCluster(shootNamespace),
+		envfuncs.CreateNamespace(namespace),
+		loadContainerImage(logger, kindClusterName, fluentBitImage),
+		loadContainerImage(logger, kindClusterName, victoriaLogsImage),
+		buildTestImages(logger, fluentBitPluginImage, eventLoggerImage),
+		envfuncs.LoadImageToCluster(kindClusterName, fluentBitPluginImage),
+		envfuncs.LoadImageToCluster(kindClusterName, eventLoggerImage),
+		createFluentBitDaemonSet(logger, namespace, fluentBitPluginImage, fluentBitImage),
+		createVictoriaLogsStatefulSet(logger, namespace, victoriaLogsImage),
+		createFetcherDeployment(logger, namespace),
+		createShootEnvironments(logger, namespace),
 	)
 
+	// Use pre-defined environment funcs to teardown kind cluster after tests
 	testenv.Finish(
 		envfuncs.ExportClusterLogs(kindClusterName, "./logs"),
 		envfuncs.DestroyCluster(kindClusterName),
 	)
+
+	testenv.BeforeEachFeature(func(ctx context.Context, cfg *envconf.Config, _ *testing.T, _ features.Feature) (context.Context, error) {
+		// ensure fluent-bit is running before each feature
+		if err := waitForDaemonSetReady(ctx, cfg, namespace, "fluent-bit"); err != nil {
+			return ctx, fmt.Errorf("fluent-bit DaemonSet is not ready: %w", err)
+		}
+
+		// ensure victoria-logs is up and running before each feature
+		if err := waitForStatefulSetReady(ctx, cfg, namespace, "victoria-logs"); err != nil {
+			return ctx, fmt.Errorf("victoria-logs StatefulSet is not ready: %w", err)
+		}
+
+		// ensure fetcher deployment is up and running before each feature
+		if err := waitForDeploymentReady(ctx, cfg, namespace, "log-fetcher"); err != nil {
+			return ctx, fmt.Errorf("log-fetcher Deployment is not ready: %w", err)
+		}
+
+		return ctx, nil
+	})
+
+	// launch package tests
 	testenv.Run(m)
 }

@@ -11,10 +11,8 @@ LOGS_DELAY            ?= 25s # Delay between log messages
 
 SCENARIO              ?= shoot # Test scenario: "shoot" or "seed"
 
-LOGCLI_BIN            := $(DIR)/bin/logcli
-
 # Default target
-.PHONY: help logcli setup run fetch down clean test check check-kubeconfig
+.PHONY: help setup run fetch down clean test check check-kubeconfig
 help:
 	@echo "Available targets:"
 	@echo "  setup  - Install fluent-bit chart and apply cluster CRD"
@@ -23,7 +21,6 @@ help:
 	@echo "  check  - Show current number of logs in Vali"
 	@echo "  down   - Clean up test clusters and log generation jobs"
 	@echo "  clean  - Remove all test components"
-	@echo "  logcli - Download and install logcli tool"
 	@echo ""
 	@echo "Environment variables:"
 	@echo "  CLUSTERS    - Number of clusters to create (default: $(CLUSTERS))"
@@ -31,26 +28,8 @@ help:
 	@echo "  LOGS        - Number of logs per job (default: $(LOGS))"
 	@echo "  LOGS_DELAY  - Delay between log messages (default: $(LOGS_DELAY))"
 
-# Download and install logcli tool using a dedicated Go module
-
-logcli: $(LOGCLI_BIN)
-    @echo "logcli present: $(LOGCLI_BIN)"
-
-$(LOGCLI_BIN):
-	@echo "Building logcli from credativ/vali (clone & build) ..."
-	@mkdir -p $(DIR)/bin
-	@TMP_DIR=$$(mktemp -d) && \
-		cd $$TMP_DIR && \
-		git clone --depth 1 https://github.com/credativ/vali.git && \
-		cd vali && \
-		echo "Building logcli..." && \
-		CGO_ENABLED=0 GOTOOLCHAIN=go1.22.0 go build -ldflags="-s -w" -tags netgo -o logcli ./cmd/logcli && \
-		mv $$TMP_DIR/vali/logcli $(DIR)/bin/logcli
-	@rm -rf $$TMP_DIR
-	@echo "logcli installed: bin/logcli"
-
 # Install fluent-bit chart and apply cluster CRD
-setup: logcli check-kubeconfig
+setup: check-kubeconfig
 	@echo "Setting up logging performance test environment..."
 	@$(DIR)/setup.sh
 

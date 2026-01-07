@@ -1,27 +1,25 @@
-// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
-//
+// Copyright 2025 SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
 // SPDX-License-Identifier: Apache-2.0
 
 package controller
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"sync"
 	"time"
 
-	"github.com/cortexproject/cortex/pkg/util/flagext"
 	extensioncontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	gardenercorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
-	"github.com/go-kit/log"
-	"github.com/go-kit/log/level"
+	"github.com/go-logr/logr"
 	"k8s.io/client-go/tools/cache"
 
-	"github.com/gardener/logging/pkg/client"
-	"github.com/gardener/logging/pkg/config"
-	"github.com/gardener/logging/pkg/metrics"
+	"github.com/gardener/logging/v1/pkg/client"
+	"github.com/gardener/logging/v1/pkg/config"
+	"github.com/gardener/logging/v1/pkg/metrics"
 )
 
 const (
@@ -39,26 +37,31 @@ type controller struct {
 	conf       *config.Config
 	lock       sync.RWMutex
 	clients    map[string]Client
-	logger     log.Logger
+	logger     logr.Logger
 	informer   cache.SharedIndexInformer
 	r          cache.ResourceEventHandlerRegistration
+	ctx        context.Context
 }
 
 // NewController return Controller interface
-func NewController(informer cache.SharedIndexInformer, conf *config.Config, l log.Logger) (Controller, error) {
+func NewController(ctx context.Context, informer cache.SharedIndexInformer, conf *config.Config, l logr.Logger) (Controller, error) {
 	var err error
 	var seedClient client.OutputClient
 
 	cfgShallowCopy := *conf
-	cfgShallowCopy.ClientConfig.BufferConfig.DqueConfig.QueueName = conf.ClientConfig.BufferConfig.DqueConfig.
-		QueueName + "-controller"
+	cfgShallowCopy.OTLPConfig.DQueConfig.DQueName = conf.OTLPConfig.DQueConfig.
+		DQueName + "-controller"
+	opt := []client.Option{client.WithTarget(client.Seed), client.WithLogger(l)}
+
+	// Pass the context when creating the seed client
 	if seedClient, err = client.NewClient(
+		ctx,
 		cfgShallowCopy,
-		client.WithLogger(l),
-		client.WithPreservedLabels(conf.PluginConfig.PreservedLabels),
+		opt...,
 	); err != nil {
 		return nil, fmt.Errorf("failed to create seed client in controller: %w", err)
 	}
+	metrics.Clients.WithLabelValues(client.Seed.String()).Inc()
 
 	ctl := &controller{
 		clients:    make(map[string]Client, expectedActiveClusters),
@@ -66,6 +69,7 @@ func NewController(informer cache.SharedIndexInformer, conf *config.Config, l lo
 		seedClient: seedClient,
 		informer:   informer,
 		logger:     l,
+		ctx:        ctx,
 	}
 
 	if ctl.r, err = informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -104,7 +108,7 @@ func (ctl *controller) Stop() {
 	}
 
 	if err := ctl.informer.RemoveEventHandler(ctl.r); err != nil {
-		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("failed to remove event handler: %v", err))
+		ctl.logger.Error(err, "failed to remove event handler")
 	}
 }
 
@@ -112,25 +116,20 @@ func (ctl *controller) Stop() {
 func (ctl *controller) addFunc(obj any) {
 	cluster, ok := obj.(*extensionsv1alpha1.Cluster)
 	if !ok {
-		metrics.Errors.WithLabelValues(metrics.ErrorAddFuncNotACluster).Inc()
-		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("%v is not a cluster", obj))
+		ctl.logger.Error(nil, "object is not a cluster", "obj", obj)
 
 		return
 	}
 
 	shoot, err := extensioncontroller.ShootFromCluster(cluster)
 	if err != nil {
-		metrics.Errors.WithLabelValues(metrics.ErrorCanNotExtractShoot).Inc()
-		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("can't extract shoot from cluster %v", cluster.Name))
+		ctl.logger.Error(err, "can't extract shoot from cluster", "cluster", cluster.Name)
 
 		return
 	}
 
 	if ctl.isAllowedShoot(shoot) && !ctl.isDeletedShoot(shoot) {
-		_ = level.Debug(ctl.logger).Log(
-			"msg", "adding cluster",
-			"cluster", cluster.Name,
-		)
+		ctl.logger.V(1).Info("adding cluster", "cluster", cluster.Name)
 		ctl.createControllerClient(cluster.Name, shoot)
 	}
 }
@@ -138,35 +137,32 @@ func (ctl *controller) addFunc(obj any) {
 func (ctl *controller) updateFunc(oldObj any, newObj any) {
 	oldCluster, ok := oldObj.(*extensionsv1alpha1.Cluster)
 	if !ok {
-		metrics.Errors.WithLabelValues(metrics.ErrorUpdateFuncOldNotACluster).Inc()
-		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("%v is not a cluster", oldCluster))
+		ctl.logger.Error(nil, "old object is not a cluster", "obj", oldCluster)
 
 		return
 	}
 
 	newCluster, ok := newObj.(*extensionsv1alpha1.Cluster)
 	if !ok {
-		metrics.Errors.WithLabelValues(metrics.ErrorUpdateFuncNewNotACluster).Inc()
-		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("%v is not a cluster", newCluster))
+		ctl.logger.Error(nil, "new object is not a cluster", "obj", newCluster)
 
 		return
 	}
 
 	if bytes.Equal(oldCluster.Spec.Shoot.Raw, newCluster.Spec.Shoot.Raw) {
-		_ = level.Debug(ctl.logger).Log("msg", "reconciliation skipped, shoot is the same", "cluster", newCluster.Name)
+		ctl.logger.V(1).Info("reconciliation skipped, shoot is the same", "cluster", newCluster.Name)
 
 		return
 	}
 
 	shoot, err := extensioncontroller.ShootFromCluster(newCluster)
 	if err != nil {
-		metrics.Errors.WithLabelValues(metrics.ErrorCanNotExtractShoot).Inc()
-		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("can't extract shoot from cluster %v", newCluster.Name))
+		ctl.logger.Error(err, "can't extract shoot from cluster", "cluster", newCluster.Name)
 
 		return
 	}
 
-	_ = level.Debug(ctl.logger).Log("msg", "reconciling", "cluster", newCluster.Name)
+	ctl.logger.V(1).Info("reconciling", "cluster", newCluster.Name)
 
 	_client, ok := ctl.clients[newCluster.Name]
 	// The client exists in the list, so we need to update it.
@@ -179,9 +175,7 @@ func (ctl *controller) updateFunc(oldObj any, newObj any) {
 		}
 		// Sanity check
 		if _client == nil {
-			_ = level.Error(ctl.logger).Log(
-				"msg", fmt.Sprintf("Nil client for cluster: %v, creating...", oldCluster.Name),
-			)
+			ctl.logger.Error(nil, "nil client for cluster, creating...", "cluster", oldCluster.Name)
 			ctl.createControllerClient(newCluster.Name, shoot)
 
 			return
@@ -189,10 +183,7 @@ func (ctl *controller) updateFunc(oldObj any, newObj any) {
 
 		ctl.updateControllerClientState(_client, shoot)
 	} else if ctl.isAllowedShoot(shoot) {
-		_ = level.Info(ctl.logger).Log(
-			"msg", "client is not found in controller, creating...",
-			"cluster", newCluster.Name,
-		)
+		ctl.logger.Info("client is not found in controller, creating...", "cluster", newCluster.Name)
 		ctl.createControllerClient(newCluster.Name, shoot)
 	}
 }
@@ -200,8 +191,7 @@ func (ctl *controller) updateFunc(oldObj any, newObj any) {
 func (ctl *controller) delFunc(obj any) {
 	cluster, ok := obj.(*extensionsv1alpha1.Cluster)
 	if !ok {
-		metrics.Errors.WithLabelValues(metrics.ErrorDeleteFuncNotAcluster).Inc()
-		_ = level.Error(ctl.logger).Log("msg", fmt.Sprintf("%v is not a cluster", obj))
+		ctl.logger.Error(nil, "object is not a cluster", "obj", obj)
 
 		return
 	}
@@ -212,28 +202,21 @@ func (ctl *controller) delFunc(obj any) {
 // updateClientConfig constructs the target URL and sets it in the client configuration
 // together with the queue name
 func (ctl *controller) updateClientConfig(clusterName string) *config.Config {
-	var clientURL flagext.URLValue
-
 	suffix := ctl.conf.ControllerConfig.DynamicHostSuffix
 
-	// Construct the valiClient URL: DynamicHostPrefix + clusterName + DynamicHostSuffix
-	url := fmt.Sprintf("%s%s%s", ctl.conf.ControllerConfig.DynamicHostPrefix, clusterName, suffix)
-	_ = level.Debug(ctl.logger).Log("msg", "set url", "url", url, "cluster", clusterName)
+	// Construct the client URL: DynamicHostPrefix + clusterName + DynamicHostSuffix
+	urlstr := fmt.Sprintf("%s%s%s", ctl.conf.ControllerConfig.DynamicHostPrefix, clusterName, suffix)
+	ctl.logger.V(1).Info("set endpoint", "endpoint", urlstr, "cluster", clusterName)
 
-	err := clientURL.Set(url)
-	if err != nil {
-		metrics.Errors.WithLabelValues(metrics.ErrorFailedToParseURL).Inc()
-		_ = level.Error(ctl.logger).Log(
-			"msg",
-			fmt.Sprintf("failed to parse client URL  for %v: %v", clusterName, err.Error()),
-		)
+	if len(urlstr) == 0 {
+		ctl.logger.Error(nil, "incorrect endpoint", "cluster", clusterName)
 
 		return nil
 	}
 
 	conf := *ctl.conf
-	conf.ClientConfig.CredativValiConfig.URL = clientURL
-	conf.ClientConfig.BufferConfig.DqueConfig.QueueName = clusterName
+	conf.OTLPConfig.Endpoint = urlstr
+	conf.OTLPConfig.DQueConfig.DQueName = clusterName // use clusterName as queue name
 
 	return &conf
 }
