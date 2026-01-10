@@ -47,4 +47,4 @@ formatters:
       sections:
         - standard
         - default
-        - prefix(github.com/gardener/logging)
+        - prefix(github.com/gardener/logging/v1)

@@ -33,9 +33,9 @@ jobs:
     strategy:
       matrix:
         args:
-          - name: fluent-bit-to-vali
+          - name: fluent-bit-plugin
             target: fluent-bit-plugin
-            oci-repository: gardener/fluent-bit-to-vali
+            oci-repository: gardener/fluent-bit-plugin
             ocm-labels:
               name: gardener.cloud/cve-categorisation
               value:
@@ -46,33 +46,6 @@ jobs:
                 integrity_requirement: none
                 availability_requirement: none
                 comment: no data is stored of processed by the installer
-          - name: vali-curator
-            target: curator
-            oci-repository: gardener/vali-curator
-            ocm-labels:
-              name: gardener.cloud/cve-categorisation
-              value:
-                network_exposure: private
-                authentication_enforced: false
-                user_interaction: gardener-operator
-                confidentiality_requirement: none
-                integrity_requirement: high
-                availability_requirement: low
-          - name: telegraf-iptables
-            target: telegraf
-            oci-repository: gardener/telegraf-iptables
-            ocm-labels:
-              name: gardener.cloud/cve-categorisation
-              value:
-                network_exposure: private
-                authentication_enforced: false
-                user_interaction: gardener-operator
-                confidentiality_requirement: none
-                integrity_requirement: none
-                availability_requirement: none
-                comment: >-
-                  telegraf is not accessible from outside the seed-cluster and does not
-                  interact with confidential data
           - name: event-logger
             target: event-logger
             oci-repository: gardener/event-logger

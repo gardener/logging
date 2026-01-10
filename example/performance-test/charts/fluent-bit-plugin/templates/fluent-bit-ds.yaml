@@ -40,7 +40,7 @@ spec:
       serviceAccountName: {{ include "fluent-bit-plugin.name" . }}
       initContainers:
         - name: install-plugin
-          image: {{ include "fluent-bit-plugin.image.repository" (merge (dict "name" "fluent-bit-to-vali") .Values.image) }}
+          image: {{ include "fluent-bit-plugin.image.repository" (merge (dict "name" "fluent-bit-plugin") .Values.image) }}
           command:
             - cp
             - /source/plugins/.
@@ -97,8 +97,8 @@ spec:
               readOnly: true
             - mountPath: /run/log/journal
               name: runlogjournal
-            - mountPath: /var/fluentbit
-              name: varfluent
+            - mountPath: /var/run/fluentbit
+              name: varrunfluentbit
             - mountPath: /fluent-bit/plugins
               name: plugins
           {{- with .Values.fluentBit.volumeMounts }}
@@ -121,9 +121,9 @@ spec:
           hostPath:
             path: /run/log/journal
             type: ""
-        - name: varfluent
+        - name: varrunfluentbit
           hostPath:
-            path: /var/fluentbit
+            path: /var/run/fluentbit
             type: ""
         - name: plugins
           emptyDir: {}

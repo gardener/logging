@@ -8,36 +8,27 @@ image:
   imagePullSecrets: []
 
 fluentBit:
-  image: ghcr.io/fluent/fluent-operator/fluent-bit:v4.1.1
+  image: ghcr.io/fluent/fluent-operator/fluent-bit:v4.2.0
 
   livenessProbe:
-    failureThreshold: 3
+    failureThreshold: 5
     httpGet:
       path: /healthz
       port: metrics-plugin
       scheme: HTTP
-    initialDelaySeconds: 90
-    periodSeconds: 300
+    initialDelaySeconds: 30
+    periodSeconds: 30
     successThreshold: 1
-    timeoutSeconds: 1
+    timeoutSeconds: 10
 
-  readinessProbe:
-    failureThreshold: 3
-    httpGet:
-      path: /api/v1/metrics/prometheus
-      port: metrics
-      scheme: HTTP
-    periodSeconds: 10
-    successThreshold: 1
-    timeoutSeconds: 1
+  readinessProbe: {}
 
   resources:
     limits:
-      memory: 350Mi
-      ephemeral-storage: 100Mi
+      memory: 600Mi
+      ephemeral-storage: 10Gi
     requests:
-      cpu: 100m
-      memory: 100Mi
+      memory: 600Mi
 
   ports:
     - name: metrics
@@ -96,7 +87,7 @@ plutono:
   volumes: [] # additional volumes to add to the Deployment
 
 prometheus:
-  image: prom/prometheus:main
+  image: quay.io/prometheus/prometheus:v3.8.1
 
   livenessProbe:
     failureThreshold: 6
@@ -124,7 +115,7 @@ prometheus:
       path: /-/ready
       port: web
       scheme: HTTP
-    periodSeconds: 15
+    periodSeconds: 10
     successThreshold: 1
     timeoutSeconds: 3
 
@@ -154,69 +145,113 @@ prometheus:
   volumeMounts: [] # additional volume mounts to add to the StatefulSet
   volumes: [] # additional volumes to add to the StatefulSet
 
-  service: # headless service for Prometheus StatefulSet
-    type: ClusterIP
-    clusterIP: None
-    ports:
-      - name: http
-        port: 9090
-        protocol: TCP
-        targetPort: web
-
-vali:
-  image: ghcr.io/credativ/vali:v2.2.27
-
-  initContainer:
-    securityContext:
-      privileged: true
-      runAsGroup: 0
-      runAsNonRoot: false
-      runAsUser: 0
-
+victorialogs:
+  image: quay.io/victoriametrics/victoria-logs:v1.41.0
   livenessProbe:
-    failureThreshold: 3
-    httpGet:
-      path: /ready
-      port: http
-      scheme: HTTP
-    initialDelaySeconds: 120
-    periodSeconds: 10
-    successThreshold: 1
-    timeoutSeconds: 1
-
-  readinessProbe:
-    failureThreshold: 5
-    httpGet:
-      path: /ready
-      port: http
-      scheme: HTTP
+    failureThreshold: 10
+    initialDelaySeconds: 30
     periodSeconds: 30
     successThreshold: 1
-    timeoutSeconds: 1
+    tcpSocket:
+      port: http
+    timeoutSeconds: 5
+
+  readinessProbe:
+    failureThreshold: 3
+    httpGet:
+      path: /health
+      port: http
+      scheme: HTTP
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 5
 
   podSecurityContext:
-    fsGroup: 10001
-    fsGroupChangePolicy: OnRootMismatch
+    fsGroup: 2000
+    runAsNonRoot: true
+    runAsUser: 1000
 
   resources:
     requests:
-      cpu: 10m
-      memory: 100M
+      memory: 256Mi
+    limits:
+      memory: 8Gi
 
   ports:
-    - containerPort: 3100
+    - containerPort: 9428
       name: http
       protocol: TCP
 
   securityContext:
     allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
     readOnlyRootFilesystem: true
-    runAsGroup: 10001
-    runAsNonRoot: true
-    runAsUser: 10001
 
   nodeSelector: {} # node selector for StatefulSet
   affinity: {} # node affinity for StatefulSet
   tolerations: []
   volumeMounts: [] # additional volume mounts to add to the StatefulSet
   volumes: [] # additional volumes to add to the StatefulSet
+
+otelCollector:
+  image: otel/opentelemetry-collector-contrib:0.141.0
+  replicas: 1
+
+  livenessProbe:
+    httpGet:
+      path: /
+      port: 13133
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  readinessProbe:
+    httpGet:
+      path: /
+      port: 13133
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+  podSecurityContext:
+    fsGroup: 10001
+    runAsNonRoot: true
+    runAsUser: 10001
+
+  resources:
+    requests:
+      memory: 256Mi
+    limits:
+      memory: 2Gi
+
+  ports:
+    - name: otlp-grpc
+      containerPort: 4317
+      protocol: TCP
+    - name: otlp-http
+      containerPort: 4318
+      protocol: TCP
+    - name: metrics
+      containerPort: 8888
+      protocol: TCP
+    - name: health
+      containerPort: 13133
+      protocol: TCP
+
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: true
+
+  nodeSelector: {} # node selector for Deployment
+  affinity: {} # node affinity for Deployment
+  tolerations: []
+  volumeMounts: [] # additional volume mounts to add to the Deployment
+  volumes: [] # additional volumes to add to the Deployment

@@ -1,22 +1,19 @@
-// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
-//
+// Copyright 2025 SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
 // SPDX-License-Identifier: Apache-2.0
 
 package controller
 
 import (
-	"fmt"
-	"time"
+	"context"
+	"errors"
 
 	gardenercorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
-	"github.com/go-kit/log"
-	"github.com/go-kit/log/level"
-	giterrors "github.com/pkg/errors"
-	"github.com/prometheus/common/model"
+	"github.com/go-logr/logr"
 
-	"github.com/gardener/logging/pkg/client"
-	"github.com/gardener/logging/pkg/config"
-	"github.com/gardener/logging/pkg/metrics"
+	"github.com/gardener/logging/v1/pkg/client"
+	"github.com/gardener/logging/v1/pkg/config"
+	"github.com/gardener/logging/v1/pkg/metrics"
+	"github.com/gardener/logging/v1/pkg/types"
 )
 
 // ClusterState is a type alias for string.
@@ -35,17 +32,17 @@ const (
 )
 
 type target struct {
-	valiClient client.OutputClient
-	mute       bool
-	conf       *config.ControllerClientConfiguration
+	client client.OutputClient
+	mute   bool
+	conf   *config.ControllerClientConfiguration
 }
 
-// Because loosing some logs when switching on and off client is not important we are omitting the synchronization.
 type controllerClient struct {
+	ctx         context.Context
 	shootTarget target
 	seedTarget  target
 	state       clusterState
-	logger      log.Logger
+	logger      logr.Logger
 	name        string
 }
 
@@ -76,30 +73,35 @@ func (ctl *controller) GetClient(name string) (client.OutputClient, bool) {
 }
 
 func (ctl *controller) newControllerClient(clusterName string, clientConf *config.Config) (*controllerClient, error) {
-	_ = level.Debug(ctl.logger).Log(
-		"msg", "creating new controller client",
+	ctl.logger.V(1).Info(
+		"creating new controller client",
 		"name", clusterName,
 	)
 
-	shootClient, err := client.NewClient(*clientConf, client.WithLogger(ctl.logger))
+	opt := []client.Option{client.WithTarget(client.Shoot), client.WithLogger(ctl.logger)}
+
+	// Pass the controller's context to the shoot client
+	shootClient, err := client.NewClient(ctl.ctx, *clientConf, opt...)
 	if err != nil {
 		return nil, err
 	}
 
 	c := &controllerClient{
+		ctx: ctl.ctx, // TODO: consider creating a separate context for the client
 		shootTarget: target{
-			valiClient: shootClient,
-			mute:       !ctl.conf.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInCreationState,
-			conf:       &ctl.conf.ControllerConfig.ShootControllerClientConfig,
+			client: shootClient,
+			mute:   !ctl.conf.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInCreationState,
+			conf:   &ctl.conf.ControllerConfig.ShootControllerClientConfig,
 		},
 		seedTarget: target{
-			valiClient: ctl.seedClient,
-			mute:       !ctl.conf.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInCreationState,
-			conf:       &ctl.conf.ControllerConfig.SeedControllerClientConfig,
+			client: ctl.seedClient,
+			mute:   !ctl.conf.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInCreationState,
+			conf:   &ctl.conf.ControllerConfig.SeedControllerClientConfig,
 		},
 		state:  clusterStateCreation, // check here the actual cluster state
 		logger: ctl.logger,
-		name:   clientConf.ClientConfig.CredativValiConfig.URL.Host,
+		name:   ctl.conf.OTLPConfig.Endpoint, // TODO: set proper name from clusterName
+
 	}
 
 	return c, nil
@@ -113,21 +115,19 @@ func (ctl *controller) createControllerClient(clusterName string, shoot *gardene
 
 	if c, ok := ctl.clients[clusterName]; ok {
 		ctl.updateControllerClientState(c, shoot)
-		_ = level.Info(ctl.logger).Log("msg", fmt.Sprintf("controller client for cluster %v already exists", clusterName))
+		ctl.logger.Info("controller client already exists", "cluster", clusterName)
 
 		return
 	}
 
 	c, err := ctl.newControllerClient(clusterName, clientConf)
 	if err != nil {
-		metrics.Errors.WithLabelValues(metrics.ErrorFailedToMakeValiClient).Inc()
-		_ = level.Error(ctl.logger).Log(
-			"msg", fmt.Sprintf("failed to make new vali client for cluster %v", clusterName),
-			"error", err.Error(),
-		)
+		metrics.Errors.WithLabelValues(metrics.ErrorFailedToMakeOutputClient).Inc()
+		ctl.logger.Error(err, "failed to create controller client", "cluster", clusterName)
 
 		return
 	}
+	metrics.Clients.WithLabelValues(client.Shoot.String()).Inc()
 
 	ctl.updateControllerClientState(c, shoot)
 
@@ -138,8 +138,7 @@ func (ctl *controller) createControllerClient(clusterName string, shoot *gardene
 		return
 	}
 	ctl.clients[clusterName] = c
-	_ = level.Info(ctl.logger).Log(
-		"msg", "added controller client",
+	ctl.logger.Info("added controller client",
 		"cluster", clusterName,
 		"mute_shoot_client", c.shootTarget.mute,
 		"mute_seed_client", c.seedTarget.mute,
@@ -157,15 +156,13 @@ func (ctl *controller) deleteControllerClient(clusterName string) {
 	c, ok := ctl.clients[clusterName]
 	if ok && c != nil {
 		delete(ctl.clients, clusterName)
+		metrics.Clients.WithLabelValues(client.Shoot.String()).Dec()
 	}
 
 	if ok && c != nil {
 		go c.Stop()
 	}
-	_ = level.Info(ctl.logger).Log(
-		"msg", "deleted controller client",
-		"cluster", clusterName,
-	)
+	ctl.logger.Info("client deleted", "cluster", clusterName)
 }
 
 func (*controller) updateControllerClientState(c Client, shoot *gardenercorev1beta1.Shoot) {
@@ -173,16 +170,12 @@ func (*controller) updateControllerClientState(c Client, shoot *gardenercorev1be
 }
 
 func (c *controllerClient) GetEndPoint() string {
-	return c.shootTarget.valiClient.GetEndPoint()
+	return c.shootTarget.client.GetEndPoint()
 }
 
 // Handle processes and sends log to Vali.
-func (c *controllerClient) Handle(ls any, t time.Time, s string) error {
+func (c *controllerClient) Handle(log types.OutputEntry) error {
 	var combineErr error
-	_ls, ok := ls.(model.LabelSet)
-	if !ok {
-		return client.ErrInvalidLabelType
-	}
 
 	// Because we do not use thread save methods here we just copy the variables
 	// in case they have changed during the two consequential calls to Handle.
@@ -194,13 +187,13 @@ func (c *controllerClient) Handle(ls any, t time.Time, s string) error {
 		// are sending the log record to both shoot and seed clients we have to pass a copy because
 		// we are not sure what kind of label set processing will be done in the corresponding
 		// client which can lead to "concurrent map iteration and map write error".
-		if err := c.shootTarget.valiClient.Handle(_ls.Clone(), t, s); err != nil {
-			combineErr = giterrors.Wrap(combineErr, err.Error())
+		if err := c.shootTarget.client.Handle(log); err != nil {
+			combineErr = errors.Join(combineErr, err)
 		}
 	}
 	if sendToSeed {
-		if err := c.seedTarget.valiClient.Handle(_ls.Clone(), t, s); err != nil {
-			combineErr = giterrors.Wrap(combineErr, err.Error())
+		if err := c.seedTarget.client.Handle(log); err != nil {
+			combineErr = errors.Join(combineErr, err)
 		}
 	}
 
@@ -209,16 +202,16 @@ func (c *controllerClient) Handle(ls any, t time.Time, s string) error {
 
 // Stop the client.
 func (c *controllerClient) Stop() {
-	c.shootTarget.valiClient.Stop()
+	c.shootTarget.client.Stop()
 }
 
 // StopWait stops the client waiting all saved logs to be sent.
 func (c *controllerClient) StopWait() {
-	c.shootTarget.valiClient.StopWait()
+	c.shootTarget.client.StopWait()
 }
 
 // SetState manages the MuteMainClient and MuteDefaultClient flags.
-// These flags govern the valiClient to which the logs are send.
+// These flags govern the client to which the logs are send.
 // When MuteMainClient is true the logs are sent to the Default which is the gardener vali instance.
 // When MuteDefaultClient is true the logs are sent to the Main which is the shoot vali instance.
 func (c *controllerClient) SetState(state clusterState) {
@@ -255,15 +248,15 @@ func (c *controllerClient) SetState(state clusterState) {
 		c.shootTarget.mute = !c.shootTarget.conf.SendLogsWhenIsInCreationState
 		c.seedTarget.mute = !c.seedTarget.conf.SendLogsWhenIsInCreationState
 	default:
-		_ = level.Error(c.logger).Log(
-			"msg", fmt.Sprintf("Unknown state %v for cluster %v. The client state will not be changed", state, c.name),
+		c.logger.Error(nil, "unknown state for cluster, client state will not be changed",
+			"state", state,
+			"cluster", c.name,
 		)
 
 		return
 	}
 
-	_ = level.Debug(c.logger).Log(
-		"msg", "cluster state changed",
+	c.logger.V(1).Info("cluster state changed",
 		"cluster", c.name,
 		"oldState", c.state,
 		"newState", state,

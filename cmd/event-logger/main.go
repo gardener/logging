@@ -1,5 +1,4 @@
-// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
-//
+// Copyright 2025 SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
 // SPDX-License-Identifier: Apache-2.0
 
 package main
@@ -7,7 +6,7 @@ package main
 import (
 	"os"
 
-	"github.com/gardener/logging/cmd/event-logger/app"
+	"github.com/gardener/logging/v1/cmd/event-logger/app"
 )
 
 func main() {

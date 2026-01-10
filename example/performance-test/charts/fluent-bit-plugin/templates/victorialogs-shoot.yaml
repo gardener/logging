@@ -1,0 +1,142 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "fluent-bit-plugin.victorialogsName" . }}-shoot
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "fluent-bit-plugin.victorialogsLabels" . | nindent 4 }}
+spec:
+  replicas: 1
+  serviceName: {{ include "fluent-bit-plugin.victorialogsName" . }}-shoot
+  selector:
+    matchLabels:
+      app: {{ include "fluent-bit-plugin.victorialogsName" . }}-shoot
+      {{- include "fluent-bit-plugin.victorialogsSelectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "fluent-bit-plugin.victorialogsName" . }}-shoot
+        {{- include "fluent-bit-plugin.victorialogsSelectorLabels" . | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.victorialogs.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: vlogs
+          image: {{ .Values.victorialogs.image }}
+          args:
+            - --envflag.enable
+            - --envflag.prefix=VM_
+            - --http.shutdownDelay=15s
+            - --httpListenAddr=:9428
+            - --loggerFormat=json
+            - --retention.maxDiskSpaceUsageBytes=30GiB
+            - --retentionPeriod=100y
+            - --storageDataPath=/storage
+          {{- with .Values.victorialogs.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.victorialogs.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.victorialogs.ports }}
+          ports:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.victorialogs.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.victorialogs.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - mountPath: /storage
+              name: {{ include "fluent-bit-plugin.victorialogsName" . }}-shoot
+          {{- with .Values.victorialogs.volumeMounts }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      volumes: []
+      {{- with .Values.victorialogs.volumes }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.victorialogs.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.victorialogs.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      affinity:
+        # Co-locate with otel-collector-shoot on the same node
+        podAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - {{ include "fluent-bit-plugin.otelCollectorName" . }}-shoot
+                topologyKey: kubernetes.io/hostname
+        # Avoid nodes with seed pods
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - {{ include "fluent-bit-plugin.otelCollectorName" . }}-seed
+                        - {{ include "fluent-bit-plugin.victorialogsName" . }}-seed
+                topologyKey: kubernetes.io/hostname
+      {{- with .Values.victorialogs.affinity }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+  volumeClaimTemplates:
+    - apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: {{ include "fluent-bit-plugin.victorialogsName" . }}-shoot
+        labels:
+          {{- include "fluent-bit-plugin.victorialogsLabels" . | nindent 10 }}
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 30Gi
+        volumeMode: Filesystem
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "fluent-bit-plugin.victorialogsName" . }}-shoot
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "fluent-bit-plugin.victorialogsLabels" . | nindent 4 }}
+spec:
+  ports:
+    - name: http
+      port: 9428
+      protocol: TCP
+      targetPort: http
+  selector:
+    {{- include "fluent-bit-plugin.victorialogsSelectorLabels" . | nindent 4 }}
+    app: {{ include "fluent-bit-plugin.victorialogsName" . }}-shoot
+  clusterIP: None
+

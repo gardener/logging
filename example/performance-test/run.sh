@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Copyright 2025 SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
+# SPDX-License-Identifier: Apache-2.0
+
 
 set -eo pipefail
 dir=$(dirname "$0")
@@ -25,7 +28,7 @@ metadata:
   namespace: "$shoot_namespace"
 spec:
   type: ExternalName
-  externalName: logging-vali-shoot.fluent-bit.svc.cluster.local
+  externalName: logging-otel-collector-shoot.fluent-bit.svc.cluster.local
 EOF
 }
 
@@ -52,7 +55,7 @@ metadata:
 spec:
   parallelism: $JOBS
   completions: $JOBS
-  ttlSecondsAfterFinished: 600
+  ttlSecondsAfterFinished: 1000
   template:
     spec:
       containers:
@@ -69,7 +72,13 @@ kubectl wait \
   --for=jsonpath='{.status.readyReplicas}'=1 \
   --timeout=300s \
   --namespace ${namespace} \
-  statefulset/${nameOverride}-vali-shoot
+  statefulset/${nameOverride}-victorialogs-shoot
+
+kubectl wait \
+  --for=jsonpath='{.status.readyReplicas}'=1 \
+  --timeout=300s \
+  --namespace ${namespace} \
+  deployment/${nameOverride}-otel-collector-shoot
 
 function shoot {
     local clusters=${CLUSTERS:-10}

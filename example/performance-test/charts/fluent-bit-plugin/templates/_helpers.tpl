@@ -20,10 +20,17 @@ Expand the name for prometheus resources.
 {{- end }}
 
 {{/*
-Expand the name for vali resources.
+Expand the name for victorialogs resources.
 */}}
-{{- define "fluent-bit-plugin.valiName" -}}
-{{- printf "%s-vali" (include "fluent-bit-plugin.name" .) | trunc 63 | trimSuffix "-" }}
+{{- define "fluent-bit-plugin.victorialogsName" -}}
+{{- printf "%s-victorialogs" (include "fluent-bit-plugin.name" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
+Expand the name for otel-collector resources.
+*/}}
+{{- define "fluent-bit-plugin.otelCollectorName" -}}
+{{- printf "%s-otel-collector" (include "fluent-bit-plugin.name" .) | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 
@@ -114,11 +121,11 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
-Vali Common labels
+VictoriaLogs Common labels
 */}}
-{{- define "fluent-bit-plugin.valiLabels" -}}
+{{- define "fluent-bit-plugin.victorialogsLabels" -}}
 helm.sh/chart: {{ include "fluent-bit-plugin.chart" . }}
-{{ include "fluent-bit-plugin.valiSelectorLabels" . }}
+{{ include "fluent-bit-plugin.victorialogsSelectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -126,10 +133,30 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
 
 {{/*
-Vali Selector labels
+VictoriaLogs Selector labels
 */}}
-{{- define "fluent-bit-plugin.valiSelectorLabels" -}}
-app.kubernetes.io/name: {{ include "fluent-bit-plugin.valiName" . }}
+{{- define "fluent-bit-plugin.victorialogsSelectorLabels" -}}
+app.kubernetes.io/name: {{ include "fluent-bit-plugin.victorialogsName" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
+
+{{/*
+OtelCollector Common labels
+*/}}
+{{- define "fluent-bit-plugin.otelCollectorLabels" -}}
+helm.sh/chart: {{ include "fluent-bit-plugin.chart" . }}
+{{ include "fluent-bit-plugin.otelCollectorSelectorLabels" . }}
+{{- if .Chart.AppVersion }}
+app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+{{- end }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- end }}
+
+{{/*
+OtelCollector Selector labels
+*/}}
+{{- define "fluent-bit-plugin.otelCollectorSelectorLabels" -}}
+app.kubernetes.io/name: {{ include "fluent-bit-plugin.otelCollectorName" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 

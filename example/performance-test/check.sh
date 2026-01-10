@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Copyright 2025 SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
+# SPDX-License-Identifier: Apache-2.0
+
 
 set -eo pipefail
 dir=$(dirname "$0")
@@ -10,35 +13,20 @@ RED="\033[31m"
 GREEN="\033[32m"
 NOCOLOR="\033[0m"
 
-# check to see if vali-shoot is port-forwarded
-if ! curl --silent --max-time 2 http://localhost:3100/metrics >/dev/null; then
-    echo "Please port-forward vali-shoot to localhost:3100"
-    echo "kubectl port-forward -n fluent-bit pod/logging-vali-shoot-0 3100:3100"
-    exit 1
-fi
-
+# VictoriaLogs endpoint
+VLOGS_ADDR="${VLOGS_ADDR:-http://localhost:9428/select/logsql/query}"
 
 run_log_query() {
-  echo "Waiting ${QUERY_WAIT}s before querying Vali..."
-  sleep "${QUERY_WAIT}"
-
-  local q='sum(count_over_time({container_name="logger"}[24h]))'
+  # VictoriaLogs LogsQL query with count() pipe - efficient counting without fetching all logs
+  local q="_time:24h k8s.container.name:logger | extract_regexp \".+id.: .(?P<id>([a-z]+|[0-9]+|-)+)\" from _msg | count_uniq(id)"
   local attempt=0
   while (( attempt < QUERY_RETRIES )); do
-    if out=$(${dir}/bin/logcli query "$q" --quiet --output=jsonl 2>/dev/null); then
-      # Extract last pair [timestamp, value]
-      if pair=$(printf '%s' "$out" | jq -r '.[0].values | last?'); then
-        if [[ -n "$pair" && "$pair" != "null" ]]; then
-          ts=$(printf '%s' "$pair" | jq '.[0]')
-          val=$(printf '%s' "$pair" | jq -r '.[1]')
-          int=${ts%.*}
-          frac=${ts#*.}; ms=$(printf '%03d' "$frac")
-          # macOS date
-          human=$(date -d "@$int" '+%Y-%m-%d %H:%M:%S')
-          echo "Query: $q"
-          echo "Last sample: $human.${ms}Z (raw=${ts}) value=${val}"
-          return 0
-        fi
+    # Query VictoriaLogs using curl with count() stats
+    if result=$(curl -s --max-time 10 "${VLOGS_ADDR}" --data-urlencode "query=${q}"  2>/dev/null); then
+      if [[ -n "$result" ]]; then
+        count=$(printf '%s' "$result" | jq -r '."count_uniq(id)"')
+        echo "Total logs found: ${count}"
+        exit 0
       fi
     fi
     attempt=$((attempt+1))

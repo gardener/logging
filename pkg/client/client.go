@@ -1,62 +1,92 @@
-// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
-//
+// Copyright 2025 SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
 // SPDX-License-Identifier: Apache-2.0
 
 package client
 
 import (
+	"context"
 	"fmt"
 
-	"github.com/go-kit/log"
+	"github.com/go-logr/logr"
 
-	"github.com/gardener/logging/pkg/config"
+	"github.com/gardener/logging/v1/pkg/config"
+	"github.com/gardener/logging/v1/pkg/types"
 )
 
 type clientOptions struct {
-	vali   *valiOptions
-	logger log.Logger
+	target Target
+	logger logr.Logger
 }
 
-// Options defines functional options for creating clients
-type Options interface {
-	apply(opts *clientOptions) error
-}
-
-// loggerOption implements Options for setting the logger
-type loggerOption struct {
-	logger log.Logger
-}
-
-func (l loggerOption) apply(opts *clientOptions) error {
-	opts.logger = l.logger
-
-	return nil
-}
+// Option defines a functional option for configuring the client
+type Option func(opts *clientOptions) error
 
 // WithLogger creates a functional option for setting the logger
-func WithLogger(logger log.Logger) Options {
-	return loggerOption{logger: logger}
+func WithLogger(logger logr.Logger) Option {
+	return func(opts *clientOptions) error {
+		opts.logger = logger
+
+		return nil
+	}
+}
+
+// WithTarget creates a functional option for setting the target type of the client
+func WithTarget(target Target) Option {
+	return func(opts *clientOptions) error {
+		opts.target = target
+
+		return nil
+	}
 }
 
 // NewClient creates a new client based on the fluent-bit configuration.
-func NewClient(cfg config.Config, opts ...Options) (OutputClient, error) {
+func NewClient(ctx context.Context, cfg config.Config, opts ...Option) (OutputClient, error) {
 	options := &clientOptions{}
 	for _, opt := range opts {
-		if err := opt.apply(options); err != nil {
+		if err := opt(options); err != nil {
 			return nil, fmt.Errorf("failed to apply option %T: %w", opt, err)
 		}
 	}
 
 	// Use the logger from options if provided, otherwise use a default
 	logger := options.logger
-	if logger == nil {
-		logger = log.NewNopLogger() // Default no-op logger
+	if logger.GetSink() == nil {
+		logger = logr.Discard() // Default no-op logger
 	}
 
-	valiOpts := valiOptions{}
-	if options.vali != nil {
-		valiOpts = *options.vali
+	var nfc NewClientFunc
+	var err error
+	switch options.target {
+	case Seed:
+		t := types.GetClientTypeFromString(cfg.PluginConfig.SeedType)
+		nfc, err = getNewClientFunc(t)
+		if err != nil {
+			return nil, err
+		}
+	case Shoot:
+		t := types.GetClientTypeFromString(cfg.PluginConfig.ShootType)
+		nfc, err = getNewClientFunc(t)
+		if err != nil {
+			return nil, err
+		}
+	default:
+		return nil, fmt.Errorf("unknown target type: %v", options.target)
 	}
 
-	return newValiClient(cfg, log.With(logger), valiOpts)
+	return nfc(ctx, cfg, logger)
+}
+
+func getNewClientFunc(t types.Type) (NewClientFunc, error) {
+	switch t {
+	case types.OTLPGRPC:
+		return NewOTLPGRPCClient, nil
+	case types.OTLPHTTP:
+		return NewOTLPHTTPClient, nil
+	case types.STDOUT:
+		return NewStdoutClient, nil
+	case types.NOOP:
+		return NewNoopClient, nil
+	default:
+		return nil, fmt.Errorf("unknown client type: %v", t)
+	}
 }
