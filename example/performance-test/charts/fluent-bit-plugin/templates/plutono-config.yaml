@@ -20,6 +20,10 @@ data:
           path: /var/lib/plutono/dashboards
     plutono-fluent-bit-dashboard.json: |-
 {{ (.Files.Get "dashboards/plutono-fluent-bit-dashboard.json") | indent 6 }}
+    plutono-otel-collector-dashboard.json: |-
+{{ (.Files.Get "dashboards/plutono-otel-collector-dashboard.json") | indent 6 }}
+    plutono-victorialogs-dashboard.json: |-
+{{ (.Files.Get "dashboards/plutono-victorialogs-dashboard.json") | indent 6 }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -37,15 +41,3 @@ data:
           access: proxy
           url: http://logging-prometheus:9090 # prometheus headless service in the same namespace
           isDefault: true
-        - name: vali-seed
-          type: vali
-          access: proxy
-          url: http://logging-vali-seed:3100 # vali-seed headless service in the same namespace
-          jsonData:
-            maxLines: 1000
-        - name: vali-shoot
-          type: vali
-          access: proxy
-          url: http://logging-vali-shoot:3100 # vali-shoot headless service in the same namespace
-          jsonData:
-            maxLines: 1000

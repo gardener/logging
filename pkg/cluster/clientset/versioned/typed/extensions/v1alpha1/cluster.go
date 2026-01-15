@@ -1,5 +1,4 @@
-// SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
-//
+// Copyright 2025 SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
 // SPDX-License-Identifier: Apache-2.0
 
 package v1alpha1
@@ -14,7 +13,7 @@ import (
 	watch "k8s.io/apimachinery/pkg/watch"
 	rest "k8s.io/client-go/rest"
 
-	scheme "github.com/gardener/logging/pkg/cluster/clientset/versioned/scheme"
+	scheme "github.com/gardener/logging/v1/pkg/cluster/clientset/versioned/scheme"
 )
 
 // ClustersGetter has a method to return a ClusterInterface.

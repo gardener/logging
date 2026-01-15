@@ -5,10 +5,8 @@
 REPO_ROOT                                  := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 VERSION                                    := $(shell cat VERSION)
 REGISTRY                                   ?= europe-docker.pkg.dev/gardener-project/snapshots/gardener
-FLUENT_BIT_TO_VALI_IMAGE_REPOSITORY        := $(REGISTRY)/fluent-bit-to-vali
-FLUENT_BIT_VALI_IMAGE_REPOSITORY           := $(REGISTRY)/fluent-bit-vali
-VALI_CURATOR_IMAGE_REPOSITORY              := $(REGISTRY)/vali-curator
-TELEGRAF_IMAGE_REPOSITORY                  := $(REGISTRY)/telegraf-iptables
+FLUENT_BIT_PLUGIN_IMAGE_REPOSITORY         := $(REGISTRY)/fluent-bit-plugin
+FLUENT_BIT_OUTPUT_IMAGE_REPOSITORY         := $(REGISTRY)/fluent-bit-output
 TUNE2FS_IMAGE_REPOSITORY                   := $(REGISTRY)/tune2fs
 EVENT_LOGGER_IMAGE_REPOSITORY              := $(REGISTRY)/event-logger
 EFFECTIVE_VERSION                          := $(VERSION)-$(shell git rev-parse --short HEAD)
@@ -30,7 +28,7 @@ include hack/tools.mk
 export PATH := $(abspath $(TOOLS_DIR)):$(PATH)
 
 .DEFAULT_GOAL := all
-all: verify plugin curator event-logger
+all: tidy fmt gci plugin event-logger lint
 
 #################################################################
 # Build targets                                                 #
@@ -45,18 +43,6 @@ plugin: tidy
 		-o $(REPO_ROOT)/build/output_plugin.so \
 	  	-ldflags="$(LD_FLAGS)" \
 		./cmd/fluent-bit-output-plugin
-
-.PHONY: curator
-curator: tidy
-	@echo "building $@ for $(BUILD_PLATFORM)/$(BUILD_ARCH)"
-	@GOOS=$(BUILD_PLATFORM) \
-		GOARCH=$(BUILD_ARCH) \
-		CGO_ENABLED=0 \
-		GO111MODULE=on \
-		go build \
-		-o $(REPO_ROOT)/build/curator \
-		-ldflags="$(LD_FLAGS)" \
-		./cmd/vali-curator
 
 .PHONY: event-logger
 event-logger: tidy
@@ -87,19 +73,11 @@ copy: tidy
 docker-images:
 	@BUILD_ARCH=$(BUILD_ARCH) \
 		$(REPO_ROOT)/hack/docker-image-build.sh "fluent-bit-plugin" \
-		$(FLUENT_BIT_TO_VALI_IMAGE_REPOSITORY) $(IMAGE_TAG)
+		$(FLUENT_BIT_PLUGIN_IMAGE_REPOSITORY) $(IMAGE_TAG)
 
 	@BUILD_ARCH=$(BUILD_ARCH) \
 		$(REPO_ROOT)/hack/docker-image-build.sh "fluent-bit-output" \
-		$(FLUENT_BIT_VALI_IMAGE_REPOSITORY) $(IMAGE_TAG)
-
-	@BUILD_ARCH=$(BUILD_ARCH) \
-		$(REPO_ROOT)/hack/docker-image-build.sh "curator" \
-		$(VALI_CURATOR_IMAGE_REPOSITORY) $(IMAGE_TAG)
-
-	@BUILD_ARCH=$(BUILD_ARCH) \
-		$(REPO_ROOT)/hack/docker-image-build.sh "telegraf" \
-		$(TELEGRAF_IMAGE_REPOSITORY) $(IMAGE_TAG)
+		$(FLUENT_BIT_OUTPUT_IMAGE_REPOSITORY) $(IMAGE_TAG)
 
 	@BUILD_ARCH=$(BUILD_ARCH) \
 		$(REPO_ROOT)/hack/docker-image-build.sh "event-logger" \
@@ -112,13 +90,7 @@ docker-images:
 .PHONY: docker-push
 docker-push:
 	@$(REPO_ROOT)/hack/docker-image-push.sh "fluent-bit-plugin" \
-	$(FLUENT_BIT_TO_VALI_IMAGE_REPOSITORY) $(IMAGE_TAG)
-
-	@$(REPO_ROOT)/hack/docker-image-push.sh "curator" \
-	$(VALI_CURATOR_IMAGE_REPOSITORY) $(IMAGE_TAG)
-
-	@$(REPO_ROOT)/hack/docker-image-push.sh "telegraf" \
-	$(TELEGRAF_IMAGE_REPOSITORY) $(IMAGE_TAG)
+	$(FLUENT_BIT_PLUGIN_IMAGE_REPOSITORY) $(IMAGE_TAG)
 
 	@$(REPO_ROOT)/hack/docker-image-push.sh "event-logger" \
 	$(EVENT_LOGGER_IMAGE_REPOSITORY) $(IMAGE_TAG) $(EFFECTIVE_VERSION)
@@ -135,7 +107,7 @@ tidy:
 	@go mod tidy
 
 .PHONY: check
-check: tidy fmt gci lint
+check: tidy fmt gci
 
 .PHONY: fmt
 fmt: tidy
@@ -150,7 +122,7 @@ gci: tidy
 	@go tool gci write $(GCI_OPT) $(SRC_DIRS)
 
 .PHONY: lint
-check: tidy
+lint: tidy
 	@echo "Running lint..."
 	 @go tool golangci-lint run \
 	 	--config=$(REPO_ROOT)/.golangci.yaml \
@@ -184,24 +156,3 @@ add-license-headers: tidy
 .PHONY: clean
 clean:
 	@rm -rf $(REPO_ROOT)/build
-
-#########################################
-# Tools                                 #
-#########################################
-.PHONY: kind-up
-kind-up: tidy $(KUBECTL)
-	@$(REPO_ROOT)/hack/kind-up.sh
-
-#########################################
-# skaffold pipeline scenarios           #
-#########################################
-skaffold-%: export KUBECONFIG = $(REPO_ROOT)/example/kind/kubeconfig
-
-.PHONY: skaffold-run
-skaffold-run: $(SKAFFOLD)
-	@$(SKAFFOLD) run --kubeconfig=$(KUBECONFIG)
-
-# skaffold-dev target requires that skaffold run has been run
-.PHONY: skaffold-dev
-skaffold-dev: $(SKAFFOLD)
-	@$(SKAFFOLD) dev --kubeconfig=$(KUBECONFIG)

@@ -1,41 +1,25 @@
-/*
-This file was copied from the credativ/vali project
-https://github.com/credativ/vali/blob/v2.2.4/cmd/fluent-bit/config.go
-
-Modifications Copyright SAP SE or an SAP affiliate company and Gardener contributors
-*/
+// Copyright 2025 SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
+// SPDX-License-Identifier: Apache-2.0
 
 package config
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
+	"errors"
 	"fmt"
-	stdurl "net/url"
 	"os"
-	"path/filepath"
-	"reflect"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/cortexproject/cortex/pkg/util"
-	"github.com/cortexproject/cortex/pkg/util/flagext"
-	"github.com/credativ/vali/pkg/logql"
-	valiflag "github.com/credativ/vali/pkg/util/flagext"
-	"github.com/credativ/vali/pkg/valitail/client"
 	"github.com/go-viper/mapstructure/v2"
-	"github.com/prometheus/common/model"
-	"github.com/weaveworks/common/logging"
+
+	"github.com/gardener/logging/v1/pkg/types"
 )
 
-// Format is the log line format
-type Format int
-
 const (
-	// JSONFormat represents json format for log line
-	JSONFormat Format = iota
-	// KvPairFormat represents key-value format for log line
-	KvPairFormat
 	// DefaultKubernetesMetadataTagExpression for extracting the kubernetes metadata from tag
 	DefaultKubernetesMetadataTagExpression = "\\.([^_]+)_([^_]+)_(.+)-([a-z0-9]{64})\\.log$"
 
@@ -47,21 +31,74 @@ const (
 
 	// MaxJSONSize parsing size limits
 	MaxJSONSize = 1 * 1024 * 1024 // 1MB limit for JSON parsing operations
-	// MaxConfigSize config size limits
-	MaxConfigSize = 512 * 1024 // 512KB limit for configuration JSON files
 )
 
 // Config holds the needed properties of the vali output plugin
 type Config struct {
-	ClientConfig     ClientConfig     `mapstructure:",squash"`
 	ControllerConfig ControllerConfig `mapstructure:",squash"`
 	PluginConfig     PluginConfig     `mapstructure:",squash"`
-	LogLevel         logging.Level    `mapstructure:"LogLevel"`
-	Pprof            bool             `mapstructure:"Pprof"`
+	OTLPConfig       OTLPConfig       `mapstructure:",squash"`
+}
+
+// sanitizeConfigString removes surrounding quotes (" or ') from configuration string values
+// This is needed because Fluent Bit may pass values with quotes, e.g., "value" or 'value'
+func sanitizeConfigString(value string) string {
+	// Remove leading and trailing whitespace first
+	value = strings.TrimSpace(value)
+
+	// Remove surrounding double quotes
+	if len(value) >= 2 && value[0] == '"' && value[len(value)-1] == '"' {
+		return value[1 : len(value)-1]
+	}
+
+	// Remove surrounding single quotes
+	if len(value) >= 2 && value[0] == '\'' && value[len(value)-1] == '\'' {
+		return value[1 : len(value)-1]
+	}
+
+	return value
+}
+
+// normalizeConfigMapKeys converts all keys in the configuration map to lowercase
+// This ensures case-insensitive configuration key matching throughout the codebase
+func normalizeConfigMapKeys(configMap map[string]any) map[string]any {
+	normalized := make(map[string]any, len(configMap))
+
+	for key, value := range configMap {
+		lowerKey := strings.ToLower(key)
+
+		// Recursively normalize nested maps
+		switch v := value.(type) {
+		case map[string]any:
+			normalized[lowerKey] = normalizeConfigMapKeys(v)
+		default:
+			normalized[lowerKey] = value
+		}
+	}
+
+	return normalized
+}
+
+// sanitizeConfigMap recursively sanitizes all string values in the configuration map
+func sanitizeConfigMap(configMap map[string]any) {
+	for key, value := range configMap {
+		switch v := value.(type) {
+		case string:
+			configMap[key] = sanitizeConfigString(v)
+		case map[string]any:
+			sanitizeConfigMap(v)
+		}
+	}
 }
 
 // ParseConfig parses a configuration from a map of string interfaces
 func ParseConfig(configMap map[string]any) (*Config, error) {
+	// Normalize all keys to lowercase for case-insensitive matching
+	configMap = normalizeConfigMapKeys(configMap)
+
+	// Sanitize configuration values to remove surrounding quotes
+	sanitizeConfigMap(configMap)
+
 	// Set default LogLevel
 
 	config, err := defaultConfig()
@@ -76,7 +113,6 @@ func ParseConfig(configMap map[string]any) (*Config, error) {
 			mapstructure.StringToSliceHookFunc(","),
 			mapstructure.StringToBoolHookFunc(),
 			mapstructure.StringToIntHookFunc(),
-			logLevelHookFunc(),
 		),
 		WeaklyTypedInput: true,
 		Result:           config,
@@ -112,35 +148,6 @@ func ParseConfigFromStringMap(configMap map[string]string) (*Config, error) {
 	return ParseConfig(interfaceMap)
 }
 
-// Custom decode hook functions for mapstructure
-
-// logLevelHookFunc converts string to logging.Level
-func logLevelHookFunc() mapstructure.DecodeHookFunc {
-	return mapstructure.DecodeHookFuncType(
-		func(f reflect.Type, t reflect.Type, data any) (any, error) {
-			if f.Kind() != reflect.String || t != reflect.TypeOf(logging.Level{}) {
-				return data, nil
-			}
-
-			str, ok := data.(string)
-			if !ok {
-				return data, nil
-			}
-
-			if str == "" {
-				return data, nil
-			}
-
-			var level logging.Level
-			if err := level.Set(str); err != nil {
-				return nil, fmt.Errorf("invalid LogLevel: %w", err)
-			}
-
-			return level, nil
-		},
-	)
-}
-
 // Helper functions for common processing patterns
 
 func processDurationField(configMap map[string]any, key string, setter func(time.Duration)) error {
@@ -155,103 +162,11 @@ func processDurationField(configMap map[string]any, key string, setter func(time
 	return nil
 }
 
-func processCommaSeparatedField(configMap map[string]any, key string, setter func([]string)) error {
-	if value, ok := configMap[key].(string); ok && value != "" {
-		split := strings.Split(value, ",")
-		for i := range split {
-			split[i] = strings.TrimSpace(split[i])
-		}
-		setter(split)
-	}
-
-	return nil
-}
-
-func processLabelMapPath(labelMapPath string, config *Config) error {
-	var labelMapData []byte
-
-	// Check if it's inline JSON (starts with '{') or a file path
-	if strings.HasPrefix(strings.TrimSpace(labelMapPath), "{") {
-		// It's inline JSON content - check size limit
-		if len(labelMapPath) > MaxConfigSize {
-			return fmt.Errorf("inline JSON content exceeds maximum size of %d bytes", MaxConfigSize)
-		}
-		labelMapData = []byte(labelMapPath)
-	} else {
-		// It's a file path - validate to prevent directory traversal attacks
-		cleanPath := filepath.Clean(labelMapPath)
-
-		// Check file size before reading to prevent memory exhaustion
-		fileInfo, err := os.Stat(cleanPath)
-		if err != nil {
-			return fmt.Errorf("failed to stat LabelMapPath file: %w", err)
-		}
-		if fileInfo.Size() > MaxConfigSize {
-			return fmt.Errorf("LabelMapPath file exceeds maximum size of %d bytes", MaxConfigSize)
-		}
-
-		labelMapData, err = os.ReadFile(cleanPath)
-		if err != nil {
-			return fmt.Errorf("failed to read LabelMapPath file: %w", err)
-		}
-	}
-
-	var labelMap map[string]any
-	if err := json.Unmarshal(labelMapData, &labelMap); err != nil {
-		return fmt.Errorf("failed to parse LabelMapPath JSON: %w", err)
-	}
-
-	config.PluginConfig.LabelMap = labelMap
-	// Clear LabelKeys when LabelMapPath is used
-	config.PluginConfig.LabelKeys = nil
-
-	return nil
-}
-
-func processNumberOfBatchIDs(configMap map[string]any, config *Config) error {
-	if numberOfBatchIDs, ok := configMap["NumberOfBatchIDs"].(string); ok && numberOfBatchIDs != "" {
-		val, err := strconv.ParseUint(numberOfBatchIDs, 10, 64)
-		if err != nil {
-			return fmt.Errorf("failed to parse NumberOfBatchIDs: %w", err)
-		}
-		if val <= 0 {
-			return fmt.Errorf("NumberOfBatchIDs can't be zero or negative value: %s", numberOfBatchIDs)
-		}
-		config.ClientConfig.NumberOfBatchIDs = val
-	}
-
-	return nil
-}
-
-func processIDLabelName(configMap map[string]any, config *Config) error {
-	if idLabelName, ok := configMap["IdLabelName"].(string); ok && idLabelName != "" {
-		labelName := model.LabelName(idLabelName)
-		if !labelName.IsValid() {
-			return fmt.Errorf("invalid IdLabelName: %s", idLabelName)
-		}
-		config.ClientConfig.IDLabelName = labelName
-	}
-
-	return nil
-}
-
-func processHostnameKeyValue(configMap map[string]any, config *Config) error {
-	if hostnameKeyValue, ok := configMap["HostnameKeyValue"].(string); ok && hostnameKeyValue != "" {
-		parts := strings.Fields(hostnameKeyValue)
-		if len(parts) < 2 {
-			return fmt.Errorf("HostnameKeyValue must have at least 2 parts (key value), got %d parts: %s", len(parts), hostnameKeyValue)
-		}
-		key := parts[0]
-		value := strings.Join(parts[1:], " ")
-		config.PluginConfig.HostnameKey = key
-		config.PluginConfig.HostnameValue = value
-	}
-
-	return nil
-}
-
 func processDynamicHostPath(configMap map[string]any, config *Config) error {
-	if dynamicHostPath, ok := configMap["DynamicHostPath"].(string); ok && dynamicHostPath != "" {
+	// Keys are already normalized to lowercase by ParseConfig
+	dynamicHostPath, ok := configMap["dynamichostpath"].(string)
+
+	if ok && dynamicHostPath != "" {
 		// Check size limit before parsing to prevent memory exhaustion
 		if len(dynamicHostPath) > MaxJSONSize {
 			return fmt.Errorf("DynamicHostPath JSON exceeds maximum size of %d bytes", MaxJSONSize)
@@ -261,7 +176,7 @@ func processDynamicHostPath(configMap map[string]any, config *Config) error {
 		if err := json.Unmarshal([]byte(dynamicHostPath), &parsedMap); err != nil {
 			return fmt.Errorf("failed to parse DynamicHostPath JSON: %w", err)
 		}
-		config.PluginConfig.DynamicHostPath = parsedMap
+		config.ControllerConfig.DynamicHostPath = parsedMap
 	}
 
 	return nil
@@ -269,30 +184,40 @@ func processDynamicHostPath(configMap map[string]any, config *Config) error {
 
 // processControllerConfigBoolFields handles boolean configuration fields for controller config
 func processControllerConfigBoolFields(configMap map[string]any, config *Config) error {
-	// Map of ConfigMap keys to their corresponding ShootControllerClientConfig fields
+	// Map of lowercase ConfigMap keys to their corresponding ShootControllerClientConfig fields
+	// Keys are already normalized to lowercase by ParseConfig
 	shootConfigMapping := map[string]*bool{
-		"SendLogsToMainClusterWhenIsInCreationState":    &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInCreationState,
-		"SendLogsToMainClusterWhenIsInReadyState":       &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInReadyState,
-		"SendLogsToMainClusterWhenIsInHibernatingState": &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInHibernatingState,
-		"SendLogsToMainClusterWhenIsInHibernatedState":  &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInHibernatedState,
-		"SendLogsToMainClusterWhenIsInWakingState":      &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInWakingState,
-		"SendLogsToMainClusterWhenIsInDeletionState":    &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInDeletionState,
-		"SendLogsToMainClusterWhenIsInDeletedState":     &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInDeletedState,
-		"SendLogsToMainClusterWhenIsInRestoreState":     &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInRestoreState,
-		"SendLogsToMainClusterWhenIsInMigrationState":   &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInMigrationState,
+		"sendlogstoshootwhenisincreationstate": &config.ControllerConfig.ShootControllerClientConfig.
+			SendLogsWhenIsInCreationState,
+		"sendlogstoshootwhenisinnreadystate": &config.ControllerConfig.ShootControllerClientConfig.
+			SendLogsWhenIsInReadyState,
+		"sendlogstoshootwhenisinhhibernatingstate": &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInHibernatingState,
+		"sendlogstoshootwhenisinhhibernatedstate":  &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInHibernatedState,
+		"sendlogstoshootwheninwakingstate":         &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInWakingState,
+		"sendlogstoshootwhenisdeletionstate":       &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInDeletionState,
+		"sendlogstoshootwhenisdeletedstate":        &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInDeletedState,
+		"sendlogstoshootwhenisrestorestate":        &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInRestoreState,
+		"sendlogstoshootwhenismigrationstate":      &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInMigrationState,
 	}
 
-	// Map of ConfigMap keys to their corresponding SeedControllerClientConfig fields
+	// Map of lowercase ConfigMap keys to their corresponding SeedControllerClientConfig fields
 	seedConfigMapping := map[string]*bool{
-		"SendLogsToDefaultClientWhenClusterIsInCreationState":    &config.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInCreationState,
-		"SendLogsToDefaultClientWhenClusterIsInReadyState":       &config.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInReadyState,
-		"SendLogsToDefaultClientWhenClusterIsInHibernatingState": &config.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInHibernatingState,
-		"SendLogsToDefaultClientWhenClusterIsInHibernatedState":  &config.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInHibernatedState,
-		"SendLogsToDefaultClientWhenClusterIsInWakingState":      &config.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInWakingState,
-		"SendLogsToDefaultClientWhenClusterIsInDeletionState":    &config.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInDeletionState,
-		"SendLogsToDefaultClientWhenClusterIsInDeletedState":     &config.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInDeletedState,
-		"SendLogsToDefaultClientWhenClusterIsInRestoreState":     &config.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInRestoreState,
-		"SendLogsToDefaultClientWhenClusterIsInMigrationState":   &config.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInMigrationState,
+		"sendlogstoseedwhenshootisincreationstate": &config.ControllerConfig.SeedControllerClientConfig.
+			SendLogsWhenIsInCreationState,
+		"sendlogstoseedwhenshootisinnreadystate": &config.ControllerConfig.SeedControllerClientConfig.
+			SendLogsWhenIsInReadyState,
+		"sendlogstoseedwhenshootisinhhibernatingstate": &config.ControllerConfig.SeedControllerClientConfig.
+			SendLogsWhenIsInHibernatingState,
+		"sendlogstoseedwhenshootisinhhibernatedstate": &config.ControllerConfig.SeedControllerClientConfig.
+			SendLogsWhenIsInHibernatedState,
+		"sendlogstoseedwhenshootinwakingstate": &config.ControllerConfig.SeedControllerClientConfig.
+			SendLogsWhenIsInWakingState,
+		"sendlogstoseedwhenshootisdeletionstate": &config.ControllerConfig.SeedControllerClientConfig.
+			SendLogsWhenIsInDeletionState,
+		"sendlogstoseedwhenshootisrestorestate": &config.ControllerConfig.SeedControllerClientConfig.
+			SendLogsWhenIsInRestoreState,
+		"sendlogstoseedwhenshootismigrationstate": &config.ControllerConfig.SeedControllerClientConfig.
+			SendLogsWhenIsInMigrationState,
 	}
 
 	// Process ShootControllerClientConfig fields - only override if key exists in ConfigMap
@@ -323,20 +248,12 @@ func processControllerConfigBoolFields(configMap map[string]any, config *Config)
 // postProcessConfig handles complex field processing that can't be done with simple mapping
 func postProcessConfig(config *Config, configMap map[string]any) error {
 	processors := []func(*Config, map[string]any) error{
-		processURLConfig,
-		processProxyURLConfig,
-		processClientConfig,
-		processDurationConfigs,
-		processLabelsConfig,
-		processLineFormatConfig,
-		processCommaSeparatedConfigs,
-		processLabelMapConfig,
-		processBatchSizeConfig,
-		processValidationConfigs,
+		processClientTypes,
 		processComplexStringConfigs,
 		processDynamicHostPathConfig,
 		processQueueSyncConfig,
 		processControllerBoolConfigs,
+		processOTLPConfig,
 	}
 
 	for _, processor := range processors {
@@ -348,187 +265,30 @@ func postProcessConfig(config *Config, configMap map[string]any) error {
 	return nil
 }
 
-// processURLConfig handles URL field processing
-func processURLConfig(config *Config, configMap map[string]any) error {
-	// Process URL field (needs special handling for flagext.URLValue)
-	// Handle both "URL" and "Url" for different format compatibility
-	var urlString string
-	if url, ok := configMap["URL"].(string); ok && url != "" {
-		urlString = url
-	} else if url, ok := configMap["Url"].(string); ok && url != "" {
-		urlString = url
-	}
-
-	if urlString != "" {
-		if err := config.ClientConfig.CredativValiConfig.URL.Set(urlString); err != nil {
-			return fmt.Errorf("failed to parse URL: %w", err)
+func processClientTypes(config *Config, configMap map[string]any) error {
+	// Keys are already normalized to lowercase by ParseConfig
+	if seedType, ok := configMap["seedtype"].(string); ok && seedType != "" {
+		t := types.GetClientTypeFromString(seedType)
+		if t == types.UNKNOWN {
+			return fmt.Errorf("invalid SeedType: %s", seedType)
 		}
+		config.PluginConfig.SeedType = t.String()
 	}
 
-	return nil
-}
-
-func processProxyURLConfig(config *Config, configMap map[string]any) error {
-	var proxyURLString string
-	if url, ok := configMap["ProxyURL"].(string); ok && url != "" {
-		proxyURLString = url
-	} else if url, ok = configMap["ProxyUrl"].(string); ok && url != "" {
-		proxyURLString = url
-	}
-
-	if proxyURLString != "" {
-		url, err := stdurl.Parse(proxyURLString)
-		if err != nil {
-			return fmt.Errorf("failed to parse proxy URL: %w", err)
+	if shootType, ok := configMap["shoottype"].(string); ok && shootType != "" {
+		t := types.GetClientTypeFromString(shootType)
+		if t == types.UNKNOWN {
+			return fmt.Errorf("invalid ShootType: %s", shootType)
 		}
-		config.ClientConfig.CredativValiConfig.Client.ProxyURL.URL = url
+		config.PluginConfig.ShootType = t.String()
 	}
 
 	return nil
-}
-
-// processClientConfig handles client configuration field copying
-func processClientConfig(config *Config, _ map[string]any) error {
-	// Copy simple fields from ClientConfig to CredativValiConfig (after mapstructure processing)
-	config.ClientConfig.CredativValiConfig.TenantID = config.ClientConfig.TenantID
-
-	// Copy BackoffConfig fields
-	if config.ClientConfig.MaxRetries > 0 {
-		config.ClientConfig.CredativValiConfig.BackoffConfig.MaxRetries = config.ClientConfig.MaxRetries
-	}
-
-	return nil
-}
-
-// processDurationConfigs handles all duration-related configuration fields
-func processDurationConfigs(config *Config, configMap map[string]any) error {
-	durationFields := []struct {
-		key    string
-		setter func(time.Duration)
-	}{
-		{"Timeout", func(d time.Duration) {
-			config.ClientConfig.CredativValiConfig.Timeout = d
-		}},
-		{"MinBackoff", func(d time.Duration) {
-			config.ClientConfig.CredativValiConfig.BackoffConfig.MinBackoff = d
-		}},
-		{"MaxBackoff", func(d time.Duration) {
-			config.ClientConfig.CredativValiConfig.BackoffConfig.MaxBackoff = d
-		}},
-		{"BatchWait", func(d time.Duration) {
-			config.ClientConfig.CredativValiConfig.BatchWait = d
-		}},
-	}
-
-	for _, field := range durationFields {
-		if err := processDurationField(configMap, field.key, field.setter); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// processLabelsConfig handles labels field processing
-func processLabelsConfig(config *Config, configMap map[string]any) error {
-	if labels, ok := configMap["Labels"].(string); ok && labels != "" {
-		matchers, err := logql.ParseMatchers(labels)
-		if err != nil {
-			return fmt.Errorf("failed to parse Labels: %w", err)
-		}
-		labelSet := make(model.LabelSet)
-		for _, m := range matchers {
-			labelSet[model.LabelName(m.Name)] = model.LabelValue(m.Value)
-		}
-		config.ClientConfig.CredativValiConfig.ExternalLabels = valiflag.LabelSet{LabelSet: labelSet}
-	}
-
-	return nil
-}
-
-// processLineFormatConfig handles LineFormat enum field processing
-func processLineFormatConfig(config *Config, configMap map[string]any) error {
-	if lineFormat, ok := configMap["LineFormat"].(string); ok {
-		switch lineFormat {
-		case "json", "":
-			config.PluginConfig.LineFormat = JSONFormat
-		case "key_value":
-			config.PluginConfig.LineFormat = KvPairFormat
-		default:
-			return fmt.Errorf("invalid format: %s", lineFormat)
-		}
-	}
-
-	return nil
-}
-
-// processCommaSeparatedConfigs handles all comma-separated string fields
-func processCommaSeparatedConfigs(config *Config, configMap map[string]any) error {
-	// Process LabelKeys
-	if err := processCommaSeparatedField(configMap, "LabelKeys", func(values []string) {
-		config.PluginConfig.LabelKeys = values
-	}); err != nil {
-		return err
-	}
-
-	// Process RemoveKeys
-	if err := processCommaSeparatedField(configMap, "RemoveKeys", func(values []string) {
-		config.PluginConfig.RemoveKeys = values
-	}); err != nil {
-		return err
-	}
-
-	// Process PreservedLabels - convert comma-separated string to LabelSet
-	if err := processCommaSeparatedField(configMap, "PreservedLabels", func(values []string) {
-		labelSet := make(model.LabelSet)
-		for _, value := range values {
-			// Trim whitespace and create label with empty value
-			labelName := model.LabelName(strings.TrimSpace(value))
-			if labelName != "" {
-				labelSet[labelName] = model.LabelValue("")
-			}
-		}
-		config.PluginConfig.PreservedLabels = labelSet
-	}); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// processLabelMapConfig handles LabelMapPath processing
-func processLabelMapConfig(config *Config, configMap map[string]any) error {
-	if labelMapPath, ok := configMap["LabelMapPath"].(string); ok && labelMapPath != "" {
-		if err := processLabelMapPath(labelMapPath, config); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// processBatchSizeConfig handles BatchSize configuration
-func processBatchSizeConfig(config *Config, _ map[string]any) error {
-	// Copy BatchSize to CredativValiConfig (mapstructure handles the main field)
-	if config.ClientConfig.BatchSize != 0 {
-		config.ClientConfig.CredativValiConfig.BatchSize = config.ClientConfig.BatchSize
-	}
-
-	return nil
-}
-
-// processValidationConfigs handles special validation fields
-func processValidationConfigs(config *Config, configMap map[string]any) error {
-	if err := processNumberOfBatchIDs(configMap, config); err != nil {
-		return err
-	}
-
-	return processIDLabelName(configMap, config)
 }
 
 // processComplexStringConfigs handles complex string parsing fields
-func processComplexStringConfigs(config *Config, configMap map[string]any) error {
-	return processHostnameKeyValue(configMap, config)
+func processComplexStringConfigs(_ *Config, _ map[string]any) error {
+	return nil
 }
 
 // processDynamicHostPathConfig handles DynamicHostPath processing
@@ -536,14 +296,15 @@ func processDynamicHostPathConfig(config *Config, configMap map[string]any) erro
 	return processDynamicHostPath(configMap, config)
 }
 
-// processQueueSyncConfig handles QueueSync special conversion
+// processQueueSyncConfig handles DQueSync special conversion
 func processQueueSyncConfig(config *Config, configMap map[string]any) error {
-	if queueSync, ok := configMap["QueueSync"].(string); ok {
+	// Keys are already normalized to lowercase by ParseConfig
+	if queueSync, ok := configMap["dquesync"].(string); ok {
 		switch queueSync {
 		case "normal", "":
-			config.ClientConfig.BufferConfig.DqueConfig.QueueSync = false
+			config.OTLPConfig.DQueConfig.DQueSync = false
 		case "full":
-			config.ClientConfig.BufferConfig.DqueConfig.QueueSync = true
+			config.OTLPConfig.DQueConfig.DQueSync = true
 		default:
 			return fmt.Errorf("invalid string queueSync: %v", queueSync)
 		}
@@ -557,60 +318,371 @@ func processControllerBoolConfigs(config *Config, configMap map[string]any) erro
 	return processControllerConfigBoolFields(configMap, config)
 }
 
+// processOTLPConfig handles OTLP configuration field processing
+func processOTLPConfig(config *Config, configMap map[string]any) error {
+	// Keys are already normalized to lowercase by ParseConfig
+
+	// Process Endpoint
+	if endpoint, ok := configMap["endpoint"].(string); ok && endpoint != "" {
+		config.OTLPConfig.Endpoint = endpoint
+	}
+
+	if endpointURL, ok := configMap["endpointurl"].(string); ok && endpointURL != "" {
+		// check that it starts with http:// or https://
+		if !strings.HasPrefix(endpointURL, "http://") && !strings.HasPrefix(endpointURL, "https://") {
+			return fmt.Errorf("invalid EndpointURL: %s", endpointURL)
+		}
+		config.OTLPConfig.EndpointURL = endpointURL
+	}
+
+	if endpointURLPath, ok := configMap["endpointurlpath"].(string); ok && endpointURLPath != "" {
+		// check that it starts with a slash and there is no whitespace or colon
+		if !strings.HasPrefix(endpointURLPath, "/") || strings.ContainsAny(endpointURLPath, " :") {
+			return fmt.Errorf("invalid EndpointURLPath: %s", endpointURLPath)
+		}
+		config.OTLPConfig.EndpointURLPath = endpointURLPath
+	}
+
+	// Process Insecure
+	if insecure, ok := configMap["insecure"].(string); ok && insecure != "" {
+		boolVal, err := strconv.ParseBool(insecure)
+		if err != nil {
+			return fmt.Errorf("failed to parse OTLPInsecure as boolean: %w", err)
+		}
+		config.OTLPConfig.Insecure = boolVal
+	}
+
+	// Process Compression
+	if compression, ok := configMap["compression"].(string); ok && compression != "" {
+		compVal, err := strconv.Atoi(compression)
+		if err != nil {
+			return fmt.Errorf("failed to parse Compression as integer: %w", err)
+		}
+		if compVal < 0 || compVal > 2 { // 0=none, 1=gzip, 2=deflate typically
+			return fmt.Errorf("invalid Compression value %d: must be between 0 and 2", compVal)
+		}
+		config.OTLPConfig.Compression = compVal
+	}
+
+	// Process Timeout
+	if err := processDurationField(configMap, "timeout", func(d time.Duration) {
+		config.OTLPConfig.Timeout = d
+	}); err != nil {
+		return err
+	}
+
+	// Process Headers - parse JSON string into map
+	if headers, ok := configMap["headers"].(string); ok && headers != "" {
+		// Check size limit before parsing to prevent memory exhaustion
+		if len(headers) > MaxJSONSize {
+			return fmt.Errorf("field Headers JSON exceeds maximum size of %d bytes", MaxJSONSize)
+		}
+
+		var headerMap map[string]string
+		if err := json.Unmarshal([]byte(headers), &headerMap); err != nil {
+			return fmt.Errorf("failed to parse Headers JSON: %w", err)
+		}
+		config.OTLPConfig.Headers = headerMap
+	}
+
+	// Process RetryConfig fields
+	if enabled, ok := configMap["retryenabled"].(string); ok && enabled != "" {
+		boolVal, err := strconv.ParseBool(enabled)
+		if err != nil {
+			return fmt.Errorf("failed to parse RetryEnabled as boolean: %w", err)
+		}
+		config.OTLPConfig.RetryEnabled = boolVal
+	}
+
+	if err := processDurationField(configMap, "retryinitialinterval", func(d time.Duration) {
+		config.OTLPConfig.RetryInitialInterval = d
+	}); err != nil {
+		return err
+	}
+
+	if err := processDurationField(configMap, "retrymaxinterval", func(d time.Duration) {
+		config.OTLPConfig.RetryMaxInterval = d
+	}); err != nil {
+		return err
+	}
+
+	if err := processDurationField(configMap, "retrymaxelapsedtime", func(d time.Duration) {
+		config.OTLPConfig.RetryMaxElapsedTime = d
+	}); err != nil {
+		return err
+	}
+
+	// Process TLS configuration fields
+	if certFile, ok := configMap["tlscertfile"].(string); ok && certFile != "" {
+		config.OTLPConfig.TLSCertFile = certFile
+	}
+
+	if keyFile, ok := configMap["tlskeyfile"].(string); ok && keyFile != "" {
+		config.OTLPConfig.TLSKeyFile = keyFile
+	}
+
+	if caFile, ok := configMap["tlscafile"].(string); ok && caFile != "" {
+		config.OTLPConfig.TLSCAFile = caFile
+	}
+
+	if serverName, ok := configMap["tlsservername"].(string); ok && serverName != "" {
+		config.OTLPConfig.TLSServerName = serverName
+	}
+
+	if insecureSkipVerify, ok := configMap["tlsinsecureskipverify"].(string); ok && insecureSkipVerify != "" {
+		boolVal, err := strconv.ParseBool(insecureSkipVerify)
+		if err != nil {
+			return fmt.Errorf("failed to parse LSInsecureSkipVerify as boolean: %w", err)
+		}
+		config.OTLPConfig.TLSInsecureSkipVerify = boolVal
+	}
+
+	if minVersion, ok := configMap["tlsminversion"].(string); ok && minVersion != "" {
+		config.OTLPConfig.TLSMinVersion = minVersion
+	}
+
+	if maxVersion, ok := configMap["tlsmaxversion"].(string); ok && maxVersion != "" {
+		config.OTLPConfig.TLSMaxVersion = maxVersion
+	}
+
+	// Process Batch Processor configuration fields
+	if maxQueueSize, ok := configMap["dquebatchprocessormaxqueuesize"].(string); ok && maxQueueSize != "" {
+		val, err := strconv.Atoi(maxQueueSize)
+		if err != nil {
+			return fmt.Errorf("failed to parse DQueBatchProcessorMaxQueueSize as integer: %w", err)
+		}
+		if val <= 0 {
+			return fmt.Errorf("DQueBatchProcessorMaxQueueSize must be positive, got %d", val)
+		}
+		config.OTLPConfig.DQueBatchProcessorMaxQueueSize = val
+	}
+
+	if maxBatchSize, ok := configMap["dquebatchprocessormaxbatchsize"].(string); ok && maxBatchSize != "" {
+		val, err := strconv.Atoi(maxBatchSize)
+		if err != nil {
+			return fmt.Errorf("failed to parse DQueBatchProcessorMaxBatchSize as integer: %w", err)
+		}
+		if val <= 0 {
+			return fmt.Errorf("DQueBatchProcessorMaxBatchSize must be positive, got %d", val)
+		}
+		config.OTLPConfig.DQueBatchProcessorMaxBatchSize = val
+	}
+
+	if bufferSize, ok := configMap["dquebatchprocessorbuffersize"].(string); ok && bufferSize != "" {
+		val, err := strconv.Atoi(bufferSize)
+		if err != nil {
+			return fmt.Errorf("failed to parse BatchProcessorBufferSize as integer: %w", err)
+		}
+		if val <= 0 {
+			return fmt.Errorf("DQueBatchProcessorBufferSize must be positive, got %d", val)
+		}
+		config.OTLPConfig.DQueBatchProcessorExportBufferSize = val
+	}
+
+	if err := processDurationField(configMap, "dquebatchprocessorexporttimeout", func(d time.Duration) {
+		config.OTLPConfig.DQueBatchProcessorExportTimeout = d
+	}); err != nil {
+		return err
+	}
+
+	if err := processDurationField(configMap, "dquebatchprocessorexportinterval", func(d time.Duration) {
+		config.OTLPConfig.DQueBatchProcessorExportInterval = d
+	}); err != nil {
+		return err
+	}
+
+	// Build retry config from individual fields
+	if err := buildRetryConfig(config); err != nil {
+		return fmt.Errorf("failed to build retry config: %w", err)
+	}
+
+	// Build TLS config from individual fields
+	if err := buildTLSConfig(config); err != nil {
+		return fmt.Errorf("failed to build TLS config: %w", err)
+	}
+
+	// Process Throttle configuration fields
+	if throttleEnabled, ok := configMap["throttleenabled"].(string); ok && throttleEnabled != "" {
+		boolVal, err := strconv.ParseBool(throttleEnabled)
+		if err != nil {
+			return fmt.Errorf("failed to parse ThrottleEnabled as boolean: %w", err)
+		}
+		config.OTLPConfig.ThrottleEnabled = boolVal
+	}
+
+	if requestsPerSec, ok := configMap["throttlerequestspersec"].(string); ok && requestsPerSec != "" {
+		val, err := strconv.Atoi(requestsPerSec)
+		if err != nil {
+			return fmt.Errorf("failed to parse ThrottleRequestsPerSec as integer: %w", err)
+		}
+		if val < 0 {
+			return fmt.Errorf("ThrottleRequestsPerSec cannot be negative, got %d", val)
+		}
+		config.OTLPConfig.ThrottleRequestsPerSec = val
+	}
+
+	return nil
+}
+
+// buildTLSConfig constructs a tls.Config from OTLP TLS configuration fields
+func buildTLSConfig(config *Config) error {
+	otlp := &config.OTLPConfig
+
+	// If no TLS configuration is specified (beyond defaults), leave TLSConfig as nil
+	if otlp.TLSCertFile == "" && otlp.TLSKeyFile == "" && otlp.TLSCAFile == "" &&
+		otlp.TLSServerName == "" && !otlp.TLSInsecureSkipVerify &&
+		(otlp.TLSMinVersion == "" || otlp.TLSMinVersion == "1.2") && otlp.TLSMaxVersion == "" {
+		return nil
+	}
+
+	tlsConfig := &tls.Config{
+		ServerName:         otlp.TLSServerName,
+		InsecureSkipVerify: otlp.TLSInsecureSkipVerify, //nolint:gosec // This is configured by the user
+	}
+
+	// Load client certificate if both cert and key files are specified
+	if otlp.TLSCertFile != "" && otlp.TLSKeyFile != "" {
+		cert, err := tls.LoadX509KeyPair(otlp.TLSCertFile, otlp.TLSKeyFile)
+		if err != nil {
+			return fmt.Errorf("failed to load client certificate: %w", err)
+		}
+		tlsConfig.Certificates = []tls.Certificate{cert}
+	} else if otlp.TLSCertFile != "" || otlp.TLSKeyFile != "" {
+		return errors.New("both TLSCertFile and TLSKeyFile must be specified together")
+	}
+
+	// Load CA certificate if specified
+	if otlp.TLSCAFile != "" {
+		caCert, err := os.ReadFile(otlp.TLSCAFile)
+		if err != nil {
+			return fmt.Errorf("failed to read CA certificate file: %w", err)
+		}
+
+		caCertPool := x509.NewCertPool()
+		if !caCertPool.AppendCertsFromPEM(caCert) {
+			return errors.New("failed to parse CA certificate")
+		}
+		tlsConfig.RootCAs = caCertPool
+	}
+
+	// Set TLS version constraints
+	if otlp.TLSMinVersion != "" {
+		minVersion, err := parseTLSVersion(otlp.TLSMinVersion)
+		if err != nil {
+			return fmt.Errorf("invalid TLSMinVersion: %w", err)
+		}
+		tlsConfig.MinVersion = minVersion
+	}
+
+	if otlp.TLSMaxVersion != "" {
+		maxVersion, err := parseTLSVersion(otlp.TLSMaxVersion)
+		if err != nil {
+			return fmt.Errorf("invalid TLSMaxVersion: %w", err)
+		}
+		tlsConfig.MaxVersion = maxVersion
+	}
+
+	// Validate that MinVersion <= MaxVersion if both are set
+	if tlsConfig.MinVersion != 0 && tlsConfig.MaxVersion != 0 && tlsConfig.MinVersion > tlsConfig.MaxVersion {
+		return errors.New("TLSMinVersion cannot be greater than TLSMaxVersion")
+	}
+
+	otlp.TLSConfig = tlsConfig
+
+	return nil
+}
+
+// parseTLSVersion converts a string TLS version to the corresponding constant
+func parseTLSVersion(version string) (uint16, error) {
+	switch version {
+	case "1.0":
+		return tls.VersionTLS10, nil
+	case "1.1":
+		return tls.VersionTLS11, nil
+	case "1.2":
+		return tls.VersionTLS12, nil
+	case "1.3":
+		return tls.VersionTLS13, nil
+	default:
+		return 0, fmt.Errorf("unsupported TLS version: %s (supported: 1.0, 1.1, 1.2, 1.3)", version)
+	}
+}
+
+// RetryConfig holds the retry configuration for OTLP exporter
+type RetryConfig struct {
+	Enabled         bool
+	InitialInterval time.Duration
+	MaxInterval     time.Duration
+	MaxElapsedTime  time.Duration
+}
+
+// buildRetryConfig constructs a RetryConfig from OTLP retry configuration fields
+func buildRetryConfig(config *Config) error {
+	otlp := &config.OTLPConfig
+
+	// If retry is not enabled, leave RetryConfig as nil
+	if !otlp.RetryEnabled {
+		otlp.RetryConfig = nil
+
+		return nil
+	}
+
+	// Validate retry intervals
+	if otlp.RetryInitialInterval <= 0 {
+		return fmt.Errorf("RetryInitialInterval must be positive, got %v", otlp.RetryInitialInterval)
+	}
+
+	if otlp.RetryMaxInterval <= 0 {
+		return fmt.Errorf("RetryMaxInterval must be positive, got %v", otlp.RetryMaxInterval)
+	}
+
+	if otlp.RetryMaxElapsedTime <= 0 {
+		return fmt.Errorf("RetryMaxElapsedTime must be positive, got %v", otlp.RetryMaxElapsedTime)
+	}
+
+	// Validate that InitialInterval <= MaxInterval
+	if otlp.RetryInitialInterval > otlp.RetryMaxInterval {
+		return fmt.Errorf("RetryInitialInterval (%v) cannot be greater than RetryMaxInterval (%v)",
+			otlp.RetryInitialInterval, otlp.RetryMaxInterval)
+	}
+
+	// Build the retry configuration
+	retryConfig := &RetryConfig{
+		Enabled:         otlp.RetryEnabled,
+		InitialInterval: otlp.RetryInitialInterval,
+		MaxInterval:     otlp.RetryMaxInterval,
+		MaxElapsedTime:  otlp.RetryMaxElapsedTime,
+	}
+
+	otlp.RetryConfig = retryConfig
+
+	return nil
+}
+
 func defaultConfig() (*Config, error) {
 	// Set default client config
-	var defaultLevel logging.Level
-	if err := defaultLevel.Set("info"); err != nil {
-		return nil, fmt.Errorf("failed to set default log level: %w", err)
-	}
-
-	defaultURL := flagext.URLValue{}
-
-	if err := defaultURL.Set("http://localhost:3100/vali/api/v1/push"); err != nil {
-		return nil, fmt.Errorf("failed to set default URL: %w", err)
-	}
+	defaultLevel := "info"
 
 	config := &Config{
 		ControllerConfig: ControllerConfig{
 			ShootControllerClientConfig: ShootControllerClientConfig,
 			SeedControllerClientConfig:  SeedControllerClientConfig,
-			DeletedClientTimeExpiration: time.Hour,
 			CtlSyncTimeout:              60 * time.Second,
-		},
-		ClientConfig: ClientConfig{
-			URL: defaultURL,
-			CredativValiConfig: client.Config{
-				URL:       defaultURL,
-				BatchSize: 1024 * 1024,
-				BatchWait: 1 * time.Second,
-				Timeout:   10 * time.Second,
-				BackoffConfig: util.BackoffConfig{
-					MinBackoff: 500 * time.Millisecond,
-					MaxBackoff: 5 * time.Minute,
-					MaxRetries: 10,
-				},
-				ExternalLabels: valiflag.LabelSet{
-					LabelSet: model.LabelSet{"job": "fluent-bit"},
-				},
-			},
-			BufferConfig:     DefaultBufferConfig,
-			NumberOfBatchIDs: 10,
-			IDLabelName:      model.LabelName("id"),
+			DynamicHostRegex:            "*",
 		},
 		PluginConfig: PluginConfig{
-			DropSingleKey:    true,
-			DynamicHostRegex: "*",
-			LineFormat:       JSONFormat,
+			SeedType:  types.NOOP.String(),
+			ShootType: types.NOOP.String(),
+			LogLevel:  defaultLevel,
+			Pprof:     false,
+
 			KubernetesMetadata: KubernetesMetadataExtraction{
 				TagKey:        DefaultKubernetesMetadataTagKey,
 				TagPrefix:     DefaultKubernetesMetadataTagPrefix,
 				TagExpression: DefaultKubernetesMetadataTagExpression,
 			},
-			LabelSetInitCapacity: 12,
-			PreservedLabels:      model.LabelSet{},
 		},
-		LogLevel: defaultLevel,
-		Pprof:    false,
+		OTLPConfig: DefaultOTLPConfig,
 	}
 
 	return config, nil
