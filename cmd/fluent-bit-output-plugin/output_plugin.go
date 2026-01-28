@@ -111,9 +111,6 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 
 	id, _, _ := strings.Cut(string(uuid.NewUUID()), "-")
 
-	// dump the complete configuration at debug level
-	// dumpConfiguration(cfg)
-
 	outputPlugin, err := plugin.NewPlugin(informer, cfg, log.NewLogger(cfg.PluginConfig.LogLevel))
 	if err != nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorNewPlugin).Inc()

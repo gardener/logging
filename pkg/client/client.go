@@ -50,7 +50,7 @@ func NewClient(ctx context.Context, cfg config.Config, opts ...Option) (OutputCl
 
 	// Use the logger from options if provided, otherwise use a default
 	logger := options.logger
-	if logger.GetSink() == nil {
+	if logger.IsZero() {
 		logger = logr.Discard() // Default no-op logger
 	}
 
