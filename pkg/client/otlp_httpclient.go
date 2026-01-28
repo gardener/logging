@@ -6,7 +6,6 @@ package client
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -63,25 +62,9 @@ func NewOTLPHTTPClient(ctx context.Context, cfg config.Config, logger logr.Logge
 		return nil, fmt.Errorf("failed to create OTLP HTTP exporter: %w", err)
 	}
 
-	// Create DQue batch processor with blocking HTTP exporter
-	dQueueDir := filepath.Join(
-		cfg.OTLPConfig.DQueConfig.DQueDir,
-		cfg.OTLPConfig.DQueConfig.DQueName,
-	)
-	batchProcessor, err := NewDQueBatchProcessor(
-		clientCtx,
-		exporter,
-		logger,
-		WithEndpoint(cfg.OTLPConfig.Endpoint),
-		WithDQueueDir(dQueueDir),
-		WithDQueueName("otlp-http"),
-		WithDQueueSegmentSize(cfg.OTLPConfig.DQueConfig.DQueSegmentSize),
-		WithDQueueSync(cfg.OTLPConfig.DQueConfig.DQueSync),
-		WithMaxQueueSize(cfg.OTLPConfig.DQueBatchProcessorMaxQueueSize),
-		WithMaxBatchSize(cfg.OTLPConfig.DQueBatchProcessorMaxBatchSize),
-		WithExportTimeout(cfg.OTLPConfig.DQueBatchProcessorExportTimeout),
-		WithExportInterval(cfg.OTLPConfig.DQueBatchProcessorExportInterval),
-	)
+	// Create batch processor using factory
+	processorFactory := NewBatchProcessorFactory(logger)
+	batchProcessor, err := processorFactory.Create(clientCtx, cfg, exporter, "otlp-http")
 	if err != nil {
 		cancel()
 
@@ -128,7 +111,10 @@ func NewOTLPHTTPClient(ctx context.Context, cfg config.Config, logger logr.Logge
 		limiter:        limiter,
 	}
 
-	logger.V(1).Info("OTLP HTTP client created with dque persistence", "endpoint", cfg.OTLPConfig.Endpoint)
+	logger.V(1).Info("OTLP HTTP client created",
+		"endpoint", cfg.OTLPConfig.Endpoint,
+		"processorType", GetProcessorType(cfg),
+	)
 
 	return client, nil
 }

@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"path/filepath"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -72,26 +71,9 @@ func NewOTLPGRPCClient(ctx context.Context, cfg config.Config, logger logr.Logge
 		return nil, fmt.Errorf("failed to create OTLP gRPC exporter: %w", err)
 	}
 
-	// Create DQue batch processor with blocking exporter
-	dQueueDir := filepath.Join(
-		cfg.OTLPConfig.DQueConfig.DQueDir,
-		cfg.OTLPConfig.DQueConfig.DQueName,
-	)
-
-	batchProcessor, err := NewDQueBatchProcessor(
-		clientCtx,
-		exporter,
-		logger,
-		WithEndpoint(cfg.OTLPConfig.Endpoint),
-		WithDQueueDir(dQueueDir),
-		WithDQueueName("otlp-grpc"),
-		WithDQueueSegmentSize(cfg.OTLPConfig.DQueConfig.DQueSegmentSize),
-		WithDQueueSync(cfg.OTLPConfig.DQueConfig.DQueSync),
-		WithMaxQueueSize(cfg.OTLPConfig.DQueBatchProcessorMaxQueueSize),
-		WithMaxBatchSize(cfg.OTLPConfig.DQueBatchProcessorMaxBatchSize),
-		WithExportTimeout(cfg.OTLPConfig.DQueBatchProcessorExportTimeout),
-		WithExportInterval(cfg.OTLPConfig.DQueBatchProcessorExportInterval),
-	)
+	// Create batch processor using factory
+	processorFactory := NewBatchProcessorFactory(logger)
+	batchProcessor, err := processorFactory.Create(clientCtx, cfg, exporter, "otlp-grpc")
 	if err != nil {
 		cancel()
 
@@ -138,7 +120,10 @@ func NewOTLPGRPCClient(ctx context.Context, cfg config.Config, logger logr.Logge
 		limiter:        limiter,
 	}
 
-	logger.V(1).Info("OTLP gRPC client created with dque persistence", "endpoint", cfg.OTLPConfig.Endpoint)
+	logger.V(1).Info("OTLP gRPC client created",
+		"endpoint", cfg.OTLPConfig.Endpoint,
+		"processorType", GetProcessorType(cfg),
+	)
 
 	return client, nil
 }
