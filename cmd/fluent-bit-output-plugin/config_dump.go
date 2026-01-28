@@ -60,6 +60,12 @@ func dumpConfiguration(conf *config.Config) {
 	logger.V(1).Info("[flb-go]", "DQueBatchProcessorExportTimeout", fmt.Sprintf("%+v", conf.OTLPConfig.DQueBatchProcessorExportTimeout))
 	logger.V(1).Info("[flb-go]", "DQueBatchProcessorExportInterval", fmt.Sprintf("%+v", conf.OTLPConfig.DQueBatchProcessorExportInterval))
 	logger.V(1).Info("[flb-go]", "DQueBatchProcessorExportBufferSize", fmt.Sprintf("%+v", conf.OTLPConfig.DQueBatchProcessorExportBufferSize))
+	// SDK BatchProcessor configuration (alternative to DQue)
+	logger.V(1).Info("[flb-go]", "UseSDKBatchProcessor", fmt.Sprintf("%+v", conf.OTLPConfig.UseSDKBatchProcessor))
+	logger.V(1).Info("[flb-go]", "SDKBatchMaxQueueSize", fmt.Sprintf("%+v", conf.OTLPConfig.SDKBatchMaxQueueSize))
+	logger.V(1).Info("[flb-go]", "SDKBatchExportTimeout", fmt.Sprintf("%+v", conf.OTLPConfig.SDKBatchExportTimeout))
+	logger.V(1).Info("[flb-go]", "SDKBatchExportInterval", fmt.Sprintf("%+v", conf.OTLPConfig.SDKBatchExportInterval))
+	logger.V(1).Info("[flb-go]", "SDKBatchExportMaxBatchSize", fmt.Sprintf("%+v", conf.OTLPConfig.SDKBatchExportMaxBatchSize))
 	// OTLP general configuration
 	logger.V(1).Info("[flb-go]", "Endpoint", fmt.Sprintf("%+v", conf.OTLPConfig.Endpoint))
 	logger.V(1).Info("[flb-go]", "EndpointUrl", fmt.Sprintf("%+v", conf.OTLPConfig.EndpointURL))

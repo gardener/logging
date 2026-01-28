@@ -121,6 +121,13 @@ func (c *pluginConfig) toStringMap() map[string]string {
 		"DQueBatchProcessorExportInterval", "dqueBatchProcessorExportInterval", "dque_batch_processor_export_interval",
 		"DQueBatchProcessorExportBufferSize", "dqueBatchProcessorExportBufferSize", "dque_batch_processor_export_buffer_size",
 
+		// SDK BatchProcessor configs (alternative to DQue)
+		"UseSDKBatchProcessor", "useSDKBatchProcessor", "use_sdk_batch_processor",
+		"SDKBatchMaxQueueSize", "sdkBatchMaxQueueSize", "sdk_batch_max_queue_size",
+		"SDKBatchExportTimeout", "sdkBatchExportTimeout", "sdk_batch_export_timeout",
+		"SDKBatchExportInterval", "sdkBatchExportInterval", "sdk_batch_export_interval",
+		"SDKBatchExportMaxBatchSize", "sdkBatchExportMaxBatchSize", "sdk_batch_export_max_batch_size",
+
 		// General config
 		"LogLevel", "logLevel", "log_level",
 		"Pprof", "pprof",
