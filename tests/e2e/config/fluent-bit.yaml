@@ -88,7 +88,7 @@ pipeline:
   outputs:
     - name: gardener
       match: "systemd.*"
-      seed_type: "otlphttp"
+      seed_type: "otlp_http"
       log_level: "debug"
       endpoint: "victoria-logs-0.victoria-logs.fluent-bit.svc.cluster.local:9428"
       endpoint_url_path: "/insert/opentelemetry/v1/logs"
@@ -99,8 +99,8 @@ pipeline:
 
     - name: gardener
       match: "kubernetes.*"
-      seed_type: "otlphttp"
-      shoot_type: "otlphttp"
+      seed_type: "otlp_http"
+      shoot_type: "otlp_http"
       log_level: "debug"
       endpoint: "victoria-logs-0.victoria-logs.fluent-bit.svc.cluster.local:9428"
       endpoint_url_path: "/insert/opentelemetry/v1/logs"

@@ -89,7 +89,7 @@ data:
     [Output]
         Name gardener
         Match kubernetes.*
-        SeedType OTLPGRPC
+        SeedType otlp_grpc
         Endpoint victorialogs.logging.svc:4317
         LogLevel info
 ```
@@ -121,7 +121,7 @@ Minimal configuration to send logs to a VictoriaLogs backend:
 [Output]
     Name gardener
     Match kubernetes.*
-    SeedType OTLPGRPC
+    SeedType otlp_grpc
     Endpoint victorialogs.logging.svc:4317
     LogLevel info
 ```
@@ -135,7 +135,7 @@ You can run multiple plugin instances in the same Fluent Bit process to route lo
 [Output]
     Name gardener
     Match kubernetes.*
-    SeedType OTLPGRPC
+    SeedType otlp_grpc
     Endpoint victorialogs-seed.logging.svc:4317
     DQueDir /fluent-bit/buffers/kubernetes
     DQueName kubernetes-logs
@@ -144,7 +144,7 @@ You can run multiple plugin instances in the same Fluent Bit process to route lo
 [Output]
     Name gardener
     Match systemd.*
-    SeedType OTLPHTTP
+    SeedType otlp_http
     Endpoint https://victorialogs-systemd.logging.svc/insert/opentelemetry/v1/logs
     DQueDir /fluent-bit/buffers/systemd
     DQueName systemd-logs
@@ -245,7 +245,7 @@ Send logs from Seed cluster to central VictoriaLogs:
 [Output]
     Name gardener
     Match *
-    SeedType OTLPGRPC
+    SeedType otlp_grpc
     Endpoint victorialogs.garden.svc:4317
     
     # TLS configuration
@@ -272,11 +272,11 @@ Route logs from Shoot control planes to both Seed and Shoot clusters:
     Match kubernetes.*
     
     # Default Seed client
-    SeedType OTLPGRPC
+    SeedType otlp_grpc
     Endpoint victorialogs-seed.logging.svc:4317
     
     # Dynamic Shoot routing
-    ShootType OTLPGRPC
+    ShootType otlp_grpc
     DynamicHostPath {"kubernetes": {"namespace_name": "namespace"}}
     DynamicHostPrefix victorialogs.
     DynamicHostSuffix .svc.cluster.local:4317
@@ -302,7 +302,7 @@ Route logs to different tenants based on namespace:
     Match kubernetes.*
     
     # HTTP client for multi-tenancy
-    SeedType OTLPHTTP
+    SeedType otlp_http
     Endpoint https://victorialogs.example.com/insert/opentelemetry/v1/logs
     
     # Extract tenant from namespace and add as header
@@ -364,7 +364,7 @@ curl http://localhost:2021/debug/pprof/goroutine?debug=2
 [Output]
     Name gardener
     Match *
-    SeedType OTLPGRPC
+    SeedType otlp_grpc
     Endpoint victorialogs.logging.svc:4317
     
     # Larger batches
@@ -390,7 +390,7 @@ For low-latency requirements with disk persistence:
 [Output]
     Name gardener
     Match *
-    SeedType OTLPGRPC
+    SeedType otlp_grpc
     Endpoint victorialogs.logging.svc:4317
     
     # Smaller batches, faster export
@@ -409,7 +409,7 @@ For scenarios where minimal latency is critical and disk persistence is not requ
 [Output]
     Name gardener
     Match *
-    SeedType OTLPGRPC
+    SeedType otlp_grpc
     Endpoint victorialogs.logging.svc:4317
     
     # Use OTEL SDK BatchProcessor (in-memory, no disk I/O overhead)
@@ -431,7 +431,7 @@ For scenarios where minimal latency is critical and disk persistence is not requ
 [Output]
     Name gardener
     Match *
-    SeedType OTLPGRPC
+    SeedType otlp_grpc
     Endpoint victorialogs.logging.svc:4317
     
     # Smaller queue

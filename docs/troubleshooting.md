@@ -16,7 +16,7 @@ This document provides solutions to common issues when using the Gardener Fluent
 1. **Check client type configuration**:
    ```ini
    SeedType OTLPGRPC  # or OTLPHTTP, stdout
-   ShootType OTLPGRPC
+   ShootType otlp_grpc
    ```
    
    Verify the client type is set correctly. If empty, the plugin won't send logs.
