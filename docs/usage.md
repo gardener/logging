@@ -384,6 +384,8 @@ curl http://localhost:2021/debug/pprof/goroutine?debug=2
 
 ### Low-Latency Requirements
 
+For low-latency requirements with disk persistence:
+
 ```ini
 [Output]
     Name gardener
@@ -398,6 +400,30 @@ curl http://localhost:2021/debug/pprof/goroutine?debug=2
     # No compression
     Compression 0
 ```
+
+### Ultra Low-Latency with SDK BatchProcessor
+
+For scenarios where minimal latency is critical and disk persistence is not required (e.g., ephemeral workloads or when using upstream buffering), use the OTEL SDK BatchProcessor:
+
+```ini
+[Output]
+    Name gardener
+    Match *
+    SeedType OTLPGRPC
+    Endpoint victorialogs.logging.svc:4317
+    
+    # Use OTEL SDK BatchProcessor (in-memory, no disk I/O overhead)
+    UseSDKBatchProcessor true
+    SDKBatchMaxQueueSize 1024
+    SDKBatchExportTimeout 10s
+    SDKBatchExportInterval 100ms
+    SDKBatchExportMaxBatchSize 128
+    
+    # No compression for lowest latency
+    Compression 0
+```
+
+> **Note:** SDK BatchProcessor stores logs in memory only. Logs will be lost if the process crashes or restarts before export. Use this option only when low latency is more important than durability.
 
 ### Memory-Constrained Environments
 
