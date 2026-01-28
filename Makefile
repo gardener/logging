@@ -36,7 +36,7 @@ all: tidy fmt gci plugin event-logger lint
 
 .PHONY: plugin
 plugin: tidy
-	@echo "building $@ for $(BUILD_PLATFORM)/$(BUILD_ARCH)"
+	@echo "Building $@ for $(BUILD_PLATFORM)/$(BUILD_ARCH)"
 	@GOOS=$(BUILD_PLATFORM) \
 		GOARCH=$(BUILD_ARCH) \
 		go build -buildmode=c-shared \
@@ -46,7 +46,7 @@ plugin: tidy
 
 .PHONY: event-logger
 event-logger: tidy
-	@echo "building $@ for $(BUILD_PLATFORM)/$(BUILD_ARCH)"
+	@echo "Building $@ for $(BUILD_PLATFORM)/$(BUILD_ARCH)"
 	@GOOS=$(BUILD_PLATFORM) \
 		GOARCH=$(BUILD_ARCH) \
 		CGO_ENABLED=0 GO111MODULE=on \
@@ -57,7 +57,7 @@ event-logger: tidy
 
 .PHONY: copy
 copy: tidy
-	@echo "building $@ for $(BUILD_PLATFORM)/$(BUILD_ARCH)"
+	@echo "Building $@ for $(BUILD_PLATFORM)/$(BUILD_ARCH)"
 	@GOOS=$(BUILD_PLATFORM) \
 		GOARCH=$(BUILD_ARCH) \
 		CGO_ENABLED=0 GO111MODULE=on \
