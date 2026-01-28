@@ -55,6 +55,15 @@ type OTLPConfig struct {
 	ThrottleEnabled        bool `mapstructure:"ThrottleEnabled"`
 	ThrottleRequestsPerSec int  `mapstructure:"ThrottleRequestsPerSec"` // Maximum requests per second, 0 means no limit
 
+	// SDK BatchProcessor configuration fields
+	// When UseSDKBatchProcessor is true, uses OTEL SDK BatchProcessor instead of DQueBatchProcessor
+	// SDK BatchProcessor is in-memory only (no disk persistence) but follows OTEL standards
+	UseSDKBatchProcessor       bool          `mapstructure:"UseSDKBatchProcessor"`
+	SDKBatchMaxQueueSize       int           `mapstructure:"SDKBatchMaxQueueSize"`
+	SDKBatchExportTimeout      time.Duration `mapstructure:"SDKBatchExportTimeout"`
+	SDKBatchExportInterval     time.Duration `mapstructure:"SDKBatchExportInterval"`
+	SDKBatchExportMaxBatchSize int           `mapstructure:"SDKBatchExportMaxBatchSize"`
+
 	// TLS configuration fields
 	TLSCertFile           string `mapstructure:"TLSCertFile"`
 	TLSKeyFile            string `mapstructure:"TLSKeyFile"`
@@ -101,4 +110,11 @@ var DefaultOTLPConfig = OTLPConfig{
 	DQueBatchProcessorExportTimeout:    30 * time.Second, // Timeout for single export
 	DQueBatchProcessorExportInterval:   1 * time.Second,  // Flush interval
 	DQueBatchProcessorExportBufferSize: 10,
+
+	// SDK BatchProcessor defaults (used when UseSDKBatchProcessor is true)
+	UseSDKBatchProcessor:       false,            // Default to DQueBatchProcessor for disk persistence
+	SDKBatchMaxQueueSize:       2048,             // OTEL SDK default max queue size
+	SDKBatchExportTimeout:      30 * time.Second, // Export timeout
+	SDKBatchExportInterval:     1 * time.Second,  // Export interval
+	SDKBatchExportMaxBatchSize: 512,              // Max batch size for export
 }

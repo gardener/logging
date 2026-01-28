@@ -521,6 +521,50 @@ func processOTLPConfig(config *Config, configMap map[string]any) error {
 		config.OTLPConfig.ThrottleRequestsPerSec = val
 	}
 
+	// Process SDK Batch Processor configuration fields
+	if useSDKBatchProcessor, ok := configMap["usesdkbatchprocessor"].(string); ok && useSDKBatchProcessor != "" {
+		boolVal, err := strconv.ParseBool(useSDKBatchProcessor)
+		if err != nil {
+			return fmt.Errorf("failed to parse UseSDKBatchProcessor as boolean: %w", err)
+		}
+		config.OTLPConfig.UseSDKBatchProcessor = boolVal
+	}
+
+	if maxQueueSize, ok := configMap["sdkbatchmaxqueuesize"].(string); ok && maxQueueSize != "" {
+		val, err := strconv.Atoi(maxQueueSize)
+		if err != nil {
+			return fmt.Errorf("failed to parse SDKBatchMaxQueueSize as integer: %w", err)
+		}
+		if val <= 0 {
+			return fmt.Errorf("SDKBatchMaxQueueSize must be positive, got %d", val)
+		}
+		config.OTLPConfig.SDKBatchMaxQueueSize = val
+	}
+
+	if maxBatchSize, ok := configMap["sdkbatchexportmaxbatchsize"].(string); ok && maxBatchSize != "" {
+		val, err := strconv.Atoi(maxBatchSize)
+		if err != nil {
+			return fmt.Errorf("failed to parse SDKBatchExportMaxBatchSize as integer: %w", err)
+		}
+		if val <= 0 {
+			return fmt.Errorf("SDKBatchExportMaxBatchSize must be positive, got %d", val)
+		}
+		config.OTLPConfig.SDKBatchExportMaxBatchSize = val
+	}
+
+	if err := processDurationField(configMap, "sdkbatchexporttimeout", func(d time.Duration) {
+		config.OTLPConfig.SDKBatchExportTimeout = d
+	}); err != nil {
+		return err
+	}
+
+	// revive:disable:if-return // improves readability
+	if err := processDurationField(configMap, "sdkbatchexportinterval", func(d time.Duration) {
+		config.OTLPConfig.SDKBatchExportInterval = d
+	}); err != nil {
+		return err
+	}
+
 	return nil
 }
 
