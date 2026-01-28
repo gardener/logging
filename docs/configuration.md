@@ -24,6 +24,27 @@ This document provides comprehensive configuration options for the Gardener Flue
 | `DQueBatchProcessorExportInterval` | Flush interval | `1s` | duration |
 | `DQueBatchProcessorExportBufferSize` | Export buffer size | `10` | int |
 
+### SDK BatchProcessor Configuration (Optional)
+
+As an alternative to the default DQue-based batch processor, you can use the OTEL SDK BatchProcessor. The SDK BatchProcessor is in-memory only (no disk persistence) but follows OTEL standards and has lower latency.
+
+| Key | Description | Default | Type |
+|-----|-------------|---------|------|
+| `UseSDKBatchProcessor` | Use OTEL SDK BatchProcessor instead of DQueBatchProcessor | `false` | bool |
+| `SDKBatchMaxQueueSize` | Maximum records in queue | `2048` | int |
+| `SDKBatchExportTimeout` | Timeout for export operation | `30s` | duration |
+| `SDKBatchExportInterval` | Flush interval | `1s` | duration |
+| `SDKBatchExportMaxBatchSize` | Maximum records per export batch | `512` | int |
+
+**Trade-offs:**
+
+| Feature | DQueBatchProcessor (Default) | SDK BatchProcessor |
+|---------|------------------------------|-------------------|
+| Persistence | Disk-based (survives restarts) | In-memory only |
+| Data Safety | Logs persist on crash | Logs lost on crash |
+| Latency | Higher (disk I/O) | Lower |
+| Implementation | Custom | Standard OTEL SDK |
+
 ### DQue (Disk Queue) Configuration
 
 | Key | Description | Default | Type |
@@ -304,5 +325,41 @@ Full production setup with mutual TLS authentication:
     # Monitoring
     HostnameValue ${HOSTNAME}
     Origin seed
+```
+
+### Low-Latency Configuration with SDK BatchProcessor
+
+For scenarios where low latency is more important than disk persistence (e.g., ephemeral workloads or when using upstream buffering):
+
+```ini
+[Output]
+    Name gardener
+    Match kubernetes.*
+    
+    # Client type
+    SeedType OTLPGRPC
+    Endpoint victorialogs.logging.svc:4317
+    LogLevel info
+    
+    # Use OTEL SDK BatchProcessor (in-memory, no disk persistence)
+    UseSDKBatchProcessor true
+    SDKBatchMaxQueueSize 2048
+    SDKBatchExportTimeout 30s
+    SDKBatchExportInterval 1s
+    SDKBatchExportMaxBatchSize 512
+    
+    # TLS configuration
+    Insecure false
+    TLSCertFile /etc/ssl/certs/client.crt
+    TLSKeyFile /etc/ssl/private/client.key
+    TLSCAFile /etc/ssl/certs/ca.crt
+    
+    # Retry configuration
+    RetryEnabled true
+    RetryInitialInterval 5s
+    RetryMaxInterval 30s
+    
+    # Compression
+    Compression 1
 ```
 
