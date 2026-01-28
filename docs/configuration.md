@@ -86,8 +86,8 @@ As an alternative to the default DQue-based batch processor, you can use the OTE
 
 | Key | Description | Default | Type |
 |-----|-------------|---------|------|
-| `SeedType` | Client type for Seed clusters (`OTLPGRPC`/`OTLPHTTP`/`stdout`/`noop`) | `""` | string |
-| `ShootType` | Client type for Shoot clusters (`OTLPGRPC`/`OTLPHTTP`/`stdout`/`noop`) | `""` | string |
+| `SeedType` | Client type for Seed clusters (`otlp_grpc`/`otlp_http`/`stdout`/`noop`) | `""` | string |
+| `ShootType` | Client type for Shoot clusters (`otlp_grpc`/`otlp_http`/`stdout`/`noop`) | `""` | string |
 | `LogLevel` | Plugin log level (debug, info, warn, error) | `info` | string |
 | `Pprof` | Enable pprof profiling endpoints | `false` | bool |
 | `HostnameValue` | Custom hostname to include in logs | OS hostname | string |
@@ -140,8 +140,8 @@ Send logs to a VictoriaLogs backend using OTLP over gRPC:
     Match kubernetes.*
     
     # Client type selection
-    SeedType OTLPGRPC
-    ShootType OTLPGRPC
+    SeedType otlp_grpc
+    ShootType otlp_grpc
     
     # OTLP endpoint
     Endpoint victorialogs.logging.svc.cluster.local:4317
@@ -189,7 +189,7 @@ Send logs using OTLP over HTTP with authentication headers:
     Match kubernetes.*
     
     # Use HTTP client
-    SeedType OTLPHTTP
+    SeedType otlp_http
     
     # OTLP HTTP endpoint
     Endpoint https://victorialogs.example.com/insert/opentelemetry/v1/logs
@@ -222,11 +222,11 @@ Route logs to different backends based on Shoot cluster namespaces:
     Match kubernetes.*
     
     # Default Seed cluster client
-    SeedType OTLPGRPC
+    SeedType otlp_grpc
     Endpoint victorialogs-seed.logging.svc:4317
     
     # Dynamic Shoot cluster routing
-    ShootType OTLPGRPC
+    ShootType otlp_grpc
     DynamicHostPath {"kubernetes": {"namespace_name": "namespace"}}
     DynamicHostPrefix victorialogs.
     DynamicHostSuffix .svc.cluster.local:4317
@@ -283,7 +283,7 @@ Full production setup with mutual TLS authentication:
     Match kubernetes.*
     
     # Production settings
-    SeedType OTLPGRPC
+    SeedType otlp_grpc
     Endpoint victorialogs-prod.logging.svc:4317
     LogLevel info
     
@@ -337,7 +337,7 @@ For scenarios where low latency is more important than disk persistence (e.g., e
     Match kubernetes.*
     
     # Client type
-    SeedType OTLPGRPC
+    SeedType otlp_grpc
     Endpoint victorialogs.logging.svc:4317
     LogLevel info
     

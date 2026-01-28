@@ -66,7 +66,7 @@ The OTLP gRPC client (`OTLPGRPCClient`) sends logs using the OpenTelemetry Proto
 - Low-latency requirements
 - When backend supports gRPC
 
-**Configuration type:** `OTLPGRPC` (string) or `types.OTLPGRPC` (enum)
+**Configuration type:** `otlp_grpc` (string) or `types.OTLPGRPC` (enum)
 
 ### OTLP HTTP Client
 
@@ -89,7 +89,7 @@ The OTLP HTTP client (`OTLPHTTPClient`) sends logs using the OpenTelemetry Proto
 - Debugging (easier to inspect with standard tools)
 - When backend only supports HTTP
 
-**Configuration type:** `OTLPHTTP` (string) or `types.OTLPHTTP` (enum)
+**Configuration type:** `otlp_http` (string) or `types.OTLPHTTP` (enum)
 
 ### Stdout Client
 
@@ -108,7 +108,7 @@ The Stdout client (`StdoutClient`) writes all log entries to standard output in 
 - Integration with stdout-based log collectors
 - Troubleshooting without backend connectivity
 
-**Configuration type:** `STDOUT` (string) or `types.STDOUT` (enum)
+**Configuration type:** `stdout` (string) or `types.STDOUT` (enum)
 
 **Output format:**
 ```json
@@ -138,7 +138,7 @@ The Noop client (`NoopClient`) discards all log entries without processing them.
 - Testing metrics collection
 - Benchmarking
 
-**Configuration type:** `NOOP` (string) or `types.NOOP` (enum)
+**Configuration type:** `noop` (string) or `types.NOOP` (enum)
 
 ## Target Types
 
@@ -344,8 +344,8 @@ import (
 // Load configuration
 cfg := config.Config{
     PluginConfig: config.PluginConfig{
-        ShootType: "OTLPGRPC",  // Client type for shoot clusters
-        SeedType: "OTLPGRPC",   // Client type for seed cluster
+        ShootType: "otlp_grpc",  // Client type for shoot clusters
+        SeedType: "otlp_grpc",   // Client type for seed cluster
     },
     OTLPConfig: config.OTLPConfig{
         Endpoint: "otlp-collector.example.com:4317",
@@ -566,7 +566,7 @@ import (
 func main() {
     cfg := config.Config{
         PluginConfig: config.PluginConfig{
-            ShootType: "OTLPGRPC",
+            ShootType: "otlp_grpc",
         },
         OTLPConfig: config.OTLPConfig{
             Endpoint: "localhost:4317",
@@ -606,7 +606,7 @@ func main() {
 ```go
 cfg := config.Config{
     PluginConfig: config.PluginConfig{
-        SeedType: "OTLPHTTP",
+        SeedType: "otlp_http",
     },
     OTLPConfig: config.OTLPConfig{
         Endpoint: "https://otlp-collector.example.com:4318",
@@ -643,7 +643,7 @@ c, err := client.NewClient(ctx, cfg,
 ```go
 cfg := config.Config{
     PluginConfig: config.PluginConfig{
-        ShootType: "OTLPGRPC",
+        ShootType: "otlp_grpc",
     },
     OTLPConfig: config.OTLPConfig{
         Endpoint: "otlp-collector:4317",
@@ -675,7 +675,7 @@ cfg := config.Config{
 ```go
 cfg := config.Config{
     PluginConfig: config.PluginConfig{
-        ShootType: "OTLPGRPC",
+        ShootType: "otlp_grpc",
     },
     OTLPConfig: config.OTLPConfig{
         Endpoint: "otlp-collector:4317",

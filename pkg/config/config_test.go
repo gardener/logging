@@ -483,8 +483,9 @@ var _ = Describe("Config", func() {
 			Expect(cfg.OTLPConfig.Endpoint).To(Equal("localhost:4317"))
 			Expect(cfg.OTLPConfig.DQueConfig.DQueName).To(Equal("my-queue"))
 			Expect(cfg.PluginConfig.LogLevel).To(Equal("info"))
-			Expect(cfg.PluginConfig.SeedType).To(Equal("OTLPGRPC"))
-			Expect(cfg.PluginConfig.ShootType).To(Equal("STDOUT"))
+			Expect(cfg.PluginConfig.SeedType).To(Equal("otlp_grpc"))
+			Expect(cfg.PluginConfig.ShootType).To(Equal("stdout"))
+			Expect(cfg.OTLPConfig.DQueConfig.DQueName).To(Equal("my-queue"))
 			Expect(cfg.OTLPConfig.DQueConfig.DQueDir).To(Equal("/tmp/queue"))
 		})
 

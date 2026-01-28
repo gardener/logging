@@ -32,9 +32,9 @@ func GetClientTypeFromString(clientType string) Type {
 		return NOOP
 	case "STDOUT":
 		return STDOUT
-	case "OTLPGRPC":
+	case "OTLPGRPC", "OTLP_GRPC":
 		return OTLPGRPC
-	case "OTLPHTTP":
+	case "OTLPHTTP", "OTLP_HTTP":
 		return OTLPHTTP
 	default:
 		return NOOP
@@ -45,15 +45,15 @@ func GetClientTypeFromString(clientType string) Type {
 func (t Type) String() string {
 	switch t {
 	case NOOP:
-		return "NOOP"
+		return "noop"
 	case STDOUT:
-		return "STDOUT"
+		return "stdout"
 	case OTLPGRPC:
-		return "OTLPGRPC"
+		return "otlp_grpc"
 	case OTLPHTTP:
-		return "OTLPHTTP"
+		return "otlp_http"
 	case UNKNOWN:
-		return "UNKNOWN"
+		return "unknown"
 	default:
 		return ""
 	}
