@@ -100,7 +100,6 @@ func ParseConfig(configMap map[string]any) (*Config, error) {
 	sanitizeConfigMap(configMap)
 
 	// Set default LogLevel
-
 	config, err := defaultConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create default config: %w", err)
@@ -249,11 +248,11 @@ func processControllerConfigBoolFields(configMap map[string]any, config *Config)
 func postProcessConfig(config *Config, configMap map[string]any) error {
 	processors := []func(*Config, map[string]any) error{
 		processClientTypes,
-		processComplexStringConfigs,
 		processDynamicHostPathConfig,
 		processQueueSyncConfig,
 		processControllerBoolConfigs,
 		processOTLPConfig,
+		processLogLevel,
 	}
 
 	for _, processor := range processors {
@@ -283,11 +282,6 @@ func processClientTypes(config *Config, configMap map[string]any) error {
 		config.PluginConfig.ShootType = t.String()
 	}
 
-	return nil
-}
-
-// processComplexStringConfigs handles complex string parsing fields
-func processComplexStringConfigs(_ *Config, _ map[string]any) error {
 	return nil
 }
 
@@ -563,6 +557,14 @@ func processOTLPConfig(config *Config, configMap map[string]any) error {
 		config.OTLPConfig.SDKBatchExportInterval = d
 	}); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func processLogLevel(config *Config, configMap map[string]any) error {
+	if logLevel, ok := configMap["loglevel"].(string); ok && logLevel != "" {
+		config.PluginConfig.LogLevel = logLevel
 	}
 
 	return nil
