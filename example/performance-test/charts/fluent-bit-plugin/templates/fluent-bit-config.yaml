@@ -196,8 +196,8 @@ data:
         LogLevel                  info
         Retry_Limit               10
 
-        SeedType                  otlpgrpc
-        ShootType                 otlpgrpc
+        SeedType                  otlp_grpc
+        ShootType                 otlp_grpc
 
         Endpoint                  logging-otel-collector-seed.fluent-bit.svc.cluster.local:4317
         Insecure                  true
