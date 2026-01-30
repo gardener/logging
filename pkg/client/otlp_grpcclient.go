@@ -53,7 +53,7 @@ func NewOTLPGRPCClient(ctx context.Context, cfg config.Config, logger logr.Logge
 	exporterOpts := configBuilder.Build()
 
 	// Add metrics instrumentation to gRPC dial options
-	// Add metrics instrumentation to gRPC dial options
+	if globalMetricsSetup != nil {
 	if globalMetricsSetup != nil {
 		exporterOpts = append(exporterOpts, otlploggrpc.WithDialOption(globalMetricsSetup.GetGRPCStatsHandler()))
 	}

@@ -31,7 +31,8 @@ type MetricsSetup struct {
 
 var (
 	// globalMetricsSetup is the singleton instance shared across all OTLP clients.
-	// It is initialized lazily on first access and reused for all subsequent requests.
+	// globalMetricsSetup is the singleton instance shared across all OTLP clients.
+	// It is initialized during package initialization and reused for all subsequent requests.
 	globalMetricsSetup *MetricsSetup
 
 	// metricsSetupErr stores any initialization error that occurred during setup.
