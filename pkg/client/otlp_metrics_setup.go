@@ -34,12 +34,7 @@ var (
 	// It is initialized during package initialization and reused for all subsequent requests.
 	globalMetricsSetup *MetricsSetup
 
-	// metricsSetupOnce ensures the metrics setup is initialized exactly once,
-	// even when called concurrently from multiple goroutines.
-	metricsSetupOnce sync.Once
-
 	// metricsSetupErr stores any initialization error that occurred during setup.
-	// If non-nil, all calls to NewMetricsSetup() will return this error.
 	metricsSetupErr error
 )
 
