@@ -10,7 +10,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"sync"
 
 	promclient "github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/otlptranslator"
@@ -25,12 +24,10 @@ import (
 // It ensures idempotent shutdown and provides helpers for gRPC instrumentation.
 // This type is thread-safe and designed to be used as a singleton.
 type MetricsSetup struct {
-	provider     *sdkmetric.MeterProvider
-	shutdownOnce sync.Once
+	provider *sdkmetric.MeterProvider
 }
 
 var (
-	// globalMetricsSetup is the singleton instance shared across all OTLP clients.
 	// globalMetricsSetup is the singleton instance shared across all OTLP clients.
 	// It is initialized during package initialization and reused for all subsequent requests.
 	globalMetricsSetup *MetricsSetup
@@ -99,13 +96,5 @@ func (m *MetricsSetup) GetGRPCStatsHandler() grpc.DialOption {
 //
 // After shutdown, the meter provider should not be used for new metric operations.
 func (m *MetricsSetup) Shutdown(ctx context.Context) error {
-	var shutdownErr error
-
-	m.shutdownOnce.Do(func() {
-		if err := m.provider.Shutdown(ctx); err != nil {
-			shutdownErr = fmt.Errorf("failed to shutdown meter provider: %w", err)
-		}
-	})
-
-	return shutdownErr
+	return m.provider.Shutdown(ctx)
 }
