@@ -158,8 +158,8 @@ func (c *OTLPHTTPClient) Stop() {
 	c.logger.V(2).Info(fmt.Sprintf("stopping %s", componentOTLPHTTPName))
 	c.cancel()
 
-	// Force shutdown without waiting
-	ctx, cancel := context.WithTimeout(c.ctx, time.Second)
+	// Create timeout context from background, not from the cancelled c.ctx
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
 	if err := c.loggerProvider.Shutdown(ctx); err != nil {
@@ -180,8 +180,8 @@ func (c *OTLPHTTPClient) StopWait() {
 	c.logger.V(2).Info(fmt.Sprintf("stopping %s with wait", componentOTLPHTTPName))
 	c.cancel()
 
-	// Force flush before shutdown
-	ctx, cancel := context.WithTimeout(c.ctx, 30*time.Second)
+	// Create timeout context from background, not from the cancelled c.ctx
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	if err := c.loggerProvider.ForceFlush(ctx); err != nil {

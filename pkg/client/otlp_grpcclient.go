@@ -54,7 +54,6 @@ func NewOTLPGRPCClient(ctx context.Context, cfg config.Config, logger logr.Logge
 
 	// Add metrics instrumentation to gRPC dial options
 	if globalMetricsSetup != nil {
-	if globalMetricsSetup != nil {
 		exporterOpts = append(exporterOpts, otlploggrpc.WithDialOption(globalMetricsSetup.GetGRPCStatsHandler()))
 	}
 
@@ -170,8 +169,8 @@ func (c *OTLPGRPCClient) Stop() {
 	c.logger.V(2).Info(fmt.Sprintf("stopping %s", componentOTLPGRPCName))
 	c.cancel()
 
-	// Force shutdown without waiting
-	ctx, cancel := context.WithTimeout(c.ctx, time.Second)
+	// Create timeout context from background, not from the cancelled c.ctx
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
 	if err := c.loggerProvider.Shutdown(ctx); err != nil {
@@ -194,8 +193,8 @@ func (c *OTLPGRPCClient) StopWait() {
 	c.logger.V(2).Info(fmt.Sprintf("stopping %s with wait", componentOTLPGRPCName))
 	c.cancel()
 
-	// Force flush before shutdown
-	ctx, cancel := context.WithTimeout(c.ctx, 30*time.Second)
+	// Create timeout context from background, not from the cancelled c.ctx
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	if err := c.loggerProvider.ForceFlush(ctx); err != nil {
