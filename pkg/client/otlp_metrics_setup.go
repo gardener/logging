@@ -9,6 +9,7 @@ package client
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"sync"
 
 	promclient "github.com/prometheus/client_golang/prometheus"
@@ -30,7 +31,7 @@ type MetricsSetup struct {
 
 var (
 	// globalMetricsSetup is the singleton instance shared across all OTLP clients.
-	// It is initialized lazily on first access and reused for all subsequent requests.
+	// It is initialized during package initialization and reused for all subsequent requests.
 	globalMetricsSetup *MetricsSetup
 
 	// metricsSetupOnce ensures the metrics setup is initialized exactly once,
@@ -42,23 +43,10 @@ var (
 	metricsSetupErr error
 )
 
-// NewMetricsSetup returns the singleton MetricsSetup instance.
-// On first call, it creates a Prometheus exporter and meter provider.
-// Subsequent calls return the same instance, ensuring no duplicate metrics.
-//
-// Multiple concurrent calls are safe - initialization happens exactly once.
-//
-// Returns an error if the Prometheus exporter creation fails.
-func NewMetricsSetup() (*MetricsSetup, error) {
-	metricsSetupOnce.Do(func() {
-		globalMetricsSetup, metricsSetupErr = initializeMetricsSetup()
-	})
-
-	if metricsSetupErr != nil {
-		return nil, metricsSetupErr
+func init() {
+	if globalMetricsSetup, metricsSetupErr = initializeMetricsSetup(); metricsSetupErr != nil {
+		slog.Error("Failed to initialize OTLP metrics setup", "error", metricsSetupErr)
 	}
-
-	return globalMetricsSetup, nil
 }
 
 // initializeMetricsSetup creates and configures the metrics infrastructure.
@@ -92,6 +80,16 @@ func initializeMetricsSetup() (*MetricsSetup, error) {
 // The provider is used for creating meters and recording metrics.
 func (m *MetricsSetup) GetProvider() *sdkmetric.MeterProvider {
 	return m.provider
+}
+
+// getGlobalMeterProvider returns the global meter provider if available, or nil otherwise.
+// This is a convenience function for safely accessing the global metrics setup.
+func getGlobalMeterProvider() *sdkmetric.MeterProvider {
+	if globalMetricsSetup != nil {
+		return globalMetricsSetup.GetProvider()
+	}
+
+	return nil
 }
 
 // GetGRPCStatsHandler returns a gRPC dial option that enables automatic
