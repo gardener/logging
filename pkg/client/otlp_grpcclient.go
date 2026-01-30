@@ -108,11 +108,17 @@ func NewOTLPGRPCClient(ctx context.Context, cfg config.Config, logger logr.Logge
 		endpoint:       cfg.OTLPConfig.Endpoint,
 		config:         cfg,
 		loggerProvider: loggerProvider,
-		meterProvider:  func() *sdkmetric.MeterProvider { if globalMetricsSetup != nil { return globalMetricsSetup.GetProvider() }; return nil }(),
-		otlLogger:      loggerProvider.Logger(PluginName, scopeOptions...),
-		ctx:            clientCtx,
-		cancel:         cancel,
-		limiter:        limiter,
+		meterProvider: func() *sdkmetric.MeterProvider {
+			if globalMetricsSetup != nil {
+				return globalMetricsSetup.GetProvider()
+			}
+
+			return nil
+		}(),
+		otlLogger: loggerProvider.Logger(PluginName, scopeOptions...),
+		ctx:       clientCtx,
+		cancel:    cancel,
+		limiter:   limiter,
 	}
 
 	logger.V(1).Info("OTLP gRPC client created",
