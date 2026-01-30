@@ -46,14 +46,6 @@ func NewOTLPGRPCClient(ctx context.Context, cfg config.Config, logger logr.Logge
 	// Use the provided context with cancel capability
 	clientCtx, cancel := context.WithCancel(ctx)
 
-	// Setup metrics
-	metricsSetup, err := NewMetricsSetup()
-	if err != nil {
-		cancel()
-
-		return nil, fmt.Errorf("failed to setup metrics: %w", err)
-	}
-
 	// Build blocking OTLP gRPC exporter configuration
 	configBuilder := NewOTLPGRPCConfigBuilder(cfg, logger)
 
@@ -61,7 +53,7 @@ func NewOTLPGRPCClient(ctx context.Context, cfg config.Config, logger logr.Logge
 	exporterOpts := configBuilder.Build()
 
 	// Add metrics instrumentation to gRPC dial options
-	exporterOpts = append(exporterOpts, otlploggrpc.WithDialOption(metricsSetup.GetGRPCStatsHandler()))
+	exporterOpts = append(exporterOpts, otlploggrpc.WithDialOption(globalMetricsSetup.GetGRPCStatsHandler()))
 
 	// Create blocking OTLP gRPC exporter
 	exporter, err := otlploggrpc.New(clientCtx, exporterOpts...)
@@ -113,7 +105,7 @@ func NewOTLPGRPCClient(ctx context.Context, cfg config.Config, logger logr.Logge
 		endpoint:       cfg.OTLPConfig.Endpoint,
 		config:         cfg,
 		loggerProvider: loggerProvider,
-		meterProvider:  metricsSetup.GetProvider(),
+		meterProvider:  globalMetricsSetup.GetProvider(),
 		otlLogger:      loggerProvider.Logger(PluginName, scopeOptions...),
 		ctx:            clientCtx,
 		cancel:         cancel,
@@ -178,11 +170,13 @@ func (c *OTLPGRPCClient) Stop() {
 	}
 
 	// Use singleton metrics setup shutdown (idempotent)
-	metricsSetup, _ := NewMetricsSetup()
-	if metricsSetup != nil {
-		if err := metricsSetup.Shutdown(ctx); err != nil {
-			c.logger.Error(err, "error during meter provider shutdown")
-		}
+
+	if globalMetricsSetup == nil {
+		return
+	}
+
+	if err := globalMetricsSetup.Shutdown(ctx); err != nil {
+		c.logger.Error(err, "error during meter provider shutdown")
 	}
 }
 
@@ -203,12 +197,12 @@ func (c *OTLPGRPCClient) StopWait() {
 		c.logger.Error(err, "error during logger provider shutdown")
 	}
 
-	// Use singleton metrics setup shutdown (idempotent)
-	metricsSetup, _ := NewMetricsSetup()
-	if metricsSetup != nil {
-		if err := metricsSetup.Shutdown(ctx); err != nil {
-			c.logger.Error(err, "error during meter provider shutdown")
-		}
+	if globalMetricsSetup == nil {
+		return
+	}
+
+	if err := globalMetricsSetup.Shutdown(ctx); err != nil {
+		c.logger.Error(err, "error during meter provider shutdown")
 	}
 }
 

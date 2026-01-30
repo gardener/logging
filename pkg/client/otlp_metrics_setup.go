@@ -9,6 +9,7 @@ package client
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"sync"
 
 	promclient "github.com/prometheus/client_golang/prometheus"
@@ -42,23 +43,10 @@ var (
 	metricsSetupErr error
 )
 
-// NewMetricsSetup returns the singleton MetricsSetup instance.
-// On first call, it creates a Prometheus exporter and meter provider.
-// Subsequent calls return the same instance, ensuring no duplicate metrics.
-//
-// Multiple concurrent calls are safe - initialization happens exactly once.
-//
-// Returns an error if the Prometheus exporter creation fails.
-func NewMetricsSetup() (*MetricsSetup, error) {
-	metricsSetupOnce.Do(func() {
-		globalMetricsSetup, metricsSetupErr = initializeMetricsSetup()
-	})
-
-	if metricsSetupErr != nil {
-		return nil, metricsSetupErr
+func init() {
+	if globalMetricsSetup, metricsSetupErr = initializeMetricsSetup(); metricsSetupErr != nil {
+		slog.Error("failed to initialize global metrics setup", "error", metricsSetupErr)
 	}
-
-	return globalMetricsSetup, nil
 }
 
 // initializeMetricsSetup creates and configures the metrics infrastructure.
