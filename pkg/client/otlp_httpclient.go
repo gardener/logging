@@ -96,7 +96,7 @@ func NewOTLPHTTPClient(ctx context.Context, cfg config.Config, logger logr.Logge
 		endpoint:       cfg.OTLPConfig.Endpoint,
 		config:         cfg,
 		loggerProvider: loggerProvider,
-		meterProvider:  globalMetricsSetup.GetProvider(),
+		meterProvider:  func() *sdkmetric.MeterProvider { if globalMetricsSetup != nil { return globalMetricsSetup.GetProvider() }; return nil }(),
 		otlLogger:      loggerProvider.Logger(PluginName, scopeOptions...),
 		ctx:            clientCtx,
 		cancel:         cancel,

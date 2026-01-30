@@ -53,7 +53,10 @@ func NewOTLPGRPCClient(ctx context.Context, cfg config.Config, logger logr.Logge
 	exporterOpts := configBuilder.Build()
 
 	// Add metrics instrumentation to gRPC dial options
-	exporterOpts = append(exporterOpts, otlploggrpc.WithDialOption(globalMetricsSetup.GetGRPCStatsHandler()))
+	// Add metrics instrumentation to gRPC dial options
+	if globalMetricsSetup != nil {
+		exporterOpts = append(exporterOpts, otlploggrpc.WithDialOption(globalMetricsSetup.GetGRPCStatsHandler()))
+	}
 
 	// Create blocking OTLP gRPC exporter
 	exporter, err := otlploggrpc.New(clientCtx, exporterOpts...)
@@ -105,7 +108,7 @@ func NewOTLPGRPCClient(ctx context.Context, cfg config.Config, logger logr.Logge
 		endpoint:       cfg.OTLPConfig.Endpoint,
 		config:         cfg,
 		loggerProvider: loggerProvider,
-		meterProvider:  globalMetricsSetup.GetProvider(),
+		meterProvider:  func() *sdkmetric.MeterProvider { if globalMetricsSetup != nil { return globalMetricsSetup.GetProvider() }; return nil }(),
 		otlLogger:      loggerProvider.Logger(PluginName, scopeOptions...),
 		ctx:            clientCtx,
 		cancel:         cancel,
