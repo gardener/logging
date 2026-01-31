@@ -42,14 +42,6 @@ func NewOTLPHTTPClient(ctx context.Context, cfg config.Config, logger logr.Logge
 	// Use the provided context with cancel capability
 	clientCtx, cancel := context.WithCancel(ctx)
 
-	// Setup metrics
-	metricsSetup, err := NewMetricsSetup()
-	if err != nil {
-		cancel()
-
-		return nil, fmt.Errorf("failed to setup metrics: %w", err)
-	}
-
 	// Build blocking OTLP HTTP exporter configuration
 	configBuilder := NewOTLPHTTPConfigBuilder(cfg)
 	exporterOpts := configBuilder.Build()
@@ -104,7 +96,7 @@ func NewOTLPHTTPClient(ctx context.Context, cfg config.Config, logger logr.Logge
 		endpoint:       cfg.OTLPConfig.Endpoint,
 		config:         cfg,
 		loggerProvider: loggerProvider,
-		meterProvider:  metricsSetup.GetProvider(),
+		meterProvider:  getGlobalMeterProvider(),
 		otlLogger:      loggerProvider.Logger(PluginName, scopeOptions...),
 		ctx:            clientCtx,
 		cancel:         cancel,
@@ -160,20 +152,20 @@ func (c *OTLPHTTPClient) Stop() {
 	c.logger.V(2).Info(fmt.Sprintf("stopping %s", componentOTLPHTTPName))
 	c.cancel()
 
-	// Force shutdown without waiting
-	ctx, cancel := context.WithTimeout(c.ctx, time.Second)
+	// Create timeout context from background, not from the cancelled c.ctx
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
 	if err := c.loggerProvider.Shutdown(ctx); err != nil {
 		c.logger.Error(err, "error during logger provider shutdown")
 	}
 
-	// Use singleton metrics setup shutdown (idempotent)
-	metricsSetup, _ := NewMetricsSetup()
-	if metricsSetup != nil {
-		if err := metricsSetup.Shutdown(ctx); err != nil {
-			c.logger.Error(err, "error during meter provider shutdown")
-		}
+	if globalMetricsSetup == nil {
+		return
+	}
+
+	if err := globalMetricsSetup.Shutdown(ctx); err != nil {
+		c.logger.Error(err, "error during meter provider shutdown")
 	}
 }
 
@@ -182,8 +174,8 @@ func (c *OTLPHTTPClient) StopWait() {
 	c.logger.V(2).Info(fmt.Sprintf("stopping %s with wait", componentOTLPHTTPName))
 	c.cancel()
 
-	// Force flush before shutdown
-	ctx, cancel := context.WithTimeout(c.ctx, 30*time.Second)
+	// Create timeout context from background, not from the cancelled c.ctx
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	if err := c.loggerProvider.ForceFlush(ctx); err != nil {
@@ -194,12 +186,12 @@ func (c *OTLPHTTPClient) StopWait() {
 		c.logger.Error(err, "error during logger provider shutdown")
 	}
 
-	// Use singleton metrics setup shutdown (idempotent)
-	metricsSetup, _ := NewMetricsSetup()
-	if metricsSetup != nil {
-		if err := metricsSetup.Shutdown(ctx); err != nil {
-			c.logger.Error(err, "error during meter provider shutdown")
-		}
+	if globalMetricsSetup == nil {
+		return
+	}
+
+	if err := globalMetricsSetup.Shutdown(ctx); err != nil {
+		c.logger.Error(err, "error during meter provider shutdown")
 	}
 }
 
