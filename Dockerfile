@@ -39,7 +39,7 @@ WORKDIR /
 ENTRYPOINT [ "/event-logger" ]
 
 #############      tune2fs-builder       #############
-FROM alpine:3.23.2 AS tune2fs-builder
+FROM alpine:3.23.3 AS tune2fs-builder
 
 RUN apk add --update bash e2fsprogs-extra mount gawk ncurses-libs && \
     rm -rf /var/cache/apk/*
