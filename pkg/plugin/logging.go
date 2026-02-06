@@ -78,7 +78,7 @@ func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger lo
 	metrics.Clients.WithLabelValues(client.Seed.String()).Inc()
 
 	logger.Info("logging plugin created",
-		"seed_client_url", l.seedClient.GetEndPoint(),
+		"seed_client_url", redactCredentialsFromEndpoint(l.seedClient.GetEndPoint()),
 		"seed_queue_name", cfg.OTLPConfig.DQueConfig.DQueName,
 	)
 
@@ -165,8 +165,9 @@ func (l *logging) Close() {
 	if l.controller != nil {
 		l.controller.Stop()
 	}
+
 	l.logger.Info("logging plugin stopped",
-		"seed_client_url", l.seedClient.GetEndPoint(),
+		"seed_client_url", redactCredentialsFromEndpoint(l.seedClient.GetEndPoint()),
 		"seed_queue_name", l.cfg.OTLPConfig.DQueConfig.DQueName,
 	)
 }
@@ -187,4 +188,11 @@ func (l *logging) isDynamicHost(dynamicHostName string) bool {
 	return dynamicHostName != "" &&
 		l.dynamicHostRegexp != nil &&
 		l.dynamicHostRegexp.MatchString(dynamicHostName)
+}
+
+// Helper function to redact possible `user:password` credentials from configured endpoint before logging
+func redactCredentialsFromEndpoint(endpoint string) string {
+	r := regexp.MustCompile(`//.*@`)
+
+	return r.ReplaceAllString(endpoint, "//xxxxx@")
 }
