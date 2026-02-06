@@ -179,6 +179,19 @@ var _ = Describe("Config", func() {
 			Expect(cfg.OTLPConfig.RetryConfig.MaxElapsedTime).To(Equal(2 * time.Minute))
 		})
 
+		It("should redact username and password from endpoint", func() {
+			configMap := map[string]any{
+				"Endpoint": "https://otel-user:password@otel-collector.example.com:4317",
+			}
+
+			cfg, err := config.ParseConfig(configMap)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(cfg).ToNot(BeNil())
+
+			// Verify credentials were redacted
+			Expect(cfg.OTLPConfig.Endpoint).To(Equal("https://xxxxx@otel-collector.example.com:4317"))
+		})
+
 		It("should disable retry configuration when RetryEnabled is false", func() {
 			configMap := map[string]any{
 				"Endpoint":     "https://otel-collector.example.com:4317",
