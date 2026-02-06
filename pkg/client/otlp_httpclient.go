@@ -6,7 +6,6 @@ package client
 import (
 	"context"
 	"fmt"
-	"regexp"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -198,6 +197,5 @@ func (c *OTLPHTTPClient) StopWait() {
 
 // GetEndPoint returns the configured endpoint
 func (c *OTLPHTTPClient) GetEndPoint() string {
-	// Redact possible credentials in endpoint URL
-	return regexp.MustCompile(`//.*@`).ReplaceAllString(c.endpoint, "//xxxxx@")
+	return c.endpoint
 }

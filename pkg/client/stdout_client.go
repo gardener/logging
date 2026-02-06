@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"regexp"
 
 	"github.com/go-logr/logr"
 
@@ -84,6 +83,5 @@ func (c *StdoutClient) StopWait() {
 
 // GetEndPoint returns the configured endpoint
 func (c *StdoutClient) GetEndPoint() string {
-	// Redact possible credentials in endpoint URL
-	return regexp.MustCompile(`//.*@`).ReplaceAllString(c.endpoint, "//xxxxx@")
+	return c.endpoint
 }

@@ -77,8 +77,12 @@ func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger lo
 	}
 	metrics.Clients.WithLabelValues(client.Seed.String()).Inc()
 
+	// Redact possible credentials from configured endpoint before logging
+	r := regexp.MustCompile(`//.*@`)
+	sanitizedEndpoint := r.ReplaceAllString(l.seedClient.GetEndPoint(), "//xxxxx@")
+
 	logger.Info("logging plugin created",
-		"seed_client_url", l.seedClient.GetEndPoint(),
+		"seed_client_url", sanitizedEndpoint,
 		"seed_queue_name", cfg.OTLPConfig.DQueConfig.DQueName,
 	)
 
@@ -165,8 +169,13 @@ func (l *logging) Close() {
 	if l.controller != nil {
 		l.controller.Stop()
 	}
+
+	// Redact possible credentials from configured endpoint before logging
+	r := regexp.MustCompile(`//.*@`)
+	sanitizedEndpoint := r.ReplaceAllString(l.seedClient.GetEndPoint(), "//xxxxx@")
+
 	l.logger.Info("logging plugin stopped",
-		"seed_client_url", l.seedClient.GetEndPoint(),
+		"seed_client_url", sanitizedEndpoint,
 		"seed_queue_name", l.cfg.OTLPConfig.DQueConfig.DQueName,
 	)
 }

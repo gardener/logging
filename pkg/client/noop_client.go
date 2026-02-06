@@ -7,7 +7,6 @@ package client
 import (
 	"context"
 	"fmt"
-	"regexp"
 
 	"github.com/go-logr/logr"
 
@@ -62,6 +61,5 @@ func (c *NoopClient) StopWait() {
 
 // GetEndPoint returns the configured endpoint
 func (c *NoopClient) GetEndPoint() string {
-	// Redact possible credentials in endpoint URL
-	return regexp.MustCompile(`//.*@`).ReplaceAllString(c.endpoint, "//xxxxx@")
+	return c.endpoint
 }
