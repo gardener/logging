@@ -193,5 +193,6 @@ func (l *logging) isDynamicHost(dynamicHostName string) bool {
 // Helper function to redact possible `user:password` credentials from configured endpoint before logging
 func redactCredentialsFromEndpoint(endpoint string) string {
 	r := regexp.MustCompile(`//.*@`)
+
 	return r.ReplaceAllString(endpoint, "//xxxxx@")
 }
