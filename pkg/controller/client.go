@@ -58,15 +58,14 @@ type Client interface {
 // GetClient search a client with <name> and returned if found.
 // In case the controller is closed it returns true as second return value.
 func (ctl *controller) GetClient(name string) (client.OutputClient, bool) {
-	ctl.lock.RLocker().Lock()
-	defer ctl.lock.RLocker().Unlock()
-
 	if ctl.isStopped() {
 		return nil, true
 	}
 
-	if c, ok := ctl.clients[name]; ok {
-		return c, false
+	if value, ok := ctl.clients.Load(name); ok {
+		if c, ok := value.(Client); ok {
+			return c, false
+		}
 	}
 
 	return nil, false
@@ -108,18 +107,33 @@ func (ctl *controller) newControllerClient(clusterName string, clientConf *confi
 }
 
 func (ctl *controller) createControllerClient(clusterName string, shoot *gardenercorev1beta1.Shoot) {
+	if ctl.isStopped() {
+		ctl.logger.V(1).Info("controller is stopped, not creating client", "cluster", clusterName)
+
+		return
+	}
+
+	// Check if client already exists
+	if value, ok := ctl.clients.Load(clusterName); ok {
+		if c, ok := value.(Client); ok {
+			ctl.updateControllerClientState(c, shoot)
+			ctl.logger.V(1).Info("controller client already exists", "cluster", clusterName)
+
+			return
+		}
+	}
+
+	// Prepare config
 	clientConf := ctl.updateClientConfig(clusterName)
 	if clientConf == nil {
-		return
-	}
-
-	if c, ok := ctl.clients[clusterName]; ok {
-		ctl.updateControllerClientState(c, shoot)
-		ctl.logger.Info("controller client already exists", "cluster", clusterName)
+		ctl.logger.Error(nil, "failed to update client config", "cluster", clusterName)
 
 		return
 	}
 
+	ctl.logger.V(1).Info("creating new controller client", "cluster", clusterName, "endpoint", clientConf.OTLPConfig.Endpoint)
+
+	// Create client
 	c, err := ctl.newControllerClient(clusterName, clientConf)
 	if err != nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorFailedToMakeOutputClient).Inc()
@@ -127,17 +141,30 @@ func (ctl *controller) createControllerClient(clusterName string, shoot *gardene
 
 		return
 	}
-	metrics.Clients.WithLabelValues(client.Shoot.String()).Inc()
-
-	ctl.updateControllerClientState(c, shoot)
-
-	ctl.lock.Lock()
-	defer ctl.lock.Unlock()
 
 	if ctl.isStopped() {
+		// Controller stopped while we were creating client, clean up
+		c.Stop()
+
 		return
 	}
-	ctl.clients[clusterName] = c
+
+	// Use LoadOrStore to atomically check and store
+	// If another goroutine stored a client first, we'll get that one
+	actual, loaded := ctl.clients.LoadOrStore(clusterName, c)
+	if loaded {
+		// Another goroutine won the race, stop our client and use theirs
+		c.Stop()
+		if existingClient, ok := actual.(Client); ok {
+			ctl.updateControllerClientState(existingClient, shoot)
+			ctl.logger.V(1).Info("controller client created by another goroutine", "cluster", clusterName)
+		}
+
+		return
+	}
+
+	metrics.Clients.WithLabelValues(client.Shoot.String()).Inc()
+	ctl.updateControllerClientState(c, shoot)
 	ctl.logger.Info("added controller client",
 		"cluster", clusterName,
 		"mute_shoot_client", c.shootTarget.mute,
@@ -146,23 +173,18 @@ func (ctl *controller) createControllerClient(clusterName string, shoot *gardene
 }
 
 func (ctl *controller) deleteControllerClient(clusterName string) {
-	ctl.lock.Lock()
-	defer ctl.lock.Unlock()
-
 	if ctl.isStopped() {
 		return
 	}
 
-	c, ok := ctl.clients[clusterName]
-	if ok && c != nil {
-		delete(ctl.clients, clusterName)
-		metrics.Clients.WithLabelValues(client.Shoot.String()).Dec()
+	value, ok := ctl.clients.LoadAndDelete(clusterName)
+	if ok {
+		if c, ok := value.(Client); ok && c != nil {
+			metrics.Clients.WithLabelValues(client.Shoot.String()).Dec()
+			go c.Stop()
+		}
+		ctl.logger.Info("client deleted", "cluster", clusterName)
 	}
-
-	if ok && c != nil {
-		go c.Stop()
-	}
-	ctl.logger.Info("client deleted", "cluster", clusterName)
 }
 
 func (*controller) updateControllerClientState(c Client, shoot *gardenercorev1beta1.Shoot) {

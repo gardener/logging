@@ -39,6 +39,7 @@ func NewClusterReconciler(c client.Client, ctl *controller, logger logr.Logger) 
 // Reconcile handles the reconciliation of Cluster resources
 func (r *ClusterReconciler) Reconcile(ctx context.Context, req reconcile.Request) (reconcile.Result, error) {
 	log := r.log.WithValues("cluster", req.Name)
+	log.Info("reconciling cluster")
 
 	// Fetch the Cluster resource
 	cluster := &extensionsv1alpha1.Cluster{}
@@ -86,26 +87,9 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req reconcile.Request
 		return reconcile.Result{}, nil
 	}
 
-	// Get or create client for this cluster
-	r.controller.lock.RLock()
-	existingClient, exists := r.controller.clients[cluster.Name]
-	r.controller.lock.RUnlock()
-
-	if exists {
-		// Update the client state based on shoot status
-		if existingClient != nil {
-			r.controller.updateControllerClientState(existingClient, shoot)
-			log.V(1).Info("updated client state", "cluster", cluster.Name)
-		} else {
-			// Sanity check - nil client, recreate
-			log.Info("nil client for cluster, creating...", "cluster", cluster.Name)
-			r.controller.createControllerClient(cluster.Name, shoot)
-		}
-	} else {
-		// Create new client
-		log.V(1).Info("creating client for cluster", "cluster", cluster.Name)
-		r.controller.createControllerClient(cluster.Name, shoot)
-	}
+	// Create or update client for this cluster
+	// createControllerClient handles the case where client already exists
+	r.controller.createControllerClient(cluster.Name, shoot)
 
 	return reconcile.Result{}, nil
 }
@@ -132,7 +116,6 @@ func NewReconcilerController(ctx context.Context, mgr ctrl.Manager, conf *config
 	metrics.Clients.WithLabelValues(loggingclient.Seed.String()).Inc()
 
 	ctl := &controller{
-		clients:    make(map[string]Client, expectedActiveClusters),
 		conf:       conf,
 		seedClient: seedClient,
 		logger:     log,

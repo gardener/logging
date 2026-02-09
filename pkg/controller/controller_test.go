@@ -55,11 +55,12 @@ func (*fakeOutputClient) GetState() clusterState {
 
 var _ = Describe("Controller", func() {
 	Describe("#GetClient", func() {
-		ctl := &controller{
-			clients: map[string]Client{
-				"shoot--dev--test1": &fakeOutputClient{},
-			},
-		}
+		var ctl *controller
+
+		BeforeEach(func() {
+			ctl = &controller{}
+			ctl.clients.Store("shoot--dev--test1", &fakeOutputClient{})
+		})
 
 		It("Should return existing client", func() {
 			c, _ := ctl.GetClient("shoot--dev--test1")
@@ -78,18 +79,15 @@ var _ = Describe("Controller", func() {
 	})
 
 	Describe("#Stop", func() {
-		shootDevTest1 := &fakeOutputClient{}
-		shootDevTest2 := &fakeOutputClient{}
-		ctl := &controller{
-			clients: map[string]Client{
-				"shoot--dev--test1": shootDevTest1,
-				"shoot--dev--test2": shootDevTest2,
-			},
-		}
+		It("Should stop properly", func() {
+			shootDevTest1 := &fakeOutputClient{}
+			shootDevTest2 := &fakeOutputClient{}
+			ctl := &controller{}
+			ctl.clients.Store("shoot--dev--test1", shootDevTest1)
+			ctl.clients.Store("shoot--dev--test2", shootDevTest2)
 
-		It("Should stops propperly ", func() {
 			ctl.Stop()
-			Expect(ctl.clients).To(BeNil())
+			Expect(ctl.isStopped()).To(BeTrue())
 			Expect(shootDevTest1.isStopped).To(BeTrue())
 			Expect(shootDevTest2.isStopped).To(BeTrue())
 		})
@@ -172,12 +170,11 @@ var _ = Describe("Controller", func() {
 				},
 			}
 			ctl = &controller{
-				clients: make(map[string]Client),
-				conf:    conf,
-				logger:  logger,
+				conf:   conf,
+				logger: logger,
 			}
 			reconciler = &TestClusterReconciler{
-				log:        logger,
+				Log:        logger,
 				controller: ctl,
 			}
 		})
@@ -185,14 +182,13 @@ var _ = Describe("Controller", func() {
 		Context("Reconcile add cluster", func() {
 			It("Should add new client for a cluster with development purpose", func() {
 				reconciler.reconcileCluster(developmentCluster)
-				c, ok := ctl.clients[shootName]
-				Expect(c).ToNot(BeNil())
+				value, ok := ctl.clients.Load(shootName)
 				Expect(ok).To(BeTrue())
+				Expect(value).ToNot(BeNil())
 			})
 			It("Should not add new client for a cluster with testing purpose", func() {
 				reconciler.reconcileCluster(testingCluster)
-				c, ok := ctl.clients[shootName]
-				Expect(c).To(BeNil())
+				_, ok := ctl.clients.Load(shootName)
 				Expect(ok).To(BeFalse())
 			})
 			It("Should not overwrite new client for a cluster in hibernation", func() {
@@ -217,51 +213,48 @@ var _ = Describe("Controller", func() {
 		Context("Reconcile update cluster", func() {
 			type args struct {
 				cluster            *extensionsv1alpha1.Cluster
-				clients            map[string]Client
+				existingClient     Client
 				shouldClientExists bool
 			}
 
 			DescribeTable("Reconcile", func(a args) {
-				ctl.clients = a.clients
+				if a.existingClient != nil {
+					ctl.clients.Store(a.cluster.Name, a.existingClient)
+				}
 				reconciler.reconcileCluster(a.cluster)
-				c, ok := ctl.clients[a.cluster.Name]
+				value, ok := ctl.clients.Load(a.cluster.Name)
 				if a.shouldClientExists {
-					Expect(c).ToNot(BeNil())
+					Expect(value).ToNot(BeNil())
 					Expect(ok).To(BeTrue())
 				} else {
-					Expect(c).To(BeNil())
 					Expect(ok).To(BeFalse())
 				}
 			},
 				Entry("client exists and cluster is hibernated",
 					args{
-						cluster: hibernatedCluster,
-						clients: map[string]Client{
-							shootName: &fakeOutputClient{},
-						},
+						cluster:            hibernatedCluster,
+						existingClient:     &fakeOutputClient{},
 						shouldClientExists: true,
 					},
 				),
 				Entry("client exists and cluster has testing purpose",
 					args{
-						cluster: testingCluster,
-						clients: map[string]Client{
-							shootName: &fakeOutputClient{},
-						},
+						cluster:            testingCluster,
+						existingClient:     &fakeOutputClient{},
 						shouldClientExists: false,
 					},
 				),
 				Entry("client does not exist and cluster has development purpose",
 					args{
 						cluster:            developmentCluster,
-						clients:            map[string]Client{},
+						existingClient:     nil,
 						shouldClientExists: true,
 					},
 				),
 				Entry("client does not exist and cluster has testing purpose",
 					args{
 						cluster:            testingCluster,
-						clients:            map[string]Client{},
+						existingClient:     nil,
 						shouldClientExists: false,
 					},
 				),
@@ -270,10 +263,9 @@ var _ = Describe("Controller", func() {
 
 		Context("Reconcile delete cluster", func() {
 			It("should delete cluster client when cluster is deleted", func() {
-				ctl.clients[shootName] = &fakeOutputClient{}
+				ctl.clients.Store(shootName, &fakeOutputClient{})
 				ctl.deleteControllerClient(shootName)
-				c, ok := ctl.clients[shootName]
-				Expect(c).To(BeNil())
+				_, ok := ctl.clients.Load(shootName)
 				Expect(ok).To(BeFalse())
 			})
 		})

@@ -447,11 +447,9 @@ var _ = Describe("Controller Client", func() {
 			}
 
 			ctl = &controller{
-				clients: map[string]Client{
-					clientName: testControllerClient,
-				},
 				logger: logger,
 			}
+			ctl.clients.Store(clientName, testControllerClient)
 		})
 
 		It("Should return the right client", func() {

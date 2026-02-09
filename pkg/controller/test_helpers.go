@@ -66,7 +66,6 @@ func NewTestControllerManager(ctx context.Context, conf *config.Config, logger l
 	metrics.Clients.WithLabelValues(loggingclient.Seed.String()).Inc()
 
 	ctl := &controller{
-		clients:    make(map[string]Client, expectedActiveClusters),
 		conf:       conf,
 		seedClient: seedClient,
 		logger:     logger,
@@ -76,7 +75,7 @@ func NewTestControllerManager(ctx context.Context, conf *config.Config, logger l
 	// Create the test reconciler
 	reconciler := &TestClusterReconciler{
 		Client:     fakeClient,
-		log:        logger.WithName("test-cluster-reconciler"),
+		Log:        logger.WithName("test-cluster-reconciler"),
 		controller: ctl,
 	}
 
@@ -146,7 +145,7 @@ func (tcm *TestControllerManager) UpdateCluster(ctx context.Context, cluster *ex
 // TestClusterReconciler is a test version of ClusterReconciler
 type TestClusterReconciler struct {
 	client.Client
-	log        logr.Logger
+	Log        logr.Logger
 	controller *controller
 	mu         sync.Mutex
 }
@@ -167,7 +166,7 @@ func (r *TestClusterReconciler) reconcileCluster(cluster *extensionsv1alpha1.Clu
 	// Extract shoot from cluster
 	shoot, err := extensioncontroller.ShootFromCluster(cluster)
 	if err != nil {
-		r.log.Error(err, "can't extract shoot from cluster")
+		r.Log.Error(err, "can't extract shoot from cluster")
 
 		return
 	}
@@ -186,20 +185,9 @@ func (r *TestClusterReconciler) reconcileCluster(cluster *extensionsv1alpha1.Clu
 		return
 	}
 
-	// Get or create client for this cluster
-	r.controller.lock.RLock()
-	existingClient, exists := r.controller.clients[cluster.Name]
-	r.controller.lock.RUnlock()
-
-	if exists {
-		if existingClient != nil {
-			r.controller.updateControllerClientState(existingClient, shoot)
-		} else {
-			r.controller.createControllerClient(cluster.Name, shoot)
-		}
-	} else {
-		r.controller.createControllerClient(cluster.Name, shoot)
-	}
+	// Create or update client for this cluster
+	// createControllerClient handles the case where client already exists
+	r.controller.createControllerClient(cluster.Name, shoot)
 }
 
 // ReconcileAll reconciles all Cluster resources
@@ -217,7 +205,7 @@ func (r *TestClusterReconciler) ReconcileAll(ctx context.Context) error {
 		if _, err := r.Reconcile(ctx, ctrl.Request{
 			NamespacedName: client.ObjectKeyFromObject(cluster),
 		}); err != nil {
-			r.log.Error(err, "failed to reconcile cluster", "cluster", cluster.Name)
+			r.Log.Error(err, "failed to reconcile cluster", "cluster", cluster.Name)
 		}
 	}
 
@@ -226,7 +214,7 @@ func (r *TestClusterReconciler) ReconcileAll(ctx context.Context) error {
 
 // Reconcile implements the reconcile logic for testing
 func (r *TestClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := r.log.WithValues("cluster", req.Name)
+	log := r.Log.WithValues("cluster", req.Name)
 
 	cluster := &extensionsv1alpha1.Cluster{}
 	if err := r.Get(ctx, req.NamespacedName, cluster); err != nil {
@@ -269,19 +257,8 @@ func (r *TestClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return ctrl.Result{}, nil
 	}
 
-	r.controller.lock.RLock()
-	existingClient, exists := r.controller.clients[cluster.Name]
-	r.controller.lock.RUnlock()
-
-	if exists {
-		if existingClient != nil {
-			r.controller.updateControllerClientState(existingClient, shoot)
-		} else {
-			r.controller.createControllerClient(cluster.Name, shoot)
-		}
-	} else {
-		r.controller.createControllerClient(cluster.Name, shoot)
-	}
+	// Create or update client - createControllerClient handles existing clients
+	r.controller.createControllerClient(cluster.Name, shoot)
 
 	return ctrl.Result{}, nil
 }

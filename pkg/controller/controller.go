@@ -7,16 +7,13 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"sync/atomic"
 
 	gardenercorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	"github.com/go-logr/logr"
 
 	"github.com/gardener/logging/v1/pkg/client"
 	"github.com/gardener/logging/v1/pkg/config"
-)
-
-const (
-	expectedActiveClusters = 128
 )
 
 // Controller holds the dynamic clients for the shoots and the seed cluster.
@@ -28,19 +25,22 @@ type Controller interface {
 type controller struct {
 	seedClient client.OutputClient
 	conf       *config.Config
-	lock       sync.RWMutex
-	clients    map[string]Client
+	clients    sync.Map // map[string]Client
+	stopped    atomic.Bool
 	logger     logr.Logger
 	ctx        context.Context
 }
 
 func (ctl *controller) Stop() {
-	ctl.lock.Lock()
-	defer ctl.lock.Unlock()
-	for _, cl := range ctl.clients {
-		cl.StopWait()
-	}
-	ctl.clients = nil
+	ctl.stopped.Store(true)
+	ctl.clients.Range(func(key, value any) bool {
+		if cl, ok := value.(Client); ok && cl != nil {
+			cl.StopWait()
+		}
+		ctl.clients.Delete(key)
+
+		return true
+	})
 	if ctl.seedClient != nil {
 		ctl.seedClient.StopWait()
 	}
@@ -79,5 +79,5 @@ func (*controller) isDeletedShoot(shoot *gardenercorev1beta1.Shoot) bool {
 }
 
 func (ctl *controller) isStopped() bool {
-	return ctl.clients == nil
+	return ctl.stopped.Load()
 }
