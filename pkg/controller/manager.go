@@ -110,11 +110,13 @@ func NewControllerManager(ctx context.Context, syncTimeout time.Duration, conf *
 
 	select {
 	case err := <-mgrErrCh:
+		syncCancel()
 		cancel()
 
 		return nil, nil, fmt.Errorf("manager failed to start: %w", err)
 	case synced := <-cacheSyncCh:
 		if !synced {
+			syncCancel()
 			cancel()
 
 			return nil, nil, fmt.Errorf("failed to sync cache within timeout: %s", syncTimeout)
