@@ -10,7 +10,6 @@ import (
 	"regexp"
 
 	"github.com/go-logr/logr"
-	"k8s.io/client-go/tools/cache"
 
 	"github.com/gardener/logging/v1/pkg/client"
 	"github.com/gardener/logging/v1/pkg/config"
@@ -37,7 +36,9 @@ type logging struct {
 }
 
 // NewPlugin returns OutputPlugin output plugin
-func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger logr.Logger) (OutputPlugin, error) {
+// The ctl parameter is the Cluster controller created by the Manager.
+// If ctl is nil, the plugin will operate without dynamic host routing.
+func NewPlugin(ctl controller.Controller, cfg *config.Config, logger logr.Logger) (OutputPlugin, error) {
 	var err error
 
 	// Create a single context for the entire plugin lifecycle
@@ -50,17 +51,10 @@ func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger lo
 		cancel: cancel,
 	}
 
-	// TODO(nickytd): Remove this magic check and introduce an Id field in the plugin output configuration
-	// If the plugin ID is "shoot" then we shall have a dynamic host and a default "controller" client
-	if len(cfg.ControllerConfig.DynamicHostPath) > 0 {
+	// If a controller is provided, use it for dynamic host routing
+	if ctl != nil && len(cfg.ControllerConfig.DynamicHostPath) > 0 {
 		l.dynamicHostRegexp = regexp.MustCompile(cfg.ControllerConfig.DynamicHostRegex)
-
-		// Pass the plugin's context to the controller
-		if l.controller, err = controller.NewController(ctx, informer, cfg, logger); err != nil {
-			cancel()
-
-			return nil, err
-		}
+		l.controller = ctl
 	}
 
 	if cfg.PluginConfig.KubernetesMetadata.FallbackToTagWhenMetadataIsMissing {

@@ -4,62 +4,36 @@
 package main
 
 import (
-	"fmt"
-	"os"
-	"time"
+	"context"
 
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
-
-	gardenerclientsetversioned "github.com/gardener/logging/v1/pkg/cluster/clientset/versioned"
-	gardeninternalcoreinformers "github.com/gardener/logging/v1/pkg/cluster/informers/externalversions"
+	"github.com/gardener/logging/v1/pkg/config"
+	"github.com/gardener/logging/v1/pkg/controller"
 )
 
-// inClusterKubernetesClient creates a Kubernetes client using in-cluster configuration.
-// It returns nil if the in-cluster config is not available (e.g., when running outside a cluster).
-func inClusterKubernetesClient() (gardenerclientsetversioned.Interface, error) {
-	c, err := rest.InClusterConfig()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get incluster config: %v", err)
+var (
+	ctrlManager       *controller.Manager
+	clusterController controller.Controller
+)
+
+// initControllerManager initializes the controller-runtime based manager for watching
+// Cluster resources using the reconciler pattern.
+func initControllerManager(ctx context.Context, cfg *config.Config) error {
+	if ctrlManager != nil {
+		return nil
 	}
 
-	return gardenerclientsetversioned.NewForConfig(c)
-}
-
-// envKubernetesClient creates a Kubernetes client using the KUBECONFIG environment variable.
-// It returns an error if the KUBECONFIG env var is not set or the config file is invalid.
-func envKubernetesClient() (gardenerclientsetversioned.Interface, error) {
-	fromFlags, err := clientcmd.BuildConfigFromFlags("", os.Getenv("KUBECONFIG"))
-	if err != nil {
-		return nil, fmt.Errorf("failed to get kubeconfig from env: %v", err)
-	}
-
-	return gardenerclientsetversioned.NewForConfig(fromFlags)
-}
-
-// initClusterInformer initializes and starts the shared informer instance for Cluster resources.
-// It first attempts to use in-cluster configuration, falling back to KUBECONFIG if that fails.
-// The informer is used to watch for changes to Cluster resources when dynamic host paths are configured.
-// This function panics if it cannot obtain a valid Kubernetes client from either source.
-func initClusterInformer() {
-	if informer != nil && !informer.IsStopped() {
-		return
-	}
-
-	var (
-		err              error
-		kubernetesClient gardenerclientsetversioned.Interface
+	var err error
+	ctrlManager, clusterController, err = controller.NewControllerManager(
+		ctx,
+		cfg.ControllerConfig.CtlSyncTimeout,
+		cfg,
+		logger,
 	)
-	if kubernetesClient, _ = inClusterKubernetesClient(); kubernetesClient == nil {
-		logger.Info("[flb-go] failed to get in-cluster kubernetes client, trying KUBECONFIG env variable")
-		kubernetesClient, err = envKubernetesClient()
-		if err != nil {
-			panic(fmt.Errorf("failed to get kubernetes client, give up: %v", err))
-		}
+	if err != nil {
+		return err
 	}
 
-	kubeInformerFactory := gardeninternalcoreinformers.NewSharedInformerFactory(kubernetesClient, time.Second*30)
-	informer = kubeInformerFactory.Extensions().V1alpha1().Clusters().Informer()
-	informerStopChan = make(chan struct{})
-	kubeInformerFactory.Start(informerStopChan)
+	logger.Info("[flb-go] controller-runtime manager initialized with reconciler")
+
+	return nil
 }

@@ -8,6 +8,7 @@ import (
 )
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -22,7 +23,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"k8s.io/apimachinery/pkg/util/uuid"
-	"k8s.io/client-go/tools/cache"
 	"k8s.io/component-base/version"
 
 	"github.com/gardener/logging/v1/pkg/config"
@@ -36,14 +36,15 @@ import (
 var (
 	// registered plugin instances, required for disposal during shutdown
 	// Uses sync.Map for concurrent-safe access without explicit locking
-	plugins          sync.Map // map[string]plugin.OutputPlugin
-	logger           logr.Logger
-	informer         cache.SharedIndexInformer
-	informerStopChan chan struct{}
-	pprofOnce        sync.Once
+	plugins      sync.Map // map[string]plugin.OutputPlugin
+	logger       logr.Logger
+	pluginCtx    context.Context
+	pluginCancel context.CancelFunc
+	pprofOnce    sync.Once
 )
 
 func init() {
+	pluginCtx, pluginCancel = context.WithCancel(context.Background())
 	logger = log.NewLogger("info")
 	logger.Info("Starting fluent-bit-gardener-output-plugin",
 		"version", version.Get().GitVersion,
@@ -105,13 +106,20 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 		setPprofProfile()
 	}
 
+	// Initialize controller-runtime manager for watching Cluster resources
 	if len(cfg.ControllerConfig.DynamicHostPath) > 0 {
-		initClusterInformer()
+		if err := initControllerManager(pluginCtx, cfg); err != nil {
+			metrics.Errors.WithLabelValues(metrics.ErrorFLBPluginInit).Inc()
+			logger.Error(err, "[flb-go] failed to initialize controller manager")
+
+			return output.FLB_ERROR
+		}
 	}
 
 	id, _, _ := strings.Cut(string(uuid.NewUUID()), "-")
 
-	outputPlugin, err := plugin.NewPlugin(informer, cfg, log.NewLogger(cfg.PluginConfig.LogLevel))
+	// Pass the cluster controller to the plugin (may be nil if no dynamic host path)
+	outputPlugin, err := plugin.NewPlugin(clusterController, cfg, log.NewLogger(cfg.PluginConfig.LogLevel))
 	if err != nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorNewPlugin).Inc()
 		logger.Error(err, "[flb-go] error creating output plugin", "id", id)
@@ -222,8 +230,14 @@ func FLBPluginExit() int {
 
 		return true
 	})
-	if informerStopChan != nil {
-		close(informerStopChan)
+
+	// Stop the controller manager
+	if ctrlManager != nil {
+		ctrlManager.Stop()
+	}
+
+	if pluginCancel != nil {
+		pluginCancel()
 	}
 
 	return output.FLB_OK
