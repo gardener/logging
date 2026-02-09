@@ -156,9 +156,6 @@ func (l *logging) Close() {
 	l.cancel()
 
 	l.seedClient.StopWait()
-	if l.controller != nil {
-		l.controller.Stop()
-	}
 
 	l.logger.Info("logging plugin stopped",
 		"seed_client_url", redactCredentialsFromEndpoint(l.seedClient.GetEndPoint()),
