@@ -51,7 +51,7 @@ func NewControllerManager(ctx context.Context, syncTimeout time.Duration, conf *
 	mgr, err := ctrl.NewManager(restConfig, manager.Options{
 		Scheme: scheme,
 		Controller: ctrlconfig.Controller{
-			// Skip leader election for this use case
+			// Skip controller name validation (not needed for this use case)
 			SkipNameValidation: toPtr(true),
 		},
 		// Disable metrics server to avoid port conflicts
@@ -86,22 +86,39 @@ func NewControllerManager(ctx context.Context, syncTimeout time.Duration, conf *
 		cancel: cancel,
 	}
 
+	// Channel to capture manager startup errors
+	mgrErrCh := make(chan error, 1)
+
 	// Start the manager in a goroutine
 	go func() {
 		cm.logger.Info("starting controller-runtime manager")
 		if err := mgr.Start(mgrCtx); err != nil {
 			cm.logger.Error(err, "failed to start manager")
+			mgrErrCh <- err
 		}
+		close(mgrErrCh)
 	}()
 
-	// Wait for cache to sync
+	// Wait for cache to sync, racing against manager startup failure
 	syncCtx, syncCancel := context.WithTimeout(mgrCtx, syncTimeout)
 	defer syncCancel()
 
-	if !mgr.GetCache().WaitForCacheSync(syncCtx) {
+	cacheSyncCh := make(chan bool, 1)
+	go func() {
+		cacheSyncCh <- mgr.GetCache().WaitForCacheSync(syncCtx)
+	}()
+
+	select {
+	case err := <-mgrErrCh:
 		cancel()
 
-		return nil, nil, fmt.Errorf("failed to sync cache within timeout: %s", syncTimeout)
+		return nil, nil, fmt.Errorf("manager failed to start: %w", err)
+	case synced := <-cacheSyncCh:
+		if !synced {
+			cancel()
+
+			return nil, nil, fmt.Errorf("failed to sync cache within timeout: %s", syncTimeout)
+		}
 	}
 
 	cm.logger.Info("controller-runtime manager started and cache synced")

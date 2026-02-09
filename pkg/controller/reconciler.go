@@ -23,22 +23,22 @@ import (
 // ClusterReconciler reconciles Cluster resources
 type ClusterReconciler struct {
 	client.Client
-	Log        logr.Logger
+	log        logr.Logger
 	controller *controller
 }
 
 // NewClusterReconciler creates a new ClusterReconciler
-func NewClusterReconciler(c client.Client, ctl *controller, log logr.Logger) *ClusterReconciler {
+func NewClusterReconciler(c client.Client, ctl *controller, logger logr.Logger) *ClusterReconciler {
 	return &ClusterReconciler{
 		Client:     c,
-		Log:        log.WithName("cluster-reconciler"),
+		log:        logger.WithName("cluster-reconciler"),
 		controller: ctl,
 	}
 }
 
 // Reconcile handles the reconciliation of Cluster resources
 func (r *ClusterReconciler) Reconcile(ctx context.Context, req reconcile.Request) (reconcile.Result, error) {
-	log := r.Log.WithValues("cluster", req.Name)
+	log := r.log.WithValues("cluster", req.Name)
 
 	// Fetch the Cluster resource
 	cluster := &extensionsv1alpha1.Cluster{}

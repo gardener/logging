@@ -18,12 +18,10 @@ import (
 	promtest "github.com/prometheus/client_golang/prometheus/testutil"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/ptr"
 
-	fakeclientset "github.com/gardener/logging/v1/pkg/cluster/clientset/versioned/fake"
-	"github.com/gardener/logging/v1/pkg/cluster/informers/externalversions"
 	"github.com/gardener/logging/v1/pkg/config"
+	"github.com/gardener/logging/v1/pkg/controller"
 	"github.com/gardener/logging/v1/pkg/log"
 	"github.com/gardener/logging/v1/pkg/metrics"
 	"github.com/gardener/logging/v1/pkg/types"
@@ -586,23 +584,16 @@ var _ = Describe("OutputPlugin plugin", func() {
 			shootNamespace := "shoot--dev--test"
 			cluster := createTestCluster(shootNamespace, "development", false)
 
-			// Create fake client with cluster resource
-			fakeClient := fakeclientset.NewSimpleClientset(cluster)
-
-			// Create informer factory and get cluster informer
-			informerFactory := externalversions.NewSharedInformerFactory(fakeClient, 0)
-			clusterInformer := informerFactory.Extensions().V1alpha1().Clusters().Informer()
-
-			// Start informers
+			// Create test controller manager with fake client
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
-			informerFactory.Start(ctx.Done())
 
-			// Wait for cache sync
-			cache.WaitForCacheSync(ctx.Done(), clusterInformer.HasSynced)
+			testMgr, ctl, err := controller.NewTestControllerManager(ctx, cfg, logger, cluster)
+			Expect(err).NotTo(HaveOccurred())
+			defer testMgr.Stop()
 
-			// Create plugin with real informer
-			plugin, err := NewPlugin(clusterInformer, cfg, logger)
+			// Create plugin with controller
+			plugin, err := NewPlugin(ctl, cfg, logger)
 			Expect(err).NotTo(HaveOccurred())
 			defer plugin.Close()
 
@@ -722,22 +713,15 @@ var _ = Describe("OutputPlugin plugin", func() {
 			cluster1 := createTestCluster(shoot1, "development", false)
 			cluster2 := createTestCluster(shoot2, "evaluation", false)
 
-			// Create fake client with multiple cluster resources
-			fakeClient := fakeclientset.NewSimpleClientset(cluster1, cluster2)
-
-			// Create informer factory and get cluster informer
-			informerFactory := externalversions.NewSharedInformerFactory(fakeClient, 0)
-			clusterInformer := informerFactory.Extensions().V1alpha1().Clusters().Informer()
-
-			// Start informers
+			// Create test controller manager with fake client
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
-			informerFactory.Start(ctx.Done())
 
-			// Wait for cache sync
-			cache.WaitForCacheSync(ctx.Done(), clusterInformer.HasSynced)
+			testMgr, ctl, err := controller.NewTestControllerManager(ctx, cfg, logger, cluster1, cluster2)
+			Expect(err).NotTo(HaveOccurred())
+			defer testMgr.Stop()
 
-			plugin, err := NewPlugin(clusterInformer, cfg, logger)
+			plugin, err := NewPlugin(ctl, cfg, logger)
 			Expect(err).NotTo(HaveOccurred())
 			defer plugin.Close()
 
@@ -795,6 +779,12 @@ var _ = Describe("OutputPlugin plugin", func() {
 				CtlSyncTimeout:    5 * time.Second,
 				DynamicHostPrefix: "http://logging.",
 				DynamicHostSuffix: ".svc:4318/v1/logs",
+				DynamicHostPath: map[string]any{
+					"kubernetes": map[string]any{
+						"namespace_name": "namespace",
+					},
+				},
+				DynamicHostRegex: `^shoot--.*`,
 				ShootControllerClientConfig: config.ControllerClientConfiguration{
 					SendLogsWhenIsInHibernatedState: false,
 				},
@@ -807,22 +797,15 @@ var _ = Describe("OutputPlugin plugin", func() {
 			shootNamespace := "shoot--dev--hibernated"
 			cluster := createTestCluster(shootNamespace, "development", true)
 
-			// Create fake client with hibernated cluster resource
-			fakeClient := fakeclientset.NewSimpleClientset(cluster)
-
-			// Create informer factory and get cluster informer
-			informerFactory := externalversions.NewSharedInformerFactory(fakeClient, 0)
-			clusterInformer := informerFactory.Extensions().V1alpha1().Clusters().Informer()
-
-			// Start informers
+			// Create test controller manager with fake client
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
-			informerFactory.Start(ctx.Done())
 
-			// Wait for cache sync
-			cache.WaitForCacheSync(ctx.Done(), clusterInformer.HasSynced)
+			testMgr, ctl, err := controller.NewTestControllerManager(ctx, cfg, logger, cluster)
+			Expect(err).NotTo(HaveOccurred())
+			defer testMgr.Stop()
 
-			plugin, err := NewPlugin(clusterInformer, cfg, logger)
+			plugin, err := NewPlugin(ctl, cfg, logger)
 			Expect(err).NotTo(HaveOccurred())
 			defer plugin.Close()
 

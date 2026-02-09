@@ -94,18 +94,19 @@ var _ = Describe("Controller", func() {
 			Expect(shootDevTest2.isStopped).To(BeTrue())
 		})
 	})
-	Describe("Event functions", func() {
+	Describe("Reconciler functions", func() {
 		var (
-			conf *config.Config
-			ctl  *controller
+			conf       *config.Config
+			ctl        *controller
+			reconciler *TestClusterReconciler
 		)
 		dynamicHostPrefix := "http://logging."
 		dynamicHostSuffix := ".svc:4318/v1/logs"
 		logger := logr.Discard() // Use nop logger for tests
 		shootName := "shoot--dev--logging"
 
-		testingPurpuse := gardencorev1beta1.ShootPurpose("testing")
-		developmentPurpuse := gardencorev1beta1.ShootPurpose("development")
+		testingPurpose := gardencorev1beta1.ShootPurpose("testing")
+		developmentPurpose := gardencorev1beta1.ShootPurpose("development")
 		notHibernation := gardencorev1beta1.Hibernation{Enabled: ptr.To(false)}
 		hibernation := gardencorev1beta1.Hibernation{Enabled: ptr.To(true)}
 		shootObjectMeta := metav1.ObjectMeta{
@@ -114,7 +115,7 @@ var _ = Describe("Controller", func() {
 		testingShoot := &gardencorev1beta1.Shoot{
 			ObjectMeta: shootObjectMeta,
 			Spec: gardencorev1beta1.ShootSpec{
-				Purpose:     &testingPurpuse,
+				Purpose:     &testingPurpose,
 				Hibernation: &notHibernation,
 			},
 			Status: gardencorev1beta1.ShootStatus{
@@ -128,7 +129,7 @@ var _ = Describe("Controller", func() {
 		developmentShoot := &gardencorev1beta1.Shoot{
 			ObjectMeta: shootObjectMeta,
 			Spec: gardencorev1beta1.ShootSpec{
-				Purpose:     &developmentPurpuse,
+				Purpose:     &developmentPurpose,
 				Hibernation: &notHibernation,
 			},
 		}
@@ -136,7 +137,7 @@ var _ = Describe("Controller", func() {
 		hibernatedShoot := &gardencorev1beta1.Shoot{
 			ObjectMeta: shootObjectMeta,
 			Spec: gardencorev1beta1.ShootSpec{
-				Purpose:     &developmentPurpuse,
+				Purpose:     &developmentPurpose,
 				Hibernation: &hibernation,
 			},
 		}
@@ -175,17 +176,21 @@ var _ = Describe("Controller", func() {
 				conf:    conf,
 				logger:  logger,
 			}
+			reconciler = &TestClusterReconciler{
+				Log:        logger,
+				controller: ctl,
+			}
 		})
 
-		Context("#addFunc", func() {
-			It("Should add new client for a cluster with evaluation purpose", func() {
-				ctl.addFunc(developmentCluster)
+		Context("Reconcile add cluster", func() {
+			It("Should add new client for a cluster with development purpose", func() {
+				reconciler.reconcileCluster(developmentCluster)
 				c, ok := ctl.clients[shootName]
 				Expect(c).ToNot(BeNil())
 				Expect(ok).To(BeTrue())
 			})
 			It("Should not add new client for a cluster with testing purpose", func() {
-				ctl.addFunc(testingCluster)
+				reconciler.reconcileCluster(testingCluster)
 				c, ok := ctl.clients[shootName]
 				Expect(c).To(BeNil())
 				Expect(ok).To(BeFalse())
@@ -194,8 +199,8 @@ var _ = Describe("Controller", func() {
 				name := "new-shoot-name"
 				newNameCluster := hibernatedCluster.DeepCopy()
 				newNameCluster.Name = name
-				ctl.addFunc(hibernatedCluster)
-				ctl.addFunc(newNameCluster)
+				reconciler.reconcileCluster(hibernatedCluster)
+				reconciler.reconcileCluster(newNameCluster)
 				Expect(ctl.conf.OTLPConfig.Endpoint).ToNot(
 					Equal(
 						ctl.conf.ControllerConfig.
@@ -209,18 +214,17 @@ var _ = Describe("Controller", func() {
 			})
 		})
 
-		Context("#updateFunc", func() {
+		Context("Reconcile update cluster", func() {
 			type args struct {
-				oldCluster         *extensionsv1alpha1.Cluster
-				newCluster         *extensionsv1alpha1.Cluster
+				cluster            *extensionsv1alpha1.Cluster
 				clients            map[string]Client
 				shouldClientExists bool
 			}
 
-			DescribeTable("#updateFunc", func(a args) {
+			DescribeTable("Reconcile", func(a args) {
 				ctl.clients = a.clients
-				ctl.updateFunc(a.oldCluster, a.newCluster)
-				c, ok := ctl.clients[a.newCluster.Name]
+				reconciler.reconcileCluster(a.cluster)
+				c, ok := ctl.clients[a.cluster.Name]
 				if a.shouldClientExists {
 					Expect(c).ToNot(BeNil())
 					Expect(ok).To(BeTrue())
@@ -229,63 +233,45 @@ var _ = Describe("Controller", func() {
 					Expect(ok).To(BeFalse())
 				}
 			},
-				Entry("client exists and after update cluster is hibernated",
+				Entry("client exists and cluster is hibernated",
 					args{
-						oldCluster: developmentCluster,
-						newCluster: hibernatedCluster,
+						cluster: hibernatedCluster,
 						clients: map[string]Client{
 							shootName: &fakeOutputClient{},
 						},
 						shouldClientExists: true,
 					},
 				),
-				Entry("client exists and after update cluster has no changes",
+				Entry("client exists and cluster has testing purpose",
 					args{
-						oldCluster: testingCluster,
-						newCluster: testingCluster,
+						cluster: testingCluster,
 						clients: map[string]Client{
 							shootName: &fakeOutputClient{},
 						},
+						shouldClientExists: false,
+					},
+				),
+				Entry("client does not exist and cluster has development purpose",
+					args{
+						cluster:            developmentCluster,
+						clients:            map[string]Client{},
 						shouldClientExists: true,
 					},
 				),
-				Entry("client does not exist and after update cluster has no changes",
+				Entry("client does not exist and cluster has testing purpose",
 					args{
-						oldCluster:         testingCluster,
-						newCluster:         testingCluster,
+						cluster:            testingCluster,
 						clients:            map[string]Client{},
 						shouldClientExists: false,
 					},
 				),
-				Entry("client does not exist and after update cluster is awake ",
-					args{
-						oldCluster:         hibernatedCluster,
-						newCluster:         developmentCluster,
-						clients:            map[string]Client{},
-						shouldClientExists: true,
-					},
-				),
-				Entry("client does not exist and after update cluster has evaluation purpose ",
-					args{
-						oldCluster:         testingCluster,
-						newCluster:         developmentCluster,
-						clients:            map[string]Client{},
-						shouldClientExists: true,
-					}),
-				Entry("client exists and after update cluster has testing purpose ",
-					args{
-						oldCluster:         developmentCluster,
-						newCluster:         testingCluster,
-						clients:            map[string]Client{},
-						shouldClientExists: false,
-					}),
 			)
 		})
 
-		Context("#deleteFunc", func() {
+		Context("Reconcile delete cluster", func() {
 			It("should delete cluster client when cluster is deleted", func() {
 				ctl.clients[shootName] = &fakeOutputClient{}
-				ctl.delFunc(developmentCluster)
+				ctl.deleteControllerClient(shootName)
 				c, ok := ctl.clients[shootName]
 				Expect(c).To(BeNil())
 				Expect(ok).To(BeFalse())

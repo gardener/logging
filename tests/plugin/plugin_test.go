@@ -45,12 +45,10 @@ import (
 	promtest "github.com/prometheus/client_golang/prometheus/testutil"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/ptr"
 
-	fakeclientset "github.com/gardener/logging/v1/pkg/cluster/clientset/versioned/fake"
-	"github.com/gardener/logging/v1/pkg/cluster/informers/externalversions"
 	"github.com/gardener/logging/v1/pkg/config"
+	"github.com/gardener/logging/v1/pkg/controller"
 	pkglog "github.com/gardener/logging/v1/pkg/log"
 	"github.com/gardener/logging/v1/pkg/metrics"
 	"github.com/gardener/logging/v1/pkg/plugin"
@@ -64,15 +62,15 @@ const (
 )
 
 type testContext struct {
-	fakeClient      *fakeclientset.Clientset
-	informerFactory externalversions.SharedInformerFactory
-	informer        cache.SharedIndexInformer
-	plugin          plugin.OutputPlugin
-	cfg             *config.Config
-	logger          logr.Logger
-	clusters        []*extensionsv1alpha1.Cluster
-	stopCh          chan struct{}
-	tmpDir          string
+	testMgr    *controller.TestControllerManager
+	controller controller.Controller
+	plugin     plugin.OutputPlugin
+	cfg        *config.Config
+	logger     logr.Logger
+	clusters   []*extensionsv1alpha1.Cluster
+	ctx        context.Context
+	cancel     context.CancelFunc
+	tmpDir     string
 }
 
 var _ = Describe("Plugin Integration Test", Ordered, func() {
@@ -94,24 +92,19 @@ var _ = Describe("Plugin Integration Test", Ordered, func() {
 		cleanup(testCtx)
 	})
 
-	It("should set up the plugin with informer", func() {
+	It("should set up the plugin with controller", func() {
 		Expect(testCtx.plugin).NotTo(BeNil())
-		Expect(testCtx.informer).NotTo(BeNil())
-		Expect(testCtx.fakeClient).NotTo(BeNil())
+		Expect(testCtx.controller).NotTo(BeNil())
+		Expect(testCtx.testMgr).NotTo(BeNil())
 	})
 
 	It("should create 100 cluster resources", func() {
-		ctx := context.Background()
-
 		for i := 0; i < numberOfClusters; i++ {
 			clusterName := fmt.Sprintf("shoot--test--cluster-%03d", i)
 			cluster := createTestCluster(clusterName, "development", false)
 			testCtx.clusters = append(testCtx.clusters, cluster)
 
-			_, err := testCtx.fakeClient.ExtensionsV1alpha1().Clusters().Create(
-				ctx,
-				cluster,
-			)
+			err := testCtx.testMgr.CreateCluster(testCtx.ctx, cluster)
 			Expect(err).NotTo(HaveOccurred())
 
 			// Brief pause to allow event processing
@@ -189,38 +182,30 @@ var _ = Describe("Plugin Integration Test", Ordered, func() {
 func setupTestContext() *testContext {
 	tmpDir, err := os.MkdirTemp("", "plugin-test-")
 	Expect(err).NotTo(HaveOccurred(), "temporary directory creation should succeed")
-	ctx := &testContext{
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	testCtx := &testContext{
 		logger:   pkglog.NewNopLogger(),
 		clusters: make([]*extensionsv1alpha1.Cluster, 0, numberOfClusters),
-		stopCh:   make(chan struct{}),
+		ctx:      ctx,
+		cancel:   cancel,
 		tmpDir:   tmpDir,
 	}
 
 	// Create configuration
-	ctx.cfg = createPluginConfig(tmpDir)
+	testCtx.cfg = createPluginConfig(tmpDir)
 
-	// Create fake Kubernetes client
-	ctx.fakeClient = fakeclientset.NewSimpleClientset()
+	// Create test controller manager with fake client
+	testCtx.testMgr, testCtx.controller, err = controller.NewTestControllerManager(ctx, testCtx.cfg, testCtx.logger)
+	Expect(err).NotTo(HaveOccurred(), "test controller manager creation should succeed")
 
-	// Create informer factory
-	ctx.informerFactory = externalversions.NewSharedInformerFactory(ctx.fakeClient, 0)
-
-	// Get cluster informer
-	ctx.informer = ctx.informerFactory.Extensions().V1alpha1().Clusters().Informer()
-
-	// Start informer factory
-	ctx.informerFactory.Start(ctx.stopCh)
-
-	// Wait for cache sync
-	synced := cache.WaitForCacheSync(ctx.stopCh, ctx.informer.HasSynced)
-	Expect(synced).To(BeTrue(), "informer cache should sync")
-
-	// Create plugin
-	ctx.plugin, err = plugin.NewPlugin(ctx.informer, ctx.cfg, ctx.logger)
+	// Create plugin with controller
+	testCtx.plugin, err = plugin.NewPlugin(testCtx.controller, testCtx.cfg, testCtx.logger)
 	Expect(err).NotTo(HaveOccurred(), "plugin creation should succeed")
-	Expect(ctx.plugin).NotTo(BeNil(), "plugin should not be nil")
+	Expect(testCtx.plugin).NotTo(BeNil(), "plugin should not be nil")
 
-	return ctx
+	return testCtx
 }
 
 // cleanup tears down the test context
@@ -233,9 +218,14 @@ func cleanup(ctx *testContext) {
 		ctx.plugin.Close()
 	}
 
-	if ctx.stopCh != nil {
-		close(ctx.stopCh)
+	if ctx.testMgr != nil {
+		ctx.testMgr.Stop()
 	}
+
+	if ctx.cancel != nil {
+		ctx.cancel()
+	}
+
 	err := os.RemoveAll(ctx.tmpDir)
 	Expect(err).NotTo(HaveOccurred(), "temporary directory cleanup should succeed")
 }
