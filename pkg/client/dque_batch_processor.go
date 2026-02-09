@@ -746,8 +746,6 @@ func (p *DQueBatchProcessor) exportBatch(batch []sdklog.Record) {
 	ctx, cancel := context.WithTimeout(p.ctx, p.config.exportTimeout)
 	defer cancel()
 
-	p.logger.V(3).Info("exporting batch", "size", len(batch))
-
 	// Blocking export call (gRPC or HTTP)
 	if err := p.exporter.Export(ctx, batch); err != nil {
 		p.logger.Error(err, "failed to export batch", "size", len(batch))
