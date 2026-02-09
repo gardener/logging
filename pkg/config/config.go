@@ -190,24 +190,24 @@ func processControllerConfigBoolFields(configMap map[string]any, config *Config)
 			SendLogsWhenIsInCreationState,
 		"sendlogstoshootwhenisinnreadystate": &config.ControllerConfig.ShootControllerClientConfig.
 			SendLogsWhenIsInReadyState,
-		"sendlogstoshootwhenisinhhibernatingstate": &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInHibernatingState,
-		"sendlogstoshootwhenisinhhibernatedstate":  &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInHibernatedState,
-		"sendlogstoshootwheninwakingstate":         &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInWakingState,
-		"sendlogstoshootwhenisdeletionstate":       &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInDeletionState,
-		"sendlogstoshootwhenisdeletedstate":        &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInDeletedState,
-		"sendlogstoshootwhenisrestorestate":        &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInRestoreState,
-		"sendlogstoshootwhenismigrationstate":      &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInMigrationState,
+		"sendlogstoshootwhenisinhibernatingstate": &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInHibernatingState,
+		"sendlogstoshootwhenisinhibernatedstate":  &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInHibernatedState,
+		"sendlogstoshootwheninwakingstate":        &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInWakingState,
+		"sendlogstoshootwhenisdeletionstate":      &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInDeletionState,
+		"sendlogstoshootwhenisdeletedstate":       &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInDeletedState,
+		"sendlogstoshootwhenisrestorestate":       &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInRestoreState,
+		"sendlogstoshootwhenismigrationstate":     &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInMigrationState,
 	}
 
 	// Map of lowercase ConfigMap keys to their corresponding SeedControllerClientConfig fields
 	seedConfigMapping := map[string]*bool{
 		"sendlogstoseedwhenshootisincreationstate": &config.ControllerConfig.SeedControllerClientConfig.
 			SendLogsWhenIsInCreationState,
-		"sendlogstoseedwhenshootisinnreadystate": &config.ControllerConfig.SeedControllerClientConfig.
+		"sendlogstoseedwhenshootisinreadystate": &config.ControllerConfig.SeedControllerClientConfig.
 			SendLogsWhenIsInReadyState,
-		"sendlogstoseedwhenshootisinhhibernatingstate": &config.ControllerConfig.SeedControllerClientConfig.
+		"sendlogstoseedwhenshootisinhibernatingstate": &config.ControllerConfig.SeedControllerClientConfig.
 			SendLogsWhenIsInHibernatingState,
-		"sendlogstoseedwhenshootisinhhibernatedstate": &config.ControllerConfig.SeedControllerClientConfig.
+		"sendlogstoseedwhenshootisinhibernatedstate": &config.ControllerConfig.SeedControllerClientConfig.
 			SendLogsWhenIsInHibernatedState,
 		"sendlogstoseedwhenshootinwakingstate": &config.ControllerConfig.SeedControllerClientConfig.
 			SendLogsWhenIsInWakingState,
