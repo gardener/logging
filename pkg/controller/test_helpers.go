@@ -76,7 +76,7 @@ func NewTestControllerManager(ctx context.Context, conf *config.Config, logger l
 	// Create the test reconciler
 	reconciler := &TestClusterReconciler{
 		Client:     fakeClient,
-		Log:        logger.WithName("test-cluster-reconciler"),
+		log:        logger.WithName("test-cluster-reconciler"),
 		controller: ctl,
 	}
 
@@ -146,7 +146,7 @@ func (tcm *TestControllerManager) UpdateCluster(ctx context.Context, cluster *ex
 // TestClusterReconciler is a test version of ClusterReconciler
 type TestClusterReconciler struct {
 	client.Client
-	Log        logr.Logger
+	log        logr.Logger
 	controller *controller
 	mu         sync.Mutex
 }
@@ -167,7 +167,7 @@ func (r *TestClusterReconciler) reconcileCluster(cluster *extensionsv1alpha1.Clu
 	// Extract shoot from cluster
 	shoot, err := extensioncontroller.ShootFromCluster(cluster)
 	if err != nil {
-		r.Log.Error(err, "can't extract shoot from cluster")
+		r.log.Error(err, "can't extract shoot from cluster")
 
 		return
 	}
@@ -217,7 +217,7 @@ func (r *TestClusterReconciler) ReconcileAll(ctx context.Context) error {
 		if _, err := r.Reconcile(ctx, ctrl.Request{
 			NamespacedName: client.ObjectKeyFromObject(cluster),
 		}); err != nil {
-			r.Log.Error(err, "failed to reconcile cluster", "cluster", cluster.Name)
+			r.log.Error(err, "failed to reconcile cluster", "cluster", cluster.Name)
 		}
 	}
 
@@ -226,7 +226,7 @@ func (r *TestClusterReconciler) ReconcileAll(ctx context.Context) error {
 
 // Reconcile implements the reconcile logic for testing
 func (r *TestClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := r.Log.WithValues("cluster", req.Name)
+	log := r.log.WithValues("cluster", req.Name)
 
 	cluster := &extensionsv1alpha1.Cluster{}
 	if err := r.Get(ctx, req.NamespacedName, cluster); err != nil {

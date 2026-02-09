@@ -177,7 +177,7 @@ var _ = Describe("Controller", func() {
 				logger:  logger,
 			}
 			reconciler = &TestClusterReconciler{
-				Log:        logger,
+				log:        logger,
 				controller: ctl,
 			}
 		})
