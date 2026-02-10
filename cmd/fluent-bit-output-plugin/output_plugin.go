@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"net/http"
 	_ "net/http/pprof"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -22,7 +21,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"k8s.io/apimachinery/pkg/util/uuid"
-	"k8s.io/client-go/tools/cache"
 	"k8s.io/component-base/version"
 
 	"github.com/gardener/logging/v1/pkg/config"
@@ -36,11 +34,9 @@ import (
 var (
 	// registered plugin instances, required for disposal during shutdown
 	// Uses sync.Map for concurrent-safe access without explicit locking
-	plugins          sync.Map // map[string]plugin.OutputPlugin
-	logger           logr.Logger
-	informer         cache.SharedIndexInformer
-	informerStopChan chan struct{}
-	pprofOnce        sync.Once
+	plugins   sync.Map // map[string]plugin.OutputPlugin
+	logger    logr.Logger
+	pprofOnce sync.Once
 )
 
 func init() {
@@ -70,7 +66,7 @@ func FLBPluginRegister(ctx unsafe.Pointer) int {
 	return output.FLBPluginRegister(ctx, "gardener", "Ship fluent-bit logs to an Output")
 }
 
-// FLBPluginInit is called for each vali plugin instance
+// FLBPluginInit is called for each plugin instance
 // Since fluent-bit 3, the context is recreated upon hot-reload.
 // Any plugin instances created before are not present in the new context, which may lead to memory leaks.
 //
@@ -105,13 +101,9 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 		setPprofProfile()
 	}
 
-	if len(cfg.ControllerConfig.DynamicHostPath) > 0 {
-		initClusterInformer()
-	}
-
 	id, _, _ := strings.Cut(string(uuid.NewUUID()), "-")
 
-	outputPlugin, err := plugin.NewPlugin(informer, cfg, log.NewLogger(cfg.PluginConfig.LogLevel))
+	outputPlugin, err := plugin.NewPlugin(cfg, log.NewLogger(cfg.PluginConfig.LogLevel))
 	if err != nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorNewPlugin).Inc()
 		logger.Error(err, "[flb-go] error creating output plugin", "id", id)
@@ -217,14 +209,9 @@ func FLBPluginExitCtx(ctx unsafe.Pointer) int {
 //
 //export FLBPluginExit
 func FLBPluginExit() int {
-	plugins.Range(func(_, value any) bool {
-		value.(plugin.OutputPlugin).Close()
+	pluginsCleanupAll()
 
-		return true
-	})
-	if informerStopChan != nil {
-		close(informerStopChan)
-	}
+	logger.Info("[flb-go] output plugin exit", "count", pluginsLen())
 
 	return output.FLB_OK
 }

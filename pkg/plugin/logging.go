@@ -10,7 +10,6 @@ import (
 	"regexp"
 
 	"github.com/go-logr/logr"
-	"k8s.io/client-go/tools/cache"
 
 	"github.com/gardener/logging/v1/pkg/client"
 	"github.com/gardener/logging/v1/pkg/config"
@@ -37,7 +36,7 @@ type logging struct {
 }
 
 // NewPlugin returns OutputPlugin output plugin
-func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger logr.Logger) (OutputPlugin, error) {
+func NewPlugin(cfg *config.Config, logger logr.Logger) (OutputPlugin, error) {
 	var err error
 
 	// Create a single context for the entire plugin lifecycle
@@ -50,13 +49,13 @@ func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger lo
 		cancel: cancel,
 	}
 
-	// TODO(nickytd): Remove this magic check and introduce an Id field in the plugin output configuration
-	// If the plugin ID is "shoot" then we shall have a dynamic host and a default "controller" client
+	// TODO(nickytd): Revisit the decision the dynamic host configuration is required to create the controller.
+	// Consider use of configuration to enable/disable the controller and dynamic host feature independently.
 	if len(cfg.ControllerConfig.DynamicHostPath) > 0 {
 		l.dynamicHostRegexp = regexp.MustCompile(cfg.ControllerConfig.DynamicHostRegex)
 
 		// Pass the plugin's context to the controller
-		if l.controller, err = controller.NewController(ctx, informer, cfg, logger); err != nil {
+		if l.controller, err = controller.NewController(ctx, cfg, logger); err != nil {
 			cancel()
 
 			return nil, err
@@ -78,6 +77,46 @@ func NewPlugin(informer cache.SharedIndexInformer, cfg *config.Config, logger lo
 	metrics.Clients.WithLabelValues(client.Seed.String()).Inc()
 
 	logger.Info("logging plugin created",
+		"seed_client_url", redactCredentialsFromEndpoint(l.seedClient.GetEndPoint()),
+		"seed_queue_name", cfg.OTLPConfig.DQueConfig.DQueName,
+	)
+
+	return l, nil
+}
+
+// NewPluginWithController creates a new plugin with a pre-configured controller.
+// This is useful for testing where the controller is created with a fake client.
+func NewPluginWithController(cfg *config.Config, logger logr.Logger, ctl controller.Controller) (OutputPlugin, error) {
+	var err error
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	l := &logging{
+		cfg:        cfg,
+		logger:     logger,
+		ctx:        ctx,
+		cancel:     cancel,
+		controller: ctl,
+	}
+
+	if len(cfg.ControllerConfig.DynamicHostPath) > 0 {
+		l.dynamicHostRegexp = regexp.MustCompile(cfg.ControllerConfig.DynamicHostRegex)
+	}
+
+	if cfg.PluginConfig.KubernetesMetadata.FallbackToTagWhenMetadataIsMissing {
+		l.extractKubernetesMetadataRegexp = regexp.MustCompile(cfg.PluginConfig.KubernetesMetadata.TagPrefix + cfg.PluginConfig.KubernetesMetadata.TagExpression)
+	}
+
+	opt := []client.Option{client.WithTarget(client.Seed), client.WithLogger(logger)}
+
+	if l.seedClient, err = client.NewClient(ctx, *cfg, opt...); err != nil {
+		cancel()
+
+		return nil, err
+	}
+	metrics.Clients.WithLabelValues(client.Seed.String()).Inc()
+
+	logger.Info("logging plugin created with controller",
 		"seed_client_url", redactCredentialsFromEndpoint(l.seedClient.GetEndPoint()),
 		"seed_queue_name", cfg.OTLPConfig.DQueConfig.DQueName,
 	)

@@ -56,3 +56,36 @@ func pluginsLen() int {
 
 	return count
 }
+
+// pluginsCleanupAll closes and removes all plugins from the plugins map.
+// This is used during fluent-bit shutdown (FLBPluginExit) to ensure all resources are properly released.
+// Each plugin's Close method is called to properly shutdown controllers and clients.
+func pluginsCleanupAll() {
+	var idsToDelete []string
+
+	// First, collect all plugin IDs and close them
+	plugins.Range(func(key, value any) bool {
+		id, ok := key.(string)
+		if !ok {
+			return true
+		}
+
+		p, ok := value.(plugin.OutputPlugin)
+		if ok && p != nil {
+			p.Close()
+		}
+
+		idsToDelete = append(idsToDelete, id)
+
+		return true
+	})
+
+	// Then delete all entries
+	for _, id := range idsToDelete {
+		plugins.Delete(id)
+	}
+
+	if len(idsToDelete) > 0 {
+		logger.Info("[flb-go] cleaned up plugins during shutdown", "count", len(idsToDelete))
+	}
+}
