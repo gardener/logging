@@ -188,34 +188,34 @@ func processControllerConfigBoolFields(configMap map[string]any, config *Config)
 	shootConfigMapping := map[string]*bool{
 		"sendlogstoshootwhenisincreationstate": &config.ControllerConfig.ShootControllerClientConfig.
 			SendLogsWhenIsInCreationState,
-		"sendlogstoshootwhenisinnreadystate": &config.ControllerConfig.ShootControllerClientConfig.
+		"sendlogstoshootwhenisinreadystate": &config.ControllerConfig.ShootControllerClientConfig.
 			SendLogsWhenIsInReadyState,
-		"sendlogstoshootwhenisinhhibernatingstate": &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInHibernatingState,
-		"sendlogstoshootwhenisinhhibernatedstate":  &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInHibernatedState,
-		"sendlogstoshootwheninwakingstate":         &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInWakingState,
-		"sendlogstoshootwhenisdeletionstate":       &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInDeletionState,
-		"sendlogstoshootwhenisdeletedstate":        &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInDeletedState,
-		"sendlogstoshootwhenisrestorestate":        &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInRestoreState,
-		"sendlogstoshootwhenismigrationstate":      &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInMigrationState,
+		"sendlogstoshootwhenisinhibernatingstate": &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInHibernatingState,
+		"sendlogstoshootwhenisinhibernatedstate":  &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInHibernatedState,
+		"sendlogstoshootwhenisinwakingstate":      &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInWakingState,
+		"sendlogstoshootwhenisindeletionstate":    &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInDeletionState,
+		"sendlogstoshootwhenisindeletedstate":     &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInDeletedState,
+		"sendlogstoshootwhenisinrestorestate":     &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInRestoreState,
+		"sendlogstoshootwhenisinmigrationstate":   &config.ControllerConfig.ShootControllerClientConfig.SendLogsWhenIsInMigrationState,
 	}
 
 	// Map of lowercase ConfigMap keys to their corresponding SeedControllerClientConfig fields
 	seedConfigMapping := map[string]*bool{
 		"sendlogstoseedwhenshootisincreationstate": &config.ControllerConfig.SeedControllerClientConfig.
 			SendLogsWhenIsInCreationState,
-		"sendlogstoseedwhenshootisinnreadystate": &config.ControllerConfig.SeedControllerClientConfig.
+		"sendlogstoseedwhenshootisinreadystate": &config.ControllerConfig.SeedControllerClientConfig.
 			SendLogsWhenIsInReadyState,
-		"sendlogstoseedwhenshootisinhhibernatingstate": &config.ControllerConfig.SeedControllerClientConfig.
+		"sendlogstoseedwhenshootisinhibernatingstate": &config.ControllerConfig.SeedControllerClientConfig.
 			SendLogsWhenIsInHibernatingState,
-		"sendlogstoseedwhenshootisinhhibernatedstate": &config.ControllerConfig.SeedControllerClientConfig.
+		"sendlogstoseedwhenshootisinhibernatedstate": &config.ControllerConfig.SeedControllerClientConfig.
 			SendLogsWhenIsInHibernatedState,
-		"sendlogstoseedwhenshootinwakingstate": &config.ControllerConfig.SeedControllerClientConfig.
+		"sendlogstoseedwhenshootisinwakingstate": &config.ControllerConfig.SeedControllerClientConfig.
 			SendLogsWhenIsInWakingState,
-		"sendlogstoseedwhenshootisdeletionstate": &config.ControllerConfig.SeedControllerClientConfig.
+		"sendlogstoseedwhenshootisindeletionstate": &config.ControllerConfig.SeedControllerClientConfig.
 			SendLogsWhenIsInDeletionState,
-		"sendlogstoseedwhenshootisrestorestate": &config.ControllerConfig.SeedControllerClientConfig.
+		"sendlogstoseedwhenshootisinrestorestate": &config.ControllerConfig.SeedControllerClientConfig.
 			SendLogsWhenIsInRestoreState,
-		"sendlogstoseedwhenshootismigrationstate": &config.ControllerConfig.SeedControllerClientConfig.
+		"sendlogstoseedwhenshootisinmigrationstate": &config.ControllerConfig.SeedControllerClientConfig.
 			SendLogsWhenIsInMigrationState,
 	}
 
