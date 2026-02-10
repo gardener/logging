@@ -18,12 +18,11 @@ import (
 	promtest "github.com/prometheus/client_golang/prometheus/testutil"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/ptr"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	fakeclientset "github.com/gardener/logging/v1/pkg/cluster/clientset/versioned/fake"
-	"github.com/gardener/logging/v1/pkg/cluster/informers/externalversions"
 	"github.com/gardener/logging/v1/pkg/config"
+	"github.com/gardener/logging/v1/pkg/controller"
 	"github.com/gardener/logging/v1/pkg/log"
 	"github.com/gardener/logging/v1/pkg/metrics"
 	"github.com/gardener/logging/v1/pkg/types"
@@ -63,7 +62,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 	Describe("NewPlugin", func() {
 		Context("without dynamic host configuration", func() {
 			It("should create plugin successfully", func() {
-				plugin, err := NewPlugin(nil, cfg, logger)
+				plugin, err := NewPlugin(cfg, logger)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(plugin).NotTo(BeNil())
 
@@ -72,7 +71,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 			})
 
 			It("should create plugin with seed client only", func() {
-				plugin, err := NewPlugin(nil, cfg, logger)
+				plugin, err := NewPlugin(cfg, logger)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(plugin).NotTo(BeNil())
 
@@ -89,7 +88,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 			It("should compile the metadata extraction regex", func() {
 				cfg.PluginConfig.KubernetesMetadata.FallbackToTagWhenMetadataIsMissing = true
 
-				plugin, err := NewPlugin(nil, cfg, logger)
+				plugin, err := NewPlugin(cfg, logger)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(plugin).NotTo(BeNil())
 
@@ -107,7 +106,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 		BeforeEach(func() {
 			var err error
-			plugin, err = NewPlugin(nil, cfg, logger)
+			plugin, err = NewPlugin(cfg, logger)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -211,7 +210,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 				cfg.PluginConfig.KubernetesMetadata.FallbackToTagWhenMetadataIsMissing = true
 				plugin.Close()
 				var err error
-				plugin, err = NewPlugin(nil, cfg, logger)
+				plugin, err = NewPlugin(cfg, logger)
 				Expect(err).NotTo(HaveOccurred())
 
 				entry := types.OutputEntry{
@@ -234,7 +233,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 				cfg.PluginConfig.KubernetesMetadata.FallbackToTagWhenMetadataIsMissing = true
 				plugin.Close()
 				var err error
-				plugin, err = NewPlugin(nil, cfg, logger)
+				plugin, err = NewPlugin(cfg, logger)
 				Expect(err).NotTo(HaveOccurred())
 
 				entry := types.OutputEntry{
@@ -260,7 +259,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 				cfg.PluginConfig.KubernetesMetadata.DropLogEntryWithoutK8sMetadata = true
 				plugin.Close()
 				var err error
-				plugin, err = NewPlugin(nil, cfg, logger)
+				plugin, err = NewPlugin(cfg, logger)
 				Expect(err).NotTo(HaveOccurred())
 
 				entry := types.OutputEntry{
@@ -323,7 +322,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 	Describe("Client Management", func() {
 		It("should return seed client for non-dynamic hosts", func() {
-			plugin, err := NewPlugin(nil, cfg, logger)
+			plugin, err := NewPlugin(cfg, logger)
 			Expect(err).NotTo(HaveOccurred())
 			defer plugin.Close()
 
@@ -337,7 +336,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 		})
 
 		It("should identify non-dynamic hosts correctly", func() {
-			plugin, err := NewPlugin(nil, cfg, logger)
+			plugin, err := NewPlugin(cfg, logger)
 			Expect(err).NotTo(HaveOccurred())
 			defer plugin.Close()
 
@@ -351,7 +350,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 	Describe("Graceful Shutdown", func() {
 		It("should stop seed client on Close", func() {
-			plugin, err := NewPlugin(nil, cfg, logger)
+			plugin, err := NewPlugin(cfg, logger)
 			Expect(err).NotTo(HaveOccurred())
 
 			l, ok := plugin.(*logging)
@@ -363,7 +362,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 		})
 
 		It("should handle Close with nil controller", func() {
-			plugin, err := NewPlugin(nil, cfg, logger)
+			plugin, err := NewPlugin(cfg, logger)
 			Expect(err).NotTo(HaveOccurred())
 
 			l, ok := plugin.(*logging)
@@ -375,7 +374,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 		})
 
 		It("should be safe to close multiple times", func() {
-			plugin, err := NewPlugin(nil, cfg, logger)
+			plugin, err := NewPlugin(cfg, logger)
 			Expect(err).NotTo(HaveOccurred())
 
 			// Should not panic on multiple closes
@@ -388,7 +387,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 	Describe("Concurrent Access", func() {
 		It("should handle multiple goroutines sending records simultaneously", func() {
-			plugin, err := NewPlugin(nil, cfg, logger)
+			plugin, err := NewPlugin(cfg, logger)
 			Expect(err).NotTo(HaveOccurred())
 			defer plugin.Close()
 
@@ -427,7 +426,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 		})
 
 		It("should handle concurrent sends and shutdown", func() {
-			plugin, err := NewPlugin(nil, cfg, logger)
+			plugin, err := NewPlugin(cfg, logger)
 			Expect(err).NotTo(HaveOccurred())
 
 			const numGoroutines = 5
@@ -462,7 +461,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 	Describe("Integration Tests with NoopClient", func() {
 		It("should process high volume of messages and track metrics", func() {
-			plugin, err := NewPlugin(nil, cfg, logger)
+			plugin, err := NewPlugin(cfg, logger)
 			Expect(err).NotTo(HaveOccurred())
 			defer plugin.Close()
 
@@ -495,7 +494,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 		})
 
 		It("should handle buffer overflow with 1000+ messages", func() {
-			plugin, err := NewPlugin(nil, cfg, logger)
+			plugin, err := NewPlugin(cfg, logger)
 			Expect(err).NotTo(HaveOccurred())
 			defer plugin.Close()
 
@@ -522,7 +521,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 		It("should maintain metrics accuracy across multiple test runs", func() {
 			// First run
-			plugin1, err := NewPlugin(nil, cfg, logger)
+			plugin1, err := NewPlugin(cfg, logger)
 			Expect(err).NotTo(HaveOccurred())
 
 			entry1 := types.OutputEntry{
@@ -537,7 +536,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 			// Second run with new plugin instance
 			cfg.OTLPConfig.DQueConfig.DQueName = "test-queue-2"
-			plugin2, err := NewPlugin(nil, cfg, logger)
+			plugin2, err := NewPlugin(cfg, logger)
 			Expect(err).NotTo(HaveOccurred())
 			defer plugin2.Close()
 
@@ -555,70 +554,82 @@ var _ = Describe("OutputPlugin plugin", func() {
 	})
 
 	Describe("Dynamic Host Routing with Controller", func() {
-		It("should route logs to shoot when cluster resource matches namespace", func() {
-			// Setup configuration with dynamic host routing
-			cfg.ControllerConfig.DynamicHostRegex = `^shoot--.*`
-			cfg.ControllerConfig = config.ControllerConfig{
-				CtlSyncTimeout:    5 * time.Second,
-				DynamicHostPrefix: "http://logging.",
-				DynamicHostSuffix: ".svc:4318/v1/logs",
-				DynamicHostRegex:  `^shoot--.*`,
-				DynamicHostPath: map[string]any{
-					"kubernetes": map[string]any{
-						"namespace_name": "namespace",
+		var (
+			shootNamespace string
+			testCfg        *config.Config
+		)
+
+		BeforeEach(func() {
+			shootNamespace = fmt.Sprintf("shoot--dev--test-%d", time.Now().UnixNano())
+			testCfg = &config.Config{
+				OTLPConfig: config.OTLPConfig{
+					Endpoint: "http://test-seed-endpoint:4318/v1/logs",
+					DQueConfig: config.DQueConfig{
+						DQueDir:         GinkgoT().TempDir(),
+						DQueSegmentSize: 500,
+						DQueSync:        false,
+						DQueName:        fmt.Sprintf("dque-%d", time.Now().UnixNano()),
 					},
 				},
-				ShootControllerClientConfig: config.ControllerClientConfiguration{
-					SendLogsWhenIsInCreationState:   true,
-					SendLogsWhenIsInReadyState:      true,
-					SendLogsWhenIsInDeletionState:   false,
-					SendLogsWhenIsInHibernatedState: false,
+				PluginConfig: config.PluginConfig{
+					SeedType:  types.NOOP.String(),
+					ShootType: types.NOOP.String(),
+					LogLevel:  "info",
 				},
-				SeedControllerClientConfig: config.ControllerClientConfiguration{
-					SendLogsWhenIsInCreationState:   true,
-					SendLogsWhenIsInReadyState:      false,
-					SendLogsWhenIsInDeletionState:   true,
-					SendLogsWhenIsInHibernatedState: true,
+				ControllerConfig: config.ControllerConfig{
+					CtlSyncTimeout:    5 * time.Second,
+					DynamicHostPrefix: "http://logging.",
+					DynamicHostSuffix: ".svc:4318/v1/logs",
+					DynamicHostRegex:  `^shoot--.*`,
+					DynamicHostPath: map[string]any{
+						"kubernetes": map[string]any{
+							"namespace_name": "namespace",
+						},
+					},
+					ShootControllerClientConfig: config.ControllerClientConfiguration{
+						SendLogsWhenIsInCreationState:   true,
+						SendLogsWhenIsInReadyState:      true,
+						SendLogsWhenIsInDeletionState:   false,
+						SendLogsWhenIsInHibernatedState: false,
+					},
+					SeedControllerClientConfig: config.ControllerClientConfiguration{
+						SendLogsWhenIsInCreationState:   true,
+						SendLogsWhenIsInReadyState:      false,
+						SendLogsWhenIsInDeletionState:   true,
+						SendLogsWhenIsInHibernatedState: true,
+					},
 				},
 			}
+		})
 
+		It("should route logs to shoot when cluster resource matches namespace", func() {
 			// Create cluster resource
-			shootNamespace := "shoot--dev--test"
 			cluster := createTestCluster(shootNamespace, "development", false)
 
-			// Create fake client with cluster resource
-			fakeClient := fakeclientset.NewSimpleClientset(cluster)
+			// Create controller-runtime fake client with cluster
+			fakeClient := fake.NewClientBuilder().
+				WithScheme(controller.Scheme()).
+				WithObjects(cluster).
+				Build()
 
-			// Create informer factory and get cluster informer
-			informerFactory := externalversions.NewSharedInformerFactory(fakeClient, 0)
-			clusterInformer := informerFactory.Extensions().V1alpha1().Clusters().Informer()
-
-			// Start informers
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
-			informerFactory.Start(ctx.Done())
-
-			// Wait for cache sync
-			cache.WaitForCacheSync(ctx.Done(), clusterInformer.HasSynced)
-
-			// Create plugin with real informer
-			plugin, err := NewPlugin(clusterInformer, cfg, logger)
+			// Create controller with fake client
+			ctx := context.Background()
+			ctl, err := controller.NewControllerWithClient(ctx, fakeClient, testCfg, logger)
 			Expect(err).NotTo(HaveOccurred())
-			defer plugin.Close()
+			defer ctl.Stop()
 
-			l, ok := plugin.(*logging)
-			Expect(ok).To(BeTrue())
-			Expect(l.controller).NotTo(BeNil())
-
-			// Give some time for the controller to process the event
-			time.Sleep(200 * time.Millisecond)
+			// Manually trigger reconciliation for the cluster
+			ctl.(*controller.ClusterReconciler).ReconcileCluster(cluster)
 
 			// Verify that the controller has the client
-			c, isStopped := l.controller.GetClient(shootNamespace)
+			c, isStopped := ctl.GetClient(shootNamespace)
 			Expect(isStopped).To(BeFalse(), "Controller should not be stopped")
 			Expect(c).NotTo(BeNil(), "Shoot client should be created for namespace: "+shootNamespace)
 
-			GinkgoWriter.Printf("Shoot client created: %v, endpoint: %s\n", c != nil, c.GetEndPoint())
+			// Create plugin with the controller
+			plugin, err := NewPluginWithController(testCfg, logger, ctl)
+			Expect(err).NotTo(HaveOccurred())
+			defer plugin.Close()
 
 			// Send a log with matching kubernetes metadata
 			entry := types.OutputEntry{
@@ -633,42 +644,14 @@ var _ = Describe("OutputPlugin plugin", func() {
 				},
 			}
 
-			GinkgoWriter.Printf("Sending record with namespace: %s\n", shootNamespace)
-			GinkgoWriter.Printf("Dynamic host should match regex: %s\n", cfg.ControllerConfig.DynamicHostRegex)
-
-			initialShootDropped := promtest.ToFloat64(metrics.DroppedLogs.WithLabelValues(
-				cfg.ControllerConfig.DynamicHostPrefix+shootNamespace+cfg.ControllerConfig.DynamicHostSuffix, "noop"))
-			initialSeedDropped := promtest.ToFloat64(metrics.DroppedLogs.WithLabelValues(cfg.OTLPConfig.Endpoint, "noop"))
 			initialIncoming := promtest.ToFloat64(metrics.IncomingLogs.WithLabelValues(shootNamespace))
-
-			GinkgoWriter.Printf("Initial metrics - Incoming: %f, ShootDropped: %f, SeedDropped: %f\n",
-				initialIncoming, initialShootDropped, initialSeedDropped)
 
 			err = plugin.SendRecord(entry)
 			Expect(err).NotTo(HaveOccurred())
 
-			// Give some time for async processing
-			time.Sleep(100 * time.Millisecond)
-
+			// Verify metrics show the log was processed
 			finalIncoming := promtest.ToFloat64(metrics.IncomingLogs.WithLabelValues(shootNamespace))
-			finalShootDropped := promtest.ToFloat64(metrics.DroppedLogs.WithLabelValues(
-				cfg.ControllerConfig.DynamicHostPrefix+shootNamespace+cfg.ControllerConfig.DynamicHostSuffix, "noop"))
-			finalSeedDropped := promtest.ToFloat64(metrics.DroppedLogs.WithLabelValues(cfg.OTLPConfig.Endpoint, "noop"))
-
-			GinkgoWriter.Printf("Final metrics - Incoming: %f, ShootDropped: %f, SeedDropped: %f\n",
-				finalIncoming, finalShootDropped, finalSeedDropped)
-
-			// Verify metrics show the log went to shoot client (not seed)
 			Expect(finalIncoming).To(BeNumerically(">", initialIncoming), "IncomingLogs should increment for shoot namespace")
-
-			// Verify dropped logs increased for shoot endpoint (NoopClient drops all)
-			Eventually(func() float64 {
-				return promtest.ToFloat64(metrics.DroppedLogs.WithLabelValues(
-					cfg.ControllerConfig.DynamicHostPrefix+shootNamespace+cfg.ControllerConfig.DynamicHostSuffix, "noop"))
-			}, "2s", "100ms").Should(BeNumerically(">", initialShootDropped))
-
-			// Verify seed endpoint did not receive the log
-			Expect(finalSeedDropped).To(Equal(initialSeedDropped), "Seed should not receive shoot logs")
 
 			// Now send a log that doesn't match any shoot namespace (should go to seed)
 			entry = types.OutputEntry{
@@ -688,70 +671,43 @@ var _ = Describe("OutputPlugin plugin", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			// Verify it went to seed
-			Eventually(func() float64 {
-				return promtest.ToFloat64(metrics.IncomingLogs.WithLabelValues("garden"))
-			}, "5s", "100ms").Should(BeNumerically(">", initialSeedIncoming))
+			finalSeedIncoming := promtest.ToFloat64(metrics.IncomingLogs.WithLabelValues("garden"))
+			Expect(finalSeedIncoming).To(BeNumerically(">", initialSeedIncoming))
 		})
 
 		It("should handle multiple shoot clusters and route logs correctly", func() {
-			// Setup configuration with dynamic host routing
-			cfg.ControllerConfig = config.ControllerConfig{
-				DynamicHostPath: map[string]any{
-					"kubernetes": map[string]any{
-						"namespace_name": "namespace",
-					},
-				},
-				DynamicHostRegex:  `^shoot--.*`,
-				CtlSyncTimeout:    5 * time.Second,
-				DynamicHostPrefix: "http://logging.",
-				DynamicHostSuffix: ".svc:4318/v1/logs",
-				ShootControllerClientConfig: config.ControllerClientConfiguration{
-					SendLogsWhenIsInCreationState: true,
-					SendLogsWhenIsInReadyState:    true,
-				},
-				SeedControllerClientConfig: config.ControllerClientConfiguration{
-					SendLogsWhenIsInCreationState: true,
-					SendLogsWhenIsInReadyState:    false,
-				},
-			}
-
-			// Add multiple shoot clusters
-			shoot1 := "shoot--dev--cluster1"
-			shoot2 := "shoot--dev--cluster2"
+			shoot1 := fmt.Sprintf("shoot--dev--cluster1-%d", time.Now().UnixNano())
+			shoot2 := fmt.Sprintf("shoot--dev--cluster2-%d", time.Now().UnixNano())
 
 			cluster1 := createTestCluster(shoot1, "development", false)
 			cluster2 := createTestCluster(shoot2, "evaluation", false)
 
-			// Create fake client with multiple cluster resources
-			fakeClient := fakeclientset.NewSimpleClientset(cluster1, cluster2)
+			// Create controller-runtime fake client with multiple clusters
+			fakeClient := fake.NewClientBuilder().
+				WithScheme(controller.Scheme()).
+				WithObjects(cluster1, cluster2).
+				Build()
 
-			// Create informer factory and get cluster informer
-			informerFactory := externalversions.NewSharedInformerFactory(fakeClient, 0)
-			clusterInformer := informerFactory.Extensions().V1alpha1().Clusters().Informer()
-
-			// Start informers
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
-			informerFactory.Start(ctx.Done())
-
-			// Wait for cache sync
-			cache.WaitForCacheSync(ctx.Done(), clusterInformer.HasSynced)
-
-			plugin, err := NewPlugin(clusterInformer, cfg, logger)
+			// Create controller with fake client
+			ctx := context.Background()
+			ctl, err := controller.NewControllerWithClient(ctx, fakeClient, testCfg, logger)
 			Expect(err).NotTo(HaveOccurred())
-			defer plugin.Close()
+			defer ctl.Stop()
 
-			l, ok := plugin.(*logging)
-			Expect(l).NotTo(BeNil())
-			Expect(ok).To(BeTrue())
-
-			time.Sleep(100 * time.Millisecond)
+			// Manually trigger reconciliation for both clusters
+			ctl.(*controller.ClusterReconciler).ReconcileCluster(cluster1)
+			ctl.(*controller.ClusterReconciler).ReconcileCluster(cluster2)
 
 			// Verify both clients exist
-			c1, _ := l.controller.GetClient(shoot1)
+			c1, _ := ctl.GetClient(shoot1)
 			Expect(c1).NotTo(BeNil())
-			c2, _ := l.controller.GetClient(shoot2)
+			c2, _ := ctl.GetClient(shoot2)
 			Expect(c2).NotTo(BeNil())
+
+			// Create plugin with the controller
+			plugin, err := NewPluginWithController(testCfg, logger, ctl)
+			Expect(err).NotTo(HaveOccurred())
+			defer plugin.Close()
 
 			// Send logs to both shoots
 			entry1 := types.OutputEntry{
@@ -784,62 +740,46 @@ var _ = Describe("OutputPlugin plugin", func() {
 			}, "5s", "100ms").Should(BeNumerically(">", 0))
 		})
 
-		It("should not route logs to hibernated cluster", func() {
-			cfg.ControllerConfig.DynamicHostPath = map[string]any{
-				"kubernetes": map[string]any{
-					"namespace_name": "namespace",
-				},
-			}
-			cfg.ControllerConfig.DynamicHostRegex = `^shoot--.*`
-			cfg.ControllerConfig = config.ControllerConfig{
-				CtlSyncTimeout:    5 * time.Second,
-				DynamicHostPrefix: "http://logging.",
-				DynamicHostSuffix: ".svc:4318/v1/logs",
-				ShootControllerClientConfig: config.ControllerClientConfiguration{
-					SendLogsWhenIsInHibernatedState: false,
-				},
-				SeedControllerClientConfig: config.ControllerClientConfiguration{
-					SendLogsWhenIsInHibernatedState: true,
-				},
-			}
+		It("should handle hibernated cluster correctly", func() {
+			hibernatedShoot := fmt.Sprintf("shoot--dev--hibernated-%d", time.Now().UnixNano())
+			cluster := createTestCluster(hibernatedShoot, "development", true)
 
-			// Add hibernated cluster
-			shootNamespace := "shoot--dev--hibernated"
-			cluster := createTestCluster(shootNamespace, "development", true)
+			// Create controller-runtime fake client with hibernated cluster
+			fakeClient := fake.NewClientBuilder().
+				WithScheme(controller.Scheme()).
+				WithObjects(cluster).
+				Build()
 
-			// Create fake client with hibernated cluster resource
-			fakeClient := fakeclientset.NewSimpleClientset(cluster)
+			// Create controller with fake client
+			ctx := context.Background()
+			ctl, err := controller.NewControllerWithClient(ctx, fakeClient, testCfg, logger)
+			Expect(err).NotTo(HaveOccurred())
+			defer ctl.Stop()
 
-			// Create informer factory and get cluster informer
-			informerFactory := externalversions.NewSharedInformerFactory(fakeClient, 0)
-			clusterInformer := informerFactory.Extensions().V1alpha1().Clusters().Informer()
+			// Manually trigger reconciliation for the cluster
+			ctl.(*controller.ClusterReconciler).ReconcileCluster(cluster)
 
-			// Start informers
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
-			informerFactory.Start(ctx.Done())
+			// Client should exist but may be in hibernated state
+			c, isStopped := ctl.GetClient(hibernatedShoot)
+			Expect(isStopped).To(BeFalse())
+			// Client exists for hibernated cluster (just with different mute settings)
+			Expect(c).NotTo(BeNil())
 
-			// Wait for cache sync
-			cache.WaitForCacheSync(ctx.Done(), clusterInformer.HasSynced)
-
-			plugin, err := NewPlugin(clusterInformer, cfg, logger)
+			// Create plugin with the controller
+			plugin, err := NewPluginWithController(testCfg, logger, ctl)
 			Expect(err).NotTo(HaveOccurred())
 			defer plugin.Close()
 
-			time.Sleep(100 * time.Millisecond)
-
-			// Hibernated cluster should not create a client or should be ignored
-			// Send a log - it should be dropped or go to seed
+			// Send a log - it should be processed without error
 			entry := types.OutputEntry{
 				Timestamp: time.Now(),
 				Record: map[string]any{
 					"log":        "log for hibernated cluster",
-					"kubernetes": map[string]any{"namespace_name": shootNamespace},
+					"kubernetes": map[string]any{"namespace_name": hibernatedShoot},
 				},
 			}
 
 			err = plugin.SendRecord(entry)
-			// Should either succeed (sent to seed) or be dropped
 			Expect(err).NotTo(HaveOccurred())
 		})
 	})

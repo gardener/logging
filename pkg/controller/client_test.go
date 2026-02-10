@@ -425,7 +425,7 @@ var _ = Describe("Controller Client", func() {
 
 	Describe("#GetClient", func() {
 		var (
-			ctl                  *controller
+			reconciler           *ClusterReconciler
 			clientName           = "test-client"
 			testControllerClient *fakeControllerClient
 		)
@@ -446,29 +446,32 @@ var _ = Describe("Controller Client", func() {
 				state:        clusterStateCreation,
 			}
 
-			ctl = &controller{
+			ctx, cancel := context.WithCancel(context.Background())
+			reconciler = &ClusterReconciler{
 				clients: map[string]Client{
 					clientName: testControllerClient,
 				},
 				logger: logger,
+				ctx:    ctx,
+				cancel: cancel,
 			}
 		})
 
 		It("Should return the right client", func() {
-			c, closed := ctl.GetClient(clientName)
+			c, closed := reconciler.GetClient(clientName)
 			Expect(closed).To(BeFalse())
 			Expect(c).To(Equal(testControllerClient))
 		})
 
 		It("Should not return the right client", func() {
-			c, closed := ctl.GetClient("some-fake-name")
+			c, closed := reconciler.GetClient("some-fake-name")
 			Expect(closed).To(BeFalse())
 			Expect(c).To(BeNil())
 		})
 
 		It("Should not return client when controller is stopped", func() {
-			ctl.Stop()
-			c, closed := ctl.GetClient(clientName)
+			reconciler.Stop()
+			c, closed := reconciler.GetClient(clientName)
 			Expect(closed).To(BeTrue())
 			Expect(c).To(BeNil())
 		})
