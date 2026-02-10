@@ -583,7 +583,7 @@ func buildTLSConfig(config *Config) error {
 
 	tlsConfig := &tls.Config{
 		ServerName:         otlp.TLSServerName,
-		InsecureSkipVerify: otlp.TLSInsecureSkipVerify, //nolint:gosec // This is configured by the user
+		InsecureSkipVerify: otlp.TLSInsecureSkipVerify, // #nosec G402 //nolint:gosec // This is configured by the user
 	}
 
 	// Load client certificate if both cert and key files are specified
