@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -252,7 +253,7 @@ func NewDQueBatchProcessor(
 	processorCtx, cancel := context.WithCancel(ctx)
 
 	processor := &DQueBatchProcessor{
-		logger:      logger.WithValues("component", "dque_batch_processor", "endpoint", config.endpoint),
+		logger:      logger.WithValues("path", strings.Join([]string{config.dqueueDir, config.dqueueName}, "/"), "endpoint", config.endpoint),
 		config:      config,
 		exporter:    exporter,
 		queue:       queue,
@@ -746,8 +747,6 @@ func (p *DQueBatchProcessor) exportBatch(batch []sdklog.Record) {
 	ctx, cancel := context.WithTimeout(p.ctx, p.config.exportTimeout)
 	defer cancel()
 
-	p.logger.V(3).Info("exporting batch", "size", len(batch))
-
 	// Blocking export call (gRPC or HTTP)
 	if err := p.exporter.Export(ctx, batch); err != nil {
 		p.logger.Error(err, "failed to export batch", "size", len(batch))
@@ -845,8 +844,6 @@ func (p *DQueBatchProcessor) Shutdown(ctx context.Context) error {
 	}
 	p.closed = true
 	p.mu.Unlock()
-
-	p.logger.V(2).Info("shutting down batch processor")
 
 	// Signal process loop to stop
 	p.cancel()
