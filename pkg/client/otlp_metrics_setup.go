@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"os"
 	"sync"
 
 	promclient "github.com/prometheus/client_golang/prometheus"
@@ -39,6 +40,12 @@ var (
 )
 
 func init() {
+	// Enable OpenTelemetry SDK observability (self-instrumentation) metrics.
+	// This is an experimental feature that emits metrics like otel.sdk.log.created,
+	// otel.sdk.exporter.* etc. The environment variable must be set before SDK initialization.
+	// See: https://pkg.go.dev/go.opentelemetry.io/otel/sdk/log/internal/x
+	_ = os.Setenv("OTEL_GO_X_OBSERVABILITY", "true")
+
 	if globalMetricsSetup, metricsSetupErr = initializeMetricsSetup(); metricsSetupErr != nil {
 		slog.Error("Failed to initialize OTLP metrics setup", "error", metricsSetupErr)
 	}

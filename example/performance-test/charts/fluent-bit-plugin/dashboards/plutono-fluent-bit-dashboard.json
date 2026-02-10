@@ -16,12 +16,12 @@
   "editable": true,
   "gnetId": 7752,
   "graphTooltip": 1,
-  "iteration": 1766128205437,
+  "iteration": 1770812698113,
   "links": [],
   "panels": [
     {
       "collapsed": false,
-      "datasource": null,
+      "datasource": "prometheus",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -80,7 +80,7 @@
         "text": {},
         "textMode": "value"
       },
-      "pluginVersion": "7.5.42",
+      "pluginVersion": "7.5.45",
       "targets": [
         {
           "exemplar": true,
@@ -138,7 +138,7 @@
         "showThresholdMarkers": false,
         "text": {}
       },
-      "pluginVersion": "7.5.42",
+      "pluginVersion": "7.5.45",
       "targets": [
         {
           "exemplar": true,
@@ -199,7 +199,7 @@
         "showThresholdMarkers": false,
         "text": {}
       },
-      "pluginVersion": "7.5.42",
+      "pluginVersion": "7.5.45",
       "targets": [
         {
           "exemplar": true,
@@ -260,7 +260,7 @@
         "showThresholdMarkers": false,
         "text": {}
       },
-      "pluginVersion": "7.5.42",
+      "pluginVersion": "7.5.45",
       "targets": [
         {
           "exemplar": true,
@@ -321,7 +321,7 @@
         "showThresholdMarkers": false,
         "text": {}
       },
-      "pluginVersion": "7.5.42",
+      "pluginVersion": "7.5.45",
       "targets": [
         {
           "exemplar": true,
@@ -386,7 +386,7 @@
         "text": {},
         "textMode": "value"
       },
-      "pluginVersion": "7.5.42",
+      "pluginVersion": "7.5.45",
       "targets": [
         {
           "exemplar": true,
@@ -402,6 +402,7 @@
     },
     {
       "datasource": "prometheus",
+      "description": "Input plugin records rate.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -477,14 +478,6 @@
           "legendFormat": "{{name}}",
           "queryType": "randomWalk",
           "refId": "A"
-        },
-        {
-          "exemplar": true,
-          "expr": "sum(rate(fluentbit_input_storage_overlimit{pod=~\"$pod\"}[$__rate_interval])) by (name)",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "{{name}}",
-          "refId": "B"
         }
       ],
       "timeFrom": null,
@@ -494,6 +487,7 @@
     },
     {
       "datasource": "prometheus",
+      "description": "Output plugin records rate",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -637,7 +631,7 @@
             "max"
           ],
           "displayMode": "table",
-          "placement": "right"
+          "placement": "bottom"
         },
         "tooltipOptions": {
           "mode": "single"
@@ -722,7 +716,7 @@
             "max"
           ],
           "displayMode": "table",
-          "placement": "right"
+          "placement": "bottom"
         },
         "tooltipOptions": {
           "mode": "single"
@@ -747,7 +741,7 @@
     },
     {
       "datasource": "prometheus",
-      "description": "",
+      "description": "Fluent-bit chunks in memory",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -803,10 +797,12 @@
         "graph": {},
         "legend": {
           "calcs": [
-            "last"
+            "last",
+            "mean",
+            "max"
           ],
           "displayMode": "table",
-          "placement": "right"
+          "placement": "bottom"
         },
         "tooltipOptions": {
           "mode": "single"
@@ -829,6 +825,7 @@
     },
     {
       "datasource": "prometheus",
+      "description": "Fluent-bit chunks on filesystem",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -884,10 +881,12 @@
         "graph": {},
         "legend": {
           "calcs": [
-            "last"
+            "last",
+            "mean",
+            "max"
           ],
           "displayMode": "table",
-          "placement": "right"
+          "placement": "bottom"
         },
         "tooltipOptions": {
           "mode": "single"
@@ -909,6 +908,7 @@
     },
     {
       "datasource": "prometheus",
+      "description": "Chunks that are stored simultaneously in memory and in filesystem storage",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -967,7 +967,7 @@
             "last"
           ],
           "displayMode": "table",
-          "placement": "right"
+          "placement": "bottom"
         },
         "tooltipOptions": {
           "mode": "single"
@@ -990,6 +990,7 @@
     },
     {
       "datasource": "prometheus",
+      "description": "Chunks that are stored only on the filesystem ",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1048,7 +1049,7 @@
             "last"
           ],
           "displayMode": "table",
-          "placement": "right"
+          "placement": "bottom"
         },
         "tooltipOptions": {
           "mode": "single"
@@ -1071,7 +1072,7 @@
     },
     {
       "collapsed": true,
-      "datasource": null,
+      "datasource": "prometheus",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -1109,7 +1110,7 @@
             "h": 5,
             "w": 4,
             "x": 0,
-            "y": 2
+            "y": 38
           },
           "id": 75,
           "options": {
@@ -1127,7 +1128,7 @@
             "text": {},
             "textMode": "value"
           },
-          "pluginVersion": "7.5.42",
+          "pluginVersion": "7.5.45",
           "targets": [
             {
               "exemplar": true,
@@ -1170,7 +1171,7 @@
             "h": 5,
             "w": 4,
             "x": 4,
-            "y": 2
+            "y": 38
           },
           "id": 76,
           "options": {
@@ -1188,11 +1189,11 @@
             "text": {},
             "textMode": "value"
           },
-          "pluginVersion": "7.5.42",
+          "pluginVersion": "7.5.45",
           "targets": [
             {
               "exemplar": true,
-              "expr": "sum(fluentbit_gardener_output_client_logs_total{pod=~\"$pod\",host=~\".+$host.svc.cluster.local:.+\"})",
+              "expr": "sum(fluentbit_gardener_output_client_logs_total{pod=~\"$pod\",host=~\".+$host.+\"})",
               "interval": "",
               "legendFormat": "",
               "queryType": "randomWalk",
@@ -1232,7 +1233,7 @@
             "h": 5,
             "w": 6,
             "x": 8,
-            "y": 2
+            "y": 38
           },
           "id": 142,
           "options": {
@@ -1250,7 +1251,7 @@
             "text": {},
             "textMode": "auto"
           },
-          "pluginVersion": "7.5.42",
+          "pluginVersion": "7.5.45",
           "targets": [
             {
               "exemplar": true,
@@ -1309,7 +1310,7 @@
             "h": 5,
             "w": 3,
             "x": 14,
-            "y": 2
+            "y": 38
           },
           "id": 78,
           "options": {
@@ -1327,7 +1328,7 @@
             "text": {},
             "textMode": "value"
           },
-          "pluginVersion": "7.5.42",
+          "pluginVersion": "7.5.45",
           "targets": [
             {
               "exemplar": true,
@@ -1370,7 +1371,7 @@
             "h": 5,
             "w": 3,
             "x": 17,
-            "y": 2
+            "y": 38
           },
           "id": 77,
           "options": {
@@ -1388,7 +1389,7 @@
             "text": {},
             "textMode": "value"
           },
-          "pluginVersion": "7.5.42",
+          "pluginVersion": "7.5.45",
           "targets": [
             {
               "exemplar": true,
@@ -1431,7 +1432,7 @@
             "h": 5,
             "w": 4,
             "x": 20,
-            "y": 2
+            "y": 38
           },
           "id": 134,
           "options": {
@@ -1449,11 +1450,11 @@
             "text": {},
             "textMode": "auto"
           },
-          "pluginVersion": "7.5.42",
+          "pluginVersion": "7.5.45",
           "targets": [
             {
               "exemplar": true,
-              "expr": "sum(output_plugin_otel_sdk_exporter_log_exported_total{server_address=~\".+$host.svc.cluster.local\"})",
+              "expr": "sum(output_plugin_otel_sdk_exporter_log_exported_total{server_address=~\".+$host.*\"})",
               "interval": "",
               "legendFormat": "",
               "queryType": "randomWalk",
@@ -1465,7 +1466,7 @@
         },
         {
           "datasource": "prometheus",
-          "description": "Output plugin total logs",
+          "description": "Output plugin incoming records rate",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -1510,19 +1511,19 @@
             "h": 8,
             "w": 13,
             "x": 0,
-            "y": 7
+            "y": 43
           },
           "id": 56,
           "options": {
             "graph": {},
             "legend": {
               "calcs": [
-                "last",
+                "lastNotNull",
                 "mean",
                 "max"
               ],
               "displayMode": "table",
-              "placement": "right"
+              "placement": "bottom"
             },
             "tooltipOptions": {
               "mode": "single"
@@ -1547,7 +1548,7 @@
         },
         {
           "datasource": "prometheus",
-          "description": "Output plugin total logs",
+          "description": "Output plugin record rate",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -1592,19 +1593,19 @@
             "h": 8,
             "w": 11,
             "x": 13,
-            "y": 7
+            "y": 43
           },
           "id": 80,
           "options": {
             "graph": {},
             "legend": {
               "calcs": [
-                "last",
+                "lastNotNull",
                 "mean",
                 "max"
               ],
               "displayMode": "table",
-              "placement": "right"
+              "placement": "bottom"
             },
             "tooltipOptions": {
               "mode": "single"
@@ -1614,7 +1615,7 @@
           "targets": [
             {
               "exemplar": true,
-              "expr": "sum(rate(fluentbit_gardener_output_client_logs_total{pod=~\"$pod\",host=~\".+$host.svc.cluster.local.*\"}[$__rate_interval])) by (host)",
+              "expr": "sum(rate(fluentbit_gardener_output_client_logs_total{pod=~\"$pod\",host=~\".+$host.*\"}[$__rate_interval])) by (host)",
               "instant": false,
               "interval": "",
               "legendFormat": "{{host}}",
@@ -1629,7 +1630,7 @@
         },
         {
           "datasource": "prometheus",
-          "description": "buffer sizes output plugin",
+          "description": "Dque current buffer size",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -1675,18 +1676,18 @@
             "h": 8,
             "w": 13,
             "x": 0,
-            "y": 15
+            "y": 51
           },
           "id": 95,
           "options": {
             "legend": {
               "calcs": [
-                "last",
+                "lastNotNull",
                 "mean",
                 "max"
               ],
               "displayMode": "table",
-              "placement": "right"
+              "placement": "bottom"
             },
             "tooltipOptions": {
               "mode": "single"
@@ -1709,6 +1710,7 @@
         },
         {
           "datasource": "prometheus",
+          "description": "DQue  records persisted on the filesystem.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -1757,17 +1759,19 @@
             "h": 8,
             "w": 11,
             "x": 13,
-            "y": 15
+            "y": 51
           },
           "id": 138,
           "options": {
             "graph": {},
             "legend": {
               "calcs": [
-                "last"
+                "lastNotNull",
+                "mean",
+                "max"
               ],
-              "displayMode": "list",
-              "placement": "right"
+              "displayMode": "table",
+              "placement": "bottom"
             },
             "tooltipOptions": {
               "mode": "single"
@@ -1784,11 +1788,12 @@
               "refId": "A"
             }
           ],
-          "title": "DQue Buffered records",
+          "title": "DQue buffered records",
           "type": "timeseries"
         },
         {
           "datasource": "prometheus",
+          "description": "Output plugin exported records rate",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -1837,17 +1842,19 @@
             "h": 8,
             "w": 13,
             "x": 0,
-            "y": 23
+            "y": 59
           },
           "id": 136,
           "options": {
             "graph": {},
             "legend": {
               "calcs": [
-                "last"
+                "lastNotNull",
+                "mean",
+                "max"
               ],
               "displayMode": "table",
-              "placement": "right"
+              "placement": "bottom"
             },
             "tooltipOptions": {
               "mode": "single"
@@ -1918,19 +1925,19 @@
             "h": 8,
             "w": 11,
             "x": 13,
-            "y": 23
+            "y": 59
           },
           "id": 118,
           "options": {
             "graph": {},
             "legend": {
               "calcs": [
-                "last",
+                "lastNotNull",
                 "mean",
                 "max"
               ],
               "displayMode": "table",
-              "placement": "right"
+              "placement": "bottom"
             },
             "tooltipOptions": {
               "mode": "single"
@@ -1956,7 +1963,7 @@
     },
     {
       "collapsed": true,
-      "datasource": null,
+      "datasource": "prometheus",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -1967,7 +1974,7 @@
       "panels": [
         {
           "datasource": "prometheus",
-          "description": "CPU time spent in user and system mode",
+          "description": "Total user and system CPU time spent in seconds.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -2010,20 +2017,21 @@
             "overrides": []
           },
           "gridPos": {
-            "h": 7,
-            "w": 24,
+            "h": 8,
+            "w": 12,
             "x": 0,
-            "y": 38
+            "y": 39
           },
           "id": 104,
           "options": {
             "legend": {
               "calcs": [
-                "last",
-                "mean"
+                "lastNotNull",
+                "mean",
+                "max"
               ],
               "displayMode": "table",
-              "placement": "right"
+              "placement": "bottom"
             },
             "tooltip": {
               "mode": "multi"
@@ -2038,11 +2046,101 @@
               "exemplar": true,
               "expr": "rate(process_cpu_seconds_total{pod=~\"$pod\"}[$__rate_interval])",
               "interval": "",
-              "legendFormat": "{{pod}} - CPU usage",
+              "legendFormat": "{{pod}}",
               "refId": "A"
             }
           ],
           "title": "[Process] CPU Usage",
+          "type": "timeseries"
+        },
+        {
+          "datasource": "prometheus",
+          "description": "Process memory usage - resident and virtual",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "graph": false,
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "bytes"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 39
+          },
+          "id": 105,
+          "options": {
+            "legend": {
+              "calcs": [
+                "lastNotNull",
+                "mean",
+                "max"
+              ],
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            },
+            "tooltipOptions": {
+              "mode": "single"
+            }
+          },
+          "pluginVersion": "7.5.42",
+          "targets": [
+            {
+              "exemplar": true,
+              "expr": "process_resident_memory_bytes{pod=~\"$pod\"}",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "{{pod}} - resident memory",
+              "refId": "A"
+            },
+            {
+              "exemplar": true,
+              "expr": "process_virtual_memory_bytes{pod=~\"$pod\"}",
+              "hide": true,
+              "interval": "",
+              "legendFormat": "{{pod}} - virtual memory",
+              "refId": "B"
+            }
+          ],
+          "title": "[Process] Memory Usage",
           "type": "timeseries"
         },
         {
@@ -2091,20 +2189,18 @@
           },
           "gridPos": {
             "h": 8,
-            "w": 24,
+            "w": 12,
             "x": 0,
-            "y": 45
+            "y": 47
           },
           "id": 106,
           "options": {
             "legend": {
               "calcs": [
-                "last",
-                "mean",
-                "max"
+                "lastNotNull"
               ],
-              "displayMode": "table",
-              "placement": "right"
+              "displayMode": "list",
+              "placement": "bottom"
             },
             "tooltip": {
               "mode": "multi"
@@ -2178,20 +2274,19 @@
             "overrides": []
           },
           "gridPos": {
-            "h": 7,
-            "w": 24,
-            "x": 0,
-            "y": 53
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 47
           },
           "id": 101,
           "options": {
             "legend": {
               "calcs": [
-                "last",
-                "max"
+                "lastNotNull"
               ],
-              "displayMode": "table",
-              "placement": "right"
+              "displayMode": "list",
+              "placement": "bottom"
             },
             "tooltip": {
               "mode": "multi"
@@ -2202,13 +2297,6 @@
           },
           "pluginVersion": "7.5.42",
           "targets": [
-            {
-              "exemplar": true,
-              "expr": "go_memstats_heap_alloc_bytes{pod=~\"$pod\"}",
-              "interval": "",
-              "legendFormat": "{{pod}} - heap alloc",
-              "refId": "A"
-            },
             {
               "exemplar": true,
               "expr": "go_memstats_heap_inuse_bytes{pod=~\"$pod\"}",
@@ -2218,201 +2306,27 @@
             },
             {
               "exemplar": true,
+              "expr": "go_memstats_heap_alloc_bytes{pod=~\"$pod\"}",
+              "hide": true,
+              "interval": "",
+              "legendFormat": "{{pod}} - heap alloc",
+              "refId": "A"
+            },
+            {
+              "exemplar": true,
               "expr": "go_memstats_heap_idle_bytes{pod=~\"$pod\"}",
+              "hide": true,
               "interval": "",
               "legendFormat": "{{pod}} - heap idle",
               "refId": "C"
             }
           ],
-          "title": "[Go] Heap Memory Usage",
+          "title": "[Go] Heap memory in-use",
           "type": "timeseries"
         },
         {
           "datasource": "prometheus",
-          "description": "Number of heap objects allocated",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "drawStyle": "line",
-                "fillOpacity": 0,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "graph": false,
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": false
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  }
-                ]
-              },
-              "unit": "short"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 24,
-            "x": 0,
-            "y": 60
-          },
-          "id": 107,
-          "options": {
-            "legend": {
-              "calcs": [
-                "last",
-                "max"
-              ],
-              "displayMode": "table",
-              "placement": "right"
-            },
-            "tooltip": {
-              "mode": "multi"
-            },
-            "tooltipOptions": {
-              "mode": "single"
-            }
-          },
-          "pluginVersion": "7.5.42",
-          "targets": [
-            {
-              "exemplar": true,
-              "expr": "go_memstats_heap_objects{pod=~\"$pod\"}",
-              "interval": "",
-              "legendFormat": "{{pod}} - heap objects",
-              "refId": "A"
-            },
-            {
-              "exemplar": true,
-              "expr": "rate(go_memstats_mallocs_total{pod=~\"$pod\"}[$__rate_interval])",
-              "interval": "",
-              "legendFormat": "{{pod}} - alloc rate",
-              "refId": "B"
-            },
-            {
-              "exemplar": true,
-              "expr": "rate(go_memstats_frees_total{pod=~\"$pod\"}[$__rate_interval])",
-              "interval": "",
-              "legendFormat": "{{pod}} - free rate",
-              "refId": "C"
-            }
-          ],
-          "title": "[Go] Heap Objects & Allocation Rate",
-          "type": "timeseries"
-        },
-        {
-          "datasource": "prometheus",
-          "description": "Number of goroutines currently running",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "drawStyle": "line",
-                "fillOpacity": 0,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "graph": false,
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": false
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "yellow",
-                    "value": 1000
-                  },
-                  {
-                    "color": "red",
-                    "value": 10000
-                  }
-                ]
-              },
-              "unit": "short"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 24,
-            "x": 0,
-            "y": 68
-          },
-          "id": 102,
-          "options": {
-            "legend": {
-              "calcs": [
-                "last",
-                "mean",
-                "max"
-              ],
-              "displayMode": "table",
-              "placement": "right"
-            },
-            "tooltip": {
-              "mode": "multi"
-            },
-            "tooltipOptions": {
-              "mode": "single"
-            }
-          },
-          "pluginVersion": "7.5.42",
-          "targets": [
-            {
-              "exemplar": true,
-              "expr": "go_goroutines{pod=~\"$pod\"}",
-              "interval": "",
-              "legendFormat": "{{pod}}",
-              "refId": "A"
-            }
-          ],
-          "title": "[Go] Goroutines",
-          "type": "timeseries"
-        },
-        {
-          "datasource": "prometheus",
-          "description": "GC pause duration and frequency",
+          "description": "GC average duration",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -2456,20 +2370,18 @@
           },
           "gridPos": {
             "h": 8,
-            "w": 24,
+            "w": 12,
             "x": 0,
-            "y": 75
+            "y": 55
           },
           "id": 103,
           "options": {
             "legend": {
               "calcs": [
-                "last",
-                "mean",
-                "max"
+                "lastNotNull"
               ],
               "displayMode": "table",
-              "placement": "right"
+              "placement": "bottom"
             },
             "tooltip": {
               "mode": "multi"
@@ -2482,25 +2394,27 @@
           "targets": [
             {
               "exemplar": true,
-              "expr": "rate(go_gc_duration_seconds_sum{pod=~\"$pod\"}[$__rate_interval])",
+              "expr": "go_gc_duration_seconds{pod=~\"fluent-bit.+\",quantile=\"0.75\"}",
+              "hide": true,
               "interval": "",
-              "legendFormat": "{{pod}} - GC duration rate",
+              "legendFormat": "{{pod}} - GC 75p",
               "refId": "A"
             },
             {
               "exemplar": true,
-              "expr": "rate(go_gc_duration_seconds_count{pod=~\"$pod\"}[$__rate_interval])",
+              "expr": "\nsum by (pod) (\n  rate(go_gc_duration_seconds_sum{pod=~\"fluent-bit.+\"}[$__rate_interval])\n)\n/\nsum by (pod) (\n  rate(go_gc_duration_seconds_count{pod=~\"fluent-bit.+\"}[$__rate_interval])\n)\n",
+              "hide": false,
               "interval": "",
-              "legendFormat": "{{pod}} - GC frequency",
+              "legendFormat": "{{pod}} - GC avg",
               "refId": "B"
             }
           ],
-          "title": "[Go] GC Duration & Frequency",
+          "title": "[Go] GC average duration",
           "type": "timeseries"
         },
         {
           "datasource": "prometheus",
-          "description": "Process memory usage - resident and virtual",
+          "description": "Heap object allocation/free rates ",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -2538,25 +2452,24 @@
                   }
                 ]
               },
-              "unit": "bytes"
+              "unit": "short"
             },
             "overrides": []
           },
           "gridPos": {
             "h": 8,
-            "w": 24,
-            "x": 0,
-            "y": 83
+            "w": 12,
+            "x": 12,
+            "y": 55
           },
-          "id": 105,
+          "id": 107,
           "options": {
             "legend": {
               "calcs": [
-                "lastNotNull",
-                "max"
+                "lastNotNull"
               ],
               "displayMode": "table",
-              "placement": "right"
+              "placement": "bottom"
             },
             "tooltip": {
               "mode": "multi"
@@ -2569,20 +2482,22 @@
           "targets": [
             {
               "exemplar": true,
-              "expr": "process_resident_memory_bytes{pod=~\"$pod\"}",
+              "expr": "rate(go_memstats_mallocs_total{pod=~\"$pod\"}[$__rate_interval])",
+              "hide": false,
               "interval": "",
-              "legendFormat": "{{pod}} - resident memory",
-              "refId": "A"
+              "legendFormat": "{{pod}} - alloc rate",
+              "refId": "B"
             },
             {
               "exemplar": true,
-              "expr": "process_virtual_memory_bytes{pod=~\"$pod\"}",
+              "expr": "rate(go_memstats_frees_total{pod=~\"$pod\"}[$__rate_interval])",
+              "hide": false,
               "interval": "",
-              "legendFormat": "{{pod}} - virtual memory",
-              "refId": "B"
+              "legendFormat": "{{pod}} - free rate",
+              "refId": "C"
             }
           ],
-          "title": "[Process] Memory Usage",
+          "title": "[Go] Heap allocation/free rate",
           "type": "timeseries"
         }
       ],
@@ -2591,7 +2506,7 @@
     },
     {
       "collapsed": true,
-      "datasource": null,
+      "datasource": "prometheus",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -2602,7 +2517,209 @@
       "panels": [
         {
           "datasource": "prometheus",
-          "description": "RPC call duration in milliseconds",
+          "description": "OTel exporter created records",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "fixedColor": "green",
+                "mode": "fixed"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 6,
+            "x": 0,
+            "y": 4
+          },
+          "id": 146,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "text": {},
+            "textMode": "auto"
+          },
+          "pluginVersion": "7.5.45",
+          "targets": [
+            {
+              "exemplar": true,
+              "expr": "sum (output_plugin_otel_sdk_log_created_total{pod=~\"$pod\"})",
+              "interval": "",
+              "legendFormat": "{{pod}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Total created records",
+          "type": "stat"
+        },
+        {
+          "datasource": "prometheus",
+          "description": "Records not yet exported",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 6,
+            "x": 6,
+            "y": 4
+          },
+          "id": 148,
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showThresholdLabels": false,
+            "showThresholdMarkers": true,
+            "text": {}
+          },
+          "pluginVersion": "7.5.45",
+          "targets": [
+            {
+              "exemplar": true,
+              "expr": "sum (\n  output_plugin_otel_sdk_exporter_log_inflight{server_address=~\".+$host.+\"}\n)",
+              "interval": "",
+              "legendFormat": "{{server_address}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Current in-flight records",
+          "type": "gauge"
+        },
+        {
+          "datasource": "prometheus",
+          "description": "Otel exporter records throughput",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "graph": false,
+                  "legend": false,
+                  "tooltip": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": true
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 4
+          },
+          "id": 144,
+          "options": {
+            "graph": {},
+            "legend": {
+              "calcs": [
+                "lastNotNull",
+                "mean",
+                "max"
+              ],
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltipOptions": {
+              "mode": "single"
+            }
+          },
+          "pluginVersion": "7.5.45",
+          "targets": [
+            {
+              "exemplar": true,
+              "expr": "sum by (server_address) (  rate(output_plugin_otel_sdk_exporter_log_exported_total{server_address=~\".+$host.+\"}[$__rate_interval]))",
+              "interval": "",
+              "legendFormat": "{{server_address}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Records throughput /s",
+          "type": "timeseries"
+        },
+        {
+          "datasource": "prometheus",
+          "description": "OTLP Exporter Duration 50 percentile",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -2656,18 +2773,16 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 39
+            "y": 12
           },
           "id": 111,
           "options": {
             "legend": {
               "calcs": [
-                "lastNotNull",
-                "max",
-                "mean"
+                "lastNotNull"
               ],
               "displayMode": "table",
-              "placement": "right"
+              "placement": "bottom"
             },
             "tooltip": {
               "mode": "multi"
@@ -2680,32 +2795,18 @@
           "targets": [
             {
               "exemplar": true,
-              "expr": "histogram_quantile(0.95, rate(output_plugin_rpc_client_duration_milliseconds_bucket{pod=~\"$pod\"}[$__rate_interval]))",
+              "expr": "histogram_quantile(0.50,sum by (le, server_address) (    rate(output_plugin_otel_sdk_exporter_operation_duration_seconds_bucket{server_address=~\".+$host.+\"}[$__rate_interval])))",
               "interval": "",
-              "legendFormat": "{{pod}} - p95",
+              "legendFormat": "{{server_address}} - p50",
               "refId": "A"
-            },
-            {
-              "exemplar": true,
-              "expr": "histogram_quantile(0.99, rate(output_plugin_rpc_client_duration_milliseconds_bucket{pod=~\"$pod\"}[$__rate_interval]))",
-              "interval": "",
-              "legendFormat": "{{pod}} - p99",
-              "refId": "B"
-            },
-            {
-              "exemplar": true,
-              "expr": "rate(output_plugin_rpc_client_duration_milliseconds_sum{pod=~\"$pod\"}[$__rate_interval]) / rate(output_plugin_rpc_client_duration_milliseconds_count{pod=~\"$pod\"}[$__rate_interval])",
-              "interval": "",
-              "legendFormat": "{{pod}} - avg",
-              "refId": "C"
             }
           ],
-          "title": "[OTLP gRPC] RPC Duration",
+          "title": "Export duration P50",
           "type": "timeseries"
         },
         {
           "datasource": "prometheus",
-          "description": "RPC call rate per second",
+          "description": "Network throughput for gRPC communication",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -2743,7 +2844,7 @@
                   }
                 ]
               },
-              "unit": "reqps"
+              "unit": "Bps"
             },
             "overrides": []
           },
@@ -2751,18 +2852,16 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 39
+            "y": 12
           },
-          "id": 112,
+          "id": 115,
           "options": {
             "legend": {
               "calcs": [
-                "lastNotNull",
-                "max",
-                "mean"
+                "lastNotNull"
               ],
               "displayMode": "table",
-              "placement": "right"
+              "placement": "bottom"
             },
             "tooltip": {
               "mode": "multi"
@@ -2775,211 +2874,18 @@
           "targets": [
             {
               "exemplar": true,
-              "expr": "rate(output_plugin_rpc_client_duration_milliseconds_count{pod=~\"$pod\"}[$__rate_interval])",
+              "expr": "rate(output_plugin_rpc_client_request_size_bytes_sum{pod=~\"$pod\"}[$__rate_interval])",
               "interval": "",
-              "legendFormat": "{{pod}} - {{rpc_method}}",
+              "legendFormat": "{{pod}} - request bytes/sec",
               "refId": "A"
             }
           ],
-          "title": "[OTLP gRPC] RPC Call Rate",
+          "title": "Network Throughput b/s",
           "type": "timeseries"
         },
         {
           "datasource": "prometheus",
-          "description": "Size of RPC request and response messages",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "drawStyle": "line",
-                "fillOpacity": 0,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "graph": false,
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "lineInterpolation": "linear",
-                "lineStyle": {
-                  "fill": "solid"
-                },
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": false
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  }
-                ]
-              },
-              "unit": "bytes"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 47
-          },
-          "id": 113,
-          "options": {
-            "legend": {
-              "calcs": [
-                "lastNotNull",
-                "max",
-                "mean"
-              ],
-              "displayMode": "table",
-              "placement": "right"
-            },
-            "tooltip": {
-              "mode": "multi"
-            },
-            "tooltipOptions": {
-              "mode": "single"
-            }
-          },
-          "pluginVersion": "7.5.42",
-          "targets": [
-            {
-              "exemplar": true,
-              "expr": "histogram_quantile(0.95, rate(output_plugin_rpc_client_request_size_bytes_bucket{pod=~\"$pod\"}[$__rate_interval]))",
-              "interval": "",
-              "legendFormat": "{{pod}} - request p95",
-              "refId": "A"
-            },
-            {
-              "exemplar": true,
-              "expr": "histogram_quantile(0.95, rate(output_plugin_rpc_client_response_size_bytes_bucket{pod=~\"$pod\"}[$__rate_interval]))",
-              "interval": "",
-              "legendFormat": "{{pod}} - response p95",
-              "refId": "B"
-            },
-            {
-              "exemplar": true,
-              "expr": "rate(output_plugin_rpc_client_request_size_bytes_sum{pod=~\"$pod\"}[$__rate_interval]) / rate(output_plugin_rpc_client_request_size_bytes_count{pod=~\"$pod\"}[$__rate_interval])",
-              "interval": "",
-              "legendFormat": "{{pod}} - request avg",
-              "refId": "C"
-            },
-            {
-              "exemplar": true,
-              "expr": "rate(output_plugin_rpc_client_response_size_bytes_sum{pod=~\"$pod\"}[$__rate_interval]) / rate(output_plugin_rpc_client_response_size_bytes_count{pod=~\"$pod\"}[$__rate_interval])",
-              "interval": "",
-              "legendFormat": "{{pod}} - response avg",
-              "refId": "D"
-            }
-          ],
-          "title": "[OTLP gRPC] Request/Response Message Size",
-          "type": "timeseries"
-        },
-        {
-          "datasource": "prometheus",
-          "description": "Number of messages per RPC call",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "drawStyle": "line",
-                "fillOpacity": 0,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "graph": false,
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": false
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  }
-                ]
-              },
-              "unit": "short"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 47
-          },
-          "id": 114,
-          "options": {
-            "legend": {
-              "calcs": [
-                "lastNotNull",
-                "max",
-                "mean"
-              ],
-              "displayMode": "table",
-              "placement": "right"
-            },
-            "tooltip": {
-              "mode": "multi"
-            },
-            "tooltipOptions": {
-              "mode": "single"
-            }
-          },
-          "pluginVersion": "7.5.42",
-          "targets": [
-            {
-              "exemplar": true,
-              "expr": "rate(output_plugin_rpc_client_requests_per_rpc_sum{pod=~\"$pod\"}[$__rate_interval]) / rate(output_plugin_rpc_client_requests_per_rpc_count{pod=~\"$pod\"}[$__rate_interval])",
-              "interval": "",
-              "legendFormat": "{{pod}} - avg requests per RPC",
-              "refId": "A"
-            },
-            {
-              "exemplar": true,
-              "expr": "rate(output_plugin_rpc_client_responses_per_rpc_sum{pod=~\"$pod\"}[$__rate_interval]) / rate(output_plugin_rpc_client_responses_per_rpc_count{pod=~\"$pod\"}[$__rate_interval])",
-              "interval": "",
-              "legendFormat": "{{pod}} - avg responses per RPC",
-              "refId": "B"
-            }
-          ],
-          "title": "[OTLP gRPC] Messages Per RPC",
-          "type": "timeseries"
-        },
-        {
-          "datasource": "prometheus",
-          "description": "gRPC response status codes distribution",
+          "description": "OTLP Exporter latency per status code",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -3078,26 +2984,24 @@
                   }
                 ]
               },
-              "unit": "reqps"
+              "unit": "s"
             },
             "overrides": []
           },
           "gridPos": {
             "h": 8,
-            "w": 24,
+            "w": 12,
             "x": 0,
-            "y": 55
+            "y": 20
           },
           "id": 116,
           "options": {
             "legend": {
               "calcs": [
-                "lastNotNull",
-                "max",
-                "mean"
+                "lastNotNull"
               ],
               "displayMode": "table",
-              "placement": "right"
+              "placement": "bottom"
             },
             "tooltip": {
               "mode": "multi"
@@ -3110,18 +3014,18 @@
           "targets": [
             {
               "exemplar": true,
-              "expr": "rate(output_plugin_rpc_client_responses_per_rpc_count{pod=~\"$pod\"}[$__rate_interval])",
+              "expr": "sum by (rpc_response_status_code,server_address) (rate(output_plugin_otel_sdk_exporter_operation_duration_seconds_count{server_address=~\".+$host.+\"}[$__rate_interval]))",
               "interval": "",
-              "legendFormat": "{{pod}} - status {{rpc_grpc_status_code}}",
+              "legendFormat": "{{server_address}} - {{rpc_response_status_code}}",
               "refId": "A"
             }
           ],
-          "title": "[OTLP gRPC] Response Status Codes",
+          "title": "Latency per rpc status code",
           "type": "timeseries"
         },
         {
           "datasource": "prometheus",
-          "description": "Network throughput for gRPC communication",
+          "description": "RPC call rate per second",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -3159,26 +3063,26 @@
                   }
                 ]
               },
-              "unit": "Bps"
+              "unit": "reqps"
             },
             "overrides": []
           },
           "gridPos": {
             "h": 8,
-            "w": 24,
-            "x": 0,
-            "y": 63
+            "w": 12,
+            "x": 12,
+            "y": 20
           },
-          "id": 115,
+          "id": 112,
           "options": {
             "legend": {
               "calcs": [
                 "lastNotNull",
-                "max",
-                "mean"
+                "mean",
+                "max"
               ],
               "displayMode": "table",
-              "placement": "right"
+              "placement": "bottom"
             },
             "tooltip": {
               "mode": "multi"
@@ -3191,24 +3095,97 @@
           "targets": [
             {
               "exemplar": true,
-              "expr": "rate(output_plugin_rpc_client_request_size_bytes_sum{pod=~\"$pod\"}[$__rate_interval])",
+              "expr": "rate(output_plugin_rpc_client_call_duration_seconds_count{pod=~\"$pod\"}[$__rate_interval])",
               "interval": "",
-              "legendFormat": "{{pod}} - request bytes/sec",
+              "legendFormat": "{{pod}} - {{rpc_method}}",
               "refId": "A"
-            },
-            {
-              "exemplar": true,
-              "expr": "rate(output_plugin_rpc_client_response_size_bytes_sum{pod=~\"$pod\"}[$__rate_interval])",
-              "interval": "",
-              "legendFormat": "{{pod}} - response bytes/sec",
-              "refId": "B"
             }
           ],
-          "title": "[OTLP gRPC] Network Throughput",
+          "title": "RPC call Rate",
+          "type": "timeseries"
+        },
+        {
+          "datasource": "prometheus",
+          "description": "OTLP Exporter rpc error rate",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "graph": false,
+                  "legend": false,
+                  "tooltip": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": true
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "dtdurationms"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 28
+          },
+          "id": 150,
+          "options": {
+            "graph": {},
+            "legend": {
+              "calcs": [],
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltipOptions": {
+              "mode": "single"
+            }
+          },
+          "pluginVersion": "7.5.45",
+          "targets": [
+            {
+              "exemplar": true,
+              "expr": "sum by (rpc_response_status_code, server_address) (\n  rate(output_plugin_otel_sdk_exporter_operation_duration_seconds_count{rpc_response_status_code!=\"OK\",rpc_response_status_code=~\".+\",server_address=~\".+$host.+\"}[$__rate_interval])\n)",
+              "interval": "",
+              "legendFormat": "{{server_address}} - {{rpc_response_status_code}}",
+              "refId": "A"
+            }
+          ],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "Export errors",
           "type": "timeseries"
         }
       ],
-      "title": "OTLP gRPC Client Metrics",
+      "title": "OTLP Exporter Metrics",
       "type": "row"
     }
   ],
@@ -3271,7 +3248,7 @@
           "refId": "StandardVariableQuery"
         },
         "refresh": 2,
-        "regex": "/garden|shoot--logging--dev.+/",
+        "regex": "/garden|shoot--.+/",
         "skipUrlSync": false,
         "sort": 3,
         "tagValuesQuery": "",
@@ -3283,7 +3260,7 @@
     ]
   },
   "time": {
-    "from": "now-15m",
+    "from": "now-1h",
     "to": "now"
   },
   "timepicker": {
@@ -3311,7 +3288,7 @@
       "30d"
     ]
   },
-  "timezone": "UTC",
+  "timezone": "",
   "title": "Fluent Bit",
   "uid": "fluentbit",
   "version": 1
