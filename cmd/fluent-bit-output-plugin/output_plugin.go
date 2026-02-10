@@ -55,8 +55,6 @@ func init() {
 			logger.Error(err, "Fluent-bit-gardener-output-plugin")
 		}
 	}()
-
-	_ = os.Setenv("OTEL_GO_X_OBSERVABILITY", "true")
 }
 
 // FLBPluginRegister registers the plugin with fluent-bit
