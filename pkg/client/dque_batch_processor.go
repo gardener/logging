@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path"
 	"strings"
 	"sync"
 	"time"
@@ -239,8 +240,8 @@ func NewDQueBatchProcessor(
 	)
 	if err != nil {
 		// Cleanup directory if dque creation fails to avoid leaving behind partial state
-		if removeErr := os.RemoveAll(config.dqueueDir); removeErr != nil {
-			logger.Error(removeErr, "failed to clean up dque directory after creation failure", "dir", config.dqueueDir)
+		if removeErr := os.RemoveAll(path.Join(config.dqueueDir, config.dqueueName)); removeErr != nil {
+			logger.Error(removeErr, "failed to clean up dque directory after creation failure", "dir", path.Join(config.dqueueDir, config.dqueueName))
 		}
 
 		return nil, fmt.Errorf("failed to create dque: %w", err)
