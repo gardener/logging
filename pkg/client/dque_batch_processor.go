@@ -31,6 +31,8 @@ import (
 var (
 	// ErrProcessorClosed indicates the processor has been shut down
 	ErrProcessorClosed = errors.New("batch processor is closed")
+	// ErrQueueFull indicates the queue has reached its maximum capacity
+	ErrQueueFull = errors.New("queue is full")
 )
 
 // Note: We use json.Marshal directly instead of pooling encoders
@@ -546,7 +548,7 @@ func (p *DQueBatchProcessor) OnEmit(_ context.Context, record *sdklog.Record) er
 			metrics.DroppedLogs.WithLabelValues(p.endpoint, "queue_full").Inc()
 			p.mu.Unlock()
 
-			return fmt.Errorf("queue full: %s", p.queue.Name)
+			return fmt.Errorf("final attempt failed, queue: %s: %w", p.queue.Name, ErrQueueFull)
 		}
 
 		// Retry with exponential backoff: 10ms, 20ms
