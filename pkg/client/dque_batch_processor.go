@@ -548,7 +548,7 @@ func (p *DQueBatchProcessor) OnEmit(_ context.Context, record *sdklog.Record) er
 			metrics.DroppedLogs.WithLabelValues(p.endpoint, "queue_full").Inc()
 			p.mu.Unlock()
 
-			return fmt.Errorf("final attempt failed, queue: %s: %w", p.queue.Name, ErrQueueFull)
+			return fmt.Errorf("final attempt failed, queue: %s: %w", path.Join(p.queue.DirPath, p.queue.Name), ErrQueueFull)
 		}
 
 		// Retry with exponential backoff: 10ms, 20ms
