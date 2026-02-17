@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path"
 	"strings"
 	"sync"
 	"time"
@@ -30,7 +31,7 @@ import (
 var (
 	// ErrProcessorClosed indicates the processor has been shut down
 	ErrProcessorClosed = errors.New("batch processor is closed")
-	// ErrQueueFull indicates the queue is at capacity
+	// ErrQueueFull indicates the queue has reached its maximum capacity
 	ErrQueueFull = errors.New("queue is full")
 )
 
@@ -240,6 +241,11 @@ func NewDQueBatchProcessor(
 		logRecordItemBuilder,
 	)
 	if err != nil {
+		// Cleanup directory if dque creation fails to avoid leaving behind partial state
+		if removeErr := os.RemoveAll(path.Join(config.dqueueDir, config.dqueueName)); removeErr != nil {
+			logger.Error(removeErr, "failed to clean up dque directory after creation failure", "dir", path.Join(config.dqueueDir, config.dqueueName))
+		}
+
 		return nil, fmt.Errorf("failed to create dque: %w", err)
 	}
 
@@ -542,7 +548,7 @@ func (p *DQueBatchProcessor) OnEmit(_ context.Context, record *sdklog.Record) er
 			metrics.DroppedLogs.WithLabelValues(p.endpoint, "queue_full").Inc()
 			p.mu.Unlock()
 
-			return ErrQueueFull
+			return fmt.Errorf("final attempt failed, queue: %s: %w", path.Join(p.queue.DirPath, p.queue.Name), ErrQueueFull)
 		}
 
 		// Retry with exponential backoff: 10ms, 20ms

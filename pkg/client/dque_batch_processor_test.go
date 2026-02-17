@@ -242,6 +242,41 @@ var _ = Describe("DQue Batch Processor with Functional Options", func() {
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("exporter"))
 	})
+
+	It("should cleanup directory when dque.NewOrOpen fails", func() {
+		exporter := &testExporter{
+			exportFunc: func(_ context.Context, _ []sdklog.Record) error {
+				return nil
+			},
+		}
+
+		// Create a file at the location where dque expects to create a directory
+		// This will cause dque.NewOrOpen to fail
+		dqueName := "test-dque-fail"
+		dquePath := filepath.Join(queueDir, dqueName)
+		err := os.WriteFile(dquePath, []byte("blocking file"), 0600)
+		Expect(err).NotTo(HaveOccurred())
+
+		// Verify the file exists before attempting to create processor
+		_, err = os.Stat(dquePath)
+		Expect(err).NotTo(HaveOccurred())
+
+		ctx := context.Background()
+		_, err = client.NewDQueBatchProcessor(
+			ctx,
+			exporter,
+			logger,
+			client.WithDQueueDir(queueDir),
+			client.WithDQueueName(dqueName),
+			client.WithEndpoint("test-endpoint"),
+		)
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("failed to create dque"))
+
+		// Verify cleanup occurred - the blocking file should be removed
+		_, err = os.Stat(dquePath)
+		Expect(os.IsNotExist(err)).To(BeTrue(), "dque directory should be cleaned up after creation failure")
+	})
 })
 
 // testExporter is a simple exporter for testing
