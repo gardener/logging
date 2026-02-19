@@ -67,7 +67,7 @@ copy: tidy
 		$(REPO_ROOT)/cmd/copy
 
 #################################################################
-# Container imges build targets                                 #
+# Container images build targets                                 #
 #################################################################
 .PHONY: docker-images
 docker-images:
@@ -137,8 +137,18 @@ test: tidy
 e2e-tests: tidy
 	@KIND_PATH=$(shell go tool -n kind) go tool gotestsum $(REPO_ROOT)/tests/e2e
 
+.PHONY: check-go-fix
+check-go-fix: tidy
+	@echo "Running go fix..."
+	@go fix $(REPO_ROOT)/...
+	@if [ -n "$$(git status --porcelain)" ]; then \
+		echo "Error: go fix produced changes. Please run 'go fix ./...' and commit the changes."; \
+		git diff; \
+		exit 1; \
+	fi
+
 .PHONY: verify
-verify: check test
+verify: check check-go-fix test
 
 .PHONY: sast
 sast: $(GOSEC)
