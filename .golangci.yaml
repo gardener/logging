@@ -31,6 +31,8 @@ linters:
           disabled: true
         - name: use-errors-new
           disabled: true
+        - name: var-naming
+          disabled: true
   exclusions:
     generated: lax
     rules:

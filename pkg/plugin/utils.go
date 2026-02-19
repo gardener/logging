@@ -1,7 +1,7 @@
 // Copyright 2025 SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
 // SPDX-License-Identifier: Apache-2.0
 
-package plugin
+package plugin // nolint:revive // var-naming the plugin package is the main entry point
 
 import (
 	"fmt"
@@ -50,6 +50,7 @@ func extractKubernetesMetadataFromTag(record map[string]any, tagKey string, re *
 
 func getDynamicHostName(records map[string]any, mapping map[string]any) string {
 	for k, v := range mapping {
+		//nolint:revive // enforce-switch-style: default-case is omitted on purpose since we are expecting only map[string]any or string as values in the mapping
 		switch nextKey := v.(type) {
 		// if the next level is a map we are expecting we need to move deeper in the tree
 		case map[string]any:
