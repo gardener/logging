@@ -312,7 +312,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 		})
 
 		It("should handle multiple log entries in sequence", func() {
-			for i := 0; i < 10; i++ {
+			for i := range 10 {
 				entry := types.OutputEntry{
 					Timestamp: time.Now(),
 					Record: map[string]any{
@@ -368,7 +368,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// Send multiple log entries
-			for i := 0; i < 5; i++ {
+			for i := range 5 {
 				entry := types.OutputEntry{
 					Timestamp: time.Now(),
 					Record: map[string]any{

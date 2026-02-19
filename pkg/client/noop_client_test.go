@@ -95,7 +95,7 @@ var _ = Describe("NoopClient", func() {
 			beforeCount := testutil.ToFloat64(initialMetric)
 
 			numEntries := 10
-			for i := 0; i < numEntries; i++ {
+			for range numEntries {
 				entry := types.OutputEntry{
 					Timestamp: time.Now(),
 					Record:    map[string]any{"msg": "test"},
@@ -116,10 +116,10 @@ var _ = Describe("NoopClient", func() {
 			entriesPerGoroutine := 10
 			done := make(chan bool, numGoroutines)
 
-			for i := 0; i < numGoroutines; i++ {
+			for range numGoroutines {
 				go func() {
 					defer GinkgoRecover()
-					for j := 0; j < entriesPerGoroutine; j++ {
+					for range entriesPerGoroutine {
 						entry := types.OutputEntry{
 							Timestamp: time.Now(),
 							Record:    map[string]any{"msg": "test"},
@@ -131,7 +131,7 @@ var _ = Describe("NoopClient", func() {
 				}()
 			}
 
-			for i := 0; i < numGoroutines; i++ {
+			for range numGoroutines {
 				<-done
 			}
 
@@ -209,7 +209,7 @@ var _ = Describe("NoopClient", func() {
 			before1 := testutil.ToFloat64(metric1)
 			before2 := testutil.ToFloat64(metric2)
 
-			for i := 0; i < 5; i++ {
+			for range 5 {
 				entry := types.OutputEntry{
 					Timestamp: time.Now(),
 					Record:    map[string]any{"msg": "test"},
@@ -217,7 +217,7 @@ var _ = Describe("NoopClient", func() {
 				err := client1.Handle(entry)
 				Expect(err).NotTo(HaveOccurred())
 			}
-			for i := 0; i < 3; i++ {
+			for range 3 {
 				entry := types.OutputEntry{
 					Timestamp: time.Now(),
 					Record:    map[string]any{"msg": "test"},

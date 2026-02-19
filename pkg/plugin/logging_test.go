@@ -18,7 +18,6 @@ import (
 	promtest "github.com/prometheus/client_golang/prometheus/testutil"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/gardener/logging/v1/pkg/config"
@@ -399,10 +398,10 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 			initialCount := promtest.ToFloat64(metrics.IncomingLogs.WithLabelValues("garden"))
 
-			for i := 0; i < numGoroutines; i++ {
+			for i := range numGoroutines {
 				go func(id int) {
 					defer wg.Done()
-					for j := 0; j < recordsPerGoroutine; j++ {
+					for j := range recordsPerGoroutine {
 						entry := types.OutputEntry{
 							Timestamp: time.Now(),
 							Record: map[string]any{
@@ -434,10 +433,10 @@ var _ = Describe("OutputPlugin plugin", func() {
 			wg.Add(numGoroutines)
 
 			// Start sending records
-			for i := 0; i < numGoroutines; i++ {
+			for i := range numGoroutines {
 				go func(id int) {
 					defer wg.Done()
-					for j := 0; j < 20; j++ {
+					for j := range 20 {
 						entry := types.OutputEntry{
 							Timestamp: time.Now(),
 							Record: map[string]any{
@@ -470,7 +469,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 			initialIncoming := promtest.ToFloat64(metrics.IncomingLogs.WithLabelValues("garden"))
 			initialDropped := promtest.ToFloat64(metrics.DroppedLogs.WithLabelValues(cfg.OTLPConfig.Endpoint, "noop"))
 
-			for i := 0; i < messageCount; i++ {
+			for i := range messageCount {
 				entry := types.OutputEntry{
 					Timestamp: time.Now(),
 					Record: map[string]any{
@@ -502,7 +501,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 			initialIncoming := promtest.ToFloat64(metrics.IncomingLogs.WithLabelValues("garden"))
 
-			for i := 0; i < messageCount; i++ {
+			for i := range messageCount {
 				entry := types.OutputEntry{
 					Timestamp: time.Now(),
 					Record: map[string]any{
@@ -795,7 +794,7 @@ func createTestCluster(namespace, purpose string, hibernated bool) *extensionsv1
 		Spec: gardencorev1beta1.ShootSpec{
 			Purpose: &shootPurpose,
 			Hibernation: &gardencorev1beta1.Hibernation{
-				Enabled: ptr.To(hibernated),
+				Enabled: new(hibernated),
 			},
 		},
 		Status: gardencorev1beta1.ShootStatus{

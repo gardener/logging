@@ -45,7 +45,6 @@ import (
 	promtest "github.com/prometheus/client_golang/prometheus/testutil"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/gardener/logging/v1/pkg/config"
@@ -96,7 +95,7 @@ var _ = Describe("Plugin Integration Test", Ordered, func() {
 	})
 
 	It("should create 100 cluster resources and register them", func() {
-		for i := 0; i < numberOfClusters; i++ {
+		for i := range numberOfClusters {
 			clusterName := fmt.Sprintf("shoot--test--cluster-%03d", i)
 			cluster := createTestCluster(clusterName, "development", false)
 			testCtx.clusters = append(testCtx.clusters, cluster)
@@ -110,7 +109,7 @@ var _ = Describe("Plugin Integration Test", Ordered, func() {
 	})
 
 	It("should verify controller has clients for all clusters", func() {
-		for i := 0; i < numberOfClusters; i++ {
+		for i := range numberOfClusters {
 			clusterName := fmt.Sprintf("shoot--test--cluster-%03d", i)
 			c, isStopped := testCtx.controller.GetClient(clusterName)
 			Expect(isStopped).To(BeFalse(), "Controller should not be stopped")
@@ -125,7 +124,7 @@ var _ = Describe("Plugin Integration Test", Ordered, func() {
 	It("should account for all incoming logs in metrics", func() {
 		totalIncoming := 0.0
 
-		for i := 0; i < numberOfClusters; i++ {
+		for i := range numberOfClusters {
 			clusterName := fmt.Sprintf("shoot--test--cluster-%03d", i)
 			incoming := promtest.ToFloat64(metrics.IncomingLogs.WithLabelValues(clusterName))
 			totalIncoming += incoming
@@ -139,7 +138,7 @@ var _ = Describe("Plugin Integration Test", Ordered, func() {
 	It("should account for all logs in NoopClient dropped metrics", func() {
 		totalDropped := 0.0
 
-		for i := 0; i < numberOfClusters; i++ {
+		for i := range numberOfClusters {
 			clusterName := fmt.Sprintf("shoot--test--cluster-%03d", i)
 			endpoint := fmt.Sprintf("http://logging.%s.svc:4318/v1/logs", clusterName)
 			dropped := promtest.ToFloat64(metrics.DroppedLogs.WithLabelValues(endpoint, "noop"))
@@ -269,7 +268,7 @@ func createTestCluster(name, purpose string, hibernated bool) *extensionsv1alpha
 		Spec: gardencorev1beta1.ShootSpec{
 			Purpose: &shootPurpose,
 			Hibernation: &gardencorev1beta1.Hibernation{
-				Enabled: ptr.To(hibernated),
+				Enabled: new(hibernated),
 			},
 		},
 		Status: gardencorev1beta1.ShootStatus{
@@ -320,7 +319,7 @@ func sendLogsInParallel(ctx *testContext, clusters []*extensionsv1alpha1.Cluster
 	clusterChan := make(chan *extensionsv1alpha1.Cluster, len(clusters))
 
 	// Start worker pool
-	for i := 0; i < workerPoolSize; i++ {
+	for i := range workerPoolSize {
 		wg.Add(1)
 		go func(_ int) {
 			defer wg.Done()
@@ -346,7 +345,7 @@ func sendLogsInParallel(ctx *testContext, clusters []*extensionsv1alpha1.Cluster
 func sendLogsForCluster(ctx *testContext, cluster *extensionsv1alpha1.Cluster, logsPerCluster int) {
 	clusterName := cluster.Name
 
-	for i := 0; i < logsPerCluster; i++ {
+	for i := range logsPerCluster {
 		entry := types.OutputEntry{
 			Timestamp: time.Now(),
 			Record:    createLogRecord(clusterName, i),

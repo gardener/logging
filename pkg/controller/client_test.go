@@ -294,10 +294,10 @@ var _ = Describe("Controller Client", func() {
 			var wg sync.WaitGroup
 			wg.Add(numGoroutines)
 
-			for i := 0; i < numGoroutines; i++ {
+			for i := range numGoroutines {
 				go func(id int) {
 					defer wg.Done()
-					for j := 0; j < logsPerGoroutine; j++ {
+					for j := range logsPerGoroutine {
 						entry := types.OutputEntry{
 							Timestamp: time.Now(),
 							Record:    map[string]any{"msg": fmt.Sprintf("concurrent log from goroutine %d, message %d", id, j)},
@@ -337,20 +337,20 @@ var _ = Describe("Controller Client", func() {
 
 			// Goroutines changing states
 			states := []clusterState{clusterStateCreation, clusterStateReady, clusterStateHibernating, clusterStateWakingUp, clusterStateDeletion}
-			for i := 0; i < numGoroutines; i++ {
+			for i := range numGoroutines {
 				go func(_ int) {
 					defer wg.Done()
-					for j := 0; j < 10; j++ {
+					for j := range 10 {
 						ctlClient.SetState(states[j%len(states)])
 					}
 				}(i)
 			}
 
 			// Goroutines sending logs
-			for i := 0; i < numGoroutines; i++ {
+			for i := range numGoroutines {
 				go func(id int) {
 					defer wg.Done()
-					for j := 0; j < 10; j++ {
+					for j := range 10 {
 						entry := types.OutputEntry{
 							Timestamp: time.Now(),
 							Record:    map[string]any{"msg": fmt.Sprintf("concurrent log during state changes %d-%d", id, j)},
@@ -383,10 +383,10 @@ var _ = Describe("Controller Client", func() {
 			wg.Add(numGoroutines + 1) // Writers + stopper
 
 			// Goroutines sending logs
-			for i := 0; i < numGoroutines; i++ {
+			for i := range numGoroutines {
 				go func(id int) {
 					defer wg.Done()
-					for j := 0; j < 20; j++ {
+					for j := range 20 {
 						entry := types.OutputEntry{
 							Timestamp: time.Now(),
 							Record:    map[string]any{"msg": fmt.Sprintf("concurrent log before stop %d-%d", id, j)},

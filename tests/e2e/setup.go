@@ -65,8 +65,8 @@ func loadContainerImage(logger logr.Logger, clusterName, imageName string) env.F
 
 		// Parse node names (one per line)
 		nodeNames := []string{}
-		lines := strings.Split(strings.TrimSpace(string(output)), "\n")
-		for _, line := range lines {
+		lines := strings.SplitSeq(strings.TrimSpace(string(output)), "\n")
+		for line := range lines {
 			nodeName := strings.TrimSpace(line)
 			if nodeName != "" {
 				nodeNames = append(nodeNames, nodeName)
@@ -121,10 +121,7 @@ func loadImageOnNode(ctx context.Context, logger logr.Logger, nodeName, imageNam
 				return fmt.Errorf("context cancelled while pulling image on node %s: %w", nodeName, ctx.Err())
 			case <-time.After(backoff):
 				// Calculate next backoff duration
-				backoff = time.Duration(float64(backoff) * backoffFactor)
-				if backoff > maxBackoff {
-					backoff = maxBackoff
-				}
+				backoff = min(time.Duration(float64(backoff)*backoffFactor), maxBackoff)
 
 				continue
 			}

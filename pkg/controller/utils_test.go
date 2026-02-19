@@ -10,15 +10,14 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 )
 
 var _ = Describe("Utils", func() {
 	var (
 		testingPurpuse     = gardencorev1beta1.ShootPurpose("testing")
 		developmentPurpuse = gardencorev1beta1.ShootPurpose("development")
-		notHibernation     = gardencorev1beta1.Hibernation{Enabled: ptr.To(false)}
-		hibernation        = gardencorev1beta1.Hibernation{Enabled: ptr.To(true)}
+		notHibernation     = gardencorev1beta1.Hibernation{Enabled: new(false)}
+		hibernation        = gardencorev1beta1.Hibernation{Enabled: new(true)}
 		shootName          = "shoot--dev--logging"
 		shootObjectMeta    = metav1.ObjectMeta{
 			Name: shootName,

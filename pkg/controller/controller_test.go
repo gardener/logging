@@ -15,7 +15,6 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/utils/ptr"
 
 	"github.com/gardener/logging/v1/pkg/client"
 	"github.com/gardener/logging/v1/pkg/config"
@@ -111,8 +110,8 @@ var _ = Describe("Controller", func() {
 
 		testingPurpose := gardencorev1beta1.ShootPurpose("testing")
 		developmentPurpose := gardencorev1beta1.ShootPurpose("development")
-		notHibernation := gardencorev1beta1.Hibernation{Enabled: ptr.To(false)}
-		hibernation := gardencorev1beta1.Hibernation{Enabled: ptr.To(true)}
+		notHibernation := gardencorev1beta1.Hibernation{Enabled: new(false)}
+		hibernation := gardencorev1beta1.Hibernation{Enabled: new(true)}
 		shootObjectMeta := metav1.ObjectMeta{
 			Name: shootName,
 		}
