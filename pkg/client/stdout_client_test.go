@@ -127,7 +127,7 @@ var _ = Describe("StdoutClient", func() {
 			beforeCount := testutil.ToFloat64(initialMetric)
 
 			numEntries := 5
-			for i := 0; i < numEntries; i++ {
+			for i := range numEntries {
 				entry := types.OutputEntry{
 					Timestamp: time.Now(),
 					Record:    map[string]any{"msg": "test", "count": i},
@@ -181,10 +181,10 @@ var _ = Describe("StdoutClient", func() {
 			entriesPerGoroutine := 10
 			done := make(chan bool, numGoroutines)
 
-			for i := 0; i < numGoroutines; i++ {
+			for i := range numGoroutines {
 				go func(id int) {
 					defer GinkgoRecover()
-					for j := 0; j < entriesPerGoroutine; j++ {
+					for range entriesPerGoroutine {
 						entry := types.OutputEntry{
 							Timestamp: time.Now(),
 							Record:    map[string]any{"msg": "test", "goroutine": id},
@@ -196,7 +196,7 @@ var _ = Describe("StdoutClient", func() {
 				}(i)
 			}
 
-			for i := 0; i < numGoroutines; i++ {
+			for range numGoroutines {
 				<-done
 			}
 
@@ -274,7 +274,7 @@ var _ = Describe("StdoutClient", func() {
 			before1 := testutil.ToFloat64(metric1)
 			before2 := testutil.ToFloat64(metric2)
 
-			for i := 0; i < 5; i++ {
+			for range 5 {
 				entry := types.OutputEntry{
 					Timestamp: time.Now(),
 					Record:    map[string]any{"msg": "test"},
@@ -282,7 +282,7 @@ var _ = Describe("StdoutClient", func() {
 				err := client1.Handle(entry)
 				Expect(err).NotTo(HaveOccurred())
 			}
-			for i := 0; i < 3; i++ {
+			for range 3 {
 				entry := types.OutputEntry{
 					Timestamp: time.Now(),
 					Record:    map[string]any{"msg": "test"},

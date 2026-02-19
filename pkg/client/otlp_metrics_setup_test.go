@@ -53,7 +53,7 @@ var _ = Describe("MetricsSetup Singleton", func() {
 		ctx := context.Background()
 
 		// Multiple goroutines try to shutdown simultaneously
-		for i := 0; i < goroutines; i++ {
+		for i := range goroutines {
 			go func(index int) {
 				errors[index] = globalMetricsSetup.Shutdown(ctx)
 				done <- true
@@ -61,12 +61,12 @@ var _ = Describe("MetricsSetup Singleton", func() {
 		}
 
 		// Wait for all goroutines
-		for i := 0; i < goroutines; i++ {
+		for range goroutines {
 			<-done
 		}
 
 		// None should error (idempotent shutdown)
-		for i := 0; i < goroutines; i++ {
+		for i := range goroutines {
 			Expect(errors[i]).ToNot(HaveOccurred())
 		}
 	})

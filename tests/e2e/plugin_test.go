@@ -113,7 +113,7 @@ func TestOutputPlugin(t *testing.T) {
 			failedNamespaces := make([]string, 0)
 			namespaceCounts := make(map[string]int)
 
-			for i := 0; i < 100; i++ {
+			for range 100 {
 				result := <-results
 
 				if result.err != nil {
