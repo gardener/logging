@@ -40,9 +40,9 @@ type event struct {
 	Namespace      string           `json:"namespace" protobuf:"bytes,2,name=namespace"`
 	Type           string           `json:"type,omitempty" protobuf:"bytes,3,opt,name=type"`
 	Count          int32            `json:"count,omitempty" protobuf:"varint,4,opt,name=count"`
-	EventTime      metav1.MicroTime `json:"eventTime" protobuf:"bytes,5,opt,name=eventTime"`
-	FirstTimestamp metav1.Time      `json:"firstTimestamp" protobuf:"bytes,6,opt,name=firstTimestamp"`
-	LastTimestamp  metav1.Time      `json:"lastTimestamp" protobuf:"bytes,7,opt,name=lastTimestamp"`
+	EventTime      metav1.MicroTime `json:"eventTime,omitzero" protobuf:"bytes,5,opt,name=eventTime"`
+	FirstTimestamp metav1.Time      `json:"firstTimestamp,omitzero" protobuf:"bytes,6,opt,name=firstTimestamp"`
+	LastTimestamp  metav1.Time      `json:"lastTimestamp,omitzero" protobuf:"bytes,7,opt,name=lastTimestamp"`
 	Reason         string           `json:"reason,omitempty" protobuf:"bytes,8,opt,name=reason"`
 	Object         string           `json:"object" protobuf:"bytes,9,opt,name=object"`
 	Message        string           `json:"_entry,omitempty" protobuf:"bytes,10,opt,name=_entry"`

@@ -57,7 +57,7 @@ func buildTestImages(logger logr.Logger, fluentBitPluginImage, eventLoggerImage 
 func loadContainerImage(logger logr.Logger, clusterName, imageName string) env.Func {
 	return func(ctx context.Context, _ *envconf.Config) (context.Context, error) {
 		// Get list of nodes in the kind cluster
-		listNodesCmd := exec.Command("kind", "get", "nodes", "--name", clusterName)
+		listNodesCmd := exec.Command("kind", "get", "nodes", "--name", clusterName) // #nosec G204 -- clusterName is a controlled input from test setup
 		output, err := listNodesCmd.Output()
 		if err != nil {
 			return ctx, fmt.Errorf("failed to list kind nodes: %w", err)
@@ -108,7 +108,7 @@ func loadImageOnNode(ctx context.Context, logger logr.Logger, nodeName, imageNam
 		pullCmd := exec.Command(
 			"docker", "exec", nodeName,
 			"ctr", "-n", "k8s.io", "images", "pull", imageName,
-		)
+		) // #nosec G204 -- nodeName and imageName are controlled inputs from test setup
 		pullCmd.Stdout = io.Discard
 		pullCmd.Stderr = io.Discard
 

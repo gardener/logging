@@ -38,7 +38,7 @@ type metricsChecker struct {
 }
 
 func (m *metricsChecker) stallMetrics(_ *http.Request) error {
-	resp, err := http.Get(m.url)
+	resp, err := http.Get(m.url) // #nosec G704
 	if err != nil {
 		return err
 	}

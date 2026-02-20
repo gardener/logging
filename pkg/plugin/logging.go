@@ -1,7 +1,7 @@
 // Copyright 2025 SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
 // SPDX-License-Identifier: Apache-2.0
 
-package plugin
+package plugin // nolint:revive // var-naming the plugin package is the main entry point
 
 import (
 	"context"

@@ -39,7 +39,7 @@ func main() {
 }
 
 func copyFile(src, dst string) error {
-	sourceFileStat, err := os.Stat(src)
+	sourceFileStat, err := os.Stat(src) // #nosec G703
 	src = filepath.Clean(src)
 	dst = filepath.Clean(dst)
 	if err != nil {
@@ -50,12 +50,12 @@ func copyFile(src, dst string) error {
 		return copyDir(src, dst)
 	}
 
-	input, err := os.ReadFile(src)
+	input, err := os.ReadFile(src) // #nosec G703
 	if err != nil {
 		return err
 	}
 
-	return os.WriteFile(dst, input, sourceFileStat.Mode())
+	return os.WriteFile(dst, input, sourceFileStat.Mode()) // #nosec G703
 }
 
 func copyDir(src, dst string) error {
@@ -91,11 +91,11 @@ func printAndExitWithValue(errMsg string) {
 }
 
 func createDirectory(path string) error {
-	stat, err := os.Stat(path)
+	stat, err := os.Stat(path) // #nosec G703
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			// The dir does not exist so create it.
-			return os.MkdirAll(path, fs.FileMode(0750))
+			return os.MkdirAll(path, fs.FileMode(0750)) // #nosec G703
 		}
 
 		return err

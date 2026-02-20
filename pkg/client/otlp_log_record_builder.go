@@ -76,6 +76,7 @@ func (b *LogRecordBuilder) Build() otlplog.Record {
 func extractBody(record map[string]any) string {
 	msg, ok := record["log"]
 	if ok {
+		//nolint:revive // enforce-switch-style: default-case is omitted on purpose since
 		switch v := msg.(type) {
 		case string:
 			return fmt.Sprintf("%v", msg)
@@ -99,6 +100,7 @@ func extractBody(record map[string]any) string {
 
 	msg, ok = record["message"]
 	if ok {
+		//nolint:revive // enforce-switch-style: default-case is omitted on purpose
 		switch v := msg.(type) {
 		case string:
 			return fmt.Sprintf("%v", msg)
@@ -117,7 +119,7 @@ func extractBody(record map[string]any) string {
 			}
 
 			return t
-		}
+		} //nolint:revive // enforce-switch-style: default-case is omitted on purpose since we are expecting only string or []byte types for log/message fields
 	}
 
 	return fmt.Sprintf("%v", record)

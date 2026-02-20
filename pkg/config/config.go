@@ -82,6 +82,7 @@ func normalizeConfigMapKeys(configMap map[string]any) map[string]any {
 // sanitizeConfigMap recursively sanitizes all string values in the configuration map
 func sanitizeConfigMap(configMap map[string]any) {
 	for key, value := range configMap {
+		//nolint:revive // enforce-switch-style: default-case is omitted on purpose
 		switch v := value.(type) {
 		case string:
 			configMap[key] = sanitizeConfigString(v)
