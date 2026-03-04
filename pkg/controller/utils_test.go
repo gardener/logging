@@ -4,15 +4,68 @@
 package controller
 
 import (
+	"encoding/json"
 	"time"
 
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
+	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 var _ = Describe("Utils", func() {
+	Describe("#shootFromCluster", func() {
+		It("should unmarshal a shoot from a cluster", func() {
+			purpose := gardencorev1beta1.ShootPurpose("development")
+			shoot := &gardencorev1beta1.Shoot{
+				ObjectMeta: metav1.ObjectMeta{Name: "my-shoot"},
+				Spec:       gardencorev1beta1.ShootSpec{Purpose: &purpose},
+			}
+			shootRaw, err := json.Marshal(shoot)
+			Expect(err).NotTo(HaveOccurred())
+
+			cluster := &extensionsv1alpha1.Cluster{
+				ObjectMeta: metav1.ObjectMeta{Name: "my-cluster"},
+				Spec: extensionsv1alpha1.ClusterSpec{
+					Shoot: runtime.RawExtension{Raw: shootRaw},
+				},
+			}
+
+			result, err := shootFromCluster(cluster)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).NotTo(BeNil())
+			Expect(result.Name).To(Equal("my-shoot"))
+			Expect(result.Spec.Purpose).NotTo(BeNil())
+			Expect(*result.Spec.Purpose).To(Equal(gardencorev1beta1.ShootPurpose("development")))
+		})
+
+		It("should return nil when shoot raw is nil", func() {
+			cluster := &extensionsv1alpha1.Cluster{
+				ObjectMeta: metav1.ObjectMeta{Name: "empty-cluster"},
+			}
+
+			result, err := shootFromCluster(cluster)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).To(BeNil())
+		})
+
+		It("should return an error for invalid JSON", func() {
+			cluster := &extensionsv1alpha1.Cluster{
+				ObjectMeta: metav1.ObjectMeta{Name: "bad-cluster"},
+				Spec: extensionsv1alpha1.ClusterSpec{
+					Shoot: runtime.RawExtension{Raw: []byte(`{invalid}`)},
+				},
+			}
+
+			result, err := shootFromCluster(cluster)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("bad-cluster"))
+			Expect(result).To(BeNil())
+		})
+	})
+
 	var (
 		testingPurpuse     = gardencorev1beta1.ShootPurpose("testing")
 		developmentPurpuse = gardencorev1beta1.ShootPurpose("development")
