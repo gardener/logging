@@ -712,10 +712,11 @@ func defaultConfig() (*Config, error) {
 
 	config := &Config{
 		ControllerConfig: ControllerConfig{
-			ShootControllerClientConfig: ShootControllerClientConfig,
-			SeedControllerClientConfig:  SeedControllerClientConfig,
-			CtlSyncTimeout:              60 * time.Second,
-			DynamicHostRegex:            "*",
+			ShootControllerClientConfig:                  ShootControllerClientConfig,
+			SeedControllerClientConfig:                   SeedControllerClientConfig,
+			CtlSyncTimeout:                               60 * time.Second,
+			DynamicHostRegex:                             "*",
+			OpenTelemetryCollectorNamespaceLabelSelector: DefaultOpenTelemetryCollectorNamespaceLabelSelector,
 		},
 		PluginConfig: PluginConfig{
 			SeedType:  types.NOOP.String(),
