@@ -22,6 +22,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
@@ -93,6 +94,12 @@ func NewController(ctx context.Context, conf *config.Config, l logr.Logger) (Con
 	mgr, err := ctrl.NewManager(restConfig, ctrl.Options{
 		Scheme: scheme,
 		Logger: l,
+		Cache: cache.Options{
+			ByObject: map[client.Object]cache.ByObject{
+				&extensionsv1alpha1.Cluster{}: {},
+			},
+			DefaultTransform: cache.TransformStripManagedFields(),
+		},
 		// Disable metrics and health probe servers since fluent-bit plugin handles these
 		Metrics:                ctrl.Options{}.Metrics,
 		HealthProbeBindAddress: "",
