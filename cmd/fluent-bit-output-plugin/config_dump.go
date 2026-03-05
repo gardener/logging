@@ -49,6 +49,7 @@ func dumpConfiguration(conf *config.Config) {
 	logger.V(1).Info("[flb-go]", "SendLogsToSeedWhenShootIsInDeletionState", fmt.Sprintf("%+v", conf.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInDeletionState))
 	logger.V(1).Info("[flb-go]", "SendLogsToSeedWhenShootIsInRestoreState", fmt.Sprintf("%+v", conf.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInRestoreState))
 	logger.V(1).Info("[flb-go]", "SendLogsToSeedWhenShootIsInMigrationState", fmt.Sprintf("%+v", conf.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInMigrationState))
+	logger.V(1).Info("[flb-go]", "WatchOpenTelemetryCollector", fmt.Sprintf("%+v", conf.ControllerConfig.WatchOpenTelemetryCollector))
 	logger.V(1).Info("")
 	logger.V(1).Info("[flb-go] =====   OTLP Config   =====")
 	logger.V(1).Info("[flb-go]", "DQueDir", fmt.Sprintf("%+v", conf.OTLPConfig.DQueConfig.DQueDir))

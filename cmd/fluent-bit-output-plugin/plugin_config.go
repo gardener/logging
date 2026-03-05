@@ -60,6 +60,9 @@ func (c *pluginConfig) toStringMap() map[string]string {
 		"DeletedClientTimeExpiration", "deletedClientTimeExpiration", "deleted_client_time_expiration",
 		"ControllerSyncTimeout", "controllerSyncTimeout", "controller_sync_timeout",
 
+		// OpenTelemetryCollector watching config
+		"WatchOpenTelemetryCollector", "watchOpenTelemetryCollector", "watch_open_telemetry_collector",
+
 		// Log flows depending on cluster state
 		// Shoot client config
 		"SendLogsToShootWhenIsInCreationState", "sendLogsToShootWhenIsInCreationState", "send_logs_to_shoot_when_is_in_creation_state",
