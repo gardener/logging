@@ -95,9 +95,11 @@ func NewController(ctx context.Context, conf *config.Config, l logr.Logger) (Con
 		Scheme: scheme,
 		Logger: l,
 		Cache: cache.Options{
+			// Restrict cache to Cluster objects only; this controller does not reconcile other types.
 			ByObject: map[client.Object]cache.ByObject{
 				&extensionsv1alpha1.Cluster{}: {},
 			},
+			// Strip managed fields from all cached objects as they are not used by the reconciler.
 			DefaultTransform: cache.TransformStripManagedFields(),
 		},
 		// Disable metrics and health probe servers since fluent-bit plugin handles these
