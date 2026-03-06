@@ -7,7 +7,6 @@ import (
 	"errors"
 	"flag"
 
-	"github.com/gardener/gardener/pkg/logger"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -21,6 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 
 	"github.com/gardener/logging/v1/pkg/events"
+	pkglog "github.com/gardener/logging/v1/pkg/log"
 )
 
 // NewCommandStartGardenerEventLogger creates a *cobra.Command object with default parameters.
@@ -120,10 +120,7 @@ func (o *Options) config(seedKubeAPIServerConfig *rest.Config, seedKubeClient *k
 
 // Run runs gardener-apiserver with the given Options.
 func (o *Options) Run(stopCh <-chan struct{}) error {
-	log, err := logger.NewZapLogger(logger.InfoLevel, logger.FormatJSON)
-	if err != nil {
-		return err
-	}
+	log := pkglog.NewLogger("info")
 	log.Info("Starting Gardener Event Logger...", "Version", version.Get())
 
 	// Create clientset for the native Kubernetes API group

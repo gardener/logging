@@ -11,7 +11,6 @@ import (
 	"sync"
 	"time"
 
-	extensioncontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	gardenercorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/go-logr/logr"
@@ -212,7 +211,7 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, fmt.Errorf("failed to get cluster: %w", err)
 	}
 
-	shoot, err := extensioncontroller.ShootFromCluster(cluster)
+	shoot, err := shootFromCluster(cluster)
 	if err != nil {
 		log.Error(err, "can't extract shoot from cluster")
 
@@ -267,7 +266,7 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 // ReconcileCluster manually triggers reconciliation for a cluster.
 // This is useful for testing without a running manager.
 func (r *ClusterReconciler) ReconcileCluster(cluster *extensionsv1alpha1.Cluster) {
-	shoot, err := extensioncontroller.ShootFromCluster(cluster)
+	shoot, err := shootFromCluster(cluster)
 	if err != nil {
 		r.logger.Error(err, "can't extract shoot from cluster", "cluster", cluster.Name)
 

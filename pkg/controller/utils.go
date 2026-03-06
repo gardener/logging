@@ -4,9 +4,25 @@
 package controller
 
 import (
+	"encoding/json"
+	"fmt"
+
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
+	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 )
+
+func shootFromCluster(cluster *extensionsv1alpha1.Cluster) (*gardencorev1beta1.Shoot, error) {
+	if cluster.Spec.Shoot.Raw == nil {
+		return nil, nil
+	}
+	shoot := &gardencorev1beta1.Shoot{}
+	if err := json.Unmarshal(cluster.Spec.Shoot.Raw, shoot); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal shoot from cluster %q: %w", cluster.Name, err)
+	}
+
+	return shoot, nil
+}
 
 func isShootInHibernation(shoot *gardencorev1beta1.Shoot) bool {
 	return shoot != nil &&
