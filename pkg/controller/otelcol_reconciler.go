@@ -43,7 +43,6 @@ type otelCollectorReconciler struct {
 	cancel                 context.CancelFunc
 	mgr                    manager.Manager
 	mgrDone                chan struct{}
-	started                bool
 	labelSelector          labels.Selector
 	namespaceLabelSelector labels.Selector
 	dynamicHostRegex       *regexp.Regexp
@@ -127,7 +126,6 @@ func newOpenTelemetryCollectorController(ctx context.Context, conf *config.Confi
 		cancel:                 cancel,
 		mgr:                    mgr,
 		mgrDone:                make(chan struct{}),
-		started:                false,
 		labelSelector:          labelSelector,
 		namespaceLabelSelector: namespaceLabelSelector,
 		dynamicHostRegex:       dynamicHostRegex,
@@ -165,7 +163,6 @@ func newOpenTelemetryCollectorController(ctx context.Context, conf *config.Confi
 		return nil, errors.New("failed to wait for cache sync within timeout")
 	}
 
-	reconciler.started = true
 	l.Info("OpenTelemetryCollector controller started and cache synced")
 
 	return reconciler, nil
@@ -395,7 +392,6 @@ func (r *otelCollectorReconciler) Stop() {
 	}
 	r.clients = nil
 
-	r.started = false
 	r.logger.Info("OpenTelemetryCollector controller stopped")
 }
 

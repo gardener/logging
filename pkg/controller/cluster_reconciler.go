@@ -37,7 +37,6 @@ type clusterReconciler struct {
 	cancel     context.CancelFunc
 	mgr        manager.Manager
 	mgrDone    chan struct{} // signals when manager goroutine has stopped
-	started    bool
 }
 
 // newClusterController creates a new Controller for Cluster resources.
@@ -98,7 +97,6 @@ func newClusterController(ctx context.Context, conf *config.Config, l logr.Logge
 		cancel:     cancel,
 		mgr:        mgr,
 		mgrDone:    make(chan struct{}),
-		started:    false,
 	}
 
 	if err = ctrl.NewControllerManagedBy(mgr).
@@ -131,7 +129,6 @@ func newClusterController(ctx context.Context, conf *config.Config, l logr.Logge
 		return nil, errors.New("failed to wait for cache sync within timeout")
 	}
 
-	reconciler.started = true
 	l.Info("controller started and cache synced")
 
 	return reconciler, nil
@@ -163,7 +160,6 @@ func NewControllerWithClient(ctx context.Context, c client.Client, conf *config.
 		ctx:        ctlCtx,
 		cancel:     cancel,
 		mgr:        nil,
-		started:    true,
 	}
 
 	return reconciler, nil
@@ -268,7 +264,6 @@ func (r *clusterReconciler) Stop() {
 		r.seedClient.StopWait()
 	}
 
-	r.started = false
 	r.logger.Info("controller stopped")
 }
 
