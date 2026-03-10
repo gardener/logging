@@ -5,6 +5,7 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"regexp"
@@ -15,6 +16,7 @@ import (
 	otelcolv1beta1 "github.com/open-telemetry/opentelemetry-operator/apis/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/uuid"
@@ -52,14 +54,14 @@ type otelCollectorReconciler struct {
 // It sets up a manager and reconciler for OpenTelemetryCollector resources.
 func newOpenTelemetryCollectorController(ctx context.Context, conf *config.Config, l logr.Logger) (Controller, error) {
 	// Parse the label selector for OpenTelemetryCollector resources
-	labelSelector, err := labels.Parse(conf.ControllerConfig.OpenTelemetryCollectorLabelSelector)
+	labelSelector, err := parseLabelSelector(conf.ControllerConfig.OpenTelemetryCollectorLabelSelector)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse OpenTelemetryCollector label selector %q: %w",
 			conf.ControllerConfig.OpenTelemetryCollectorLabelSelector, err)
 	}
 
 	// Parse the namespace label selector
-	namespaceLabelSelector, err := labels.Parse(conf.ControllerConfig.OpenTelemetryCollectorNamespaceLabelSelector)
+	namespaceLabelSelector, err := parseLabelSelector(conf.ControllerConfig.OpenTelemetryCollectorNamespaceLabelSelector)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse namespace label selector %q: %w",
 			conf.ControllerConfig.OpenTelemetryCollectorNamespaceLabelSelector, err)
@@ -397,4 +399,31 @@ func (r *otelCollectorReconciler) Stop() {
 
 func (r *otelCollectorReconciler) isStopped() bool {
 	return r.clients == nil
+}
+
+// parseLabelSelector parses a label selector from either:
+//   - JSON LabelSelector format: {"matchLabels":{"key":"value"}}
+//   - Label selector string format: key=value,key2=value2
+//
+// An empty string returns a selector that matches everything.
+func parseLabelSelector(s string) (labels.Selector, error) {
+	if s == "" {
+		return labels.Everything(), nil
+	}
+
+	if s[0] == '{' {
+		var ls metav1.LabelSelector
+		if err := json.Unmarshal([]byte(s), &ls); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal JSON label selector: %w", err)
+		}
+
+		sel, err := metav1.LabelSelectorAsSelector(&ls)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert label selector: %w", err)
+		}
+
+		return sel, nil
+	}
+
+	return labels.Parse(s)
 }

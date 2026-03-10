@@ -374,3 +374,42 @@ var _ = Describe("otelCollectorReconciler", func() {
 		})
 	})
 })
+
+var _ = Describe("parseLabelSelector", func() {
+	It("should return everything selector for empty string", func() {
+		sel, err := parseLabelSelector("")
+		Expect(err).ToNot(HaveOccurred())
+		Expect(sel.Empty()).To(BeTrue())
+	})
+
+	It("should parse plain label selector string format", func() {
+		sel, err := parseLabelSelector("app=foo,env=prod")
+		Expect(err).ToNot(HaveOccurred())
+		Expect(sel.Matches(labels.Set{"app": "foo", "env": "prod"})).To(BeTrue())
+		Expect(sel.Matches(labels.Set{"app": "foo"})).To(BeFalse())
+	})
+
+	It("should parse JSON matchLabels format", func() {
+		sel, err := parseLabelSelector(`{"matchLabels":{"observability.gardener.cloud/app":"external-otelcol"}}`)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(sel.Matches(labels.Set{"observability.gardener.cloud/app": "external-otelcol"})).To(BeTrue())
+		Expect(sel.Matches(labels.Set{"observability.gardener.cloud/app": "other"})).To(BeFalse())
+	})
+
+	It("should parse JSON matchLabels format with gardener role label", func() {
+		sel, err := parseLabelSelector(`{"matchLabels":{"gardener.cloud/role":"shoot"}}`)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(sel.Matches(labels.Set{"gardener.cloud/role": "shoot"})).To(BeTrue())
+		Expect(sel.Matches(labels.Set{"gardener.cloud/role": "seed"})).To(BeFalse())
+	})
+
+	It("should return error for invalid JSON", func() {
+		_, err := parseLabelSelector(`{"matchLabels": bad}`)
+		Expect(err).To(HaveOccurred())
+	})
+
+	It("should return error for invalid string selector", func() {
+		_, err := parseLabelSelector("!!!invalid")
+		Expect(err).To(HaveOccurred())
+	})
+})
