@@ -270,10 +270,10 @@ var _ = Describe("Controller", func() {
 			)
 		})
 
-		Context("#deleteControllerClient", func() {
+		Context("#deleteClient", func() {
 			It("should delete cluster client when cluster is deleted", func() {
 				reconciler.clients[shootName] = &fakeOutputClient{}
-				reconciler.deleteControllerClient(developmentCluster.Name)
+				reconciler.deleteClient(developmentCluster.Name)
 				c, ok := reconciler.clients[shootName]
 				Expect(c).To(BeNil())
 				Expect(ok).To(BeFalse())
