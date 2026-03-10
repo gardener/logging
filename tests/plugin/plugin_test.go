@@ -47,7 +47,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	k8stypes "k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
-	sigs_client "sigs.k8s.io/controller-runtime/pkg/client"
+	sigsclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/gardener/logging/v1/pkg/config"
@@ -65,13 +65,13 @@ const (
 )
 
 type testContext struct {
-	controller  controller.Controller
-	fakeClient  sigs_client.Client
-	plugin      plugin.OutputPlugin
-	cfg         *config.Config
-	logger      logr.Logger
-	clusters    []*extensionsv1alpha1.Cluster
-	tmpDir      string
+	controller controller.Controller
+	fakeClient sigsclient.Client
+	plugin     plugin.OutputPlugin
+	cfg        *config.Config
+	logger     logr.Logger
+	clusters   []*extensionsv1alpha1.Cluster
+	tmpDir     string
 }
 
 var _ = Describe("Plugin Integration Test", Ordered, func() {
