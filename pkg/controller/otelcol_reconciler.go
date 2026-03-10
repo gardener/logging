@@ -275,19 +275,13 @@ func (r *OpenTelemetryCollectorReconciler) isNamespaceAllowed(ctx context.Contex
 }
 
 // createClient creates a new client for the given namespace.
+// Client construction happens outside the lock to avoid holding it during I/O.
+// After construction the write lock is acquired and a final duplicate check is
+// performed; if a concurrent call already inserted a client the newly created
+// one is stopped and discarded.
 func (r *OpenTelemetryCollectorReconciler) createClient(namespace string) {
 	clientConf := r.buildClientConfig(namespace)
 	if clientConf == nil {
-		return
-	}
-
-	r.lock.RLock()
-	_, exists := r.clients[namespace]
-	r.lock.RUnlock()
-
-	if exists {
-		r.logger.Info("client already exists for namespace", "namespace", namespace)
-
 		return
 	}
 
@@ -299,7 +293,6 @@ func (r *OpenTelemetryCollectorReconciler) createClient(namespace string) {
 
 		return
 	}
-	metrics.Clients.WithLabelValues(pkgclient.Shoot.String()).Inc()
 
 	r.lock.Lock()
 	defer r.lock.Unlock()
@@ -310,6 +303,14 @@ func (r *OpenTelemetryCollectorReconciler) createClient(namespace string) {
 		return
 	}
 
+	if _, exists := r.clients[namespace]; exists {
+		r.logger.Info("client already exists for namespace, discarding duplicate", "namespace", namespace)
+		outputClient.StopWait()
+
+		return
+	}
+
+	metrics.Clients.WithLabelValues(pkgclient.Shoot.String()).Inc()
 	r.clients[namespace] = outputClient
 	r.logger.Info("added client for namespace", "namespace", namespace, "endpoint", clientConf.OTLPConfig.Endpoint)
 }
