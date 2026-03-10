@@ -6,7 +6,7 @@ package client
 import (
 	"bytes"
 	"fmt"
-	"sort"
+	"slices"
 	"time"
 
 	otlplog "go.opentelemetry.io/otel/log"
@@ -243,7 +243,7 @@ func marshalMap(m map[string]any) string {
 	for k := range m {
 		keys = append(keys, k)
 	}
-	sort.Strings(keys)
+	slices.Sort(keys)
 
 	var b bytes.Buffer
 	for i, k := range keys {

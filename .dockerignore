@@ -12,5 +12,6 @@
 !.golangci.yaml
 !go.mod
 !go.sum
+!tools/
 !Makefile
 !VERSION

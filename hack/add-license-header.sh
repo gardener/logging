@@ -8,7 +8,7 @@ set -e
 root_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." &> /dev/null && pwd )"
 COPYRIGHT="SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors"
 
-go tool -modfile=${root_dir}/go.mod addlicense \
+go tool -modfile=${root_dir}/tools/go.mod addlicense \
   -c "$COPYRIGHT" \
   -l apache \
   -s=only \
