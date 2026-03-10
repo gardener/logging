@@ -7,10 +7,6 @@ import (
 	"time"
 )
 
-// DefaultOpenTelemetryCollectorNamespaceLabelSelector is the default label selector for namespaces
-// when using OpenTelemetryCollector mode.
-const DefaultOpenTelemetryCollectorNamespaceLabelSelector = "gardener.cloud/role=shoot"
-
 // ControllerConfig hold the configuration fot the Vali client controller
 type ControllerConfig struct {
 	CtlSyncTimeout   time.Duration  `mapstructure:"ControllerSyncTimeout"`
@@ -37,7 +33,7 @@ type ControllerConfig struct {
 	// OpenTelemetryCollectorNamespaceLabelSelector is a label selector to filter namespaces.
 	// Only OpenTelemetryCollector resources in namespaces matching this selector will be considered.
 	// Additionally, the namespace name must match DynamicHostRegex.
-	// Default: "gardener.cloud/role=shoot"
+	// When empty, all namespaces are considered (no filtering).
 	OpenTelemetryCollectorNamespaceLabelSelector string `mapstructure:"OpenTelemetryCollectorNamespaceLabelSelector"`
 }
 
