@@ -24,7 +24,7 @@ IMAGE_TAG                                  := $(EFFECTIVE_VERSION)
 
 # project folder structure
 TOOLS_DIR                                  := $(REPO_ROOT)/tools
-include hack/tools.mk
+TOOLS_MODFILE                              := $(TOOLS_DIR)/go.mod
 export PATH := $(abspath $(TOOLS_DIR)):$(PATH)
 
 .DEFAULT_GOAL := all
@@ -105,6 +105,7 @@ docker-push:
 .PHONY: tidy
 tidy:
 	@go mod tidy
+	@cd $(TOOLS_DIR) && go mod tidy
 
 .PHONY: check
 check: tidy fmt gci
@@ -112,30 +113,30 @@ check: tidy fmt gci
 .PHONY: fmt
 fmt: tidy
 	@echo "Running fmt..."
-	@go tool golangci-lint fmt \
+	@go tool -modfile=$(TOOLS_MODFILE) golangci-lint fmt \
 	 	--config=$(REPO_ROOT)/.golangci.yaml \
 		$(SRC_DIRS)
 
 .PHONY: gci
 gci: tidy
 	@echo "Running gci..."
-	@go tool gci write $(GCI_OPT) $(SRC_DIRS)
+	@go tool -modfile=$(TOOLS_MODFILE) gci write $(GCI_OPT) $(SRC_DIRS)
 
 .PHONY: lint
 lint: tidy
 	@echo "Running lint..."
-	 @go tool golangci-lint run \
+	 @go tool -modfile=$(TOOLS_MODFILE) golangci-lint run \
 	 	--config=$(REPO_ROOT)/.golangci.yaml \
 		$(SRC_DIRS)
 
 .PHONY: test
 test: tidy
-	@go tool gotestsum $(REPO_ROOT)/pkg/... --v --ginkgo.v --ginkgo.no-color
-	@go tool gotestsum $(REPO_ROOT)/tests/plugin
+	@go tool -modfile=$(TOOLS_MODFILE) gotestsum $(REPO_ROOT)/pkg/... --v --ginkgo.v --ginkgo.no-color
+	@go tool -modfile=$(TOOLS_MODFILE) gotestsum $(REPO_ROOT)/tests/plugin
 
 .PHONY: e2e-tests
 e2e-tests: tidy
-	@KIND_PATH=$(shell go tool -n kind) go tool gotestsum $(REPO_ROOT)/tests/e2e
+	@KIND_PATH=$(shell go tool -modfile=$(TOOLS_MODFILE) -n kind) go tool -modfile=$(TOOLS_MODFILE) gotestsum $(REPO_ROOT)/tests/e2e
 
 .PHONY: check-go-fix
 check-go-fix: tidy
@@ -151,17 +152,16 @@ check-go-fix: tidy
 verify: check check-go-fix test
 
 .PHONY: sast
-sast: $(GOSEC)
+sast:
 	@$(REPO_ROOT)/hack/sast.sh
 
 .PHONY: sast-report
-sast-report: $(GOSEC)
+sast-report:
 	@$(REPO_ROOT)/hack/sast.sh --gosec-report true
 
 .PHONY: add-license-headers
 add-license-headers: tidy
 	@$(REPO_ROOT)/hack/add-license-header.sh
-
 
 .PHONY: clean
 clean:
