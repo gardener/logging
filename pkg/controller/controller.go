@@ -8,10 +8,7 @@ import (
 	"fmt"
 	"os"
 
-	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/go-logr/logr"
-	"k8s.io/apimachinery/pkg/runtime"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -23,14 +20,6 @@ import (
 const (
 	expectedActiveClusters = 128
 )
-
-var (
-	scheme = runtime.NewScheme()
-)
-
-func init() {
-	utilruntime.Must(extensionsv1alpha1.AddToScheme(scheme))
-}
 
 // Controller represent a k8s controller watching for resources and
 // create logging clients based on them
@@ -70,9 +59,4 @@ func getRestConfig() (*rest.Config, error) {
 	}
 
 	return clientcmd.BuildConfigFromFlags("", kubeconfig)
-}
-
-// Scheme returns the scheme used by the controller.
-func Scheme() *runtime.Scheme {
-	return scheme
 }

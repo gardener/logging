@@ -15,7 +15,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -29,7 +28,6 @@ var _ = Describe("otelCollectorReconciler", func() {
 		reconciler        *otelCollectorReconciler
 		ctx               context.Context
 		cancel            context.CancelFunc
-		otelcolScheme     *runtime.Scheme
 		dynamicHostPrefix = "http://logging."
 		dynamicHostSuffix = ".svc:4318/v1/logs"
 		namespace         = "shoot--dev--logging"
@@ -41,10 +39,6 @@ var _ = Describe("otelCollectorReconciler", func() {
 	)
 
 	BeforeEach(func() {
-		otelcolScheme = runtime.NewScheme()
-		Expect(otelcolv1beta1.AddToScheme(otelcolScheme)).To(Succeed())
-		Expect(corev1.AddToScheme(otelcolScheme)).To(Succeed())
-
 		ctx, cancel = context.WithCancel(context.Background())
 
 		labelSelector, err := labels.Parse(labelKey + "=" + labelValue)

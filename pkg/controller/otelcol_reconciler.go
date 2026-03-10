@@ -19,6 +19,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
@@ -30,6 +31,14 @@ import (
 	"github.com/gardener/logging/v1/pkg/config"
 	"github.com/gardener/logging/v1/pkg/metrics"
 )
+
+var otelcolScheme = func() *runtime.Scheme {
+	s := runtime.NewScheme()
+	utilruntime.Must(otelcolv1beta1.AddToScheme(s))
+	utilruntime.Must(corev1.AddToScheme(s))
+
+	return s
+}()
 
 // otelCollectorReconciler reconciles OpenTelemetryCollector objects using controller-runtime.
 // It creates dynamic logging clients based on OpenTelemetryCollector resources that match
@@ -82,19 +91,6 @@ func newOpenTelemetryCollectorController(ctx context.Context, conf *config.Confi
 	ctlCtx, cancel := context.WithCancel(ctx)
 
 	ctrl.SetLogger(l)
-
-	// Add OpenTelemetryCollector to scheme
-	otelcolScheme := runtime.NewScheme()
-	if err := otelcolv1beta1.AddToScheme(otelcolScheme); err != nil {
-		cancel()
-
-		return nil, fmt.Errorf("failed to add otelcol v1beta1 to scheme: %w", err)
-	}
-	if err := corev1.AddToScheme(otelcolScheme); err != nil {
-		cancel()
-
-		return nil, fmt.Errorf("failed to add corev1 to scheme: %w", err)
-	}
 
 	mgr, err := ctrl.NewManager(restConfig, ctrl.Options{
 		Scheme: otelcolScheme,

@@ -14,6 +14,8 @@ import (
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/go-logr/logr"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/runtime"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
@@ -24,6 +26,19 @@ import (
 	"github.com/gardener/logging/v1/pkg/config"
 	"github.com/gardener/logging/v1/pkg/metrics"
 )
+
+var scheme = func() *runtime.Scheme {
+	s := runtime.NewScheme()
+	utilruntime.Must(extensionsv1alpha1.AddToScheme(s))
+
+	return s
+}()
+
+// Scheme returns the scheme used by the cluster controller.
+// It contains extensionsv1alpha1 types needed for watching Cluster resources.
+func Scheme() *runtime.Scheme {
+	return scheme
+}
 
 // clusterReconciler reconciles Cluster objects using controller-runtime
 type clusterReconciler struct {
