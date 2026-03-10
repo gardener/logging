@@ -62,6 +62,8 @@ func (c *pluginConfig) toStringMap() map[string]string {
 
 		// OpenTelemetryCollector watching config
 		"WatchOpenTelemetryCollector", "watchOpenTelemetryCollector", "watch_open_telemetry_collector",
+		"OpenTelemetryCollectorLabelSelector", "openTelemetryCollectorLabelSelector", "open_telemetry_collector_label_selector",
+		"OpenTelemetryCollectorNamespaceLabelSelector", "openTelemetryCollectorNamespaceLabelSelector", "open_telemetry_collector_namespace_label_selector",
 
 		// Log flows depending on cluster state
 		// Shoot client config
