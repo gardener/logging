@@ -18,6 +18,8 @@ import (
 	promtest "github.com/prometheus/client_golang/prometheus/testutil"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	k8stypes "k8s.io/apimachinery/pkg/types"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/gardener/logging/v1/pkg/config"
@@ -618,7 +620,8 @@ var _ = Describe("OutputPlugin plugin", func() {
 			defer ctl.Stop()
 
 			// Manually trigger reconciliation for the cluster
-			ctl.ReconcileCluster(cluster)
+			_, err = ctl.Reconcile(ctx, ctrl.Request{NamespacedName: k8stypes.NamespacedName{Name: cluster.Name}})
+			Expect(err).NotTo(HaveOccurred())
 
 			// Verify that the controller has the client
 			c, isStopped := ctl.GetClient(shootNamespace)
@@ -694,8 +697,10 @@ var _ = Describe("OutputPlugin plugin", func() {
 			defer ctl.Stop()
 
 			// Manually trigger reconciliation for both clusters
-			ctl.ReconcileCluster(cluster1)
-			ctl.ReconcileCluster(cluster2)
+			_, err = ctl.Reconcile(ctx, ctrl.Request{NamespacedName: k8stypes.NamespacedName{Name: cluster1.Name}})
+			Expect(err).NotTo(HaveOccurred())
+			_, err = ctl.Reconcile(ctx, ctrl.Request{NamespacedName: k8stypes.NamespacedName{Name: cluster2.Name}})
+			Expect(err).NotTo(HaveOccurred())
 
 			// Verify both clients exist
 			c1, _ := ctl.GetClient(shoot1)
@@ -756,7 +761,8 @@ var _ = Describe("OutputPlugin plugin", func() {
 			defer ctl.Stop()
 
 			// Manually trigger reconciliation for the cluster
-			ctl.ReconcileCluster(cluster)
+			_, err = ctl.Reconcile(ctx, ctrl.Request{NamespacedName: k8stypes.NamespacedName{Name: cluster.Name}})
+			Expect(err).NotTo(HaveOccurred())
 
 			// Client should exist but may be in hibernated state
 			c, isStopped := ctl.GetClient(hibernatedShoot)

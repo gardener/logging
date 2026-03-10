@@ -137,9 +137,9 @@ func newClusterController(ctx context.Context, conf *config.Config, l logr.Logge
 	return reconciler, nil
 }
 
-// NewControllerWithClient creates a clusterReconciler with a pre-configured client.
+// NewControllerWithClient creates a Controller with a pre-configured client.
 // This is useful for testing with fake clients.
-func NewControllerWithClient(ctx context.Context, c client.Client, conf *config.Config, l logr.Logger) (*clusterReconciler, error) {
+func NewControllerWithClient(ctx context.Context, c client.Client, conf *config.Config, l logr.Logger) (Controller, error) {
 	var err error
 	var seedClient pkgclient.OutputClient
 
@@ -237,43 +237,6 @@ func (r *clusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 
 	return ctrl.Result{}, nil
-}
-
-// ReconcileCluster manually triggers reconciliation for a cluster.
-// This is useful for testing without a running manager.
-func (r *clusterReconciler) ReconcileCluster(cluster *extensionsv1alpha1.Cluster) {
-	shoot, err := shootFromCluster(cluster)
-	if err != nil {
-		r.logger.Error(err, "can't extract shoot from cluster", "cluster", cluster.Name)
-
-		return
-	}
-
-	if cluster.DeletionTimestamp != nil {
-		r.deleteClient(cluster.Name)
-
-		return
-	}
-
-	if !r.isAllowedShoot(shoot) || r.isDeletedShoot(shoot) {
-		r.deleteClient(cluster.Name)
-
-		return
-	}
-
-	r.lock.RLock()
-	existingClient, clientExists := r.clients[cluster.Name]
-	r.lock.RUnlock()
-
-	if clientExists {
-		if existingClient == nil {
-			r.createClient(cluster.Name, shoot)
-		} else {
-			r.updateClientState(existingClient, shoot)
-		}
-	} else {
-		r.createClient(cluster.Name, shoot)
-	}
 }
 
 // Stop gracefully shuts down the controller and all its clients.

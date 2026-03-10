@@ -45,6 +45,9 @@ import (
 	promtest "github.com/prometheus/client_golang/prometheus/testutil"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	k8stypes "k8s.io/apimachinery/pkg/types"
+	ctrl "sigs.k8s.io/controller-runtime"
+	sigs_client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/gardener/logging/v1/pkg/config"
@@ -62,13 +65,13 @@ const (
 )
 
 type testContext struct {
-	controller    controller.Controller
-	clusterCtl    interface{ ReconcileCluster(*extensionsv1alpha1.Cluster) }
-	plugin        plugin.OutputPlugin
-	cfg           *config.Config
-	logger        logr.Logger
-	clusters      []*extensionsv1alpha1.Cluster
-	tmpDir        string
+	controller  controller.Controller
+	fakeClient  sigs_client.Client
+	plugin      plugin.OutputPlugin
+	cfg         *config.Config
+	logger      logr.Logger
+	clusters    []*extensionsv1alpha1.Cluster
+	tmpDir      string
 }
 
 var _ = Describe("Plugin Integration Test", Ordered, func() {
@@ -102,7 +105,11 @@ var _ = Describe("Plugin Integration Test", Ordered, func() {
 			testCtx.clusters = append(testCtx.clusters, cluster)
 
 			// Manually trigger reconciliation for each cluster
-			testCtx.clusterCtl.ReconcileCluster(cluster)
+			Expect(testCtx.fakeClient.Create(context.Background(), cluster)).To(Succeed())
+			_, reconcileErr := testCtx.controller.Reconcile(context.Background(), ctrl.Request{
+				NamespacedName: k8stypes.NamespacedName{Name: clusterName},
+			})
+			Expect(reconcileErr).NotTo(HaveOccurred())
 		}
 
 		// Verify all clusters are registered
@@ -193,7 +200,7 @@ func setupTestContext() *testContext {
 
 	return &testContext{
 		controller: ctl,
-		clusterCtl: ctl,
+		fakeClient: fakeClient,
 		plugin:     p,
 		cfg:        cfg,
 		logger:     logger,

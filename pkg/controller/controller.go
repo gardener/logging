@@ -14,6 +14,7 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	ctrl "sigs.k8s.io/controller-runtime"
 
 	pkgclient "github.com/gardener/logging/v1/pkg/client"
 	"github.com/gardener/logging/v1/pkg/config"
@@ -35,6 +36,7 @@ func init() {
 // create logging clients based on them
 type Controller interface {
 	GetClient(name string) (pkgclient.OutputClient, bool)
+	Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error)
 	Stop()
 }
 
