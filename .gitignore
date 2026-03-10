@@ -1,6 +1,8 @@
 /build
 /test
-/tools
+/tools/*
+!/tools/go.mod
+!/tools/go.sum
 /gardener
 logs
 bin
