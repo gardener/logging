@@ -400,17 +400,6 @@ func (r *ClusterReconciler) createControllerClient(clusterName string, shoot *ga
 		return
 	}
 
-	r.lock.RLock()
-	existingClient, exists := r.clients[clusterName]
-	r.lock.RUnlock()
-
-	if exists && existingClient != nil {
-		r.updateControllerClientState(existingClient, shoot)
-		r.logger.Info("controller client already exists", "cluster", clusterName)
-
-		return
-	}
-
 	c, err := r.newControllerClient(clusterName, clientConf)
 	if err != nil {
 		metrics.Errors.WithLabelValues(metrics.ErrorFailedToMakeOutputClient).Inc()
@@ -418,7 +407,6 @@ func (r *ClusterReconciler) createControllerClient(clusterName string, shoot *ga
 
 		return
 	}
-	metrics.Clients.WithLabelValues(pkgclient.Shoot.String()).Inc()
 
 	r.updateControllerClientState(c, shoot)
 
@@ -426,8 +414,20 @@ func (r *ClusterReconciler) createControllerClient(clusterName string, shoot *ga
 	defer r.lock.Unlock()
 
 	if r.isStopped() {
+		c.StopWait()
+
 		return
 	}
+
+	if existingClient, exists := r.clients[clusterName]; exists && existingClient != nil {
+		r.logger.Info("controller client already exists, discarding duplicate", "cluster", clusterName)
+		c.StopWait()
+		r.updateControllerClientState(existingClient, shoot)
+
+		return
+	}
+
+	metrics.Clients.WithLabelValues(pkgclient.Shoot.String()).Inc()
 	r.clients[clusterName] = c
 	r.logger.Info("added controller client",
 		"cluster", clusterName,
