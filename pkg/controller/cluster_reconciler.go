@@ -329,9 +329,6 @@ func (r *clusterReconciler) newControllerClient(clusterName string, clientConf *
 
 func (r *clusterReconciler) createClient(clusterName string, shoot *gardenercorev1beta1.Shoot) {
 	clientConf := r.buildClientConfig(clusterName)
-	if clientConf == nil {
-		return
-	}
 
 	c, err := r.newControllerClient(clusterName, clientConf)
 	if err != nil {
@@ -382,8 +379,8 @@ func (r *clusterReconciler) deleteClient(clusterName string) {
 		delete(r.clients, clusterName)
 		metrics.Clients.WithLabelValues(pkgclient.Shoot.String()).Dec()
 		go c.Stop() // TODO: check
+		r.logger.Info("client deleted", "cluster", clusterName)
 	}
-	r.logger.Info("client deleted", "cluster", clusterName)
 }
 
 func (*clusterReconciler) updateClientState(c Client, shoot *gardenercorev1beta1.Shoot) {
@@ -391,15 +388,8 @@ func (*clusterReconciler) updateClientState(c Client, shoot *gardenercorev1beta1
 }
 
 func (r *clusterReconciler) buildClientConfig(clusterName string) *config.Config {
-	suffix := r.conf.ControllerConfig.DynamicHostSuffix
-	urlstr := fmt.Sprintf("%s%s%s", r.conf.ControllerConfig.DynamicHostPrefix, clusterName, suffix)
+	urlstr := fmt.Sprintf("%s%s%s", r.conf.ControllerConfig.DynamicHostPrefix, clusterName, r.conf.ControllerConfig.DynamicHostSuffix)
 	r.logger.V(1).Info("set endpoint", "endpoint", urlstr, "cluster", clusterName)
-
-	if len(urlstr) == 0 {
-		r.logger.Error(nil, "incorrect endpoint", "cluster", clusterName)
-
-		return nil
-	}
 
 	conf := *r.conf
 	conf.OTLPConfig.Endpoint = urlstr

@@ -276,9 +276,6 @@ func (r *otelCollectorReconciler) isNamespaceAllowed(ctx context.Context, namesp
 // one is stopped and discarded.
 func (r *otelCollectorReconciler) createClient(namespace string) {
 	clientConf := r.buildClientConfig(namespace)
-	if clientConf == nil {
-		return
-	}
 
 	opt := []pkgclient.Option{pkgclient.WithTarget(pkgclient.Shoot), pkgclient.WithLogger(r.logger)}
 	outputClient, err := pkgclient.NewClient(r.ctx, *clientConf, opt...)
@@ -324,8 +321,8 @@ func (r *otelCollectorReconciler) deleteClient(namespace string) {
 		delete(r.clients, namespace)
 		metrics.Clients.WithLabelValues(pkgclient.Shoot.String()).Dec()
 		go c.Stop()
+		r.logger.Info("client deleted for namespace", "namespace", namespace)
 	}
-	r.logger.Info("client deleted for namespace", "namespace", namespace)
 }
 
 // buildClientConfig creates a Config for the client with the endpoint based on namespace.
@@ -335,12 +332,6 @@ func (r *otelCollectorReconciler) buildClientConfig(namespace string) *config.Co
 		namespace,
 		r.conf.ControllerConfig.DynamicHostSuffix)
 	r.logger.V(1).Info("building endpoint", "endpoint", endpoint, "namespace", namespace)
-
-	if len(endpoint) == 0 {
-		r.logger.Error(nil, "incorrect endpoint", "namespace", namespace)
-
-		return nil
-	}
 
 	conf := *r.conf
 	conf.OTLPConfig.Endpoint = endpoint
