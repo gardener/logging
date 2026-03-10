@@ -266,14 +266,14 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	if clientExists {
 		if existingClient == nil {
 			log.Error(nil, "nil client for cluster, recreating")
-			r.createControllerClient(cluster.Name, shoot)
+			r.createClient(cluster.Name, shoot)
 		} else {
 			log.V(1).Info("updating cluster state")
 			r.updateControllerClientState(existingClient, shoot)
 		}
 	} else {
 		log.V(1).Info("creating new client for cluster")
-		r.createControllerClient(cluster.Name, shoot)
+		r.createClient(cluster.Name, shoot)
 	}
 
 	return ctrl.Result{}, nil
@@ -307,12 +307,12 @@ func (r *ClusterReconciler) ReconcileCluster(cluster *extensionsv1alpha1.Cluster
 
 	if clientExists {
 		if existingClient == nil {
-			r.createControllerClient(cluster.Name, shoot)
+			r.createClient(cluster.Name, shoot)
 		} else {
 			r.updateControllerClientState(existingClient, shoot)
 		}
 	} else {
-		r.createControllerClient(cluster.Name, shoot)
+		r.createClient(cluster.Name, shoot)
 	}
 }
 
@@ -394,7 +394,7 @@ func (r *ClusterReconciler) newControllerClient(clusterName string, clientConf *
 	return c, nil
 }
 
-func (r *ClusterReconciler) createControllerClient(clusterName string, shoot *gardenercorev1beta1.Shoot) {
+func (r *ClusterReconciler) createClient(clusterName string, shoot *gardenercorev1beta1.Shoot) {
 	clientConf := r.updateClientConfig(clusterName)
 	if clientConf == nil {
 		return
