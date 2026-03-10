@@ -24,9 +24,9 @@ import (
 	"github.com/gardener/logging/v1/pkg/config"
 )
 
-var _ = Describe("OpenTelemetryCollectorReconciler", func() {
+var _ = Describe("otelCollectorReconciler", func() {
 	var (
-		reconciler        *OpenTelemetryCollectorReconciler
+		reconciler        *otelCollectorReconciler
 		ctx               context.Context
 		cancel            context.CancelFunc
 		otelcolScheme     *runtime.Scheme
@@ -52,7 +52,7 @@ var _ = Describe("OpenTelemetryCollectorReconciler", func() {
 		namespaceLabelSelector, err := labels.Parse(nsLabelKey + "=" + nsLabelValue)
 		Expect(err).ToNot(HaveOccurred())
 
-		reconciler = &OpenTelemetryCollectorReconciler{
+		reconciler = &otelCollectorReconciler{
 			conf: &config.Config{
 				OTLPConfig: config.OTLPConfig{
 					DQueConfig: config.DefaultDQueConfig,

@@ -25,8 +25,8 @@ import (
 	"github.com/gardener/logging/v1/pkg/metrics"
 )
 
-// ClusterReconciler reconciles Cluster objects using controller-runtime
-type ClusterReconciler struct {
+// clusterReconciler reconciles Cluster objects using controller-runtime
+type clusterReconciler struct {
 	client.Client
 	seedClient pkgclient.OutputClient
 	conf       *config.Config
@@ -88,7 +88,7 @@ func newClusterController(ctx context.Context, conf *config.Config, l logr.Logge
 		return nil, fmt.Errorf("failed to create manager: %w", err)
 	}
 
-	reconciler := &ClusterReconciler{
+	reconciler := &clusterReconciler{
 		Client:     mgr.GetClient(),
 		seedClient: seedClient,
 		conf:       conf,
@@ -137,9 +137,9 @@ func newClusterController(ctx context.Context, conf *config.Config, l logr.Logge
 	return reconciler, nil
 }
 
-// NewControllerWithClient creates a Controller with a pre-configured client.
+// NewControllerWithClient creates a clusterReconciler with a pre-configured client.
 // This is useful for testing with fake clients.
-func NewControllerWithClient(ctx context.Context, c client.Client, conf *config.Config, l logr.Logger) (Controller, error) {
+func NewControllerWithClient(ctx context.Context, c client.Client, conf *config.Config, l logr.Logger) (*clusterReconciler, error) {
 	var err error
 	var seedClient pkgclient.OutputClient
 
@@ -154,7 +154,7 @@ func NewControllerWithClient(ctx context.Context, c client.Client, conf *config.
 
 	ctlCtx, cancel := context.WithCancel(ctx)
 
-	reconciler := &ClusterReconciler{
+	reconciler := &clusterReconciler{
 		Client:     c,
 		seedClient: seedClient,
 		conf:       conf,
@@ -171,7 +171,7 @@ func NewControllerWithClient(ctx context.Context, c client.Client, conf *config.
 
 // Reconcile implements the controller-runtime Reconciler interface.
 // It handles create, update, and delete events for Cluster resources.
-func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *clusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.logger.WithValues("cluster", req.Name)
 
 	cluster := &extensionsv1alpha1.Cluster{}
@@ -241,7 +241,7 @@ func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 // ReconcileCluster manually triggers reconciliation for a cluster.
 // This is useful for testing without a running manager.
-func (r *ClusterReconciler) ReconcileCluster(cluster *extensionsv1alpha1.Cluster) {
+func (r *clusterReconciler) ReconcileCluster(cluster *extensionsv1alpha1.Cluster) {
 	shoot, err := shootFromCluster(cluster)
 	if err != nil {
 		r.logger.Error(err, "can't extract shoot from cluster", "cluster", cluster.Name)
@@ -277,7 +277,7 @@ func (r *ClusterReconciler) ReconcileCluster(cluster *extensionsv1alpha1.Cluster
 }
 
 // Stop gracefully shuts down the controller and all its clients.
-func (r *ClusterReconciler) Stop() {
+func (r *clusterReconciler) Stop() {
 	// Cancel the context to signal the manager to stop
 	r.cancel()
 
@@ -310,7 +310,7 @@ func (r *ClusterReconciler) Stop() {
 }
 
 // GetClient returns the client for the given cluster name.
-func (r *ClusterReconciler) GetClient(name string) (pkgclient.OutputClient, bool) {
+func (r *clusterReconciler) GetClient(name string) (pkgclient.OutputClient, bool) {
 	r.lock.RLock()
 	defer r.lock.RUnlock()
 
@@ -325,7 +325,7 @@ func (r *ClusterReconciler) GetClient(name string) (pkgclient.OutputClient, bool
 	return nil, false
 }
 
-func (r *ClusterReconciler) newControllerClient(clusterName string, clientConf *config.Config) (*controllerClient, error) {
+func (r *clusterReconciler) newControllerClient(clusterName string, clientConf *config.Config) (*controllerClient, error) {
 	r.logger.V(1).Info("creating new controller client", "name", clusterName)
 
 	opt := []pkgclient.Option{pkgclient.WithTarget(pkgclient.Shoot), pkgclient.WithLogger(r.logger)}
@@ -354,7 +354,7 @@ func (r *ClusterReconciler) newControllerClient(clusterName string, clientConf *
 	return c, nil
 }
 
-func (r *ClusterReconciler) createClient(clusterName string, shoot *gardenercorev1beta1.Shoot) {
+func (r *clusterReconciler) createClient(clusterName string, shoot *gardenercorev1beta1.Shoot) {
 	clientConf := r.buildClientConfig(clusterName)
 	if clientConf == nil {
 		return
@@ -396,7 +396,7 @@ func (r *ClusterReconciler) createClient(clusterName string, shoot *gardenercore
 	)
 }
 
-func (r *ClusterReconciler) deleteClient(clusterName string) {
+func (r *clusterReconciler) deleteClient(clusterName string) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
@@ -413,11 +413,11 @@ func (r *ClusterReconciler) deleteClient(clusterName string) {
 	r.logger.Info("client deleted", "cluster", clusterName)
 }
 
-func (*ClusterReconciler) updateClientState(c Client, shoot *gardenercorev1beta1.Shoot) {
+func (*clusterReconciler) updateClientState(c Client, shoot *gardenercorev1beta1.Shoot) {
 	c.SetState(getShootState(shoot))
 }
 
-func (r *ClusterReconciler) buildClientConfig(clusterName string) *config.Config {
+func (r *clusterReconciler) buildClientConfig(clusterName string) *config.Config {
 	suffix := r.conf.ControllerConfig.DynamicHostSuffix
 	urlstr := fmt.Sprintf("%s%s%s", r.conf.ControllerConfig.DynamicHostPrefix, clusterName, suffix)
 	r.logger.V(1).Info("set endpoint", "endpoint", urlstr, "cluster", clusterName)
@@ -435,14 +435,14 @@ func (r *ClusterReconciler) buildClientConfig(clusterName string) *config.Config
 	return &conf
 }
 
-func (*ClusterReconciler) isAllowedShoot(shoot *gardenercorev1beta1.Shoot) bool {
+func (*clusterReconciler) isAllowedShoot(shoot *gardenercorev1beta1.Shoot) bool {
 	return !isTestingShoot(shoot)
 }
 
-func (*ClusterReconciler) isDeletedShoot(shoot *gardenercorev1beta1.Shoot) bool {
+func (*clusterReconciler) isDeletedShoot(shoot *gardenercorev1beta1.Shoot) bool {
 	return shoot != nil && shoot.DeletionTimestamp != nil
 }
 
-func (r *ClusterReconciler) isStopped() bool {
+func (r *clusterReconciler) isStopped() bool {
 	return r.clients == nil
 }

@@ -62,12 +62,13 @@ const (
 )
 
 type testContext struct {
-	controller controller.Controller
-	plugin     plugin.OutputPlugin
-	cfg        *config.Config
-	logger     logr.Logger
-	clusters   []*extensionsv1alpha1.Cluster
-	tmpDir     string
+	controller    controller.Controller
+	clusterCtl    interface{ ReconcileCluster(*extensionsv1alpha1.Cluster) }
+	plugin        plugin.OutputPlugin
+	cfg           *config.Config
+	logger        logr.Logger
+	clusters      []*extensionsv1alpha1.Cluster
+	tmpDir        string
 }
 
 var _ = Describe("Plugin Integration Test", Ordered, func() {
@@ -101,7 +102,7 @@ var _ = Describe("Plugin Integration Test", Ordered, func() {
 			testCtx.clusters = append(testCtx.clusters, cluster)
 
 			// Manually trigger reconciliation for each cluster
-			testCtx.controller.(*controller.ClusterReconciler).ReconcileCluster(cluster)
+			testCtx.clusterCtl.ReconcileCluster(cluster)
 		}
 
 		// Verify all clusters are registered
@@ -192,6 +193,7 @@ func setupTestContext() *testContext {
 
 	return &testContext{
 		controller: ctl,
+		clusterCtl: ctl,
 		plugin:     p,
 		cfg:        cfg,
 		logger:     logger,

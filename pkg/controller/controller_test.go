@@ -55,7 +55,7 @@ func (*fakeOutputClient) GetState() clusterState {
 
 var _ = Describe("Controller", func() {
 	Describe("#GetClient", func() {
-		reconciler := &ClusterReconciler{
+		reconciler := &clusterReconciler{
 			clients: map[string]Client{
 				"shoot--dev--test1": &fakeOutputClient{},
 			},
@@ -81,7 +81,7 @@ var _ = Describe("Controller", func() {
 		shootDevTest1 := &fakeOutputClient{}
 		shootDevTest2 := &fakeOutputClient{}
 		ctx, cancel := context.WithCancel(context.Background())
-		reconciler := &ClusterReconciler{
+		reconciler := &clusterReconciler{
 			clients: map[string]Client{
 				"shoot--dev--test1": shootDevTest1,
 				"shoot--dev--test2": shootDevTest2,
@@ -101,7 +101,7 @@ var _ = Describe("Controller", func() {
 	Describe("Reconcile functions", func() {
 		var (
 			conf       *config.Config
-			reconciler *ClusterReconciler
+			reconciler *clusterReconciler
 		)
 		dynamicHostPrefix := "http://logging."
 		dynamicHostSuffix := ".svc:4318/v1/logs"
@@ -175,7 +175,7 @@ var _ = Describe("Controller", func() {
 				},
 			}
 			ctx, cancel := context.WithCancel(context.Background())
-			reconciler = &ClusterReconciler{
+			reconciler = &clusterReconciler{
 				clients: make(map[string]Client),
 				conf:    conf,
 				logger:  logger,

@@ -29,11 +29,11 @@ import (
 	"github.com/gardener/logging/v1/pkg/metrics"
 )
 
-// OpenTelemetryCollectorReconciler reconciles OpenTelemetryCollector objects using controller-runtime.
+// otelCollectorReconciler reconciles OpenTelemetryCollector objects using controller-runtime.
 // It creates dynamic logging clients based on OpenTelemetryCollector resources that match
 // the configured label selector and are in namespaces matching the namespace label selector
 // and DynamicHostRegex.
-type OpenTelemetryCollectorReconciler struct {
+type otelCollectorReconciler struct {
 	client.Client
 	conf                   *config.Config
 	lock                   sync.RWMutex
@@ -118,7 +118,7 @@ func newOpenTelemetryCollectorController(ctx context.Context, conf *config.Confi
 		return nil, fmt.Errorf("failed to create manager: %w", err)
 	}
 
-	reconciler := &OpenTelemetryCollectorReconciler{
+	reconciler := &otelCollectorReconciler{
 		Client:                 mgr.GetClient(),
 		conf:                   conf,
 		clients:                make(map[string]pkgclient.OutputClient, expectedActiveClusters),
@@ -173,7 +173,7 @@ func newOpenTelemetryCollectorController(ctx context.Context, conf *config.Confi
 
 // buildLabelPredicate creates a predicate that filters OpenTelemetryCollector resources
 // based on the configured label selector.
-func (r *OpenTelemetryCollectorReconciler) buildLabelPredicate() predicate.Predicate {
+func (r *otelCollectorReconciler) buildLabelPredicate() predicate.Predicate {
 	return predicate.NewPredicateFuncs(func(obj client.Object) bool {
 		return r.labelSelector.Matches(labels.Set(obj.GetLabels()))
 	})
@@ -181,7 +181,7 @@ func (r *OpenTelemetryCollectorReconciler) buildLabelPredicate() predicate.Predi
 
 // Reconcile implements the controller-runtime Reconciler interface.
 // It handles create, update, and delete events for OpenTelemetryCollector resources.
-func (r *OpenTelemetryCollectorReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *otelCollectorReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.logger.WithValues("otelcol", req.NamespacedName)
 
 	otelcol := &otelcolv1beta1.OpenTelemetryCollector{}
@@ -242,7 +242,7 @@ func (r *OpenTelemetryCollectorReconciler) Reconcile(ctx context.Context, req ct
 // isNamespaceAllowed checks if the namespace matches both:
 // 1. The namespace label selector (e.g., gardener.cloud/role=shoot)
 // 2. The DynamicHostRegex (namespace name must match the regex)
-func (r *OpenTelemetryCollectorReconciler) isNamespaceAllowed(ctx context.Context, namespaceName string) (bool, error) {
+func (r *otelCollectorReconciler) isNamespaceAllowed(ctx context.Context, namespaceName string) (bool, error) {
 	// Check if namespace name matches DynamicHostRegex
 	if !r.dynamicHostRegex.MatchString(namespaceName) {
 		r.logger.V(1).Info("namespace name does not match DynamicHostRegex",
@@ -279,7 +279,7 @@ func (r *OpenTelemetryCollectorReconciler) isNamespaceAllowed(ctx context.Contex
 // After construction the write lock is acquired and a final duplicate check is
 // performed; if a concurrent call already inserted a client the newly created
 // one is stopped and discarded.
-func (r *OpenTelemetryCollectorReconciler) createClient(namespace string) {
+func (r *otelCollectorReconciler) createClient(namespace string) {
 	clientConf := r.buildClientConfig(namespace)
 	if clientConf == nil {
 		return
@@ -316,7 +316,7 @@ func (r *OpenTelemetryCollectorReconciler) createClient(namespace string) {
 }
 
 // deleteClient removes the client for the given namespace.
-func (r *OpenTelemetryCollectorReconciler) deleteClient(namespace string) {
+func (r *otelCollectorReconciler) deleteClient(namespace string) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
@@ -334,7 +334,7 @@ func (r *OpenTelemetryCollectorReconciler) deleteClient(namespace string) {
 }
 
 // buildClientConfig creates a Config for the client with the endpoint based on namespace.
-func (r *OpenTelemetryCollectorReconciler) buildClientConfig(namespace string) *config.Config {
+func (r *otelCollectorReconciler) buildClientConfig(namespace string) *config.Config {
 	endpoint := fmt.Sprintf("%s%s%s",
 		r.conf.ControllerConfig.DynamicHostPrefix,
 		namespace,
@@ -355,7 +355,7 @@ func (r *OpenTelemetryCollectorReconciler) buildClientConfig(namespace string) *
 }
 
 // GetClient returns the client for the given namespace.
-func (r *OpenTelemetryCollectorReconciler) GetClient(name string) (pkgclient.OutputClient, bool) {
+func (r *otelCollectorReconciler) GetClient(name string) (pkgclient.OutputClient, bool) {
 	r.lock.RLock()
 	defer r.lock.RUnlock()
 
@@ -371,7 +371,7 @@ func (r *OpenTelemetryCollectorReconciler) GetClient(name string) (pkgclient.Out
 }
 
 // Stop gracefully shuts down the controller and all its clients.
-func (r *OpenTelemetryCollectorReconciler) Stop() {
+func (r *otelCollectorReconciler) Stop() {
 	// Cancel the context to signal the manager to stop
 	r.cancel()
 
@@ -399,6 +399,6 @@ func (r *OpenTelemetryCollectorReconciler) Stop() {
 	r.logger.Info("OpenTelemetryCollector controller stopped")
 }
 
-func (r *OpenTelemetryCollectorReconciler) isStopped() bool {
+func (r *otelCollectorReconciler) isStopped() bool {
 	return r.clients == nil
 }

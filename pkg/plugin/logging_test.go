@@ -618,7 +618,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 			defer ctl.Stop()
 
 			// Manually trigger reconciliation for the cluster
-			ctl.(*controller.ClusterReconciler).ReconcileCluster(cluster)
+			ctl.ReconcileCluster(cluster)
 
 			// Verify that the controller has the client
 			c, isStopped := ctl.GetClient(shootNamespace)
@@ -694,8 +694,8 @@ var _ = Describe("OutputPlugin plugin", func() {
 			defer ctl.Stop()
 
 			// Manually trigger reconciliation for both clusters
-			ctl.(*controller.ClusterReconciler).ReconcileCluster(cluster1)
-			ctl.(*controller.ClusterReconciler).ReconcileCluster(cluster2)
+			ctl.ReconcileCluster(cluster1)
+			ctl.ReconcileCluster(cluster2)
 
 			// Verify both clients exist
 			c1, _ := ctl.GetClient(shoot1)
@@ -756,7 +756,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 			defer ctl.Stop()
 
 			// Manually trigger reconciliation for the cluster
-			ctl.(*controller.ClusterReconciler).ReconcileCluster(cluster)
+			ctl.ReconcileCluster(cluster)
 
 			// Client should exist but may be in hibernated state
 			c, isStopped := ctl.GetClient(hibernatedShoot)

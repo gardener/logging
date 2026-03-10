@@ -425,7 +425,7 @@ var _ = Describe("Controller Client", func() {
 
 	Describe("#GetClient", func() {
 		var (
-			reconciler           *ClusterReconciler
+			reconciler           *clusterReconciler
 			clientName           = "test-client"
 			testControllerClient *fakeControllerClient
 		)
@@ -447,7 +447,7 @@ var _ = Describe("Controller Client", func() {
 			}
 
 			ctx, cancel := context.WithCancel(context.Background())
-			reconciler = &ClusterReconciler{
+			reconciler = &clusterReconciler{
 				clients: map[string]Client{
 					clientName: testControllerClient,
 				},
