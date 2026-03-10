@@ -46,12 +46,12 @@ func NewController(ctx context.Context, conf *config.Config, l logr.Logger) (Con
 	if conf.ControllerConfig.WatchOpenTelemetryCollector {
 		l.Info("using OpenTelemetryCollector mode for dynamic clients")
 
-		return NewOpenTelemetryCollectorController(ctx, conf, l)
+		return newOpenTelemetryCollectorController(ctx, conf, l)
 	}
 
 	l.Info("using Cluster mode for dynamic clients")
 
-	return NewClusterController(ctx, conf, l)
+	return newClusterController(ctx, conf, l)
 }
 
 // getRestConfig returns the Kubernetes REST config.

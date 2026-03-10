@@ -40,9 +40,9 @@ type ClusterReconciler struct {
 	started    bool
 }
 
-// NewClusterController creates a new Controller for Cluster resources.
+// newClusterController creates a new Controller for Cluster resources.
 // It sets up a manager and reconciler for Cluster resources.
-func NewClusterController(ctx context.Context, conf *config.Config, l logr.Logger) (Controller, error) {
+func newClusterController(ctx context.Context, conf *config.Config, l logr.Logger) (Controller, error) {
 	var err error
 	var seedClient pkgclient.OutputClient
 

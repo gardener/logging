@@ -49,9 +49,9 @@ type OpenTelemetryCollectorReconciler struct {
 	dynamicHostRegex       *regexp.Regexp
 }
 
-// NewOpenTelemetryCollectorController creates a new Controller for OpenTelemetryCollector resources.
+// newOpenTelemetryCollectorController creates a new Controller for OpenTelemetryCollector resources.
 // It sets up a manager and reconciler for OpenTelemetryCollector resources.
-func NewOpenTelemetryCollectorController(ctx context.Context, conf *config.Config, l logr.Logger) (Controller, error) {
+func newOpenTelemetryCollectorController(ctx context.Context, conf *config.Config, l logr.Logger) (Controller, error) {
 	// Parse the label selector for OpenTelemetryCollector resources
 	labelSelector, err := labels.Parse(conf.ControllerConfig.OpenTelemetryCollectorLabelSelector)
 	if err != nil {
