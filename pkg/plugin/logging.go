@@ -178,6 +178,10 @@ func (l *logging) SendRecord(log types.OutputEntry) error {
 	if c == nil {
 		metrics.DroppedLogs.WithLabelValues(host, "no_client").Inc()
 
+		if l.cfg.ControllerConfig.WatchOpenTelemetryCollector {
+			return nil
+		}
+
 		return fmt.Errorf("no client found in controller for host: %v", dynamicHostName)
 	}
 

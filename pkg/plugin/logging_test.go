@@ -22,6 +22,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
+	"github.com/gardener/logging/v1/pkg/client"
 	"github.com/gardener/logging/v1/pkg/config"
 	"github.com/gardener/logging/v1/pkg/controller"
 	"github.com/gardener/logging/v1/pkg/log"
@@ -788,7 +789,72 @@ var _ = Describe("OutputPlugin plugin", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 	})
+
+	Describe("OtelCollector mode: no client for dynamic host", func() {
+		It("should drop the record silently and not return an error to Fluent Bit", func() {
+			namespace := fmt.Sprintf("shoot--dev--test-%d", time.Now().UnixNano())
+			testCfg := &config.Config{
+				OTLPConfig: config.OTLPConfig{
+					Endpoint: "http://test-seed-endpoint:4318/v1/logs",
+					DQueConfig: config.DQueConfig{
+						DQueDir:         GinkgoT().TempDir(),
+						DQueSegmentSize: 500,
+						DQueSync:        false,
+						DQueName:        fmt.Sprintf("dque-%d", time.Now().UnixNano()),
+					},
+				},
+				PluginConfig: config.PluginConfig{
+					SeedType:  types.NOOP.String(),
+					ShootType: types.NOOP.String(),
+					LogLevel:  "info",
+				},
+				ControllerConfig: config.ControllerConfig{
+					CtlSyncTimeout:              5 * time.Second,
+					DynamicHostPrefix:           "http://logging.",
+					DynamicHostSuffix:           ".svc:4318/v1/logs",
+					DynamicHostRegex:            `^shoot--.*`,
+					WatchOpenTelemetryCollector: true,
+					DynamicHostPath: map[string]any{
+						"kubernetes": map[string]any{
+							"namespace_name": "namespace",
+						},
+					},
+				},
+			}
+
+			ctl := &noClientController{}
+			plugin, err := NewPluginWithController(testCfg, logger, ctl)
+			Expect(err).NotTo(HaveOccurred())
+			defer plugin.Close()
+
+			initialDropped := promtest.ToFloat64(metrics.DroppedLogs.WithLabelValues(namespace, "no_client"))
+
+			entry := types.OutputEntry{
+				Timestamp: time.Now(),
+				Record: map[string]any{
+					"log":        "log for unknown namespace",
+					"kubernetes": map[string]any{"namespace_name": namespace},
+				},
+			}
+
+			err = plugin.SendRecord(entry)
+			Expect(err).NotTo(HaveOccurred(), "should ack the record without error in OtelCollector mode")
+			Expect(promtest.ToFloat64(metrics.DroppedLogs.WithLabelValues(namespace, "no_client"))).To(
+				BeNumerically(">", initialDropped), "DroppedLogs metric should be incremented",
+			)
+		})
+	})
 })
+
+// noClientController is a fake Controller that always returns nil for GetClient,
+// simulating OtelCollector mode where no client exists for a given namespace.
+type noClientController struct{}
+
+func (*noClientController) GetClient(_ string) (client.OutputClient, bool) { return nil, false }
+func (*noClientController) Stop()                                          {}
+func (*noClientController) Reconcile(_ context.Context, _ ctrl.Request) (ctrl.Result, error) {
+	return ctrl.Result{}, nil
+}
 
 // createTestCluster creates a test cluster resource with the given namespace, purpose, and hibernation status
 func createTestCluster(namespace, purpose string, hibernated bool) *extensionsv1alpha1.Cluster {
