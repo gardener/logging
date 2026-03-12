@@ -16,7 +16,7 @@
   "editable": true,
   "gnetId": 7752,
   "graphTooltip": 1,
-  "iteration": 1770812698113,
+  "iteration": 1773295740873,
   "links": [],
   "panels": [
     {
@@ -80,7 +80,7 @@
         "text": {},
         "textMode": "value"
       },
-      "pluginVersion": "7.5.45",
+      "pluginVersion": "7.5.42",
       "targets": [
         {
           "exemplar": true,
@@ -138,7 +138,7 @@
         "showThresholdMarkers": false,
         "text": {}
       },
-      "pluginVersion": "7.5.45",
+      "pluginVersion": "7.5.42",
       "targets": [
         {
           "exemplar": true,
@@ -199,7 +199,7 @@
         "showThresholdMarkers": false,
         "text": {}
       },
-      "pluginVersion": "7.5.45",
+      "pluginVersion": "7.5.42",
       "targets": [
         {
           "exemplar": true,
@@ -260,7 +260,7 @@
         "showThresholdMarkers": false,
         "text": {}
       },
-      "pluginVersion": "7.5.45",
+      "pluginVersion": "7.5.42",
       "targets": [
         {
           "exemplar": true,
@@ -321,7 +321,7 @@
         "showThresholdMarkers": false,
         "text": {}
       },
-      "pluginVersion": "7.5.45",
+      "pluginVersion": "7.5.42",
       "targets": [
         {
           "exemplar": true,
@@ -386,7 +386,7 @@
         "text": {},
         "textMode": "value"
       },
-      "pluginVersion": "7.5.45",
+      "pluginVersion": "7.5.42",
       "targets": [
         {
           "exemplar": true,
@@ -1128,7 +1128,7 @@
             "text": {},
             "textMode": "value"
           },
-          "pluginVersion": "7.5.45",
+          "pluginVersion": "7.5.42",
           "targets": [
             {
               "exemplar": true,
@@ -1189,7 +1189,7 @@
             "text": {},
             "textMode": "value"
           },
-          "pluginVersion": "7.5.45",
+          "pluginVersion": "7.5.42",
           "targets": [
             {
               "exemplar": true,
@@ -1251,7 +1251,7 @@
             "text": {},
             "textMode": "auto"
           },
-          "pluginVersion": "7.5.45",
+          "pluginVersion": "7.5.42",
           "targets": [
             {
               "exemplar": true,
@@ -1328,7 +1328,7 @@
             "text": {},
             "textMode": "value"
           },
-          "pluginVersion": "7.5.45",
+          "pluginVersion": "7.5.42",
           "targets": [
             {
               "exemplar": true,
@@ -1389,7 +1389,7 @@
             "text": {},
             "textMode": "value"
           },
-          "pluginVersion": "7.5.45",
+          "pluginVersion": "7.5.42",
           "targets": [
             {
               "exemplar": true,
@@ -1450,7 +1450,7 @@
             "text": {},
             "textMode": "auto"
           },
-          "pluginVersion": "7.5.45",
+          "pluginVersion": "7.5.42",
           "targets": [
             {
               "exemplar": true,
@@ -2394,7 +2394,7 @@
           "targets": [
             {
               "exemplar": true,
-              "expr": "go_gc_duration_seconds{pod=~\"fluent-bit.+\",quantile=\"0.75\"}",
+              "expr": "go_gc_duration_seconds{pod=~\"$pod\",quantile=\"0.75\"}",
               "hide": true,
               "interval": "",
               "legendFormat": "{{pod}} - GC 75p",
@@ -2402,7 +2402,7 @@
             },
             {
               "exemplar": true,
-              "expr": "\nsum by (pod) (\n  rate(go_gc_duration_seconds_sum{pod=~\"fluent-bit.+\"}[$__rate_interval])\n)\n/\nsum by (pod) (\n  rate(go_gc_duration_seconds_count{pod=~\"fluent-bit.+\"}[$__rate_interval])\n)\n",
+              "expr": "\nsum by (pod) (\n  rate(go_gc_duration_seconds_sum{pod=~\"$pod\"}[$__rate_interval])\n)\n/\nsum by (pod) (\n  rate(go_gc_duration_seconds_count{pod=~\"$pod\"}[$__rate_interval])\n)\n",
               "hide": false,
               "interval": "",
               "legendFormat": "{{pod}} - GC avg",
@@ -2546,7 +2546,7 @@
             "h": 8,
             "w": 6,
             "x": 0,
-            "y": 4
+            "y": 40
           },
           "id": 146,
           "options": {
@@ -2564,7 +2564,7 @@
             "text": {},
             "textMode": "auto"
           },
-          "pluginVersion": "7.5.45",
+          "pluginVersion": "7.5.42",
           "targets": [
             {
               "exemplar": true,
@@ -2607,7 +2607,7 @@
             "h": 8,
             "w": 6,
             "x": 6,
-            "y": 4
+            "y": 40
           },
           "id": 148,
           "options": {
@@ -2622,7 +2622,7 @@
             "showThresholdMarkers": true,
             "text": {}
           },
-          "pluginVersion": "7.5.45",
+          "pluginVersion": "7.5.42",
           "targets": [
             {
               "exemplar": true,
@@ -2686,7 +2686,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 4
+            "y": 40
           },
           "id": 144,
           "options": {
@@ -2773,7 +2773,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 12
+            "y": 48
           },
           "id": 111,
           "options": {
@@ -2852,7 +2852,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 12
+            "y": 48
           },
           "id": 115,
           "options": {
@@ -2992,7 +2992,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 20
+            "y": 56
           },
           "id": 116,
           "options": {
@@ -3071,7 +3071,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 20
+            "y": 56
           },
           "id": 112,
           "options": {
@@ -3155,7 +3155,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 28
+            "y": 64
           },
           "id": 150,
           "options": {
