@@ -715,7 +715,7 @@ func defaultConfig() (*Config, error) {
 			ShootControllerClientConfig: ShootControllerClientConfig,
 			SeedControllerClientConfig:  SeedControllerClientConfig,
 			CtlSyncTimeout:              60 * time.Second,
-			DynamicHostRegex:            "*",
+			DynamicHostRegex:            ".*",
 		},
 		PluginConfig: PluginConfig{
 			SeedType:  types.NOOP.String(),

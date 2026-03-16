@@ -63,7 +63,7 @@ var _ = Describe("Config", func() {
 			Expect(cfg.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInDeletedState).To(BeTrue())
 			Expect(cfg.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInRestoreState).To(BeTrue())
 			Expect(cfg.ControllerConfig.SeedControllerClientConfig.SendLogsWhenIsInMigrationState).To(BeTrue())
-			Expect(cfg.ControllerConfig.DynamicHostRegex).To(Equal("*"))
+			Expect(cfg.ControllerConfig.DynamicHostRegex).To(Equal(".*"))
 
 			// Plugin config defaults
 
