@@ -6,7 +6,6 @@ package plugin // nolint:revive // var-naming the plugin package is the main ent
 import (
 	"context"
 	"errors"
-	"fmt"
 	"regexp"
 
 	"github.com/go-logr/logr"
@@ -178,11 +177,8 @@ func (l *logging) SendRecord(log types.OutputEntry) error {
 	if c == nil {
 		metrics.DroppedLogs.WithLabelValues(host, "no_client").Inc()
 
-		if l.cfg.ControllerConfig.WatchOpenTelemetryCollector {
-			return nil
-		}
-
-		return fmt.Errorf("no client found in controller for host: %v", dynamicHostName)
+		// since there is no destination to which the record shall be sent, it is skipped
+		return nil
 	}
 
 	// Client uses its own lifecycle context
