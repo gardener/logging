@@ -17,7 +17,7 @@ require (
 	github.com/spf13/pflag v1.0.10
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.67.0
 	go.opentelemetry.io/otel v1.43.0
-	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc v0.18.0
+	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc v0.19.0
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp v0.19.0
 	go.opentelemetry.io/otel/exporters/prometheus v0.64.0
 	go.opentelemetry.io/otel/log v0.19.0
