@@ -88,9 +88,9 @@ func extractBody(record map[string]any) string {
 		case map[string]any:
 			// For nested maps, avoid deep serialization that causes memory leaks
 			// Serialize the line and fetch 1024 bytes only
-			t, err := marshalMap(msg.(map[string]any))
+			t, err := marshalMap(v)
 			if err != nil {
-				return fmt.Sprintf("failed to marshal record: %s", err.Error())
+				return fmt.Sprintf("failed to marshal record: %v", err)
 			}
 			if len(t) > 1024 {
 				return fmt.Sprintf("%s... <truncated %d bytes>", t[:1024], len(t)-1024)
@@ -115,9 +115,9 @@ func extractBody(record map[string]any) string {
 		case map[string]any:
 			// For nested maps, avoid deep serialization that causes memory leaks
 			// Serialize the line and fetch 1024 bytes only
-			t, err := marshalMap(msg.(map[string]any))
+			t, err := marshalMap(v)
 			if err != nil {
-				return fmt.Sprintf("failed to marshal record: %s", err.Error())
+				return fmt.Sprintf("failed to marshal record: %v", err)
 			}
 			if len(t) > 1024 {
 				return fmt.Sprintf("%s... <truncated %d bytes>", t[:1024], len(t)-1024)
