@@ -4,9 +4,8 @@
 package client
 
 import (
-	"bytes"
+	"encoding/json"
 	"fmt"
-	"slices"
 	"time"
 
 	otlplog "go.opentelemetry.io/otel/log"
@@ -89,7 +88,10 @@ func extractBody(record map[string]any) string {
 		case map[string]any:
 			// For nested maps, avoid deep serialization that causes memory leaks
 			// Serialize the line and fetch 1024 bytes only
-			t := marshalMap(msg.(map[string]any))
+			t, err := marshalMap(msg.(map[string]any))
+			if err != nil {
+				return fmt.Sprintf("failed to marshal record: %s", err.Error())
+			}
 			if len(t) > 1024 {
 				return fmt.Sprintf("%s... <truncated %d bytes>", t[:1024], len(t)-1024)
 			}
@@ -113,7 +115,10 @@ func extractBody(record map[string]any) string {
 		case map[string]any:
 			// For nested maps, avoid deep serialization that causes memory leaks
 			// Serialize the line and fetch 1024 bytes only
-			t := marshalMap(msg.(map[string]any))
+			t, err := marshalMap(msg.(map[string]any))
+			if err != nil {
+				return fmt.Sprintf("failed to marshal record: %s", err.Error())
+			}
 			if len(t) > 1024 {
 				return fmt.Sprintf("%s... <truncated %d bytes>", t[:1024], len(t)-1024)
 			}
@@ -238,20 +243,11 @@ func convertToKeyValue(key string, value any) otlplog.KeyValue {
 	}
 }
 
-func marshalMap(m map[string]any) string {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	slices.Sort(keys)
-
-	var b bytes.Buffer
-	for i, k := range keys {
-		if i > 0 {
-			_, _ = b.WriteString(" ")
-		}
-		_, _ = fmt.Fprintf(&b, "%s:%v", k, m[k])
+func marshalMap(m map[string]any) (string, error) {
+	jsonStr, err := json.Marshal(m)
+	if err != nil {
+		return "", err
 	}
 
-	return b.String()
+	return string(jsonStr), nil
 }

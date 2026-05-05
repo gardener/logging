@@ -4,6 +4,8 @@
 package client
 
 import (
+	"fmt"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -215,6 +217,86 @@ var _ = Describe("LogRecordBuilder", func() {
 			Expect(body).To(ContainSubstring("field1"))
 			Expect(body).To(ContainSubstring("field2"))
 		})
+
+		It("should serialize map in 'log' field as JSON", func() {
+			record := map[string]any{
+				"log": map[string]any{
+					"key1": "value1",
+					"key2": "value2",
+				},
+			}
+
+			body := extractBody(record)
+
+			Expect(body).To(ContainSubstring(`"key1":"value1"`))
+			Expect(body).To(ContainSubstring(`"key2":"value2"`))
+		})
+
+		It("should truncate large map in 'log' field", func() {
+			largeMap := make(map[string]any)
+			for i := range 200 {
+				largeMap[fmt.Sprintf("key_%04d", i)] = strings.Repeat("x", 10)
+			}
+			record := map[string]any{
+				"log": largeMap,
+			}
+
+			body := extractBody(record)
+
+			Expect(body).To(ContainSubstring("<truncated"))
+			Expect(len(body)).To(BeNumerically(">", 1024))
+		})
+
+		It("should serialize map in 'message' field as JSON", func() {
+			record := map[string]any{
+				"message": map[string]any{
+					"event": "started",
+					"pid":   float64(1234),
+				},
+			}
+
+			body := extractBody(record)
+
+			Expect(body).To(ContainSubstring(`"event":"started"`))
+			Expect(body).To(ContainSubstring(`"pid":1234`))
+		})
+
+		It("should truncate large map in 'message' field", func() {
+			largeMap := make(map[string]any)
+			for i := range 200 {
+				largeMap[fmt.Sprintf("key_%04d", i)] = strings.Repeat("x", 10)
+			}
+			record := map[string]any{
+				"message": largeMap,
+			}
+
+			body := extractBody(record)
+
+			Expect(body).To(ContainSubstring("<truncated"))
+			Expect(len(body)).To(BeNumerically(">", 1024))
+		})
+
+		It("should truncate large byte slice in 'log' field", func() {
+			record := map[string]any{
+				"log": []byte(strings.Repeat("a", 2048)),
+			}
+
+			body := extractBody(record)
+
+			Expect(body).To(ContainSubstring("<truncated"))
+			Expect(body).To(ContainSubstring("1024 bytes"))
+		})
+
+		It("should truncate large byte slice in 'message' field", func() {
+			record := map[string]any{
+				"message": []byte(strings.Repeat("b", 2048)),
+			}
+
+			body := extractBody(record)
+
+			Expect(body).To(ContainSubstring("<truncated"))
+			Expect(body).To(ContainSubstring("1024 bytes"))
+		})
 	})
 
 	Describe("convertToKeyValue", func() {
@@ -318,6 +400,56 @@ var _ = Describe("LogRecordBuilder", func() {
 			Expect(attrKeys).NotTo(ContainElement("log"))
 			Expect(attrKeys).NotTo(ContainElement("message"))
 			Expect(attrKeys).To(ContainElement("custom"))
+		})
+	})
+
+	Describe("marshalMap", func() {
+		It("should marshal a simple map to JSON", func() {
+			m := map[string]any{
+				"key": "value",
+			}
+
+			result, err := marshalMap(m)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).To(Equal(`{"key":"value"}`))
+		})
+
+		It("should marshal a map with multiple types", func() {
+			m := map[string]any{
+				"str":  "hello",
+				"num":  float64(42),
+				"bool": true,
+			}
+
+			result, err := marshalMap(m)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).To(ContainSubstring(`"str":"hello"`))
+			Expect(result).To(ContainSubstring(`"num":42`))
+			Expect(result).To(ContainSubstring(`"bool":true`))
+		})
+
+		It("should marshal nested maps", func() {
+			m := map[string]any{
+				"outer": map[string]any{
+					"inner": "value",
+				},
+			}
+
+			result, err := marshalMap(m)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).To(Equal(`{"outer":{"inner":"value"}}`))
+		})
+
+		It("should marshal an empty map", func() {
+			m := map[string]any{}
+
+			result, err := marshalMap(m)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).To(Equal(`{}`))
 		})
 	})
 })
