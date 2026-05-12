@@ -106,8 +106,11 @@ func getGlobalMeterProvider() *sdkmetric.MeterProvider {
 // GetGRPCStatsHandler returns a gRPC dial option that enables automatic
 // metrics collection for gRPC client calls.
 //
-// The handler collects standard gRPC metrics like request count, duration,
-// and message sizes using the OpenTelemetry meter provider.
+// The handler collects standard gRPC metrics like:
+// - Number of metric data points pending export - https://opentelemetry.io/docs/specs/semconv/otel/sdk-metrics/#metric-otelsdkexportermetric_data_pointinflight
+// - Number of exported metrics (successful or failed) - https://opentelemetry.io/docs/specs/semconv/otel/sdk-metrics/#metric-otelsdkexportermetric_data_pointexported
+// - Duration of the collect operation of the metric reader - https://opentelemetry.io/docs/specs/semconv/otel/sdk-metrics/#metric-otelsdkmetric_readercollectionduration
+// - Duration of exporting a batch of telemetry records - https://opentelemetry.io/docs/specs/semconv/otel/sdk-metrics/#metric-otelsdkexporteroperationduration
 func (m *MetricsSetup) GetGRPCStatsHandler() grpc.DialOption {
 	return grpc.WithStatsHandler(otelgrpc.NewClientHandler(
 		otelgrpc.WithMeterProvider(m.provider),
