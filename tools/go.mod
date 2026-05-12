@@ -1,6 +1,6 @@
 module github.com/gardener/logging/v1/tools
 
-go 1.26.2
+go 1.26.3
 
 tool (
 	github.com/daixiang0/gci
