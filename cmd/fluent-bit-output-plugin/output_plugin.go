@@ -49,6 +49,10 @@ func init() {
 		"revision", version.Get().GitCommit,
 		"gitTreeState", version.Get().GitTreeState,
 	)
+	err := plugin.InitRegistry(logger)
+	if err != nil {
+		panic("Plugin registry failed to initialize")
+	}
 
 	// metrics and healthz
 	reg = metrics.NewRegistry()
@@ -76,7 +80,7 @@ func FLBPluginRegister(ctx unsafe.Pointer) int {
 //export FLBPluginInit
 func FLBPluginInit(ctx unsafe.Pointer) int {
 	// shall create only if not found in the context and in plugins slice
-	if id := output.FLBPluginGetContext(ctx); id != nil && pluginsContains(id.(string)) {
+	if id := output.FLBPluginGetContext(ctx); id != nil && plugin.RegistryInst().Contains(id.(string)) {
 		logger.Info("[flb-go]", "outputPlugin already present")
 
 		return output.FLB_OK
@@ -117,9 +121,9 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 	// register outputPlugin instance, to be retrievable when sending logs
 	output.FLBPluginSetContext(ctx, id)
 	// remember outputPlugin instance, required to cleanly dispose when fluent-bit is shutting down
-	pluginsSet(id, outputPlugin)
+	plugin.RegistryInst().Set(id, outputPlugin)
 
-	logger.Info("[flb-go] output plugin initialized", "id", id, "count", pluginsLen())
+	logger.Info("[flb-go] output plugin initialized", "id", id, "count", plugin.RegistryInst().Len())
 
 	return output.FLB_OK
 }
@@ -135,7 +139,7 @@ func FLBPluginFlushCtx(ctx, data unsafe.Pointer, length C.int, _ *C.char) int {
 
 		return output.FLB_ERROR
 	}
-	outputPlugin, ok := pluginsGet(id)
+	outputPlugin, ok := plugin.RegistryInst().Get(id)
 	if !ok {
 		metricsInst.Errors.WithLabelValues(metrics.ErrorFLBPluginFlushCtx).Inc()
 		logger.Error(errors.New("not found"), "outputPlugin not found in plugins map", "id", id)
@@ -196,14 +200,14 @@ func FLBPluginExitCtx(ctx unsafe.Pointer) int {
 
 		return output.FLB_ERROR
 	}
-	outputPlugin, ok := pluginsGet(id)
+	outputPlugin, ok := plugin.RegistryInst().Get(id)
 	if !ok {
 		return output.FLB_ERROR
 	}
 	outputPlugin.Close()
-	pluginsRemove(id)
+	plugin.RegistryInst().Remove(id)
 
-	logger.Info("[flb-go] output plugin removed", "id", id, "count", pluginsLen())
+	logger.Info("[flb-go] output plugin removed", "id", id, "count", plugin.RegistryInst().Len())
 
 	return output.FLB_OK
 }
@@ -212,9 +216,9 @@ func FLBPluginExitCtx(ctx unsafe.Pointer) int {
 //
 //export FLBPluginExit
 func FLBPluginExit() int {
-	pluginsCleanupAll()
+	plugin.RegistryInst().CleanupAll()
 
-	logger.Info("[flb-go] output plugin exit", "count", pluginsLen())
+	logger.Info("[flb-go] output plugin exit", "count", plugin.RegistryInst().Len())
 
 	return output.FLB_OK
 }
