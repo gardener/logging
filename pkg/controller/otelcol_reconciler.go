@@ -280,7 +280,7 @@ func (r *otelCollectorReconciler) createClient(namespace string) {
 	opt := []pkgclient.Option{pkgclient.WithTarget(pkgclient.Shoot), pkgclient.WithLogger(r.logger)}
 	outputClient, err := pkgclient.NewClient(r.ctx, *clientConf, opt...)
 	if err != nil {
-		metrics.Errors.WithLabelValues(metrics.ErrorFailedToMakeOutputClient).Inc()
+		metrics.FluentBitGardenerMetricsInst(metrics.RegistryInst()).Errors.WithLabelValues(metrics.ErrorFailedToMakeOutputClient).Inc()
 		r.logger.Error(err, "failed to create client for namespace", "namespace", namespace)
 
 		return
@@ -302,7 +302,7 @@ func (r *otelCollectorReconciler) createClient(namespace string) {
 		return
 	}
 
-	metrics.Clients.WithLabelValues(pkgclient.Shoot.String()).Inc()
+	metrics.FluentBitGardenerMetricsInst(metrics.RegistryInst()).Clients.WithLabelValues(pkgclient.Shoot.String()).Inc()
 	r.clients[namespace] = outputClient
 	r.logger.Info("added client for namespace", "namespace", namespace, "endpoint", clientConf.OTLPConfig.Endpoint)
 }
@@ -319,7 +319,7 @@ func (r *otelCollectorReconciler) deleteClient(namespace string) {
 	c, ok := r.clients[namespace]
 	if ok && c != nil {
 		delete(r.clients, namespace)
-		metrics.Clients.WithLabelValues(pkgclient.Shoot.String()).Dec()
+		metrics.FluentBitGardenerMetricsInst(metrics.RegistryInst()).Clients.WithLabelValues(pkgclient.Shoot.String()).Dec()
 		go c.Stop()
 		r.logger.Info("client deleted for namespace", "namespace", namespace)
 	}

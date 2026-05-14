@@ -123,7 +123,7 @@ func (c *OTLPHTTPClient) Handle(entry types.OutputEntry) error {
 		// Try to acquire a token from the rate limiter
 		// Allow returns false if the request would exceed the rate limit
 		if !c.limiter.Allow() {
-			metrics.ThrottledLogs.WithLabelValues(c.endpoint).Inc()
+			metrics.FluentBitGardenerMetricsInst(metrics.RegistryInst()).ThrottledLogs.WithLabelValues(c.endpoint).Inc()
 
 			return ErrThrottled
 		}
@@ -142,7 +142,7 @@ func (c *OTLPHTTPClient) Handle(entry types.OutputEntry) error {
 	c.otlLogger.Emit(c.ctx, logRecord)
 
 	// Increment the output logs counter
-	metrics.OutputClientLogs.WithLabelValues(c.endpoint).Inc()
+	metrics.FluentBitGardenerMetricsInst(metrics.RegistryInst()).OutputClientLogs.WithLabelValues(c.endpoint).Inc()
 
 	return nil
 }
