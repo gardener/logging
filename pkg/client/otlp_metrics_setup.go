@@ -19,7 +19,6 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/prometheus"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
-	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"google.golang.org/grpc"
 )
 
@@ -28,7 +27,6 @@ import (
 // This type is thread-safe and designed to be used as a singleton.
 type MetricsSetup struct {
 	provider     *sdkmetric.MeterProvider
-	reader       sdkmetric.Reader
 	shutdownOnce sync.Once
 }
 
@@ -77,7 +75,6 @@ func initializeMetricsSetup() (*MetricsSetup, error) {
 
 	return &MetricsSetup{
 		provider: meterProvider,
-		reader:   promExporter,
 	}, nil
 }
 
@@ -85,12 +82,6 @@ func initializeMetricsSetup() (*MetricsSetup, error) {
 // The provider is used for creating meters and recording metrics.
 func (m *MetricsSetup) GetProvider() *sdkmetric.MeterProvider {
 	return m.provider
-}
-
-// GetReader returns the configured OpenTelemetry meter reader.
-// The reader is used is the interface used between the SDK and an exporter.
-func (m *MetricsSetup) GetReader() *sdkmetric.Reader {
-	return &m.reader
 }
 
 // getGlobalMeterProvider returns the global meter provider if available, or nil otherwise.
@@ -133,22 +124,4 @@ func (m *MetricsSetup) Shutdown(ctx context.Context) error {
 	})
 
 	return shutdownErr
-}
-
-// CollectOTelMetrics collects all OTel SDK metrics via the reader without going
-// through the Prometheus Gather() mechanism. This gives a complete view of all
-// OTel-managed metrics (self-instrumentation, target_info, etc.) immediately,
-// without needing warmup gathers.
-func (m *MetricsSetup) CollectOTelMetrics(ctx context.Context) (*metricdata.ResourceMetrics, error) {
-	var rm metricdata.ResourceMetrics
-	if err := m.reader.Collect(ctx, &rm); err != nil {
-		return nil, fmt.Errorf("failed to collect OTel metrics: %w", err)
-	}
-	return &rm, nil
-}
-
-// GetGlobalMetricsSetup returns the global singleton MetricsSetup instance and any
-// initialization error. This is intended for testing and observability tooling.
-func GetGlobalMetricsSetup() (*MetricsSetup, error) {
-	return globalMetricsSetup, metricsSetupErr
 }
