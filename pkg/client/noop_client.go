@@ -43,7 +43,7 @@ func NewNoopClient(ctx context.Context, cfg config.Config, logger logr.Logger) (
 // Handle processes and discards the log entry while incrementing metrics
 func (c *NoopClient) Handle(_ types.OutputEntry) error {
 	// Increment the dropped logs counter since we're discarding the record
-	metrics.FluentBitGardenerMetricsInst(metrics.RegistryInst()).DroppedLogs.WithLabelValues(c.endpoint, "noop").Inc()
+	metrics.DroppedLogs.WithLabelValues(c.endpoint, "noop").Inc()
 
 	// Simply discard the record - no-op
 	return nil

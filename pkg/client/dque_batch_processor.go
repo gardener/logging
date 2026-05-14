@@ -545,7 +545,7 @@ func (p *DQueBatchProcessor) OnEmit(_ context.Context, record *sdklog.Record) er
 		// Queue is full
 		if attempt == maxRetries {
 			// Final attempt failed
-			metrics.FluentBitGardenerMetricsInst(metrics.RegistryInst()).DroppedLogs.WithLabelValues(p.endpoint, "queue_full").Inc()
+			metrics.DroppedLogs.WithLabelValues(p.endpoint, "queue_full").Inc()
 			p.mu.Unlock()
 
 			return fmt.Errorf("final attempt failed, queue: %s: %w", path.Join(p.queue.DirPath, p.queue.Name), ErrQueueFull)
@@ -579,7 +579,7 @@ func (p *DQueBatchProcessor) OnEmit(_ context.Context, record *sdklog.Record) er
 	// Encode to JSON
 	jsonData, err := json.Marshal(item)
 	if err != nil {
-		metrics.FluentBitGardenerMetricsInst(metrics.RegistryInst()).DroppedLogs.WithLabelValues(p.endpoint, "marshal_error").Inc()
+		metrics.DroppedLogs.WithLabelValues(p.endpoint, "marshal_error").Inc()
 		p.mu.Unlock()
 
 		return fmt.Errorf("failed to marshal record to JSON: %w", err)
@@ -590,13 +590,13 @@ func (p *DQueBatchProcessor) OnEmit(_ context.Context, record *sdklog.Record) er
 
 	// Enqueue to dque (persistent, blocking)
 	if err := p.queue.Enqueue(wrapper); err != nil {
-		metrics.FluentBitGardenerMetricsInst(metrics.RegistryInst()).DroppedLogs.WithLabelValues(p.endpoint, "enqueue_error").Inc()
+		metrics.DroppedLogs.WithLabelValues(p.endpoint, "enqueue_error").Inc()
 		p.mu.Unlock()
 
 		return fmt.Errorf("failed to enqueue record: %w", err)
 	}
 
-	metrics.FluentBitGardenerMetricsInst(metrics.RegistryInst()).BufferedLogs.WithLabelValues(p.endpoint).Inc()
+	metrics.BufferedLogs.WithLabelValues(p.endpoint).Inc()
 
 	// Signal processLoop that a new record is available (non-blocking)
 	select {
@@ -644,7 +644,7 @@ func (p *DQueBatchProcessor) processLoop() {
 		case <-metricsTicker.C:
 			// Report queue size to metrics
 			queueSize := p.queue.Size()
-			metrics.FluentBitGardenerMetricsInst(metrics.RegistryInst()).DqueSize.WithLabelValues(p.queue.Name).Set(float64(queueSize))
+			metrics.DqueSize.WithLabelValues(p.queue.Name).Set(float64(queueSize))
 			if !p.config.dqueueSync {
 				if err := p.queue.TurboSync(); err != nil {
 					p.logger.Error(err, "error turbo sync")
@@ -659,9 +659,9 @@ func (p *DQueBatchProcessor) processLoop() {
 				// increase error count
 				wrapped := errors.Unwrap(err)
 				if wrapped != nil {
-					metrics.FluentBitGardenerMetricsInst(metrics.RegistryInst()).Errors.WithLabelValues(wrapped.Error()).Inc()
+					metrics.Errors.WithLabelValues(wrapped.Error()).Inc()
 				} else {
-					metrics.FluentBitGardenerMetricsInst(metrics.RegistryInst()).Errors.WithLabelValues(err.Error()).Inc()
+					metrics.Errors.WithLabelValues(err.Error()).Inc()
 				}
 
 				continue
@@ -690,9 +690,9 @@ func (p *DQueBatchProcessor) processLoop() {
 				// increase error count
 				wrapped := errors.Unwrap(err)
 				if wrapped != nil {
-					metrics.FluentBitGardenerMetricsInst(metrics.RegistryInst()).Errors.WithLabelValues(wrapped.Error()).Inc()
+					metrics.Errors.WithLabelValues(wrapped.Error()).Inc()
 				} else {
-					metrics.FluentBitGardenerMetricsInst(metrics.RegistryInst()).Errors.WithLabelValues(err.Error()).Inc()
+					metrics.Errors.WithLabelValues(err.Error()).Inc()
 				}
 
 				continue
@@ -737,7 +737,7 @@ func (p *DQueBatchProcessor) dequeue() (sdklog.Record, error) {
 		return sdklog.Record{}, fmt.Errorf("failed to unmarshal JSON: %w", err)
 	}
 
-	metrics.FluentBitGardenerMetricsInst(metrics.RegistryInst()).BufferedLogs.WithLabelValues(p.endpoint).Dec()
+	metrics.BufferedLogs.WithLabelValues(p.endpoint).Dec()
 	// Convert item back to record
 	record := itemToRecord(&item)
 
@@ -756,7 +756,7 @@ func (p *DQueBatchProcessor) exportBatch(batch []sdklog.Record) {
 	// Blocking export call (gRPC or HTTP)
 	if err := p.exporter.Export(ctx, batch); err != nil {
 		p.logger.Error(err, "failed to export batch", "size", len(batch))
-		metrics.FluentBitGardenerMetricsInst(metrics.RegistryInst()).DroppedLogs.WithLabelValues(p.endpoint, "export_error").Add(float64(len(batch)))
+		metrics.DroppedLogs.WithLabelValues(p.endpoint, "export_error").Add(float64(len(batch)))
 
 		// Re-enqueue failed records
 		p.requeueBatch(batch)
@@ -764,7 +764,7 @@ func (p *DQueBatchProcessor) exportBatch(batch []sdklog.Record) {
 		return
 	}
 
-	metrics.FluentBitGardenerMetricsInst(metrics.RegistryInst()).ExportedClientLogs.WithLabelValues(p.endpoint).Add(float64(len(batch)))
+	metrics.ExportedClientLogs.WithLabelValues(p.endpoint).Add(float64(len(batch)))
 	p.logger.V(3).Info("batch exported successfully", "size", len(batch))
 }
 
@@ -781,7 +781,7 @@ func (p *DQueBatchProcessor) requeueBatch(batch []sdklog.Record) {
 		jsonData, err := json.Marshal(item)
 		if err != nil {
 			p.logger.Error(err, "failed to marshal record for re-enqueuing")
-			metrics.FluentBitGardenerMetricsInst(metrics.RegistryInst()).DroppedLogs.WithLabelValues(p.endpoint, "requeue_marshal_error").Inc()
+			metrics.DroppedLogs.WithLabelValues(p.endpoint, "requeue_marshal_error").Inc()
 
 			continue
 		}
@@ -791,7 +791,7 @@ func (p *DQueBatchProcessor) requeueBatch(batch []sdklog.Record) {
 
 		if err := p.queue.Enqueue(wrapper); err != nil {
 			p.logger.Error(err, "failed to re-enqueue record")
-			metrics.FluentBitGardenerMetricsInst(metrics.RegistryInst()).DroppedLogs.WithLabelValues(p.endpoint, "requeue_error").Inc()
+			metrics.DroppedLogs.WithLabelValues(p.endpoint, "requeue_error").Inc()
 		}
 	}
 }

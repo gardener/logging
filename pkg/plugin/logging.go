@@ -73,7 +73,7 @@ func NewPlugin(cfg *config.Config, logger logr.Logger) (OutputPlugin, error) {
 
 		return nil, err
 	}
-	metrics.FluentBitGardenerMetricsInst(metrics.RegistryInst()).Clients.WithLabelValues(client.Seed.String()).Inc()
+	metrics.Clients.WithLabelValues(client.Seed.String()).Inc()
 
 	logger.Info("logging plugin created",
 		"seed_client_url", redactCredentialsFromEndpoint(l.seedClient.GetEndPoint()),
@@ -113,7 +113,7 @@ func NewPluginWithController(cfg *config.Config, logger logr.Logger, ctl control
 
 		return nil, err
 	}
-	metrics.FluentBitGardenerMetricsInst(metrics.RegistryInst()).Clients.WithLabelValues(client.Seed.String()).Inc()
+	metrics.Clients.WithLabelValues(client.Seed.String()).Inc()
 
 	logger.Info("logging plugin created with controller",
 		"seed_client_url", redactCredentialsFromEndpoint(l.seedClient.GetEndPoint()),
@@ -142,10 +142,10 @@ func (l *logging) SendRecord(log types.OutputEntry) error {
 			l.extractKubernetesMetadataRegexp,
 		); err != nil {
 			// Increment error metric if metadata extraction fails
-			metrics.FluentBitGardenerMetricsInst(metrics.RegistryInst()).Errors.WithLabelValues(metrics.ErrorCanNotExtractMetadataFromTag).Inc()
+			metrics.Errors.WithLabelValues(metrics.ErrorCanNotExtractMetadataFromTag).Inc()
 			// Drop log entry if configured to do so when metadata is missing
 			if l.cfg.PluginConfig.KubernetesMetadata.DropLogEntryWithoutK8sMetadata {
-				metrics.FluentBitGardenerMetricsInst(metrics.RegistryInst()).LogsWithoutMetadata.WithLabelValues(metrics.MissingMetadataType).Inc()
+				metrics.LogsWithoutMetadata.WithLabelValues(metrics.MissingMetadataType).Inc()
 
 				return nil
 			}
@@ -158,7 +158,7 @@ func (l *logging) SendRecord(log types.OutputEntry) error {
 		host = "garden" // the record needs to go to the seed client (in garden namespace)
 	}
 
-	metrics.FluentBitGardenerMetricsInst(metrics.RegistryInst()).IncomingLogs.WithLabelValues(host).Inc()
+	metrics.IncomingLogs.WithLabelValues(host).Inc()
 
 	if len(record) == 0 {
 		l.logger.Info("no record left after removing keys", "host", dynamicHostName)
@@ -175,7 +175,7 @@ func (l *logging) SendRecord(log types.OutputEntry) error {
 	c := l.getClient(dynamicHostName)
 
 	if c == nil {
-		metrics.FluentBitGardenerMetricsInst(metrics.RegistryInst()).DroppedLogs.WithLabelValues(host, "no_client").Inc()
+		metrics.DroppedLogs.WithLabelValues(host, "no_client").Inc()
 
 		// since there is no destination to which the record shall be sent, it is skipped
 		return nil
@@ -191,7 +191,7 @@ func (l *logging) SendRecord(log types.OutputEntry) error {
 	}
 
 	l.logger.Error(err, "error sending record to logging", "host", dynamicHostName)
-	metrics.FluentBitGardenerMetricsInst(metrics.RegistryInst()).Errors.WithLabelValues(metrics.ErrorSendRecord).Inc()
+	metrics.Errors.WithLabelValues(metrics.ErrorSendRecord).Inc()
 
 	return err
 }

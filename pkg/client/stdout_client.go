@@ -52,7 +52,7 @@ func (c *StdoutClient) Handle(entry types.OutputEntry) error {
 	data, err := json.Marshal(output)
 	if err != nil {
 		c.logger.Error(err, "failed to marshal log entry to JSON")
-		metrics.FluentBitGardenerMetricsInst(metrics.RegistryInst()).Errors.WithLabelValues(metrics.ErrorSendRecord).Inc()
+		metrics.Errors.WithLabelValues(metrics.ErrorSendRecord).Inc()
 
 		return fmt.Errorf("failed to marshal log entry: %w", err)
 	}
@@ -60,13 +60,13 @@ func (c *StdoutClient) Handle(entry types.OutputEntry) error {
 	// Write to stdout
 	if _, err := fmt.Fprintln(os.Stdout, string(data)); err != nil {
 		c.logger.Error(err, "failed to write log entry to stdout")
-		metrics.FluentBitGardenerMetricsInst(metrics.RegistryInst()).Errors.WithLabelValues(metrics.ErrorSendRecord).Inc()
+		metrics.Errors.WithLabelValues(metrics.ErrorSendRecord).Inc()
 
 		return fmt.Errorf("failed to write to stdout: %w", err)
 	}
 
 	// Increment the output logs counter
-	metrics.FluentBitGardenerMetricsInst(metrics.RegistryInst()).OutputClientLogs.WithLabelValues(c.endpoint).Inc()
+	metrics.OutputClientLogs.WithLabelValues(c.endpoint).Inc()
 
 	return nil
 }

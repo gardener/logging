@@ -46,11 +46,10 @@ func init() {
 		"revision", version.Get().GitCommit,
 		"gitTreeState", version.Get().GitTreeState,
 	)
-	metrics.InitRegistry()
 
 	// metrics and healthz
 	go func() {
-		http.Handle("/metrics", promhttp.HandlerFor(metrics.RegistryInst(), promhttp.HandlerOpts{}))
+		http.Handle("/metrics", promhttp.Handler())
 		http.Handle("/healthz", healthz.Handler("", ""))
 		if err := http.ListenAndServe(":2021", nil); err != nil {
 			logger.Error(err, "Fluent-bit-gardener-output-plugin")
@@ -84,7 +83,7 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 	cfg, err := config.ParseConfigFromStringMap(configurationMap)
 
 	if err != nil {
-		metrics.FluentBitGardenerMetricsInst(metrics.RegistryInst()).Errors.WithLabelValues(metrics.ErrorFLBPluginInit).Inc()
+		metrics.Errors.WithLabelValues(metrics.ErrorFLBPluginInit).Inc()
 		logger.Info("[flb-go] failed to launch", "error", err)
 
 		return output.FLB_ERROR
@@ -104,7 +103,7 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 
 	outputPlugin, err := plugin.NewPlugin(cfg, log.NewLogger(cfg.PluginConfig.LogLevel))
 	if err != nil {
-		metrics.FluentBitGardenerMetricsInst(metrics.RegistryInst()).Errors.WithLabelValues(metrics.ErrorNewPlugin).Inc()
+		metrics.Errors.WithLabelValues(metrics.ErrorNewPlugin).Inc()
 		logger.Error(err, "[flb-go] error creating output plugin", "id", id)
 
 		return output.FLB_ERROR
@@ -133,7 +132,7 @@ func FLBPluginFlushCtx(ctx, data unsafe.Pointer, length C.int, _ *C.char) int {
 	}
 	outputPlugin, ok := pluginsGet(id)
 	if !ok {
-		metrics.FluentBitGardenerMetricsInst(metrics.RegistryInst()).Errors.WithLabelValues(metrics.ErrorFLBPluginFlushCtx).Inc()
+		metrics.Errors.WithLabelValues(metrics.ErrorFLBPluginFlushCtx).Inc()
 		logger.Error(errors.New("not found"), "outputPlugin not found in plugins map", "id", id)
 
 		return output.FLB_ERROR

@@ -67,7 +67,7 @@ func newClusterController(ctx context.Context, conf *config.Config, l logr.Logge
 	if seedClient, err = pkgclient.NewClient(ctx, cfgShallowCopy, opt...); err != nil {
 		return nil, fmt.Errorf("failed to create seed client in controller: %w", err)
 	}
-	metrics.FluentBitGardenerMetricsInst(metrics.RegistryInst()).Clients.WithLabelValues(pkgclient.Seed.String()).Inc()
+	metrics.Clients.WithLabelValues(pkgclient.Seed.String()).Inc()
 
 	restConfig, err := getRestConfig()
 	if err != nil {
@@ -162,7 +162,7 @@ func NewControllerWithClient(ctx context.Context, c client.Client, conf *config.
 	if seedClient, err = pkgclient.NewClient(ctx, cfgShallowCopy, opt...); err != nil {
 		return nil, fmt.Errorf("failed to create seed client in controller: %w", err)
 	}
-	metrics.FluentBitGardenerMetricsInst(metrics.RegistryInst()).Clients.WithLabelValues(pkgclient.Seed.String()).Inc()
+	metrics.Clients.WithLabelValues(pkgclient.Seed.String()).Inc()
 
 	ctlCtx, cancel := context.WithCancel(ctx)
 
@@ -332,7 +332,7 @@ func (r *clusterReconciler) createClient(clusterName string, shoot *gardenercore
 
 	c, err := r.newControllerClient(clusterName, clientConf)
 	if err != nil {
-		metrics.FluentBitGardenerMetricsInst(metrics.RegistryInst()).Errors.WithLabelValues(metrics.ErrorFailedToMakeOutputClient).Inc()
+		metrics.Errors.WithLabelValues(metrics.ErrorFailedToMakeOutputClient).Inc()
 		r.logger.Error(err, "failed to create controller client", "cluster", clusterName)
 
 		return
@@ -357,7 +357,7 @@ func (r *clusterReconciler) createClient(clusterName string, shoot *gardenercore
 		return
 	}
 
-	metrics.FluentBitGardenerMetricsInst(metrics.RegistryInst()).Clients.WithLabelValues(pkgclient.Shoot.String()).Inc()
+	metrics.Clients.WithLabelValues(pkgclient.Shoot.String()).Inc()
 	r.clients[clusterName] = c
 	r.logger.Info("added controller client",
 		"cluster", clusterName,
@@ -377,7 +377,7 @@ func (r *clusterReconciler) deleteClient(clusterName string) {
 	c, ok := r.clients[clusterName]
 	if ok && c != nil {
 		delete(r.clients, clusterName)
-		metrics.FluentBitGardenerMetricsInst(metrics.RegistryInst()).Clients.WithLabelValues(pkgclient.Shoot.String()).Dec()
+		metrics.Clients.WithLabelValues(pkgclient.Shoot.String()).Dec()
 		go c.Stop() // TODO: check
 		r.logger.Info("client deleted", "cluster", clusterName)
 	}
