@@ -8,98 +8,81 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
-// Collector is a union type representing any metric vec registered by this package.
-type Collector interface {
-	prometheus.Collector
+type FluentBitGardenerMetrics struct {
+	// Clients is a prometheus metric which keeps total number of the output clients
+	Clients *prometheus.GaugeVec
+	// Errors is a prometheus which keeps total number of the errors
+	Errors *prometheus.CounterVec
+	// LogsWithoutMetadata is a prometheus metric which keeps the number of logs without metadata
+	LogsWithoutMetadata *prometheus.CounterVec
+	// IncomingLogs is a prometheus metric which keeps the number of incoming logs
+	IncomingLogs *prometheus.CounterVec
+	// OutputClientLogs is a prometheus metric which keeps logs to the Output Client
+	OutputClientLogs *prometheus.CounterVec
+	// ExportedClientLogs is a prometheus metric which keeps logs to the Output Client
+	ExportedClientLogs *prometheus.CounterVec
+	// DroppedLogs is a prometheus metric which keeps the number of dropped logs by the output plugin
+	DroppedLogs *prometheus.CounterVec
+	// ThrottledLogs is a prometheus metric which keeps the number of throttled logs by the output plugin
+	ThrottledLogs *prometheus.CounterVec
+	// BufferedLogs is a prometheus metric which keeps the number of logs buffered in the batch processor queue
+	BufferedLogs *prometheus.GaugeVec
+	// DqueSize is a prometheus metric which keeps the current size of the dque queue
+	DqueSize *prometheus.GaugeVec
 }
 
-// AllCollectors returns all metric collectors registered by this package.
-// This enables dynamic test discovery without hardcoding metric references.
-func AllCollectors() []Collector {
-	return []Collector{
-		Clients,
-		Errors,
-		LogsWithoutMetadata,
-		IncomingLogs,
-		OutputClientLogs,
-		ExportedClientLogs,
-		DroppedLogs,
-		ThrottledLogs,
-		BufferedLogs,
-		DqueSize,
+func NewFluentBitGardenerMetrics(reg prometheus.Registerer) *FluentBitGardenerMetrics {
+	namespace := "fluentbit_gardener"
+	return &FluentBitGardenerMetrics{
+		Clients: promauto.With(reg).NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: namespace,
+			Name:      "clients_total",
+			Help:      "Total number of the output clients",
+		}, []string{"type"}),
+		Errors: promauto.With(reg).NewCounterVec(prometheus.CounterOpts{
+			Namespace: namespace,
+			Name:      "errors_total",
+			Help:      "Total number of the errors",
+		}, []string{"type"}),
+		LogsWithoutMetadata: promauto.With(reg).NewCounterVec(prometheus.CounterOpts{
+			Namespace: namespace,
+			Name:      "logs_without_metadata_total",
+			Help:      "Total numbers of logs without metadata in the gardener output plugin",
+		}, []string{"type"}),
+		IncomingLogs: promauto.With(reg).NewCounterVec(prometheus.CounterOpts{
+			Namespace: namespace,
+			Name:      "incoming_logs_total",
+			Help:      "Total number of incoming logs in the gardener output plugin",
+		}, []string{"host"}),
+		OutputClientLogs: promauto.With(reg).NewCounterVec(prometheus.CounterOpts{
+			Namespace: namespace,
+			Name:      "output_client_logs_total",
+			Help:      "Total number of the forwarded logs to the output client",
+		}, []string{"host"}),
+		ExportedClientLogs: promauto.With(reg).NewCounterVec(prometheus.CounterOpts{
+			Namespace: namespace,
+			Name:      "exported_client_logs_total",
+			Help:      "Total number of the exported logs to the output client",
+		}, []string{"host"}),
+		DroppedLogs: promauto.With(reg).NewCounterVec(prometheus.CounterOpts{
+			Namespace: namespace,
+			Name:      "dropped_logs_total",
+			Help:      "Total number of dropped logs by the output plugin",
+		}, []string{"host", "reason"}),
+		ThrottledLogs: promauto.With(reg).NewCounterVec(prometheus.CounterOpts{
+			Namespace: namespace,
+			Name:      "throttled_logs_total",
+			Help:      "Total number of throttled logs by the output plugin",
+		}, []string{"host"}),
+		BufferedLogs: promauto.With(reg).NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: namespace,
+			Name:      "buffered_logs",
+			Help:      "Current number of logs buffered in the batch processor queue",
+		}, []string{"host"}),
+		DqueSize: promauto.With(reg).NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: namespace,
+			Name:      "dque_size",
+			Help:      "Current size of the dque queue",
+		}, []string{"name"}),
 	}
 }
-
-var (
-	namespace = "fluentbit_gardener"
-
-	// Clients is a prometheus metric which keeps total number of the output clients
-	Clients = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace: namespace,
-		Name:      "clients_total",
-		Help:      "Total number of the output clients",
-	}, []string{"type"})
-
-	// Errors is a prometheus which keeps total number of the errors
-	Errors = promauto.NewCounterVec(prometheus.CounterOpts{
-		Namespace: namespace,
-		Name:      "errors_total",
-		Help:      "Total number of the errors",
-	}, []string{"type"})
-
-	// LogsWithoutMetadata is a prometheus metric which keeps the number of logs without metadata
-	LogsWithoutMetadata = promauto.NewCounterVec(prometheus.CounterOpts{
-		Namespace: namespace,
-		Name:      "logs_without_metadata_total",
-		Help:      "Total numbers of logs without metadata in the gardener output plugin",
-	}, []string{"type"})
-
-	// IncomingLogs is a prometheus metric which keeps the number of incoming logs
-	IncomingLogs = promauto.NewCounterVec(prometheus.CounterOpts{
-		Namespace: namespace,
-		Name:      "incoming_logs_total",
-		Help:      "Total number of incoming logs in the gardener output plugin",
-	}, []string{"host"})
-
-	// OutputClientLogs is a prometheus metric which keeps logs to the Output Client
-	OutputClientLogs = promauto.NewCounterVec(prometheus.CounterOpts{
-		Namespace: namespace,
-		Name:      "output_client_logs_total",
-		Help:      "Total number of the forwarded logs to the output client",
-	}, []string{"host"})
-
-	// ExportedClientLogs is a prometheus metric which keeps logs to the Output Client
-	ExportedClientLogs = promauto.NewCounterVec(prometheus.CounterOpts{
-		Namespace: namespace,
-		Name:      "exported_client_logs_total",
-		Help:      "Total number of the exported logs to the output client",
-	}, []string{"host"})
-
-	// DroppedLogs is a prometheus metric which keeps the number of dropped logs by the output plugin
-	DroppedLogs = promauto.NewCounterVec(prometheus.CounterOpts{
-		Namespace: namespace,
-		Name:      "dropped_logs_total",
-		Help:      "Total number of dropped logs by the output plugin",
-	}, []string{"host", "reason"})
-
-	// ThrottledLogs is a prometheus metric which keeps the number of throttled logs by the output plugin
-	ThrottledLogs = promauto.NewCounterVec(prometheus.CounterOpts{
-		Namespace: namespace,
-		Name:      "throttled_logs_total",
-		Help:      "Total number of throttled logs by the output plugin",
-	}, []string{"host"})
-
-	// BufferedLogs is a prometheus metric which keeps the number of logs buffered in the batch processor queue
-	BufferedLogs = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace: namespace,
-		Name:      "buffered_logs",
-		Help:      "Current number of logs buffered in the batch processor queue",
-	}, []string{"host"})
-
-	// DqueSize is a prometheus metric which keeps the current size of the dque queue
-	DqueSize = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace: namespace,
-		Name:      "dque_size",
-		Help:      "Current size of the dque queue",
-	}, []string{"name"})
-)
