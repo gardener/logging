@@ -8,6 +8,28 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
+// Collector is a union type representing any metric vec registered by this package.
+type Collector interface {
+	prometheus.Collector
+}
+
+// AllCollectors returns all metric collectors registered by this package.
+// This enables dynamic test discovery without hardcoding metric references.
+func AllCollectors() []Collector {
+	return []Collector{
+		Clients,
+		Errors,
+		LogsWithoutMetadata,
+		IncomingLogs,
+		OutputClientLogs,
+		ExportedClientLogs,
+		DroppedLogs,
+		ThrottledLogs,
+		BufferedLogs,
+		DqueSize,
+	}
+}
+
 var (
 	namespace = "fluentbit_gardener"
 
