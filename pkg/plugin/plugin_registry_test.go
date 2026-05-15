@@ -4,8 +4,6 @@
 package plugin
 
 import (
-	"sync"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -30,51 +28,9 @@ var _ = Describe("Plugin Registry", func() {
 	var registry *Registry
 
 	BeforeEach(func() {
-		// Create a fresh registry for each test (bypassing the singleton).
 		registry = &Registry{
 			logger: log.NewNopLogger(),
 		}
-	})
-
-	Describe("InitRegistry", func() {
-		It("should initialize the global registry", func() {
-			// Reset the global state to test InitRegistry.
-			reg = nil
-			registryOnce = sync.Once{}
-
-			err := InitRegistry(log.NewNopLogger())
-			Expect(err).NotTo(HaveOccurred())
-			Expect(RegistryInst()).NotTo(BeNil())
-		})
-
-		It("should only initialize once even when called multiple times", func() {
-			reg = nil
-			registryOnce = sync.Once{}
-
-			logger1 := log.NewNopLogger()
-			logger2 := log.NewNopLogger()
-
-			err := InitRegistry(logger1)
-			Expect(err).NotTo(HaveOccurred())
-			first := RegistryInst()
-
-			err = InitRegistry(logger2)
-			Expect(err).NotTo(HaveOccurred())
-			second := RegistryInst()
-
-			// Both calls return the same instance — sync.Once prevents re-initialization.
-			Expect(RegistryInst()).To(BeIdenticalTo(first))
-			Expect(first).To(BeIdenticalTo(second))
-		})
-	})
-
-	Describe("RegistryInst", func() {
-		It("should return nil before initialization", func() {
-			reg = nil
-			registryOnce = sync.Once{}
-
-			Expect(RegistryInst()).To(BeNil())
-		})
 	})
 
 	Describe("Contains", func() {

@@ -9,11 +9,6 @@ import (
 	"github.com/go-logr/logr"
 )
 
-var (
-	reg          *Registry
-	registryOnce sync.Once
-)
-
 // Registry registeres plugin instances, required for disposal during shutdown.
 // Safe for concurrent use.
 type Registry struct {
@@ -21,20 +16,11 @@ type Registry struct {
 	logger   logr.Logger
 }
 
-// InitRegistry initializes the global plugin registry singleton.
-// It is safe to call multiple times; only the first call takes effect.
-func InitRegistry(logger logr.Logger) error {
-	registryOnce.Do(func() {
-		reg = &Registry{
-			logger: logger,
-		}
-	})
-	return nil
-}
-
-// RegistryInst returns the global plugin registry instance.
-// InitRegistry must be called before this function; otherwise it returns nil.
-func RegistryInst() *Registry {
+// NewRegistry create a plugin registry.
+func NewRegistry(logger logr.Logger) *Registry {
+	reg := &Registry{
+		logger: logger,
+	}
 	return reg
 }
 
@@ -53,9 +39,6 @@ func (r *Registry) Get(id string) (OutputPlugin, bool) {
 	}
 
 	p, ok := val.(OutputPlugin)
-	if !ok {
-		return nil, false
-	}
 
 	return p, ok
 }
