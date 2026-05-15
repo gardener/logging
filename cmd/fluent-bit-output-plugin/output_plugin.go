@@ -19,6 +19,7 @@ import (
 
 	"github.com/fluent/fluent-bit-go/output"
 	"github.com/go-logr/logr"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/component-base/version"
@@ -34,9 +35,11 @@ import (
 var (
 	// registered plugin instances, required for disposal during shutdown
 	// Uses sync.Map for concurrent-safe access without explicit locking
-	plugins   sync.Map // map[string]plugin.OutputPlugin
-	logger    logr.Logger
-	pprofOnce sync.Once
+	plugins     sync.Map // map[string]plugin.OutputPlugin
+	logger      logr.Logger
+	pprofOnce   sync.Once
+	reg         *prometheus.Registry
+	metricsInst *metrics.FluentBitGardenerMetrics
 )
 
 func init() {
@@ -48,8 +51,10 @@ func init() {
 	)
 
 	// metrics and healthz
+	reg = metrics.NewRegistry()
+	metricsInst = metrics.NewFluentBitGardenerMetrics(reg)
 	go func() {
-		http.Handle("/metrics", promhttp.Handler())
+		http.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
 		http.Handle("/healthz", healthz.Handler("", ""))
 		if err := http.ListenAndServe(":2021", nil); err != nil {
 			logger.Error(err, "Fluent-bit-gardener-output-plugin")
@@ -83,7 +88,7 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 	cfg, err := config.ParseConfigFromStringMap(configurationMap)
 
 	if err != nil {
-		metrics.Errors.WithLabelValues(metrics.ErrorFLBPluginInit).Inc()
+		metricsInst.Errors.WithLabelValues(metrics.ErrorFLBPluginInit).Inc()
 		logger.Info("[flb-go] failed to launch", "error", err)
 
 		return output.FLB_ERROR
@@ -101,9 +106,9 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 
 	id, _, _ := strings.Cut(string(uuid.NewUUID()), "-")
 
-	outputPlugin, err := plugin.NewPlugin(cfg, log.NewLogger(cfg.PluginConfig.LogLevel))
+	outputPlugin, err := plugin.NewPlugin(cfg, log.NewLogger(cfg.PluginConfig.LogLevel), metricsInst)
 	if err != nil {
-		metrics.Errors.WithLabelValues(metrics.ErrorNewPlugin).Inc()
+		metricsInst.Errors.WithLabelValues(metrics.ErrorNewPlugin).Inc()
 		logger.Error(err, "[flb-go] error creating output plugin", "id", id)
 
 		return output.FLB_ERROR
@@ -132,7 +137,7 @@ func FLBPluginFlushCtx(ctx, data unsafe.Pointer, length C.int, _ *C.char) int {
 	}
 	outputPlugin, ok := pluginsGet(id)
 	if !ok {
-		metrics.Errors.WithLabelValues(metrics.ErrorFLBPluginFlushCtx).Inc()
+		metricsInst.Errors.WithLabelValues(metrics.ErrorFLBPluginFlushCtx).Inc()
 		logger.Error(errors.New("not found"), "outputPlugin not found in plugins map", "id", id)
 
 		return output.FLB_ERROR

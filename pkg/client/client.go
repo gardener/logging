@@ -10,12 +10,14 @@ import (
 	"github.com/go-logr/logr"
 
 	"github.com/gardener/logging/v1/pkg/config"
+	"github.com/gardener/logging/v1/pkg/metrics"
 	"github.com/gardener/logging/v1/pkg/types"
 )
 
 type clientOptions struct {
-	target Target
-	logger logr.Logger
+	target  Target
+	logger  logr.Logger
+	metrics *metrics.FluentBitGardenerMetrics
 }
 
 // Option defines a functional option for configuring the client
@@ -34,6 +36,15 @@ func WithLogger(logger logr.Logger) Option {
 func WithTarget(target Target) Option {
 	return func(opts *clientOptions) error {
 		opts.target = target
+
+		return nil
+	}
+}
+
+// WithMetrics creates a functional option for setting the metrics instance
+func WithMetrics(m *metrics.FluentBitGardenerMetrics) Option {
+	return func(opts *clientOptions) error {
+		opts.metrics = m
 
 		return nil
 	}
@@ -73,7 +84,7 @@ func NewClient(ctx context.Context, cfg config.Config, opts ...Option) (OutputCl
 		return nil, fmt.Errorf("unknown target type: %v", options.target)
 	}
 
-	return nfc(ctx, cfg, logger)
+	return nfc(ctx, cfg, logger, options.metrics)
 }
 
 func getNewClientFunc(t types.Type) (NewClientFunc, error) {

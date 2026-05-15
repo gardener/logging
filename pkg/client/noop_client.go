@@ -23,16 +23,18 @@ type NoopClient struct {
 	ctx      context.Context
 	logger   logr.Logger
 	endpoint string
+	metrics  *metrics.FluentBitGardenerMetrics
 }
 
 var _ OutputClient = &NoopClient{}
 
 // NewNoopClient creates a new NoopClient that discards all records
-func NewNoopClient(ctx context.Context, cfg config.Config, logger logr.Logger) (OutputClient, error) {
+func NewNoopClient(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics) (OutputClient, error) {
 	client := &NoopClient{
 		ctx:      ctx,
 		endpoint: cfg.OTLPConfig.Endpoint,
 		logger:   logger.WithValues("endpoint", cfg.OTLPConfig.Endpoint),
+		metrics:  m,
 	}
 
 	logger.V(1).Info(fmt.Sprintf("%s created", componentNoopName))
@@ -43,7 +45,7 @@ func NewNoopClient(ctx context.Context, cfg config.Config, logger logr.Logger) (
 // Handle processes and discards the log entry while incrementing metrics
 func (c *NoopClient) Handle(_ types.OutputEntry) error {
 	// Increment the dropped logs counter since we're discarding the record
-	metrics.DroppedLogs.WithLabelValues(c.endpoint, "noop").Inc()
+	c.metrics.DroppedLogs.WithLabelValues(c.endpoint, "noop").Inc()
 
 	// Simply discard the record - no-op
 	return nil

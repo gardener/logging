@@ -13,11 +13,14 @@ import (
 	"github.com/gardener/logging/v1/pkg/client"
 	"github.com/gardener/logging/v1/pkg/config"
 	"github.com/gardener/logging/v1/pkg/log"
+	"github.com/gardener/logging/v1/pkg/metrics"
 	"github.com/gardener/logging/v1/pkg/types"
 )
 
 var _ = Describe("Simple Plugin Test", func() {
 	It("should create a NoopClient with logr logger", func() {
+		reg := metrics.NewRegistry()
+		testMetrics := metrics.NewFluentBitGardenerMetrics(reg)
 		logger := log.NewNopLogger()
 		cfg := config.Config{
 			PluginConfig: config.PluginConfig{
@@ -28,7 +31,7 @@ var _ = Describe("Simple Plugin Test", func() {
 			},
 		}
 
-		c, err := client.NewNoopClient(context.Background(), cfg, logger)
+		c, err := client.NewNoopClient(context.Background(), cfg, logger, testMetrics)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(c).NotTo(BeNil())
 

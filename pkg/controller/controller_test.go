@@ -21,6 +21,7 @@ import (
 
 	"github.com/gardener/logging/v1/pkg/client"
 	"github.com/gardener/logging/v1/pkg/config"
+	"github.com/gardener/logging/v1/pkg/metrics"
 	pkgtypes "github.com/gardener/logging/v1/pkg/types"
 )
 
@@ -103,9 +104,10 @@ var _ = Describe("Controller", func() {
 
 	Describe("Reconcile functions", func() {
 		var (
-			conf       *config.Config
-			reconciler *clusterReconciler
-			ctx        context.Context
+			conf        *config.Config
+			reconciler  *clusterReconciler
+			ctx         context.Context
+			testMetrics *metrics.FluentBitGardenerMetrics
 		)
 		dynamicHostPrefix := "http://logging."
 		dynamicHostSuffix := ".svc:4318/v1/logs"
@@ -176,6 +178,8 @@ var _ = Describe("Controller", func() {
 		}
 
 		BeforeEach(func() {
+			reg := metrics.NewRegistry()
+			testMetrics = metrics.NewFluentBitGardenerMetrics(reg)
 			conf = &config.Config{
 				OTLPConfig: config.OTLPConfig{
 					DQueConfig: config.DefaultDQueConfig,
@@ -193,6 +197,7 @@ var _ = Describe("Controller", func() {
 				logger:  logger,
 				ctx:     ctx,
 				cancel:  cancel,
+				metrics: testMetrics,
 			}
 		})
 

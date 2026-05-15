@@ -37,12 +37,13 @@ type OTLPGRPCClient struct {
 	ctx            context.Context
 	cancel         context.CancelFunc
 	limiter        *rate.Limiter // Rate limiter for throttling
+	metrics        *metrics.FluentBitGardenerMetrics
 }
 
 var _ OutputClient = &OTLPGRPCClient{}
 
 // NewOTLPGRPCClient creates a new OTLP gRPC client with dque batch processor
-func NewOTLPGRPCClient(ctx context.Context, cfg config.Config, logger logr.Logger) (OutputClient, error) {
+func NewOTLPGRPCClient(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics) (OutputClient, error) {
 	// Use the provided context with cancel capability
 	clientCtx, cancel := context.WithCancel(ctx)
 
@@ -66,7 +67,7 @@ func NewOTLPGRPCClient(ctx context.Context, cfg config.Config, logger logr.Logge
 	}
 
 	// Create batch processor using factory
-	processorFactory := NewBatchProcessorFactory(logger)
+	processorFactory := NewBatchProcessorFactory(logger, m)
 	batchProcessor, err := processorFactory.Create(clientCtx, cfg, exporter, "otlp-grpc")
 	if err != nil {
 		cancel()
@@ -112,6 +113,7 @@ func NewOTLPGRPCClient(ctx context.Context, cfg config.Config, logger logr.Logge
 		ctx:            clientCtx,
 		cancel:         cancel,
 		limiter:        limiter,
+		metrics:        m,
 	}
 
 	logger.V(1).Info("OTLP gRPC client created",
@@ -134,7 +136,7 @@ func (c *OTLPGRPCClient) Handle(entry types.OutputEntry) error {
 		// Try to acquire a token from the rate limiter
 		// Allow returns false if the request would exceed the rate limit
 		if !c.limiter.Allow() {
-			metrics.ThrottledLogs.WithLabelValues(c.endpoint).Inc()
+			c.metrics.ThrottledLogs.WithLabelValues(c.endpoint).Inc()
 
 			return ErrThrottled
 		}
@@ -153,7 +155,7 @@ func (c *OTLPGRPCClient) Handle(entry types.OutputEntry) error {
 	c.otlLogger.Emit(c.ctx, logRecord)
 
 	// Increment the output logs counter
-	metrics.OutputClientLogs.WithLabelValues(c.endpoint).Inc()
+	c.metrics.OutputClientLogs.WithLabelValues(c.endpoint).Inc()
 
 	return nil
 }

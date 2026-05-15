@@ -21,6 +21,7 @@ import (
 
 	pkgclient "github.com/gardener/logging/v1/pkg/client"
 	"github.com/gardener/logging/v1/pkg/config"
+	"github.com/gardener/logging/v1/pkg/metrics"
 )
 
 var _ = Describe("otelCollectorReconciler", func() {
@@ -28,6 +29,7 @@ var _ = Describe("otelCollectorReconciler", func() {
 		reconciler        *otelCollectorReconciler
 		ctx               context.Context
 		cancel            context.CancelFunc
+		testMetrics       *metrics.FluentBitGardenerMetrics
 		dynamicHostPrefix = "http://logging."
 		dynamicHostSuffix = ".svc:4318/v1/logs"
 		namespace         = "shoot--dev--logging"
@@ -39,6 +41,8 @@ var _ = Describe("otelCollectorReconciler", func() {
 	)
 
 	BeforeEach(func() {
+		reg := metrics.NewRegistry()
+		testMetrics = metrics.NewFluentBitGardenerMetrics(reg)
 		ctx, cancel = context.WithCancel(context.Background())
 
 		labelSelector, err := labels.Parse(labelKey + "=" + labelValue)
@@ -66,6 +70,7 @@ var _ = Describe("otelCollectorReconciler", func() {
 			labelSelector:          labelSelector,
 			namespaceLabelSelector: namespaceLabelSelector,
 			dynamicHostRegex:       regexp.MustCompile("shoot--.*"),
+			metrics:                testMetrics,
 		}
 	})
 

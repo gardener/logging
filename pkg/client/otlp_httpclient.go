@@ -33,12 +33,13 @@ type OTLPHTTPClient struct {
 	ctx            context.Context
 	cancel         context.CancelFunc
 	limiter        *rate.Limiter // Rate limiter for throttling
+	metrics        *metrics.FluentBitGardenerMetrics
 }
 
 var _ OutputClient = &OTLPHTTPClient{}
 
 // NewOTLPHTTPClient creates a new OTLP HTTP client with dque batch processor
-func NewOTLPHTTPClient(ctx context.Context, cfg config.Config, logger logr.Logger) (OutputClient, error) {
+func NewOTLPHTTPClient(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics) (OutputClient, error) {
 	// Use the provided context with cancel capability
 	clientCtx, cancel := context.WithCancel(ctx)
 
@@ -55,7 +56,7 @@ func NewOTLPHTTPClient(ctx context.Context, cfg config.Config, logger logr.Logge
 	}
 
 	// Create batch processor using factory
-	processorFactory := NewBatchProcessorFactory(logger)
+	processorFactory := NewBatchProcessorFactory(logger, m)
 	batchProcessor, err := processorFactory.Create(clientCtx, cfg, exporter, "otlp-http")
 	if err != nil {
 		cancel()
@@ -101,6 +102,7 @@ func NewOTLPHTTPClient(ctx context.Context, cfg config.Config, logger logr.Logge
 		ctx:            clientCtx,
 		cancel:         cancel,
 		limiter:        limiter,
+		metrics:        m,
 	}
 
 	logger.V(1).Info("OTLP HTTP client created",
@@ -123,7 +125,7 @@ func (c *OTLPHTTPClient) Handle(entry types.OutputEntry) error {
 		// Try to acquire a token from the rate limiter
 		// Allow returns false if the request would exceed the rate limit
 		if !c.limiter.Allow() {
-			metrics.ThrottledLogs.WithLabelValues(c.endpoint).Inc()
+			c.metrics.ThrottledLogs.WithLabelValues(c.endpoint).Inc()
 
 			return ErrThrottled
 		}
@@ -142,7 +144,7 @@ func (c *OTLPHTTPClient) Handle(entry types.OutputEntry) error {
 	c.otlLogger.Emit(c.ctx, logRecord)
 
 	// Increment the output logs counter
-	metrics.OutputClientLogs.WithLabelValues(c.endpoint).Inc()
+	c.metrics.OutputClientLogs.WithLabelValues(c.endpoint).Inc()
 
 	return nil
 }

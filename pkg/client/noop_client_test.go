@@ -23,9 +23,13 @@ var _ = Describe("NoopClient", func() {
 		outputClient OutputClient
 		cfg          config.Config
 		logger       logr.Logger
+		testMetrics  *metrics.FluentBitGardenerMetrics
 	)
 
 	BeforeEach(func() {
+		reg := metrics.NewRegistry()
+		testMetrics = metrics.NewFluentBitGardenerMetrics(reg)
+
 		cfg = config.Config{}
 
 		logger = log.NewNopLogger()
@@ -33,10 +37,8 @@ var _ = Describe("NoopClient", func() {
 			context.Background(),
 			cfg,
 			logger,
+			testMetrics,
 		)
-
-		// Reset metrics for clean state
-		metrics.DroppedLogs.Reset()
 	})
 
 	Describe("NewNoopClient", func() {
@@ -48,14 +50,14 @@ var _ = Describe("NoopClient", func() {
 				},
 			}
 
-			testClient, err := NewNoopClient(context.Background(), testCfg, logger)
+			testClient, err := NewNoopClient(context.Background(), testCfg, logger, testMetrics)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(testClient).NotTo(BeNil())
 			Expect(testClient.GetEndPoint()).To(Equal(testEndpoint))
 		})
 
 		It("should work with nil logger", func() {
-			testClient, err := NewNoopClient(context.Background(), cfg, logger)
+			testClient, err := NewNoopClient(context.Background(), cfg, logger, testMetrics)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(testClient).NotTo(BeNil())
 		})
@@ -67,7 +69,7 @@ var _ = Describe("NoopClient", func() {
 				},
 			}
 
-			testClient, err := NewNoopClient(context.Background(), testCfg, logger)
+			testClient, err := NewNoopClient(context.Background(), testCfg, logger, testMetrics)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(testClient).NotTo(BeNil())
 			Expect(testClient.GetEndPoint()).To(Equal(""))
@@ -76,7 +78,7 @@ var _ = Describe("NoopClient", func() {
 
 	Describe("Handle", func() {
 		It("should discard log entries and increment dropped logs metric", func() {
-			initialMetric := metrics.DroppedLogs.WithLabelValues(outputClient.GetEndPoint(), "noop")
+			initialMetric := testMetrics.DroppedLogs.WithLabelValues(outputClient.GetEndPoint(), "noop")
 			beforeCount := testutil.ToFloat64(initialMetric)
 
 			entry := types.OutputEntry{
@@ -91,7 +93,7 @@ var _ = Describe("NoopClient", func() {
 		})
 
 		It("should handle multiple log entries and track count", func() {
-			initialMetric := metrics.DroppedLogs.WithLabelValues(outputClient.GetEndPoint(), "noop")
+			initialMetric := testMetrics.DroppedLogs.WithLabelValues(outputClient.GetEndPoint(), "noop")
 			beforeCount := testutil.ToFloat64(initialMetric)
 
 			numEntries := 10
@@ -109,7 +111,7 @@ var _ = Describe("NoopClient", func() {
 		})
 
 		It("should handle concurrent log entries safely", func() {
-			initialMetric := metrics.DroppedLogs.WithLabelValues(outputClient.GetEndPoint(), "noop")
+			initialMetric := testMetrics.DroppedLogs.WithLabelValues(outputClient.GetEndPoint(), "noop")
 			beforeCount := testutil.ToFloat64(initialMetric)
 
 			numGoroutines := 10
@@ -177,7 +179,7 @@ var _ = Describe("NoopClient", func() {
 				},
 			}
 
-			testClient, err := NewNoopClient(context.Background(), testCfg, logger)
+			testClient, err := NewNoopClient(context.Background(), testCfg, logger, testMetrics)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(testClient.GetEndPoint()).To(Equal(testEndpoint))
 		})
@@ -199,13 +201,13 @@ var _ = Describe("NoopClient", func() {
 				},
 			}
 
-			client1, err := NewNoopClient(context.Background(), cfg1, logger)
+			client1, err := NewNoopClient(context.Background(), cfg1, logger, testMetrics)
 			Expect(err).NotTo(HaveOccurred())
-			client2, err := NewNoopClient(context.Background(), cfg2, logger)
+			client2, err := NewNoopClient(context.Background(), cfg2, logger, testMetrics)
 			Expect(err).NotTo(HaveOccurred())
 
-			metric1 := metrics.DroppedLogs.WithLabelValues(endpoint1, "noop")
-			metric2 := metrics.DroppedLogs.WithLabelValues(endpoint2, "noop")
+			metric1 := testMetrics.DroppedLogs.WithLabelValues(endpoint1, "noop")
+			metric2 := testMetrics.DroppedLogs.WithLabelValues(endpoint2, "noop")
 			before1 := testutil.ToFloat64(metric1)
 			before2 := testutil.ToFloat64(metric2)
 

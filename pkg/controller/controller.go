@@ -15,6 +15,7 @@ import (
 
 	pkgclient "github.com/gardener/logging/v1/pkg/client"
 	"github.com/gardener/logging/v1/pkg/config"
+	"github.com/gardener/logging/v1/pkg/metrics"
 )
 
 const (
@@ -33,16 +34,16 @@ type Controller interface {
 // It sets up a manager and reconciler based on the configuration:
 // - If WatchOpenTelemetryCollector is true, it watches OpenTelemetryCollector resources
 // - Otherwise (default), it watches Cluster resources
-func NewController(ctx context.Context, conf *config.Config, l logr.Logger) (Controller, error) {
+func NewController(ctx context.Context, conf *config.Config, l logr.Logger, m *metrics.FluentBitGardenerMetrics) (Controller, error) {
 	if conf.ControllerConfig.WatchOpenTelemetryCollector {
 		l.Info("using OpenTelemetryCollector mode for dynamic clients")
 
-		return newOpenTelemetryCollectorController(ctx, conf, l)
+		return newOpenTelemetryCollectorController(ctx, conf, l, m)
 	}
 
 	l.Info("using Cluster mode for dynamic clients")
 
-	return newClusterController(ctx, conf, l)
+	return newClusterController(ctx, conf, l, m)
 }
 
 // getRestConfig returns the Kubernetes REST config.
