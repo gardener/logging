@@ -32,20 +32,22 @@ type logging struct {
 	logger                          logr.Logger
 	ctx                             context.Context
 	cancel                          context.CancelFunc
+	metrics                         *metrics.FluentBitGardenerMetrics
 }
 
 // NewPlugin returns OutputPlugin output plugin
-func NewPlugin(cfg *config.Config, logger logr.Logger) (OutputPlugin, error) {
+func NewPlugin(cfg *config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics) (OutputPlugin, error) {
 	var err error
 
 	// Create a single context for the entire plugin lifecycle
 	ctx, cancel := context.WithCancel(context.Background())
 
 	l := &logging{
-		cfg:    cfg,
-		logger: logger,
-		ctx:    ctx,
-		cancel: cancel,
+		cfg:     cfg,
+		logger:  logger,
+		ctx:     ctx,
+		cancel:  cancel,
+		metrics: m,
 	}
 
 	// TODO(nickytd): Revisit the decision the dynamic host configuration is required to create the controller.
@@ -54,7 +56,7 @@ func NewPlugin(cfg *config.Config, logger logr.Logger) (OutputPlugin, error) {
 		l.dynamicHostRegexp = regexp.MustCompile(cfg.ControllerConfig.DynamicHostRegex)
 
 		// Pass the plugin's context to the controller
-		if l.controller, err = controller.NewController(ctx, cfg, logger); err != nil {
+		if l.controller, err = controller.NewController(ctx, cfg, logger, m); err != nil {
 			cancel()
 
 			return nil, err
@@ -65,7 +67,7 @@ func NewPlugin(cfg *config.Config, logger logr.Logger) (OutputPlugin, error) {
 		l.extractKubernetesMetadataRegexp = regexp.MustCompile(cfg.PluginConfig.KubernetesMetadata.TagPrefix + cfg.PluginConfig.KubernetesMetadata.TagExpression)
 	}
 
-	opt := []client.Option{client.WithTarget(client.Seed), client.WithLogger(logger)}
+	opt := []client.Option{client.WithTarget(client.Seed), client.WithLogger(logger), client.WithMetrics(m)}
 
 	// Pass the plugin's context to the client
 	if l.seedClient, err = client.NewClient(ctx, *cfg, opt...); err != nil {
@@ -73,7 +75,7 @@ func NewPlugin(cfg *config.Config, logger logr.Logger) (OutputPlugin, error) {
 
 		return nil, err
 	}
-	metrics.Clients.WithLabelValues(client.Seed.String()).Inc()
+	l.metrics.Clients.WithLabelValues(client.Seed.String()).Inc()
 
 	logger.Info("logging plugin created",
 		"seed_client_url", redactCredentialsFromEndpoint(l.seedClient.GetEndPoint()),
@@ -85,7 +87,7 @@ func NewPlugin(cfg *config.Config, logger logr.Logger) (OutputPlugin, error) {
 
 // NewPluginWithController creates a new plugin with a pre-configured controller.
 // This is useful for testing where the controller is created with a fake client.
-func NewPluginWithController(cfg *config.Config, logger logr.Logger, ctl controller.Controller) (OutputPlugin, error) {
+func NewPluginWithController(cfg *config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics, ctl controller.Controller) (OutputPlugin, error) {
 	var err error
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -96,6 +98,7 @@ func NewPluginWithController(cfg *config.Config, logger logr.Logger, ctl control
 		ctx:        ctx,
 		cancel:     cancel,
 		controller: ctl,
+		metrics:    m,
 	}
 
 	if len(cfg.ControllerConfig.DynamicHostPath) > 0 {
@@ -106,14 +109,14 @@ func NewPluginWithController(cfg *config.Config, logger logr.Logger, ctl control
 		l.extractKubernetesMetadataRegexp = regexp.MustCompile(cfg.PluginConfig.KubernetesMetadata.TagPrefix + cfg.PluginConfig.KubernetesMetadata.TagExpression)
 	}
 
-	opt := []client.Option{client.WithTarget(client.Seed), client.WithLogger(logger)}
+	opt := []client.Option{client.WithTarget(client.Seed), client.WithLogger(logger), client.WithMetrics(m)}
 
 	if l.seedClient, err = client.NewClient(ctx, *cfg, opt...); err != nil {
 		cancel()
 
 		return nil, err
 	}
-	metrics.Clients.WithLabelValues(client.Seed.String()).Inc()
+	l.metrics.Clients.WithLabelValues(client.Seed.String()).Inc()
 
 	logger.Info("logging plugin created with controller",
 		"seed_client_url", redactCredentialsFromEndpoint(l.seedClient.GetEndPoint()),
@@ -142,10 +145,10 @@ func (l *logging) SendRecord(log types.OutputEntry) error {
 			l.extractKubernetesMetadataRegexp,
 		); err != nil {
 			// Increment error metric if metadata extraction fails
-			metrics.Errors.WithLabelValues(metrics.ErrorCanNotExtractMetadataFromTag).Inc()
+			l.metrics.Errors.WithLabelValues(metrics.ErrorCanNotExtractMetadataFromTag).Inc()
 			// Drop log entry if configured to do so when metadata is missing
 			if l.cfg.PluginConfig.KubernetesMetadata.DropLogEntryWithoutK8sMetadata {
-				metrics.LogsWithoutMetadata.WithLabelValues(metrics.MissingMetadataType).Inc()
+				l.metrics.LogsWithoutMetadata.WithLabelValues(metrics.MissingMetadataType).Inc()
 
 				return nil
 			}
@@ -158,7 +161,7 @@ func (l *logging) SendRecord(log types.OutputEntry) error {
 		host = "garden" // the record needs to go to the seed client (in garden namespace)
 	}
 
-	metrics.IncomingLogs.WithLabelValues(host).Inc()
+	l.metrics.IncomingLogs.WithLabelValues(host).Inc()
 
 	if len(record) == 0 {
 		l.logger.Info("no record left after removing keys", "host", dynamicHostName)
@@ -175,7 +178,7 @@ func (l *logging) SendRecord(log types.OutputEntry) error {
 	c := l.getClient(dynamicHostName)
 
 	if c == nil {
-		metrics.DroppedLogs.WithLabelValues(host, "no_client").Inc()
+		l.metrics.DroppedLogs.WithLabelValues(host, "no_client").Inc()
 
 		// since there is no destination to which the record shall be sent, it is skipped
 		return nil
@@ -191,7 +194,7 @@ func (l *logging) SendRecord(log types.OutputEntry) error {
 	}
 
 	l.logger.Error(err, "error sending record to logging", "host", dynamicHostName)
-	metrics.Errors.WithLabelValues(metrics.ErrorSendRecord).Inc()
+	l.metrics.Errors.WithLabelValues(metrics.ErrorSendRecord).Inc()
 
 	return err
 }

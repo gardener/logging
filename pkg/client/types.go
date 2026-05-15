@@ -9,6 +9,7 @@ import (
 	"github.com/go-logr/logr"
 
 	"github.com/gardener/logging/v1/pkg/config"
+	"github.com/gardener/logging/v1/pkg/metrics"
 	"github.com/gardener/logging/v1/pkg/types"
 )
 
@@ -25,4 +26,4 @@ type OutputClient interface {
 }
 
 // NewClientFunc is a function type for creating new OutputClient instances
-type NewClientFunc func(ctx context.Context, cfg config.Config, logger logr.Logger) (OutputClient, error)
+type NewClientFunc func(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics) (OutputClient, error)

@@ -18,15 +18,19 @@ import (
 	"go.opentelemetry.io/otel/sdk/log/logtest"
 
 	"github.com/gardener/logging/v1/pkg/client"
+	"github.com/gardener/logging/v1/pkg/metrics"
 )
 
 var _ = Describe("DQue Batch Processor Integration", func() {
 	var (
-		tempDir string
-		logger  logr.Logger
+		tempDir     string
+		logger      logr.Logger
+		testMetrics *metrics.FluentBitGardenerMetrics
 	)
 
 	BeforeEach(func() {
+		reg := metrics.NewRegistry()
+		testMetrics = metrics.NewFluentBitGardenerMetrics(reg)
 		logger = logr.Discard()
 		tempDir = GinkgoT().TempDir()
 	})
@@ -47,6 +51,7 @@ var _ = Describe("DQue Batch Processor Integration", func() {
 			ctx,
 			exporter,
 			logger,
+			testMetrics,
 			client.WithDQueueDir(queueDir),
 			client.WithExportInterval(time.Millisecond*1),
 			client.WithEndpoint("test-endpoint"),
@@ -127,11 +132,15 @@ var _ = Describe("DQue Batch Processor Integration", func() {
 
 var _ = Describe("DQue Batch Processor with Functional Options", func() {
 	var (
-		queueDir string
-		logger   logr.Logger
+		queueDir    string
+		logger      logr.Logger
+		testMetrics *metrics.FluentBitGardenerMetrics
 	)
 
 	BeforeEach(func() {
+		reg := metrics.NewRegistry()
+		testMetrics = metrics.NewFluentBitGardenerMetrics(reg)
+
 		var err error
 		queueDir, err = os.MkdirTemp("", "dque-processor-options-test-*")
 		Expect(err).NotTo(HaveOccurred())
@@ -162,6 +171,7 @@ var _ = Describe("DQue Batch Processor with Functional Options", func() {
 			ctx,
 			exporter,
 			logger,
+			testMetrics,
 			client.WithDQueueDir(queueDir),
 			client.WithDQueueName("test-options"),
 			client.WithMaxQueueSize(100),
@@ -216,6 +226,7 @@ var _ = Describe("DQue Batch Processor with Functional Options", func() {
 			ctx,
 			exporter,
 			logger,
+			testMetrics,
 			client.WithDQueueDir(queueDir),
 			client.WithEndpoint("test-minimal"),
 		)
@@ -236,6 +247,7 @@ var _ = Describe("DQue Batch Processor with Functional Options", func() {
 			ctx,
 			nil,
 			logger,
+			testMetrics,
 			client.WithDQueueDir(queueDir),
 			client.WithEndpoint("test-endpoint"),
 		)
@@ -266,6 +278,7 @@ var _ = Describe("DQue Batch Processor with Functional Options", func() {
 			ctx,
 			exporter,
 			logger,
+			testMetrics,
 			client.WithDQueueDir(queueDir),
 			client.WithDQueueName(dqueName),
 			client.WithEndpoint("test-endpoint"),

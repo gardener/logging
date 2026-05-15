@@ -13,6 +13,7 @@ import (
 	sdklog "go.opentelemetry.io/otel/sdk/log"
 
 	"github.com/gardener/logging/v1/pkg/config"
+	"github.com/gardener/logging/v1/pkg/metrics"
 )
 
 // mockExporter is a simple mock exporter for testing
@@ -32,16 +33,19 @@ func (*mockExporter) ForceFlush(_ context.Context) error {
 
 var _ = Describe("BatchProcessorFactory", func() {
 	var (
-		factory  *BatchProcessorFactory
-		logger   logr.Logger
-		exporter sdklog.Exporter
-		ctx      context.Context
-		cancel   context.CancelFunc
+		factory     *BatchProcessorFactory
+		logger      logr.Logger
+		exporter    sdklog.Exporter
+		ctx         context.Context
+		cancel      context.CancelFunc
+		testMetrics *metrics.FluentBitGardenerMetrics
 	)
 
 	BeforeEach(func() {
+		reg := metrics.NewRegistry()
+		testMetrics = metrics.NewFluentBitGardenerMetrics(reg)
 		logger = logr.Discard()
-		factory = NewBatchProcessorFactory(logger)
+		factory = NewBatchProcessorFactory(logger, testMetrics)
 		exporter = &mockExporter{}
 		ctx, cancel = context.WithCancel(context.Background())
 	})
@@ -52,7 +56,7 @@ var _ = Describe("BatchProcessorFactory", func() {
 
 	Describe("NewBatchProcessorFactory", func() {
 		It("should create a factory instance", func() {
-			f := NewBatchProcessorFactory(logger)
+			f := NewBatchProcessorFactory(logger, testMetrics)
 			Expect(f).NotTo(BeNil())
 			Expect(f.logger).To(Equal(logger))
 		})

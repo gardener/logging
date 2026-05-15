@@ -32,16 +32,14 @@ import (
 
 var _ = Describe("OutputPlugin plugin", func() {
 	var (
-		cfg    *config.Config
-		logger logr.Logger
+		cfg         *config.Config
+		logger      logr.Logger
+		testMetrics *metrics.FluentBitGardenerMetrics
 	)
 
 	BeforeEach(func() {
-		// Reset metrics before each test
-		metrics.IncomingLogs.Reset()
-		metrics.DroppedLogs.Reset()
-		metrics.Errors.Reset()
-		metrics.LogsWithoutMetadata.Reset()
+		reg := metrics.NewRegistry()
+		testMetrics = metrics.NewFluentBitGardenerMetrics(reg)
 
 		logger = log.NewNopLogger()
 
@@ -64,7 +62,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 	Describe("NewPlugin", func() {
 		Context("without dynamic host configuration", func() {
 			It("should create plugin successfully", func() {
-				plugin, err := NewPlugin(cfg, logger)
+				plugin, err := NewPlugin(cfg, logger, testMetrics)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(plugin).NotTo(BeNil())
 
@@ -73,7 +71,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 			})
 
 			It("should create plugin with seed client only", func() {
-				plugin, err := NewPlugin(cfg, logger)
+				plugin, err := NewPlugin(cfg, logger, testMetrics)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(plugin).NotTo(BeNil())
 
@@ -90,7 +88,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 			It("should compile the metadata extraction regex", func() {
 				cfg.PluginConfig.KubernetesMetadata.FallbackToTagWhenMetadataIsMissing = true
 
-				plugin, err := NewPlugin(cfg, logger)
+				plugin, err := NewPlugin(cfg, logger, testMetrics)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(plugin).NotTo(BeNil())
 
@@ -108,7 +106,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 		BeforeEach(func() {
 			var err error
-			plugin, err = NewPlugin(cfg, logger)
+			plugin, err = NewPlugin(cfg, logger, testMetrics)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -137,7 +135,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 				// Verify metrics
 				Eventually(func() float64 {
-					return promtest.ToFloat64(metrics.IncomingLogs.WithLabelValues("garden"))
+					return promtest.ToFloat64(testMetrics.IncomingLogs.WithLabelValues("garden"))
 				}, "5s", "100ms").Should(BeNumerically(">", 0))
 			})
 
@@ -205,14 +203,14 @@ var _ = Describe("OutputPlugin plugin", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				// Should not have metadata extraction errors
-				Expect(promtest.ToFloat64(metrics.Errors.WithLabelValues(metrics.ErrorCanNotExtractMetadataFromTag))).To(BeZero())
+				Expect(promtest.ToFloat64(testMetrics.Errors.WithLabelValues(metrics.ErrorCanNotExtractMetadataFromTag))).To(BeZero())
 			})
 
 			It("should extract metadata from tag when fallback is enabled and metadata is missing", func() {
 				cfg.PluginConfig.KubernetesMetadata.FallbackToTagWhenMetadataIsMissing = true
 				plugin.Close()
 				var err error
-				plugin, err = NewPlugin(cfg, logger)
+				plugin, err = NewPlugin(cfg, logger, testMetrics)
 				Expect(err).NotTo(HaveOccurred())
 
 				entry := types.OutputEntry{
@@ -227,15 +225,15 @@ var _ = Describe("OutputPlugin plugin", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				// Should not increment error or missing metadata counters
-				Expect(promtest.ToFloat64(metrics.Errors.WithLabelValues(metrics.ErrorCanNotExtractMetadataFromTag))).To(BeZero())
-				Expect(promtest.ToFloat64(metrics.LogsWithoutMetadata.WithLabelValues(metrics.MissingMetadataType))).To(BeZero())
+				Expect(promtest.ToFloat64(testMetrics.Errors.WithLabelValues(metrics.ErrorCanNotExtractMetadataFromTag))).To(BeZero())
+				Expect(promtest.ToFloat64(testMetrics.LogsWithoutMetadata.WithLabelValues(metrics.MissingMetadataType))).To(BeZero())
 			})
 
 			It("should increment error metric when metadata extraction fails", func() {
 				cfg.PluginConfig.KubernetesMetadata.FallbackToTagWhenMetadataIsMissing = true
 				plugin.Close()
 				var err error
-				plugin, err = NewPlugin(cfg, logger)
+				plugin, err = NewPlugin(cfg, logger, testMetrics)
 				Expect(err).NotTo(HaveOccurred())
 
 				entry := types.OutputEntry{
@@ -252,7 +250,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 				// Should increment error metric
 				Eventually(func() float64 {
-					return promtest.ToFloat64(metrics.Errors.WithLabelValues(metrics.ErrorCanNotExtractMetadataFromTag))
+					return promtest.ToFloat64(testMetrics.Errors.WithLabelValues(metrics.ErrorCanNotExtractMetadataFromTag))
 				}, "5s", "100ms").Should(BeNumerically(">", 0))
 			})
 
@@ -261,7 +259,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 				cfg.PluginConfig.KubernetesMetadata.DropLogEntryWithoutK8sMetadata = true
 				plugin.Close()
 				var err error
-				plugin, err = NewPlugin(cfg, logger)
+				plugin, err = NewPlugin(cfg, logger, testMetrics)
 				Expect(err).NotTo(HaveOccurred())
 
 				entry := types.OutputEntry{
@@ -277,14 +275,14 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 				// Should increment missing metadata metric
 				Eventually(func() float64 {
-					return promtest.ToFloat64(metrics.LogsWithoutMetadata.WithLabelValues(metrics.MissingMetadataType))
+					return promtest.ToFloat64(testMetrics.LogsWithoutMetadata.WithLabelValues(metrics.MissingMetadataType))
 				}, "5s", "100ms").Should(BeNumerically(">", 0))
 			})
 		})
 
 		Context("metrics verification", func() {
 			It("should increment IncomingLogs metric for each record", func() {
-				initialCount := promtest.ToFloat64(metrics.IncomingLogs.WithLabelValues("garden"))
+				initialCount := promtest.ToFloat64(testMetrics.IncomingLogs.WithLabelValues("garden"))
 
 				entry := types.OutputEntry{
 					Timestamp: time.Now(),
@@ -297,12 +295,12 @@ var _ = Describe("OutputPlugin plugin", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				Eventually(func() float64 {
-					return promtest.ToFloat64(metrics.IncomingLogs.WithLabelValues("garden"))
+					return promtest.ToFloat64(testMetrics.IncomingLogs.WithLabelValues("garden"))
 				}, "5s", "100ms").Should(BeNumerically(">", initialCount))
 			})
 
 			It("should track DroppedLogs metric via NoopClient", func() {
-				initialCount := promtest.ToFloat64(metrics.DroppedLogs.WithLabelValues(cfg.OTLPConfig.Endpoint, "noop"))
+				initialCount := promtest.ToFloat64(testMetrics.DroppedLogs.WithLabelValues(cfg.OTLPConfig.Endpoint, "noop"))
 
 				entry := types.OutputEntry{
 					Timestamp: time.Now(),
@@ -316,7 +314,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 				// NoopClient increments DroppedLogs in Handle
 				Eventually(func() float64 {
-					return promtest.ToFloat64(metrics.DroppedLogs.WithLabelValues(cfg.OTLPConfig.Endpoint, "noop"))
+					return promtest.ToFloat64(testMetrics.DroppedLogs.WithLabelValues(cfg.OTLPConfig.Endpoint, "noop"))
 				}, "5s", "100ms").Should(BeNumerically(">", initialCount))
 			})
 		})
@@ -324,7 +322,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 	Describe("Client Management", func() {
 		It("should return seed client for non-dynamic hosts", func() {
-			plugin, err := NewPlugin(cfg, logger)
+			plugin, err := NewPlugin(cfg, logger, testMetrics)
 			Expect(err).NotTo(HaveOccurred())
 			defer plugin.Close()
 
@@ -338,7 +336,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 		})
 
 		It("should identify non-dynamic hosts correctly", func() {
-			plugin, err := NewPlugin(cfg, logger)
+			plugin, err := NewPlugin(cfg, logger, testMetrics)
 			Expect(err).NotTo(HaveOccurred())
 			defer plugin.Close()
 
@@ -352,7 +350,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 	Describe("Graceful Shutdown", func() {
 		It("should stop seed client on Close", func() {
-			plugin, err := NewPlugin(cfg, logger)
+			plugin, err := NewPlugin(cfg, logger, testMetrics)
 			Expect(err).NotTo(HaveOccurred())
 
 			l, ok := plugin.(*logging)
@@ -364,7 +362,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 		})
 
 		It("should handle Close with nil controller", func() {
-			plugin, err := NewPlugin(cfg, logger)
+			plugin, err := NewPlugin(cfg, logger, testMetrics)
 			Expect(err).NotTo(HaveOccurred())
 
 			l, ok := plugin.(*logging)
@@ -376,7 +374,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 		})
 
 		It("should be safe to close multiple times", func() {
-			plugin, err := NewPlugin(cfg, logger)
+			plugin, err := NewPlugin(cfg, logger, testMetrics)
 			Expect(err).NotTo(HaveOccurred())
 
 			// Should not panic on multiple closes
@@ -389,7 +387,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 	Describe("Concurrent Access", func() {
 		It("should handle multiple goroutines sending records simultaneously", func() {
-			plugin, err := NewPlugin(cfg, logger)
+			plugin, err := NewPlugin(cfg, logger, testMetrics)
 			Expect(err).NotTo(HaveOccurred())
 			defer plugin.Close()
 
@@ -399,7 +397,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 			var wg sync.WaitGroup
 			wg.Add(numGoroutines)
 
-			initialCount := promtest.ToFloat64(metrics.IncomingLogs.WithLabelValues("garden"))
+			initialCount := promtest.ToFloat64(testMetrics.IncomingLogs.WithLabelValues("garden"))
 
 			for i := range numGoroutines {
 				go func(id int) {
@@ -423,12 +421,12 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 			// Verify all records were counted
 			Eventually(func() float64 {
-				return promtest.ToFloat64(metrics.IncomingLogs.WithLabelValues("garden"))
+				return promtest.ToFloat64(testMetrics.IncomingLogs.WithLabelValues("garden"))
 			}, "10s", "100ms").Should(BeNumerically(">=", initialCount+numGoroutines*recordsPerGoroutine))
 		})
 
 		It("should handle concurrent sends and shutdown", func() {
-			plugin, err := NewPlugin(cfg, logger)
+			plugin, err := NewPlugin(cfg, logger, testMetrics)
 			Expect(err).NotTo(HaveOccurred())
 
 			const numGoroutines = 5
@@ -463,14 +461,14 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 	Describe("Integration Tests with NoopClient", func() {
 		It("should process high volume of messages and track metrics", func() {
-			plugin, err := NewPlugin(cfg, logger)
+			plugin, err := NewPlugin(cfg, logger, testMetrics)
 			Expect(err).NotTo(HaveOccurred())
 			defer plugin.Close()
 
 			const messageCount = 100
 
-			initialIncoming := promtest.ToFloat64(metrics.IncomingLogs.WithLabelValues("garden"))
-			initialDropped := promtest.ToFloat64(metrics.DroppedLogs.WithLabelValues(cfg.OTLPConfig.Endpoint, "noop"))
+			initialIncoming := promtest.ToFloat64(testMetrics.IncomingLogs.WithLabelValues("garden"))
+			initialDropped := promtest.ToFloat64(testMetrics.DroppedLogs.WithLabelValues(cfg.OTLPConfig.Endpoint, "noop"))
 
 			for i := range messageCount {
 				entry := types.OutputEntry{
@@ -486,23 +484,23 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 			// Wait for all messages to be processed
 			Eventually(func() float64 {
-				return promtest.ToFloat64(metrics.IncomingLogs.WithLabelValues("garden"))
+				return promtest.ToFloat64(testMetrics.IncomingLogs.WithLabelValues("garden"))
 			}, "10s", "100ms").Should(BeNumerically(">=", initialIncoming+messageCount))
 
 			// Verify dropped logs (from NoopClient)
 			Eventually(func() float64 {
-				return promtest.ToFloat64(metrics.DroppedLogs.WithLabelValues(cfg.OTLPConfig.Endpoint, "noop"))
+				return promtest.ToFloat64(testMetrics.DroppedLogs.WithLabelValues(cfg.OTLPConfig.Endpoint, "noop"))
 			}, "10s", "100ms").Should(BeNumerically(">=", initialDropped+messageCount))
 		})
 
 		It("should handle buffer overflow with 1000+ messages", func() {
-			plugin, err := NewPlugin(cfg, logger)
+			plugin, err := NewPlugin(cfg, logger, testMetrics)
 			Expect(err).NotTo(HaveOccurred())
 			defer plugin.Close()
 
 			const messageCount = 1000
 
-			initialIncoming := promtest.ToFloat64(metrics.IncomingLogs.WithLabelValues("garden"))
+			initialIncoming := promtest.ToFloat64(testMetrics.IncomingLogs.WithLabelValues("garden"))
 
 			for i := range messageCount {
 				entry := types.OutputEntry{
@@ -517,13 +515,13 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 			// Verify all incoming logs were counted
 			Eventually(func() float64 {
-				return promtest.ToFloat64(metrics.IncomingLogs.WithLabelValues("garden"))
+				return promtest.ToFloat64(testMetrics.IncomingLogs.WithLabelValues("garden"))
 			}, "30s", "200ms").Should(BeNumerically(">=", initialIncoming+messageCount))
 		})
 
 		It("should maintain metrics accuracy across multiple test runs", func() {
 			// First run
-			plugin1, err := NewPlugin(cfg, logger)
+			plugin1, err := NewPlugin(cfg, logger, testMetrics)
 			Expect(err).NotTo(HaveOccurred())
 
 			entry1 := types.OutputEntry{
@@ -533,12 +531,12 @@ var _ = Describe("OutputPlugin plugin", func() {
 			err = plugin1.SendRecord(entry1)
 			Expect(err).NotTo(HaveOccurred())
 
-			count1 := promtest.ToFloat64(metrics.IncomingLogs.WithLabelValues("garden"))
+			count1 := promtest.ToFloat64(testMetrics.IncomingLogs.WithLabelValues("garden"))
 			plugin1.Close()
 
 			// Second run with new plugin instance
 			cfg.OTLPConfig.DQueConfig.DQueName = "test-queue-2"
-			plugin2, err := NewPlugin(cfg, logger)
+			plugin2, err := NewPlugin(cfg, logger, testMetrics)
 			Expect(err).NotTo(HaveOccurred())
 			defer plugin2.Close()
 
@@ -550,7 +548,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(func() float64 {
-				return promtest.ToFloat64(metrics.IncomingLogs.WithLabelValues("garden"))
+				return promtest.ToFloat64(testMetrics.IncomingLogs.WithLabelValues("garden"))
 			}, "5s", "100ms").Should(BeNumerically(">", count1))
 		})
 	})
@@ -616,7 +614,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 			// Create controller with fake client
 			ctx := context.Background()
-			ctl, err := controller.NewControllerWithClient(ctx, fakeClient, testCfg, logger)
+			ctl, err := controller.NewControllerWithClient(ctx, fakeClient, testCfg, logger, testMetrics)
 			Expect(err).NotTo(HaveOccurred())
 			defer ctl.Stop()
 
@@ -630,7 +628,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 			Expect(c).NotTo(BeNil(), "Shoot client should be created for namespace: "+shootNamespace)
 
 			// Create plugin with the controller
-			plugin, err := NewPluginWithController(testCfg, logger, ctl)
+			plugin, err := NewPluginWithController(testCfg, logger, testMetrics, ctl)
 			Expect(err).NotTo(HaveOccurred())
 			defer plugin.Close()
 
@@ -647,13 +645,13 @@ var _ = Describe("OutputPlugin plugin", func() {
 				},
 			}
 
-			initialIncoming := promtest.ToFloat64(metrics.IncomingLogs.WithLabelValues(shootNamespace))
+			initialIncoming := promtest.ToFloat64(testMetrics.IncomingLogs.WithLabelValues(shootNamespace))
 
 			err = plugin.SendRecord(entry)
 			Expect(err).NotTo(HaveOccurred())
 
 			// Verify metrics show the log was processed
-			finalIncoming := promtest.ToFloat64(metrics.IncomingLogs.WithLabelValues(shootNamespace))
+			finalIncoming := promtest.ToFloat64(testMetrics.IncomingLogs.WithLabelValues(shootNamespace))
 			Expect(finalIncoming).To(BeNumerically(">", initialIncoming), "IncomingLogs should increment for shoot namespace")
 
 			// Now send a log that doesn't match any shoot namespace (should go to seed)
@@ -668,13 +666,13 @@ var _ = Describe("OutputPlugin plugin", func() {
 				},
 			}
 
-			initialSeedIncoming := promtest.ToFloat64(metrics.IncomingLogs.WithLabelValues("garden"))
+			initialSeedIncoming := promtest.ToFloat64(testMetrics.IncomingLogs.WithLabelValues("garden"))
 
 			err = plugin.SendRecord(entry)
 			Expect(err).NotTo(HaveOccurred())
 
 			// Verify it went to seed
-			finalSeedIncoming := promtest.ToFloat64(metrics.IncomingLogs.WithLabelValues("garden"))
+			finalSeedIncoming := promtest.ToFloat64(testMetrics.IncomingLogs.WithLabelValues("garden"))
 			Expect(finalSeedIncoming).To(BeNumerically(">", initialSeedIncoming))
 		})
 
@@ -693,7 +691,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 			// Create controller with fake client
 			ctx := context.Background()
-			ctl, err := controller.NewControllerWithClient(ctx, fakeClient, testCfg, logger)
+			ctl, err := controller.NewControllerWithClient(ctx, fakeClient, testCfg, logger, testMetrics)
 			Expect(err).NotTo(HaveOccurred())
 			defer ctl.Stop()
 
@@ -710,7 +708,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 			Expect(c2).NotTo(BeNil())
 
 			// Create plugin with the controller
-			plugin, err := NewPluginWithController(testCfg, logger, ctl)
+			plugin, err := NewPluginWithController(testCfg, logger, testMetrics, ctl)
 			Expect(err).NotTo(HaveOccurred())
 			defer plugin.Close()
 
@@ -737,11 +735,11 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 			// Verify metrics for both shoots
 			Eventually(func() float64 {
-				return promtest.ToFloat64(metrics.IncomingLogs.WithLabelValues(shoot1))
+				return promtest.ToFloat64(testMetrics.IncomingLogs.WithLabelValues(shoot1))
 			}, "5s", "100ms").Should(BeNumerically(">", 0))
 
 			Eventually(func() float64 {
-				return promtest.ToFloat64(metrics.IncomingLogs.WithLabelValues(shoot2))
+				return promtest.ToFloat64(testMetrics.IncomingLogs.WithLabelValues(shoot2))
 			}, "5s", "100ms").Should(BeNumerically(">", 0))
 		})
 
@@ -757,7 +755,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 			// Create controller with fake client
 			ctx := context.Background()
-			ctl, err := controller.NewControllerWithClient(ctx, fakeClient, testCfg, logger)
+			ctl, err := controller.NewControllerWithClient(ctx, fakeClient, testCfg, logger, testMetrics)
 			Expect(err).NotTo(HaveOccurred())
 			defer ctl.Stop()
 
@@ -772,7 +770,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 			Expect(c).NotTo(BeNil())
 
 			// Create plugin with the controller
-			plugin, err := NewPluginWithController(testCfg, logger, ctl)
+			plugin, err := NewPluginWithController(testCfg, logger, testMetrics, ctl)
 			Expect(err).NotTo(HaveOccurred())
 			defer plugin.Close()
 
@@ -823,11 +821,11 @@ var _ = Describe("OutputPlugin plugin", func() {
 			}
 
 			ctl := &noClientController{}
-			plugin, err := NewPluginWithController(testCfg, logger, ctl)
+			plugin, err := NewPluginWithController(testCfg, logger, testMetrics, ctl)
 			Expect(err).NotTo(HaveOccurred())
 			defer plugin.Close()
 
-			initialDropped := promtest.ToFloat64(metrics.DroppedLogs.WithLabelValues(namespace, "no_client"))
+			initialDropped := promtest.ToFloat64(testMetrics.DroppedLogs.WithLabelValues(namespace, "no_client"))
 
 			entry := types.OutputEntry{
 				Timestamp: time.Now(),
@@ -839,7 +837,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 			err = plugin.SendRecord(entry)
 			Expect(err).NotTo(HaveOccurred(), "should ack the record without error in OtelCollector mode")
-			Expect(promtest.ToFloat64(metrics.DroppedLogs.WithLabelValues(namespace, "no_client"))).To(
+			Expect(promtest.ToFloat64(testMetrics.DroppedLogs.WithLabelValues(namespace, "no_client"))).To(
 				BeNumerically(">", initialDropped), "DroppedLogs metric should be incremented",
 			)
 		})

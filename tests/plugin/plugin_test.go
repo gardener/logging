@@ -65,13 +65,14 @@ const (
 )
 
 type testContext struct {
-	controller controller.Controller
-	fakeClient sigsclient.Client
-	plugin     plugin.OutputPlugin
-	cfg        *config.Config
-	logger     logr.Logger
-	clusters   []*extensionsv1alpha1.Cluster
-	tmpDir     string
+	controller  controller.Controller
+	fakeClient  sigsclient.Client
+	plugin      plugin.OutputPlugin
+	cfg         *config.Config
+	logger      logr.Logger
+	clusters    []*extensionsv1alpha1.Cluster
+	tmpDir      string
+	testMetrics *metrics.FluentBitGardenerMetrics
 }
 
 var _ = Describe("Plugin Integration Test", Ordered, func() {
@@ -80,12 +81,6 @@ var _ = Describe("Plugin Integration Test", Ordered, func() {
 	)
 
 	BeforeAll(func() {
-		// Reset metrics before test
-		metrics.IncomingLogs.Reset()
-		metrics.DroppedLogs.Reset()
-		metrics.Errors.Reset()
-		metrics.LogsWithoutMetadata.Reset()
-
 		testCtx = setupTestContext()
 	})
 
@@ -134,7 +129,7 @@ var _ = Describe("Plugin Integration Test", Ordered, func() {
 
 		for i := range numberOfClusters {
 			clusterName := fmt.Sprintf("shoot--test--cluster-%03d", i)
-			incoming := promtest.ToFloat64(metrics.IncomingLogs.WithLabelValues(clusterName))
+			incoming := promtest.ToFloat64(testCtx.testMetrics.IncomingLogs.WithLabelValues(clusterName))
 			totalIncoming += incoming
 		}
 
@@ -149,7 +144,7 @@ var _ = Describe("Plugin Integration Test", Ordered, func() {
 		for i := range numberOfClusters {
 			clusterName := fmt.Sprintf("shoot--test--cluster-%03d", i)
 			endpoint := fmt.Sprintf("http://logging.%s.svc:4318/v1/logs", clusterName)
-			dropped := promtest.ToFloat64(metrics.DroppedLogs.WithLabelValues(endpoint, "noop"))
+			dropped := promtest.ToFloat64(testCtx.testMetrics.DroppedLogs.WithLabelValues(endpoint, "noop"))
 			totalDropped += dropped
 		}
 
@@ -167,7 +162,7 @@ var _ = Describe("Plugin Integration Test", Ordered, func() {
 		}
 
 		for _, errorType := range errorTypes {
-			errorCount := promtest.ToFloat64(metrics.Errors.WithLabelValues(errorType))
+			errorCount := promtest.ToFloat64(testCtx.testMetrics.Errors.WithLabelValues(errorType))
 			totalErrors += errorCount
 		}
 
@@ -180,6 +175,9 @@ func setupTestContext() *testContext {
 	tmpDir, err := os.MkdirTemp("", "plugin-test-")
 	Expect(err).NotTo(HaveOccurred(), "temporary directory creation should succeed")
 
+	reg := metrics.NewRegistry()
+	testMetrics := metrics.NewFluentBitGardenerMetrics(reg)
+
 	logger := pkglog.NewNopLogger()
 	cfg := createPluginConfig(tmpDir)
 
@@ -190,22 +188,23 @@ func setupTestContext() *testContext {
 
 	// Create controller with fake client
 	ctx := context.Background()
-	ctl, err := controller.NewControllerWithClient(ctx, fakeClient, cfg, logger)
+	ctl, err := controller.NewControllerWithClient(ctx, fakeClient, cfg, logger, testMetrics)
 	Expect(err).NotTo(HaveOccurred(), "controller creation should succeed")
 
 	// Create plugin with controller
-	p, err := plugin.NewPluginWithController(cfg, logger, ctl)
+	p, err := plugin.NewPluginWithController(cfg, logger, testMetrics, ctl)
 	Expect(err).NotTo(HaveOccurred(), "plugin creation should succeed")
 	Expect(p).NotTo(BeNil(), "plugin should not be nil")
 
 	return &testContext{
-		controller: ctl,
-		fakeClient: fakeClient,
-		plugin:     p,
-		cfg:        cfg,
-		logger:     logger,
-		clusters:   make([]*extensionsv1alpha1.Cluster, 0, numberOfClusters),
-		tmpDir:     tmpDir,
+		controller:  ctl,
+		fakeClient:  fakeClient,
+		plugin:      p,
+		cfg:         cfg,
+		logger:      logger,
+		clusters:    make([]*extensionsv1alpha1.Cluster, 0, numberOfClusters),
+		tmpDir:      tmpDir,
+		testMetrics: testMetrics,
 	}
 }
 

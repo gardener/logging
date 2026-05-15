@@ -12,6 +12,7 @@ import (
 	sdklog "go.opentelemetry.io/otel/sdk/log"
 
 	"github.com/gardener/logging/v1/pkg/config"
+	"github.com/gardener/logging/v1/pkg/metrics"
 )
 
 // BatchProcessorType defines the type of batch processor to use
@@ -26,13 +27,15 @@ const (
 
 // BatchProcessorFactory creates batch processors based on configuration
 type BatchProcessorFactory struct {
-	logger logr.Logger
+	logger  logr.Logger
+	metrics *metrics.FluentBitGardenerMetrics
 }
 
 // NewBatchProcessorFactory creates a new BatchProcessorFactory
-func NewBatchProcessorFactory(logger logr.Logger) *BatchProcessorFactory {
+func NewBatchProcessorFactory(logger logr.Logger, m *metrics.FluentBitGardenerMetrics) *BatchProcessorFactory {
 	return &BatchProcessorFactory{
-		logger: logger,
+		logger:  logger,
+		metrics: m,
 	}
 }
 
@@ -100,6 +103,7 @@ func (f *BatchProcessorFactory) createDQueProcessor(
 		ctx,
 		exporter,
 		f.logger,
+		f.metrics,
 		WithEndpoint(cfg.OTLPConfig.Endpoint),
 		WithDQueueDir(dQueueDir),
 		WithDQueueName(clientName),

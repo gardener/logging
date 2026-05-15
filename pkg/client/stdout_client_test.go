@@ -30,9 +30,13 @@ var _ = Describe("StdoutClient", func() {
 		oldStdout    *os.File
 		r            *os.File
 		w            *os.File
+		testMetrics  *metrics.FluentBitGardenerMetrics
 	)
 
 	BeforeEach(func() {
+		reg := metrics.NewRegistry()
+		testMetrics = metrics.NewFluentBitGardenerMetrics(reg)
+
 		cfg = config.Config{}
 
 		logger = log.NewNopLogger()
@@ -42,11 +46,7 @@ var _ = Describe("StdoutClient", func() {
 		r, w, _ = os.Pipe()
 		os.Stdout = w
 
-		outputClient, _ = NewStdoutClient(context.Background(), cfg, logger)
-
-		// Reset metrics for clean state
-		metrics.OutputClientLogs.Reset()
-		metrics.Errors.Reset()
+		outputClient, _ = NewStdoutClient(context.Background(), cfg, logger, testMetrics)
 	})
 
 	AfterEach(func() {
@@ -64,14 +64,14 @@ var _ = Describe("StdoutClient", func() {
 				},
 			}
 
-			testClient, err := NewStdoutClient(context.Background(), testCfg, logger)
+			testClient, err := NewStdoutClient(context.Background(), testCfg, logger, testMetrics)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(testClient).NotTo(BeNil())
 			Expect(testClient.GetEndPoint()).To(Equal(testEndpoint))
 		})
 
 		It("should work with nil logger", func() {
-			testClient, err := NewStdoutClient(context.Background(), cfg, logger)
+			testClient, err := NewStdoutClient(context.Background(), cfg, logger, testMetrics)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(testClient).NotTo(BeNil())
 		})
@@ -83,7 +83,7 @@ var _ = Describe("StdoutClient", func() {
 				},
 			}
 
-			testClient, err := NewStdoutClient(context.Background(), testCfg, logger)
+			testClient, err := NewStdoutClient(context.Background(), testCfg, logger, testMetrics)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(testClient).NotTo(BeNil())
 			Expect(testClient.GetEndPoint()).To(Equal(""))
@@ -92,7 +92,7 @@ var _ = Describe("StdoutClient", func() {
 
 	Describe("Handle", func() {
 		It("should write log entries to stdout and increment metrics", func() {
-			initialMetric := metrics.OutputClientLogs.WithLabelValues(outputClient.GetEndPoint())
+			initialMetric := testMetrics.OutputClientLogs.WithLabelValues(outputClient.GetEndPoint())
 			beforeCount := testutil.ToFloat64(initialMetric)
 
 			entry := types.OutputEntry{
@@ -123,7 +123,7 @@ var _ = Describe("StdoutClient", func() {
 		})
 
 		It("should handle multiple log entries and track count", func() {
-			initialMetric := metrics.OutputClientLogs.WithLabelValues(outputClient.GetEndPoint())
+			initialMetric := testMetrics.OutputClientLogs.WithLabelValues(outputClient.GetEndPoint())
 			beforeCount := testutil.ToFloat64(initialMetric)
 
 			numEntries := 5
@@ -174,7 +174,7 @@ var _ = Describe("StdoutClient", func() {
 		})
 
 		It("should handle concurrent log entries safely", func() {
-			initialMetric := metrics.OutputClientLogs.WithLabelValues(outputClient.GetEndPoint())
+			initialMetric := testMetrics.OutputClientLogs.WithLabelValues(outputClient.GetEndPoint())
 			beforeCount := testutil.ToFloat64(initialMetric)
 
 			numGoroutines := 10
@@ -242,7 +242,7 @@ var _ = Describe("StdoutClient", func() {
 				},
 			}
 
-			testClient, err := NewStdoutClient(context.Background(), testCfg, logger)
+			testClient, err := NewStdoutClient(context.Background(), testCfg, logger, testMetrics)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(testClient.GetEndPoint()).To(Equal(testEndpoint))
 		})
@@ -264,13 +264,13 @@ var _ = Describe("StdoutClient", func() {
 				},
 			}
 
-			client1, err := NewStdoutClient(context.Background(), cfg1, logger)
+			client1, err := NewStdoutClient(context.Background(), cfg1, logger, testMetrics)
 			Expect(err).NotTo(HaveOccurred())
-			client2, err := NewStdoutClient(context.Background(), cfg2, logger)
+			client2, err := NewStdoutClient(context.Background(), cfg2, logger, testMetrics)
 			Expect(err).NotTo(HaveOccurred())
 
-			metric1 := metrics.OutputClientLogs.WithLabelValues(endpoint1)
-			metric2 := metrics.OutputClientLogs.WithLabelValues(endpoint2)
+			metric1 := testMetrics.OutputClientLogs.WithLabelValues(endpoint1)
+			metric2 := testMetrics.OutputClientLogs.WithLabelValues(endpoint2)
 			before1 := testutil.ToFloat64(metric1)
 			before2 := testutil.ToFloat64(metric2)
 

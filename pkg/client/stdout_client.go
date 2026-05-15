@@ -23,16 +23,18 @@ type StdoutClient struct {
 	ctx      context.Context
 	logger   logr.Logger
 	endpoint string
+	metrics  *metrics.FluentBitGardenerMetrics
 }
 
 var _ OutputClient = &StdoutClient{}
 
 // NewStdoutClient creates a new StdoutClient that writes all records to stdout
-func NewStdoutClient(ctx context.Context, cfg config.Config, logger logr.Logger) (OutputClient, error) {
+func NewStdoutClient(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics) (OutputClient, error) {
 	client := &StdoutClient{
 		ctx:      ctx,
 		endpoint: cfg.OTLPConfig.Endpoint,
 		logger:   logger.WithValues("endpoint", cfg.OTLPConfig.Endpoint),
+		metrics:  m,
 	}
 
 	logger.V(1).Info(fmt.Sprintf("%s created", componentStdoutName))
@@ -52,7 +54,7 @@ func (c *StdoutClient) Handle(entry types.OutputEntry) error {
 	data, err := json.Marshal(output)
 	if err != nil {
 		c.logger.Error(err, "failed to marshal log entry to JSON")
-		metrics.Errors.WithLabelValues(metrics.ErrorSendRecord).Inc()
+		c.metrics.Errors.WithLabelValues(metrics.ErrorSendRecord).Inc()
 
 		return fmt.Errorf("failed to marshal log entry: %w", err)
 	}
@@ -60,13 +62,13 @@ func (c *StdoutClient) Handle(entry types.OutputEntry) error {
 	// Write to stdout
 	if _, err := fmt.Fprintln(os.Stdout, string(data)); err != nil {
 		c.logger.Error(err, "failed to write log entry to stdout")
-		metrics.Errors.WithLabelValues(metrics.ErrorSendRecord).Inc()
+		c.metrics.Errors.WithLabelValues(metrics.ErrorSendRecord).Inc()
 
 		return fmt.Errorf("failed to write to stdout: %w", err)
 	}
 
 	// Increment the output logs counter
-	metrics.OutputClientLogs.WithLabelValues(c.endpoint).Inc()
+	c.metrics.OutputClientLogs.WithLabelValues(c.endpoint).Inc()
 
 	return nil
 }
