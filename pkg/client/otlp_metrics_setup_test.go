@@ -8,44 +8,49 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	promclient "github.com/prometheus/client_golang/prometheus"
 )
 
 var _ = Describe("MetricsSetup Singleton", func() {
-	It("should be initialized during package init", func() {
-		Expect(metricsSetupErr).ToNot(HaveOccurred())
-		Expect(globalMetricsSetup).ToNot(BeNil())
+	var metricsSetup *MetricsSetup
+
+	BeforeEach(func() {
+		reg := promclient.NewRegistry()
+		var err error
+		metricsSetup, err = InitializeMetricsSetup(reg)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(metricsSetup).ToNot(BeNil())
+	})
+
+	It("should be initialized successfully", func() {
+		Expect(metricsSetup).ToNot(BeNil())
 	})
 
 	It("should return the same meter provider instance", func() {
-		provider1 := globalMetricsSetup.GetProvider()
-		provider2 := globalMetricsSetup.GetProvider()
+		provider1 := metricsSetup.GetProvider()
+		provider2 := metricsSetup.GetProvider()
 
 		// Should be the exact same provider instance
 		Expect(provider1).To(BeIdenticalTo(provider2))
 	})
 
 	It("should shutdown idempotently - multiple shutdowns should not error", func() {
-		Expect(metricsSetupErr).ToNot(HaveOccurred())
-		Expect(globalMetricsSetup).ToNot(BeNil())
-
 		ctx := context.Background()
 
 		// First shutdown
-		err := globalMetricsSetup.Shutdown(ctx)
+		err := metricsSetup.Shutdown(ctx)
 		Expect(err).ToNot(HaveOccurred())
 
 		// Second shutdown should not error (idempotent)
-		err = globalMetricsSetup.Shutdown(ctx)
+		err = metricsSetup.Shutdown(ctx)
 		Expect(err).ToNot(HaveOccurred())
 
 		// Third shutdown should also not error
-		err = globalMetricsSetup.Shutdown(ctx)
+		err = metricsSetup.Shutdown(ctx)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	It("should handle concurrent shutdown calls", func() {
-		Expect(metricsSetupErr).ToNot(HaveOccurred())
-
 		const goroutines = 10
 		errors := make([]error, goroutines)
 		done := make(chan bool)
@@ -55,7 +60,7 @@ var _ = Describe("MetricsSetup Singleton", func() {
 		// Multiple goroutines try to shutdown simultaneously
 		for i := range goroutines {
 			go func(index int) {
-				errors[index] = globalMetricsSetup.Shutdown(ctx)
+				errors[index] = metricsSetup.Shutdown(ctx)
 				done <- true
 			}(i)
 		}

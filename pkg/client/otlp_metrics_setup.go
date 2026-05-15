@@ -9,7 +9,6 @@ package client
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"os"
 	"sync"
 
@@ -34,31 +33,27 @@ var (
 	// globalMetricsSetup is the singleton instance shared across all OTLP clients.
 	// It is initialized during package initialization and reused for all subsequent requests.
 	globalMetricsSetup *MetricsSetup
-
-	// metricsSetupErr stores any initialization error that occurred during setup.
-	metricsSetupErr error
 )
 
-func init() {
+// SetGlobalMetricsSetup sets the value to the glbal OTLP metrics setup.
+func SetGlobalMetricsSetup(ms *MetricsSetup) {
+	globalMetricsSetup = ms
+}
+
+// InitializeMetricsSetup creates and configures the metrics infrastructure.
+// This function is called exactly once by the singleton pattern.
+func InitializeMetricsSetup(reg *promclient.Registry) (*MetricsSetup, error) {
 	// Enable OpenTelemetry SDK observability (self-instrumentation) metrics.
 	// This is an experimental feature that emits metrics like otel.sdk.log.created,
 	// otel.sdk.exporter.* etc. The environment variable must be set before SDK initialization.
 	// See: https://pkg.go.dev/go.opentelemetry.io/otel/sdk/log/internal/x
 	_ = os.Setenv("OTEL_GO_X_OBSERVABILITY", "true")
 
-	if globalMetricsSetup, metricsSetupErr = initializeMetricsSetup(); metricsSetupErr != nil {
-		slog.Error("Failed to initialize OTLP metrics setup", "error", metricsSetupErr)
-	}
-}
-
-// initializeMetricsSetup creates and configures the metrics infrastructure.
-// This function is called exactly once by the singleton pattern.
-func initializeMetricsSetup() (*MetricsSetup, error) {
 	// Create Prometheus exporter using the default registry
 	// This ensures OTLP metrics are exposed on the same /metrics endpoint
 	// as the existing Prometheus metrics (port 2021)
 	promExporter, err := prometheus.New(
-		prometheus.WithRegisterer(promclient.DefaultRegisterer),
+		prometheus.WithRegisterer(reg),
 		prometheus.WithNamespace("output_plugin"),
 		prometheus.WithTranslationStrategy(otlptranslator.UnderscoreEscapingWithSuffixes),
 	)

@@ -24,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/component-base/version"
 
+	"github.com/gardener/logging/v1/pkg/client"
 	"github.com/gardener/logging/v1/pkg/config"
 	"github.com/gardener/logging/v1/pkg/healthz"
 	"github.com/gardener/logging/v1/pkg/log"
@@ -40,6 +41,7 @@ var (
 	metricsInst     *metrics.FluentBitGardenerMetrics
 )
 
+// TODO(iypetrov): Refactor later to avoid global state + mixed responability of the components
 func init() {
 	logger = log.NewLogger("info")
 	logger.Info("Starting fluent-bit-gardener-output-plugin",
@@ -52,6 +54,8 @@ func init() {
 	// metrics and healthz
 	reg = metrics.NewRegistry()
 	metricsInst = metrics.NewFluentBitGardenerMetrics(reg)
+	globalMetricsSetup, _ := client.InitializeMetricsSetup(reg)
+	client.SetGlobalMetricsSetup(globalMetricsSetup)
 	go func() {
 		http.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
 		http.Handle("/healthz", healthz.Handler("", ""))
