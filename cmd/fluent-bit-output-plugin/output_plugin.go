@@ -19,6 +19,7 @@ import (
 
 	"github.com/fluent/fluent-bit-go/output"
 	"github.com/go-logr/logr"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/component-base/version"
@@ -37,8 +38,8 @@ var (
 	plugins     sync.Map // map[string]plugin.OutputPlugin
 	logger      logr.Logger
 	pprofOnce   sync.Once
-	reg         = metrics.NewRegistry()
-	metricsInst = metrics.NewFluentBitGardenerMetrics(reg)
+	reg         *prometheus.Registry
+	metricsInst *metrics.FluentBitGardenerMetrics
 )
 
 func init() {
@@ -50,6 +51,8 @@ func init() {
 	)
 
 	// metrics and healthz
+	reg = metrics.NewRegistry()
+	metricsInst = metrics.NewFluentBitGardenerMetrics(reg)
 	go func() {
 		http.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
 		http.Handle("/healthz", healthz.Handler("", ""))

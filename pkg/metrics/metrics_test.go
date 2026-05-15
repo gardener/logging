@@ -8,11 +8,10 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/gardener/logging/v1/pkg/metrics"
 )
@@ -139,7 +138,8 @@ func scrapeMetrics(reg *prometheus.Registry, m *metrics.FluentBitGardenerMetrics
 	handler.ServeHTTP(rec, req)
 
 	resp := rec.Result()
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	body, _ := io.ReadAll(resp.Body)
+
 	return string(body)
 }

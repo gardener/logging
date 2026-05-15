@@ -125,7 +125,7 @@ func (c *OTLPHTTPClient) Handle(entry types.OutputEntry) error {
 		// Try to acquire a token from the rate limiter
 		// Allow returns false if the request would exceed the rate limit
 		if !c.limiter.Allow() {
-				c.metrics.ThrottledLogs.WithLabelValues(c.endpoint).Inc()
+			c.metrics.ThrottledLogs.WithLabelValues(c.endpoint).Inc()
 
 			return ErrThrottled
 		}

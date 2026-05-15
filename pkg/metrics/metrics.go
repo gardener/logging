@@ -8,6 +8,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
+// FluentBitGardenerMetrics contains all prometheus metrics for the fluent-bit gardener output plugin.
 type FluentBitGardenerMetrics struct {
 	// Clients is a prometheus metric which keeps total number of the output clients
 	Clients *prometheus.GaugeVec
@@ -31,8 +32,10 @@ type FluentBitGardenerMetrics struct {
 	DqueSize *prometheus.GaugeVec
 }
 
+// NewFluentBitGardenerMetrics creates and registers all fluent-bit gardener metrics with the given registerer.
 func NewFluentBitGardenerMetrics(reg prometheus.Registerer) *FluentBitGardenerMetrics {
 	namespace := "fluentbit_gardener"
+
 	return &FluentBitGardenerMetrics{
 		Clients: promauto.With(reg).NewGaugeVec(prometheus.GaugeOpts{
 			Namespace: namespace,
