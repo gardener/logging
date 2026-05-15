@@ -16,6 +16,7 @@ type fakePlugin struct {
 	closed bool
 }
 
+//nolint:revive // receiver-naming
 func (f *fakePlugin) SendRecord(_ types.OutputEntry) error {
 	return nil
 }

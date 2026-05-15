@@ -21,12 +21,14 @@ func NewRegistry(logger logr.Logger) *Registry {
 	reg := &Registry{
 		logger: logger,
 	}
+
 	return reg
 }
 
 // Contains checks if a plugin with the given id exists in the plugins map.
 func (r *Registry) Contains(id string) bool {
 	_, ok := r.Load(id)
+
 	return ok
 }
 
@@ -58,6 +60,7 @@ func (r *Registry) Len() int {
 	count := 0
 	r.Range(func(_, _ any) bool {
 		count++
+
 		return true
 	})
 
