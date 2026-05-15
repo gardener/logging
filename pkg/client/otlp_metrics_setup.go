@@ -33,17 +33,11 @@ var (
 	// globalMetricsSetup is the singleton instance shared across all OTLP clients.
 	// It is initialized during package initialization and reused for all subsequent requests.
 	globalMetricsSetup *MetricsSetup
-
-	// metricsSetupErr stores any initialization error that occurred during setup.
-	metricsSetupErr error
 )
 
+// SetGlobalMetricsSetup sets the value to the glbal OTLP metrics setup.
 func SetGlobalMetricsSetup(ms *MetricsSetup) {
 	globalMetricsSetup = ms
-}
-
-func SetGlobalMetricsSetupErr(err error) {
-	metricsSetupErr = err
 }
 
 // InitializeMetricsSetup creates and configures the metrics infrastructure.

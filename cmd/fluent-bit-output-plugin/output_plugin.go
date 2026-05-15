@@ -54,9 +54,8 @@ func init() {
 	// metrics and healthz
 	reg = metrics.NewRegistry()
 	metricsInst = metrics.NewFluentBitGardenerMetrics(reg)
-	globalMetricsSetup, metricsSetupErr := client.InitializeMetricsSetup(reg)
+	globalMetricsSetup, _ := client.InitializeMetricsSetup(reg)
 	client.SetGlobalMetricsSetup(globalMetricsSetup)
-	client.SetGlobalMetricsSetupErr(metricsSetupErr)
 	go func() {
 		http.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
 		http.Handle("/healthz", healthz.Handler("", ""))
