@@ -53,7 +53,7 @@ var _ = Describe("NoopClient", func() {
 			testClient, err := NewNoopClient(context.Background(), testCfg, logger, testMetrics)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(testClient).NotTo(BeNil())
-			Expect(testClient.GetEndPoint()).To(Equal(testEndpoint))
+			Expect(testClient.GetEndpoint()).To(Equal(testEndpoint))
 		})
 
 		It("should work with nil logger", func() {
@@ -72,13 +72,13 @@ var _ = Describe("NoopClient", func() {
 			testClient, err := NewNoopClient(context.Background(), testCfg, logger, testMetrics)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(testClient).NotTo(BeNil())
-			Expect(testClient.GetEndPoint()).To(Equal(""))
+			Expect(testClient.GetEndpoint()).To(Equal(""))
 		})
 	})
 
 	Describe("Handle", func() {
 		It("should discard log entries and increment dropped logs metric", func() {
-			initialMetric := testMetrics.DroppedLogs.WithLabelValues(outputClient.GetEndPoint(), "noop")
+			initialMetric := testMetrics.DroppedLogs.WithLabelValues(outputClient.GetEndpoint(), "noop")
 			beforeCount := testutil.ToFloat64(initialMetric)
 
 			entry := types.OutputEntry{
@@ -93,7 +93,7 @@ var _ = Describe("NoopClient", func() {
 		})
 
 		It("should handle multiple log entries and track count", func() {
-			initialMetric := testMetrics.DroppedLogs.WithLabelValues(outputClient.GetEndPoint(), "noop")
+			initialMetric := testMetrics.DroppedLogs.WithLabelValues(outputClient.GetEndpoint(), "noop")
 			beforeCount := testutil.ToFloat64(initialMetric)
 
 			numEntries := 10
@@ -111,7 +111,7 @@ var _ = Describe("NoopClient", func() {
 		})
 
 		It("should handle concurrent log entries safely", func() {
-			initialMetric := testMetrics.DroppedLogs.WithLabelValues(outputClient.GetEndPoint(), "noop")
+			initialMetric := testMetrics.DroppedLogs.WithLabelValues(outputClient.GetEndpoint(), "noop")
 			beforeCount := testutil.ToFloat64(initialMetric)
 
 			numGoroutines := 10
@@ -170,7 +170,7 @@ var _ = Describe("NoopClient", func() {
 		})
 	})
 
-	Describe("GetEndPoint", func() {
+	Describe("GetEndpoint", func() {
 		It("should return the configured endpoint", func() {
 			testEndpoint := "http://custom-endpoint:9999"
 			testCfg := config.Config{
@@ -181,7 +181,7 @@ var _ = Describe("NoopClient", func() {
 
 			testClient, err := NewNoopClient(context.Background(), testCfg, logger, testMetrics)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(testClient.GetEndPoint()).To(Equal(testEndpoint))
+			Expect(testClient.GetEndpoint()).To(Equal(testEndpoint))
 		})
 	})
 

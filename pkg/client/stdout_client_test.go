@@ -67,7 +67,7 @@ var _ = Describe("StdoutClient", func() {
 			testClient, err := NewStdoutClient(context.Background(), testCfg, logger, testMetrics)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(testClient).NotTo(BeNil())
-			Expect(testClient.GetEndPoint()).To(Equal(testEndpoint))
+			Expect(testClient.GetEndpoint()).To(Equal(testEndpoint))
 		})
 
 		It("should work with nil logger", func() {
@@ -86,13 +86,13 @@ var _ = Describe("StdoutClient", func() {
 			testClient, err := NewStdoutClient(context.Background(), testCfg, logger, testMetrics)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(testClient).NotTo(BeNil())
-			Expect(testClient.GetEndPoint()).To(Equal(""))
+			Expect(testClient.GetEndpoint()).To(Equal(""))
 		})
 	})
 
 	Describe("Handle", func() {
 		It("should write log entries to stdout and increment metrics", func() {
-			initialMetric := testMetrics.OutputClientLogs.WithLabelValues(outputClient.GetEndPoint())
+			initialMetric := testMetrics.OutputClientLogs.WithLabelValues(outputClient.GetEndpoint())
 			beforeCount := testutil.ToFloat64(initialMetric)
 
 			entry := types.OutputEntry{
@@ -123,7 +123,7 @@ var _ = Describe("StdoutClient", func() {
 		})
 
 		It("should handle multiple log entries and track count", func() {
-			initialMetric := testMetrics.OutputClientLogs.WithLabelValues(outputClient.GetEndPoint())
+			initialMetric := testMetrics.OutputClientLogs.WithLabelValues(outputClient.GetEndpoint())
 			beforeCount := testutil.ToFloat64(initialMetric)
 
 			numEntries := 5
@@ -174,7 +174,7 @@ var _ = Describe("StdoutClient", func() {
 		})
 
 		It("should handle concurrent log entries safely", func() {
-			initialMetric := testMetrics.OutputClientLogs.WithLabelValues(outputClient.GetEndPoint())
+			initialMetric := testMetrics.OutputClientLogs.WithLabelValues(outputClient.GetEndpoint())
 			beforeCount := testutil.ToFloat64(initialMetric)
 
 			numGoroutines := 10
@@ -233,7 +233,7 @@ var _ = Describe("StdoutClient", func() {
 		})
 	})
 
-	Describe("GetEndPoint", func() {
+	Describe("GetEndpoint", func() {
 		It("should return the configured endpoint", func() {
 			testEndpoint := "http://custom-endpoint:9999"
 			testCfg := config.Config{
@@ -244,7 +244,7 @@ var _ = Describe("StdoutClient", func() {
 
 			testClient, err := NewStdoutClient(context.Background(), testCfg, logger, testMetrics)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(testClient.GetEndPoint()).To(Equal(testEndpoint))
+			Expect(testClient.GetEndpoint()).To(Equal(testEndpoint))
 		})
 	})
 

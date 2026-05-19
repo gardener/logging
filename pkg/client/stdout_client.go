@@ -83,7 +83,7 @@ func (c *StdoutClient) StopWait() {
 	c.logger.V(2).Info(fmt.Sprintf("stopping %s with wait", componentStdoutName))
 }
 
-// GetEndPoint returns the configured endpoint
-func (c *StdoutClient) GetEndPoint() string {
+// GetEndpoint returns the configured endpoint
+func (c *StdoutClient) GetEndpoint() string {
 	return c.endpoint
 }

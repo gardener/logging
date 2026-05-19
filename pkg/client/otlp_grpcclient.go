@@ -210,7 +210,7 @@ func (c *OTLPGRPCClient) StopWait() {
 	}
 }
 
-// GetEndPoint returns the configured endpoint
-func (c *OTLPGRPCClient) GetEndPoint() string {
+// GetEndpoint returns the configured endpoint
+func (c *OTLPGRPCClient) GetEndpoint() string {
 	return c.endpoint
 }
