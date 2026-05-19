@@ -197,7 +197,7 @@ func (c *OTLPHTTPClient) StopWait() {
 	}
 }
 
-// GetEndPoint returns the configured endpoint
-func (c *OTLPHTTPClient) GetEndPoint() string {
+// GetEndpoint returns the configured endpoint
+func (c *OTLPHTTPClient) GetEndpoint() string {
 	return c.endpoint
 }

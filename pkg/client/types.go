@@ -21,8 +21,8 @@ type OutputClient interface {
 	Stop()
 	// StopWait stops the client of receiving new logs and waits all saved logs to be sent until shutting down
 	StopWait()
-	// GetEndPoint returns the target logging backend endpoint
-	GetEndPoint() string
+	// GetEndpoint returns the target logging backend endpoint
+	GetEndpoint() string
 }
 
 // NewClientFunc is a function type for creating new OutputClient instances
