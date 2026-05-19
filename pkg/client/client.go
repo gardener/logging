@@ -14,6 +14,9 @@ import (
 	"github.com/gardener/logging/v1/pkg/types"
 )
 
+// NewClientFunc is a function type for creating new OutputClient instances
+type NewClientFunc func(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics) (types.OutputClient, error)
+
 type clientOptions struct {
 	target  types.Target
 	logger  logr.Logger
