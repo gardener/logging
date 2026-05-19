@@ -36,10 +36,10 @@ type OTLPHTTPClient struct {
 	metrics        *metrics.FluentBitGardenerMetrics
 }
 
-var _ OutputClient = &OTLPHTTPClient{}
+var _ types.OutputClient = &OTLPHTTPClient{}
 
 // NewOTLPHTTPClient creates a new OTLP HTTP client with dque batch processor
-func NewOTLPHTTPClient(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics) (OutputClient, error) {
+func NewOTLPHTTPClient(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics) (types.OutputClient, error) {
 	// Use the provided context with cancel capability
 	clientCtx, cancel := context.WithCancel(ctx)
 

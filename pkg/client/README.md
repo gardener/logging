@@ -66,7 +66,7 @@ The OTLP gRPC client (`OTLPGRPCClient`) sends logs using the OpenTelemetry Proto
 - Low-latency requirements
 - When backend supports gRPC
 
-**Configuration type:** `otlp_grpc` (string) or `types.OTLPGRPC` (enum)
+**Configuration type:** `otlp_grpc` (string) or `types.OTLPGRPCType` (enum)
 
 ### OTLP HTTP Client
 
@@ -89,7 +89,7 @@ The OTLP HTTP client (`OTLPHTTPClient`) sends logs using the OpenTelemetry Proto
 - Debugging (easier to inspect with standard tools)
 - When backend only supports HTTP
 
-**Configuration type:** `otlp_http` (string) or `types.OTLPHTTP` (enum)
+**Configuration type:** `otlp_http` (string) or `types.OTLPHTTPType` (enum)
 
 ### Stdout Client
 
@@ -108,7 +108,7 @@ The Stdout client (`StdoutClient`) writes all log entries to standard output in 
 - Integration with stdout-based log collectors
 - Troubleshooting without backend connectivity
 
-**Configuration type:** `stdout` (string) or `types.STDOUT` (enum)
+**Configuration type:** `stdout` (string) or `types.StdOutType` (enum)
 
 **Output format:**
 ```json
@@ -138,7 +138,7 @@ The Noop client (`NoopClient`) discards all log entries without processing them.
 - Testing metrics collection
 - Benchmarking
 
-**Configuration type:** `noop` (string) or `types.NOOP` (enum)
+**Configuration type:** `noop` (string) or `types.NoopType` (enum)
 
 ## Target Types
 
@@ -146,20 +146,20 @@ The client package supports two target types that determine which backend config
 
 ### Seed Target
 
-The Seed target (`client.Seed`) is used for logs originating from the Gardener Seed cluster. The client uses the `SeedType` configuration from `PluginConfig` to determine which client implementation to create.
+The Seed target (`types.SeedTarget`) is used for logs originating from the Gardener Seed cluster. The client uses the `SeedType` configuration from `PluginConfig` to determine which client implementation to create.
 
 **Usage:**
 ```go
-client, err := client.NewClient(ctx, cfg, client.WithTarget(client.Seed))
+client, err := client.NewClient(ctx, cfg, client.WithTarget(types.SeedTarget))
 ```
 
 ### Shoot Target
 
-The Shoot target (`client.Shoot`) is used for logs originating from the Gardener Shoot clusters. The client uses the `ShootType` configuration from `PluginConfig` to determine which client implementation to create.
+The Shoot target (`types.ShootTarget`) is used for logs originating from the Gardener Shoot clusters. The client uses the `ShootType` configuration from `PluginConfig` to determine which client implementation to create.
 
 **Usage:**
 ```go
-client, err := client.NewClient(ctx, cfg, client.WithTarget(client.Shoot))
+client, err := client.NewClient(ctx, cfg, client.WithTarget(types.ShootTarget))
 ```
 
 ## Configuration
@@ -361,7 +361,7 @@ ctx := context.Background()
 shootClient, err := client.NewClient(
     ctx,
     cfg,
-    client.WithTarget(client.Shoot),
+    client.WithTarget(types.ShootTarget),
     client.WithLogger(logger),
 )
 if err != nil {
@@ -379,8 +379,8 @@ The `NewClient` function accepts functional options:
 Specifies whether to use Seed or Shoot configuration:
 
 ```go
-client.NewClient(ctx, cfg, client.WithTarget(client.Shoot))
-client.NewClient(ctx, cfg, client.WithTarget(client.Seed))
+client.NewClient(ctx, cfg, client.WithTarget(types.ShootTarget))
+client.NewClient(ctx, cfg, client.WithTarget(types.SeedTarget))
 ```
 
 #### WithLogger
@@ -578,7 +578,7 @@ func main() {
     logger := logr.Discard()
     
     c, err := client.NewClient(ctx, cfg,
-        client.WithTarget(client.Shoot),
+        client.WithTarget(types.ShootTarget),
         client.WithLogger(logger),
     )
     if err != nil {
@@ -618,7 +618,7 @@ cfg := config.Config{
 }
 
 c, err := client.NewClient(ctx, cfg,
-    client.WithTarget(client.Seed),
+    client.WithTarget(types.SeedTarget),
     client.WithLogger(logger),
 )
 ```
@@ -633,7 +633,7 @@ cfg := config.Config{
 }
 
 c, err := client.NewClient(ctx, cfg,
-    client.WithTarget(client.Shoot),
+    client.WithTarget(types.ShootTarget),
 )
 // Logs will be written to stdout in JSON format
 ```
@@ -687,7 +687,7 @@ cfg := config.Config{
 }
 
 c, err := client.NewClient(ctx, cfg,
-    client.WithTarget(client.Shoot),
+    client.WithTarget(types.ShootTarget),
 )
 
 // Handle throttling

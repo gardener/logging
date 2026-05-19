@@ -20,7 +20,7 @@ import (
 
 var _ = Describe("NoopClient", func() {
 	var (
-		outputClient OutputClient
+		outputClient types.OutputClient
 		cfg          config.Config
 		logger       logr.Logger
 		testMetrics  *metrics.FluentBitGardenerMetrics

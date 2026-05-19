@@ -26,10 +26,10 @@ type NoopClient struct {
 	metrics  *metrics.FluentBitGardenerMetrics
 }
 
-var _ OutputClient = &NoopClient{}
+var _ types.OutputClient = &NoopClient{}
 
 // NewNoopClient creates a new NoopClient that discards all records
-func NewNoopClient(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics) (OutputClient, error) {
+func NewNoopClient(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics) (types.OutputClient, error) {
 	client := &NoopClient{
 		ctx:      ctx,
 		endpoint: cfg.OTLPConfig.Endpoint,

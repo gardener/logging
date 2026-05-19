@@ -483,7 +483,7 @@ var _ = Describe("Controller Client", func() {
 })
 
 type fakeControllerClient struct {
-	client.OutputClient
+	types.OutputClient
 	state clusterState
 	name  string
 }

@@ -30,6 +30,7 @@ import (
 	pkgclient "github.com/gardener/logging/v1/pkg/client"
 	"github.com/gardener/logging/v1/pkg/config"
 	"github.com/gardener/logging/v1/pkg/metrics"
+	"github.com/gardener/logging/v1/pkg/types"
 )
 
 var otelcolScheme = func() *runtime.Scheme {
@@ -48,7 +49,7 @@ type otelCollectorReconciler struct {
 	client.Client
 	conf                   *config.Config
 	lock                   sync.RWMutex
-	clients                map[string]pkgclient.OutputClient
+	clients                map[string]types.OutputClient
 	logger                 logr.Logger
 	ctx                    context.Context
 	cancel                 context.CancelFunc
@@ -119,7 +120,7 @@ func newOpenTelemetryCollectorController(ctx context.Context, conf *config.Confi
 	reconciler := &otelCollectorReconciler{
 		Client:                 mgr.GetClient(),
 		conf:                   conf,
-		clients:                make(map[string]pkgclient.OutputClient, expectedActiveClusters),
+		clients:                make(map[string]types.OutputClient, expectedActiveClusters),
 		logger:                 l,
 		ctx:                    ctlCtx,
 		cancel:                 cancel,
@@ -279,7 +280,7 @@ func (r *otelCollectorReconciler) isNamespaceAllowed(ctx context.Context, namesp
 func (r *otelCollectorReconciler) createClient(namespace string) {
 	clientConf := r.buildClientConfig(namespace)
 
-	opt := []pkgclient.Option{pkgclient.WithTarget(pkgclient.Shoot), pkgclient.WithLogger(r.logger), pkgclient.WithMetrics(r.metrics)}
+	opt := []pkgclient.Option{pkgclient.WithTarget(types.ShootTarget), pkgclient.WithLogger(r.logger), pkgclient.WithMetrics(r.metrics)}
 	outputClient, err := pkgclient.NewClient(r.ctx, *clientConf, opt...)
 	if err != nil {
 		r.metrics.Errors.WithLabelValues(metrics.ErrorFailedToMakeOutputClient).Inc()
@@ -304,7 +305,7 @@ func (r *otelCollectorReconciler) createClient(namespace string) {
 		return
 	}
 
-	r.metrics.Clients.WithLabelValues(pkgclient.Shoot.String()).Inc()
+	r.metrics.Clients.WithLabelValues(types.ShootTarget.String()).Inc()
 	r.clients[namespace] = outputClient
 	r.logger.Info("added client for namespace", "namespace", namespace, "endpoint", clientConf.OTLPConfig.Endpoint)
 }
@@ -321,7 +322,7 @@ func (r *otelCollectorReconciler) deleteClient(namespace string) {
 	c, ok := r.clients[namespace]
 	if ok && c != nil {
 		delete(r.clients, namespace)
-		r.metrics.Clients.WithLabelValues(pkgclient.Shoot.String()).Dec()
+		r.metrics.Clients.WithLabelValues(types.ShootTarget.String()).Dec()
 		go c.Stop()
 		r.logger.Info("client deleted for namespace", "namespace", namespace)
 	}
@@ -343,7 +344,7 @@ func (r *otelCollectorReconciler) buildClientConfig(namespace string) *config.Co
 }
 
 // GetClient returns the client for the given namespace.
-func (r *otelCollectorReconciler) GetClient(name string) (pkgclient.OutputClient, bool) {
+func (r *otelCollectorReconciler) GetClient(name string) (types.OutputClient, bool) {
 	r.lock.RLock()
 	defer r.lock.RUnlock()
 

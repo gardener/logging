@@ -26,10 +26,10 @@ type StdoutClient struct {
 	metrics  *metrics.FluentBitGardenerMetrics
 }
 
-var _ OutputClient = &StdoutClient{}
+var _ types.OutputClient = &StdoutClient{}
 
 // NewStdoutClient creates a new StdoutClient that writes all records to stdout
-func NewStdoutClient(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics) (OutputClient, error) {
+func NewStdoutClient(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics) (types.OutputClient, error) {
 	client := &StdoutClient{
 		ctx:      ctx,
 		endpoint: cfg.OTLPConfig.Endpoint,

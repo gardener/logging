@@ -123,7 +123,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 	})
 
 	Describe("Handle", func() {
-		var client OutputClient
+		var client types.OutputClient
 
 		BeforeEach(func() {
 			var err error
