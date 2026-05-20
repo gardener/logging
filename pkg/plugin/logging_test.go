@@ -572,8 +572,8 @@ var _ = Describe("OutputPlugin plugin", func() {
 					},
 				},
 				PluginConfig: config.PluginConfig{
-					SeedType:  types.Noop.String(),
-					ShootType: types.Noop.String(),
+					SeedType:  types.NOOP.String(),
+					ShootType: types.NOOP.String(),
 					LogLevel:  "info",
 				},
 				ControllerConfig: config.ControllerConfig{
@@ -802,8 +802,8 @@ var _ = Describe("OutputPlugin plugin", func() {
 					},
 				},
 				PluginConfig: config.PluginConfig{
-					SeedType:  types.Noop.String(),
-					ShootType: types.Noop.String(),
+					SeedType:  types.NOOP.String(),
+					ShootType: types.NOOP.String(),
 					LogLevel:  "info",
 				},
 				ControllerConfig: config.ControllerConfig{

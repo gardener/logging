@@ -98,9 +98,9 @@ func getNewFunc(t types.Type) (NewFunc, error) {
 		return NewOTLPGRPCClient, nil
 	case types.OTLPHTTP:
 		return NewOTLPHTTPClient, nil
-	case types.StdOut:
+	case types.STDOUT:
 		return NewStdoutClient, nil
-	case types.Noop:
+	case types.NOOP:
 		return NewNoopClient, nil
 	default:
 		return nil, fmt.Errorf("unknown client type: %v", t)

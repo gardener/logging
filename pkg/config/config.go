@@ -718,8 +718,8 @@ func defaultConfig() (*Config, error) {
 			DynamicHostRegex:            ".*",
 		},
 		PluginConfig: PluginConfig{
-			SeedType:  types.Noop.String(),
-			ShootType: types.Noop.String(),
+			SeedType:  types.NOOP.String(),
+			ShootType: types.NOOP.String(),
 			LogLevel:  defaultLevel,
 			Pprof:     false,
 
