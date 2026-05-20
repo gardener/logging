@@ -8,7 +8,7 @@ import (
 
 	"github.com/go-logr/logr"
 
-	"github.com/gardener/logging/v1/pkg/client"
+	"github.com/gardener/logging/v1/pkg/client/api"
 	"github.com/gardener/logging/v1/pkg/config"
 	"github.com/gardener/logging/v1/pkg/types"
 )
@@ -29,7 +29,7 @@ const (
 )
 
 type target struct {
-	client client.OutputClient
+	client api.Output
 	mute   bool
 	conf   *config.ControllerClientConfiguration
 }
@@ -42,11 +42,11 @@ type controllerClient struct {
 	name        string
 }
 
-var _ client.OutputClient = &controllerClient{}
+var _ api.Output = &controllerClient{}
 
 // Client is a logging client for the plugin controller
 type Client interface {
-	client.OutputClient
+	api.Output
 	GetState() clusterState
 	SetState(state clusterState)
 }

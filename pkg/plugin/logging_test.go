@@ -22,7 +22,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	"github.com/gardener/logging/v1/pkg/client"
+	"github.com/gardener/logging/v1/pkg/client/api"
 	"github.com/gardener/logging/v1/pkg/config"
 	"github.com/gardener/logging/v1/pkg/controller"
 	"github.com/gardener/logging/v1/pkg/log"
@@ -848,8 +848,10 @@ var _ = Describe("OutputPlugin plugin", func() {
 // simulating OtelCollector mode where no client exists for a given namespace.
 type noClientController struct{}
 
-func (*noClientController) GetClient(_ string) (client.OutputClient, bool) { return nil, false }
-func (*noClientController) Stop()                                          {}
+func (*noClientController) GetClient(_ string) (api.Output, bool) { return nil, false }
+
+func (*noClientController) Stop() {}
+
 func (*noClientController) Reconcile(_ context.Context, _ ctrl.Request) (ctrl.Result, error) {
 	return ctrl.Result{}, nil
 }

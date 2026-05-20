@@ -16,6 +16,7 @@ import (
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"golang.org/x/time/rate"
 
+	"github.com/gardener/logging/v1/pkg/client/api"
 	"github.com/gardener/logging/v1/pkg/config"
 	"github.com/gardener/logging/v1/pkg/metrics"
 	"github.com/gardener/logging/v1/pkg/types"
@@ -26,7 +27,7 @@ const componentOTLPGRPCName = "otlpgrpc"
 // ErrThrottled is returned when the client is throttled
 var ErrThrottled = errors.New("client throttled: rate limit exceeded")
 
-// OTLPGRPCClient is an implementation of OutputClient that sends logs via OTLP gRPC
+// OTLPGRPCClient is an implementation of Output that sends logs via OTLP gRPC
 type OTLPGRPCClient struct {
 	logger         logr.Logger
 	endpoint       string
@@ -40,10 +41,10 @@ type OTLPGRPCClient struct {
 	metrics        *metrics.FluentBitGardenerMetrics
 }
 
-var _ OutputClient = &OTLPGRPCClient{}
+var _ api.Output = &OTLPGRPCClient{}
 
 // NewOTLPGRPCClient creates a new OTLP gRPC client with dque batch processor
-func NewOTLPGRPCClient(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics) (OutputClient, error) {
+func NewOTLPGRPCClient(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics) (api.Output, error) {
 	// Use the provided context with cancel capability
 	clientCtx, cancel := context.WithCancel(ctx)
 

@@ -23,13 +23,15 @@ import (
 	"k8s.io/apimachinery/pkg/util/uuid"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
-	pkgclient "github.com/gardener/logging/v1/pkg/client"
+	"github.com/gardener/logging/v1/pkg/client"
+	"github.com/gardener/logging/v1/pkg/client/api"
 	"github.com/gardener/logging/v1/pkg/config"
 	"github.com/gardener/logging/v1/pkg/metrics"
+	"github.com/gardener/logging/v1/pkg/targets"
 )
 
 var otelcolScheme = func() *runtime.Scheme {
@@ -45,10 +47,10 @@ var otelcolScheme = func() *runtime.Scheme {
 // the configured label selector and are in namespaces matching the namespace label selector
 // and DynamicHostRegex.
 type otelCollectorReconciler struct {
-	client.Client
+	k8sclient.Client
 	conf                   *config.Config
 	lock                   sync.RWMutex
-	clients                map[string]pkgclient.OutputClient
+	clients                map[string]api.Output
 	logger                 logr.Logger
 	ctx                    context.Context
 	cancel                 context.CancelFunc
@@ -99,7 +101,7 @@ func newOpenTelemetryCollectorController(ctx context.Context, conf *config.Confi
 		Cache: cache.Options{
 			// Restrict cache to OpenTelemetryCollector and Namespace objects only;
 			// this controller does not reconcile other types.
-			ByObject: map[client.Object]cache.ByObject{
+			ByObject: map[k8sclient.Object]cache.ByObject{
 				&otelcolv1beta1.OpenTelemetryCollector{}: {},
 				&corev1.Namespace{}:                      {},
 			},
@@ -119,7 +121,7 @@ func newOpenTelemetryCollectorController(ctx context.Context, conf *config.Confi
 	reconciler := &otelCollectorReconciler{
 		Client:                 mgr.GetClient(),
 		conf:                   conf,
-		clients:                make(map[string]pkgclient.OutputClient, expectedActiveClusters),
+		clients:                make(map[string]api.Output, expectedActiveClusters),
 		logger:                 l,
 		ctx:                    ctlCtx,
 		cancel:                 cancel,
@@ -171,7 +173,7 @@ func newOpenTelemetryCollectorController(ctx context.Context, conf *config.Confi
 // buildLabelPredicate creates a predicate that filters OpenTelemetryCollector resources
 // based on the configured label selector.
 func (r *otelCollectorReconciler) buildLabelPredicate() predicate.Predicate {
-	return predicate.NewPredicateFuncs(func(obj client.Object) bool {
+	return predicate.NewPredicateFuncs(func(obj k8sclient.Object) bool {
 		return r.labelSelector.Matches(labels.Set(obj.GetLabels()))
 	})
 }
@@ -251,7 +253,7 @@ func (r *otelCollectorReconciler) isNamespaceAllowed(ctx context.Context, namesp
 
 	// Check if namespace has matching labels
 	ns := &corev1.Namespace{}
-	if err := r.Get(ctx, client.ObjectKey{Name: namespaceName}, ns); err != nil {
+	if err := r.Get(ctx, k8sclient.ObjectKey{Name: namespaceName}, ns); err != nil {
 		if apierrors.IsNotFound(err) {
 			return false, nil
 		}
@@ -279,8 +281,8 @@ func (r *otelCollectorReconciler) isNamespaceAllowed(ctx context.Context, namesp
 func (r *otelCollectorReconciler) createClient(namespace string) {
 	clientConf := r.buildClientConfig(namespace)
 
-	opt := []pkgclient.Option{pkgclient.WithTarget(pkgclient.Shoot), pkgclient.WithLogger(r.logger), pkgclient.WithMetrics(r.metrics)}
-	outputClient, err := pkgclient.NewClient(r.ctx, *clientConf, opt...)
+	opt := []client.Option{client.WithTarget(targets.Shoot), client.WithLogger(r.logger), client.WithMetrics(r.metrics)}
+	outputClient, err := client.NewClient(r.ctx, *clientConf, opt...)
 	if err != nil {
 		r.metrics.Errors.WithLabelValues(metrics.ErrorFailedToMakeOutputClient).Inc()
 		r.logger.Error(err, "failed to create client for namespace", "namespace", namespace)
@@ -304,7 +306,7 @@ func (r *otelCollectorReconciler) createClient(namespace string) {
 		return
 	}
 
-	r.metrics.Clients.WithLabelValues(pkgclient.Shoot.String()).Inc()
+	r.metrics.Clients.WithLabelValues(targets.Shoot.String()).Inc()
 	r.clients[namespace] = outputClient
 	r.logger.Info("added client for namespace", "namespace", namespace, "endpoint", clientConf.OTLPConfig.Endpoint)
 }
@@ -321,7 +323,7 @@ func (r *otelCollectorReconciler) deleteClient(namespace string) {
 	c, ok := r.clients[namespace]
 	if ok && c != nil {
 		delete(r.clients, namespace)
-		r.metrics.Clients.WithLabelValues(pkgclient.Shoot.String()).Dec()
+		r.metrics.Clients.WithLabelValues(targets.Shoot.String()).Dec()
 		go c.Stop()
 		r.logger.Info("client deleted for namespace", "namespace", namespace)
 	}
@@ -343,7 +345,7 @@ func (r *otelCollectorReconciler) buildClientConfig(namespace string) *config.Co
 }
 
 // GetClient returns the client for the given namespace.
-func (r *otelCollectorReconciler) GetClient(name string) (pkgclient.OutputClient, bool) {
+func (r *otelCollectorReconciler) GetClient(name string) (api.Output, bool) {
 	r.lock.RLock()
 	defer r.lock.RUnlock()
 

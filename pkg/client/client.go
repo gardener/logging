@@ -9,13 +9,18 @@ import (
 
 	"github.com/go-logr/logr"
 
+	"github.com/gardener/logging/v1/pkg/client/api"
 	"github.com/gardener/logging/v1/pkg/config"
 	"github.com/gardener/logging/v1/pkg/metrics"
+	"github.com/gardener/logging/v1/pkg/targets"
 	"github.com/gardener/logging/v1/pkg/types"
 )
 
+// NewFunc is a function type for creating new api.Output instances
+type NewFunc func(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics) (api.Output, error)
+
 type clientOptions struct {
-	target  Target
+	target  targets.Target
 	logger  logr.Logger
 	metrics *metrics.FluentBitGardenerMetrics
 }
@@ -33,7 +38,7 @@ func WithLogger(logger logr.Logger) Option {
 }
 
 // WithTarget creates a functional option for setting the target type of the client
-func WithTarget(target Target) Option {
+func WithTarget(target targets.Target) Option {
 	return func(opts *clientOptions) error {
 		opts.target = target
 
@@ -51,7 +56,7 @@ func WithMetrics(m *metrics.FluentBitGardenerMetrics) Option {
 }
 
 // NewClient creates a new client based on the fluent-bit configuration.
-func NewClient(ctx context.Context, cfg config.Config, opts ...Option) (OutputClient, error) {
+func NewClient(ctx context.Context, cfg config.Config, opts ...Option) (api.Output, error) {
 	options := &clientOptions{}
 	for _, opt := range opts {
 		if err := opt(options); err != nil {
@@ -65,18 +70,18 @@ func NewClient(ctx context.Context, cfg config.Config, opts ...Option) (OutputCl
 		logger = logr.Discard() // Default no-op logger
 	}
 
-	var nfc NewClientFunc
+	var nf NewFunc
 	var err error
 	switch options.target {
-	case Seed:
+	case targets.Seed:
 		t := types.GetClientTypeFromString(cfg.PluginConfig.SeedType)
-		nfc, err = getNewClientFunc(t)
+		nf, err = getNewFunc(t)
 		if err != nil {
 			return nil, err
 		}
-	case Shoot:
+	case targets.Shoot:
 		t := types.GetClientTypeFromString(cfg.PluginConfig.ShootType)
-		nfc, err = getNewClientFunc(t)
+		nf, err = getNewFunc(t)
 		if err != nil {
 			return nil, err
 		}
@@ -84,10 +89,10 @@ func NewClient(ctx context.Context, cfg config.Config, opts ...Option) (OutputCl
 		return nil, fmt.Errorf("unknown target type: %v", options.target)
 	}
 
-	return nfc(ctx, cfg, logger, options.metrics)
+	return nf(ctx, cfg, logger, options.metrics)
 }
 
-func getNewClientFunc(t types.Type) (NewClientFunc, error) {
+func getNewFunc(t types.Type) (NewFunc, error) {
 	switch t {
 	case types.OTLPGRPC:
 		return NewOTLPGRPCClient, nil

@@ -12,6 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 
+	"github.com/gardener/logging/v1/pkg/client/api"
 	"github.com/gardener/logging/v1/pkg/config"
 	"github.com/gardener/logging/v1/pkg/log"
 	"github.com/gardener/logging/v1/pkg/metrics"
@@ -20,7 +21,7 @@ import (
 
 var _ = Describe("NoopClient", func() {
 	var (
-		outputClient OutputClient
+		outputClient api.Output
 		cfg          config.Config
 		logger       logr.Logger
 		testMetrics  *metrics.FluentBitGardenerMetrics

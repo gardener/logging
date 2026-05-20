@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-logr/logr"
 
+	"github.com/gardener/logging/v1/pkg/client/api"
 	"github.com/gardener/logging/v1/pkg/config"
 	"github.com/gardener/logging/v1/pkg/metrics"
 	"github.com/gardener/logging/v1/pkg/types"
@@ -17,7 +18,7 @@ import (
 
 const componentNoopName = "noop"
 
-// NoopClient is an implementation of OutputClient that discards all records
+// NoopClient is an implementation of Output that discards all records
 // but keeps metrics and increments counters
 type NoopClient struct {
 	ctx      context.Context
@@ -26,10 +27,10 @@ type NoopClient struct {
 	metrics  *metrics.FluentBitGardenerMetrics
 }
 
-var _ OutputClient = &NoopClient{}
+var _ api.Output = &NoopClient{}
 
 // NewNoopClient creates a new NoopClient that discards all records
-func NewNoopClient(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics) (OutputClient, error) {
+func NewNoopClient(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics) (api.Output, error) {
 	client := &NoopClient{
 		ctx:      ctx,
 		endpoint: cfg.OTLPConfig.Endpoint,

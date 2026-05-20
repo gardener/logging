@@ -14,6 +14,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/testutil"
 
 	"github.com/gardener/logging/v1/pkg/client"
+	"github.com/gardener/logging/v1/pkg/client/api"
 	"github.com/gardener/logging/v1/pkg/config"
 	"github.com/gardener/logging/v1/pkg/log"
 	"github.com/gardener/logging/v1/pkg/metrics"
@@ -445,9 +446,9 @@ var _ = Describe("Controller Client", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			testControllerClient = &fakeControllerClient{
-				OutputClient: noopClient,
-				name:         clientName,
-				state:        clusterStateCreation,
+				Output: noopClient,
+				name:   clientName,
+				state:  clusterStateCreation,
 			}
 
 			ctx, cancel := context.WithCancel(context.Background())
@@ -483,7 +484,7 @@ var _ = Describe("Controller Client", func() {
 })
 
 type fakeControllerClient struct {
-	client.OutputClient
+	api.Output
 	state clusterState
 	name  string
 }

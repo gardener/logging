@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/gardener/logging/v1/pkg/client/api"
 	"github.com/gardener/logging/v1/pkg/config"
 	"github.com/gardener/logging/v1/pkg/metrics"
 	"github.com/gardener/logging/v1/pkg/types"
@@ -83,7 +84,7 @@ var _ = Describe("OTLPGRPCClient", func() {
 	})
 
 	Describe("Handle", func() {
-		var client OutputClient
+		var client api.Output
 
 		BeforeEach(func() {
 			var err error
