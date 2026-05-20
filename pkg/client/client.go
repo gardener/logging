@@ -9,26 +9,15 @@ import (
 
 	"github.com/go-logr/logr"
 
+	"github.com/gardener/logging/v1/pkg/client/api"
 	"github.com/gardener/logging/v1/pkg/config"
 	"github.com/gardener/logging/v1/pkg/metrics"
 	"github.com/gardener/logging/v1/pkg/targets"
 	"github.com/gardener/logging/v1/pkg/types"
 )
 
-// Output represents an instance which sends logs to the configured logging backend
-type Output interface {
-	// Handle processes logs and then sends them to the logging backend
-	Handle(log types.OutputEntry) error
-	// Stop shut down the client immediately without waiting to send the saved logs
-	Stop()
-	// StopWait stops the client of receiving new logs and waits all saved logs to be sent until shutting down
-	StopWait()
-	// GetEndpoint returns the target logging backend endpoint
-	GetEndpoint() string
-}
-
-// NewFunc is a function type for creating new Output instances
-type NewFunc func(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics) (Output, error)
+// NewFunc is a function type for creating new api.Output instances
+type NewFunc func(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics) (api.Output, error)
 
 type clientOptions struct {
 	target  targets.Target
@@ -67,7 +56,7 @@ func WithMetrics(m *metrics.FluentBitGardenerMetrics) Option {
 }
 
 // NewClient creates a new client based on the fluent-bit configuration.
-func NewClient(ctx context.Context, cfg config.Config, opts ...Option) (Output, error) {
+func NewClient(ctx context.Context, cfg config.Config, opts ...Option) (api.Output, error) {
 	options := &clientOptions{}
 	for _, opt := range opts {
 		if err := opt(options); err != nil {

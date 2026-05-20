@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-logr/logr"
 
+	"github.com/gardener/logging/v1/pkg/client/api"
 	"github.com/gardener/logging/v1/pkg/config"
 	"github.com/gardener/logging/v1/pkg/metrics"
 	"github.com/gardener/logging/v1/pkg/types"
@@ -26,10 +27,10 @@ type StdoutClient struct {
 	metrics  *metrics.FluentBitGardenerMetrics
 }
 
-var _ Output = &StdoutClient{}
+var _ api.Output = &StdoutClient{}
 
 // NewStdoutClient creates a new StdoutClient that writes all records to stdout
-func NewStdoutClient(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics) (Output, error) {
+func NewStdoutClient(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics) (api.Output, error) {
 	client := &StdoutClient{
 		ctx:      ctx,
 		endpoint: cfg.OTLPConfig.Endpoint,

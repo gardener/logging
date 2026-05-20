@@ -19,7 +19,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	"github.com/gardener/logging/v1/pkg/client"
+	"github.com/gardener/logging/v1/pkg/client/api"
 	"github.com/gardener/logging/v1/pkg/config"
 	"github.com/gardener/logging/v1/pkg/metrics"
 )
@@ -63,7 +63,7 @@ var _ = Describe("otelCollectorReconciler", func() {
 					OpenTelemetryCollectorLabelSelector:          labelKey + "=" + labelValue,
 				},
 			},
-			clients:                make(map[string]client.Output),
+			clients:                make(map[string]api.Output),
 			logger:                 logr.Discard(),
 			ctx:                    ctx,
 			cancel:                 cancel,

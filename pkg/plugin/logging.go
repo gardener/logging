@@ -11,6 +11,7 @@ import (
 	"github.com/go-logr/logr"
 
 	"github.com/gardener/logging/v1/pkg/client"
+	"github.com/gardener/logging/v1/pkg/client/api"
 	"github.com/gardener/logging/v1/pkg/config"
 	"github.com/gardener/logging/v1/pkg/controller"
 	"github.com/gardener/logging/v1/pkg/metrics"
@@ -25,7 +26,7 @@ type OutputPlugin interface {
 }
 
 type logging struct {
-	seedClient                      client.Output
+	seedClient                      api.Output
 	cfg                             *config.Config
 	dynamicHostRegexp               *regexp.Regexp
 	extractKubernetesMetadataRegexp *regexp.Regexp
@@ -170,7 +171,7 @@ func (l *logging) SendRecord(log types.OutputEntry) error {
 		return nil
 	}
 
-	// client.Output - actual client chain to send the log to.
+	// api.Output - actual client chain to send the log to.
 	// The dynamicHostName is extracted from DynamicHostPath field
 	// in the record and must match DynamicHostRegex
 	// example shoot--local--local
@@ -215,7 +216,7 @@ func (l *logging) Close() {
 	)
 }
 
-func (l *logging) getClient(dynamicHosName string) client.Output {
+func (l *logging) getClient(dynamicHosName string) api.Output {
 	if l.isDynamicHost(dynamicHosName) && l.controller != nil {
 		if c, isStopped := l.controller.GetClient(dynamicHosName); !isStopped {
 			return c

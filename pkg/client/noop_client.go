@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-logr/logr"
 
+	"github.com/gardener/logging/v1/pkg/client/api"
 	"github.com/gardener/logging/v1/pkg/config"
 	"github.com/gardener/logging/v1/pkg/metrics"
 	"github.com/gardener/logging/v1/pkg/types"
@@ -26,10 +27,10 @@ type NoopClient struct {
 	metrics  *metrics.FluentBitGardenerMetrics
 }
 
-var _ Output = &NoopClient{}
+var _ api.Output = &NoopClient{}
 
 // NewNoopClient creates a new NoopClient that discards all records
-func NewNoopClient(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics) (Output, error) {
+func NewNoopClient(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics) (api.Output, error) {
 	client := &NoopClient{
 		ctx:      ctx,
 		endpoint: cfg.OTLPConfig.Endpoint,

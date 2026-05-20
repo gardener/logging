@@ -19,13 +19,13 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	"github.com/gardener/logging/v1/pkg/client"
+	"github.com/gardener/logging/v1/pkg/client/api"
 	"github.com/gardener/logging/v1/pkg/config"
 	"github.com/gardener/logging/v1/pkg/metrics"
 	pkgtypes "github.com/gardener/logging/v1/pkg/types"
 )
 
-var _ client.Output = &fakeOutputClient{}
+var _ api.Output = &fakeOutputClient{}
 
 type fakeOutputClient struct {
 	isStopped bool

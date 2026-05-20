@@ -1,6 +1,6 @@
 # Client Package
 
-The `client` package provides multiple implementations of the `Output` interface for sending logs from Fluent Bit to various backends. It supports OpenTelemetry Protocol (OTLP) over gRPC and HTTP, as well as stdout and no-op clients for testing and debugging.
+The `client` package provides multiple implementations of the `Output` interface (defined in [`pkg/client/api`](./api)) for sending logs from Fluent Bit to various backends. It supports OpenTelemetry Protocol (OTLP) over gRPC and HTTP, as well as stdout and no-op clients for testing and debugging.
 
 ## Table of Contents
 
@@ -30,7 +30,7 @@ The `client` package provides multiple implementations of the `Output` interface
 
 ## Overview
 
-The client package abstracts the complexity of sending logs to different backends. All clients implement the `Output` interface, which provides a consistent API regardless of the underlying transport mechanism.
+The client package abstracts the complexity of sending logs to different backends. All clients implement the `api.Output` interface (in [`pkg/client/api`](./api)), which provides a consistent API regardless of the underlying transport mechanism. Consumers depending only on the contract can import `pkg/client/api` without pulling in the OTLP/stdout/noop implementations.
 
 The package supports:
 - **Multiple protocols**: OTLP over gRPC and HTTP
@@ -704,7 +704,7 @@ if err := c.Handle(entry); err != nil {
 
 When adding new client types or modifying existing ones:
 
-1. Implement the `Output` interface
+1. Implement the `api.Output` interface (defined in [`pkg/client/api`](./api))
 2. Add appropriate metrics
 3. Write unit tests using Ginkgo and Gomega
 4. Update this documentation

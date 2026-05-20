@@ -15,6 +15,7 @@ import (
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"golang.org/x/time/rate"
 
+	"github.com/gardener/logging/v1/pkg/client/api"
 	"github.com/gardener/logging/v1/pkg/config"
 	"github.com/gardener/logging/v1/pkg/metrics"
 	"github.com/gardener/logging/v1/pkg/types"
@@ -36,10 +37,10 @@ type OTLPHTTPClient struct {
 	metrics        *metrics.FluentBitGardenerMetrics
 }
 
-var _ Output = &OTLPHTTPClient{}
+var _ api.Output = &OTLPHTTPClient{}
 
 // NewOTLPHTTPClient creates a new OTLP HTTP client with dque batch processor
-func NewOTLPHTTPClient(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics) (Output, error) {
+func NewOTLPHTTPClient(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics) (api.Output, error) {
 	// Use the provided context with cancel capability
 	clientCtx, cancel := context.WithCancel(ctx)
 
