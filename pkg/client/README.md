@@ -1,6 +1,6 @@
 # Client Package
 
-The `client` package provides multiple implementations of the `OutputClient` interface for sending logs from Fluent Bit to various backends. It supports OpenTelemetry Protocol (OTLP) over gRPC and HTTP, as well as stdout and no-op clients for testing and debugging.
+The `client` package provides multiple implementations of the `Output` interface for sending logs from Fluent Bit to various backends. It supports OpenTelemetry Protocol (OTLP) over gRPC and HTTP, as well as stdout and no-op clients for testing and debugging.
 
 ## Table of Contents
 
@@ -30,7 +30,7 @@ The `client` package provides multiple implementations of the `OutputClient` int
 
 ## Overview
 
-The client package abstracts the complexity of sending logs to different backends. All clients implement the `OutputClient` interface, which provides a consistent API regardless of the underlying transport mechanism.
+The client package abstracts the complexity of sending logs to different backends. All clients implement the `Output` interface, which provides a consistent API regardless of the underlying transport mechanism.
 
 The package supports:
 - **Multiple protocols**: OTLP over gRPC and HTTP
@@ -66,7 +66,7 @@ The OTLP gRPC client (`OTLPGRPCClient`) sends logs using the OpenTelemetry Proto
 - Low-latency requirements
 - When backend supports gRPC
 
-**Configuration type:** `otlp_grpc` (string) or `types.OTLPGRPCType` (enum)
+**Configuration type:** `otlp_grpc` (string) or `types.OTLPGRPC` (enum)
 
 ### OTLP HTTP Client
 
@@ -89,7 +89,7 @@ The OTLP HTTP client (`OTLPHTTPClient`) sends logs using the OpenTelemetry Proto
 - Debugging (easier to inspect with standard tools)
 - When backend only supports HTTP
 
-**Configuration type:** `otlp_http` (string) or `types.OTLPHTTPType` (enum)
+**Configuration type:** `otlp_http` (string) or `types.OTLPHTTP` (enum)
 
 ### Stdout Client
 
@@ -108,7 +108,7 @@ The Stdout client (`StdoutClient`) writes all log entries to standard output in 
 - Integration with stdout-based log collectors
 - Troubleshooting without backend connectivity
 
-**Configuration type:** `stdout` (string) or `types.StdOutType` (enum)
+**Configuration type:** `stdout` (string) or `types.StdOut` (enum)
 
 **Output format:**
 ```json
@@ -138,7 +138,7 @@ The Noop client (`NoopClient`) discards all log entries without processing them.
 - Testing metrics collection
 - Benchmarking
 
-**Configuration type:** `noop` (string) or `types.NoopType` (enum)
+**Configuration type:** `noop` (string) or `types.Noop` (enum)
 
 ## Target Types
 
@@ -146,20 +146,20 @@ The client package supports two target types that determine which backend config
 
 ### Seed Target
 
-The Seed target (`types.SeedTarget`) is used for logs originating from the Gardener Seed cluster. The client uses the `SeedType` configuration from `PluginConfig` to determine which client implementation to create.
+The Seed target (`targets.Seed`) is used for logs originating from the Gardener Seed cluster. The client uses the `SeedType` configuration from `PluginConfig` to determine which client implementation to create.
 
 **Usage:**
 ```go
-client, err := client.NewClient(ctx, cfg, client.WithTarget(types.SeedTarget))
+client, err := client.NewClient(ctx, cfg, client.WithTarget(targets.Seed))
 ```
 
 ### Shoot Target
 
-The Shoot target (`types.ShootTarget`) is used for logs originating from the Gardener Shoot clusters. The client uses the `ShootType` configuration from `PluginConfig` to determine which client implementation to create.
+The Shoot target (`targets.Shoot`) is used for logs originating from the Gardener Shoot clusters. The client uses the `ShootType` configuration from `PluginConfig` to determine which client implementation to create.
 
 **Usage:**
 ```go
-client, err := client.NewClient(ctx, cfg, client.WithTarget(types.ShootTarget))
+client, err := client.NewClient(ctx, cfg, client.WithTarget(targets.Shoot))
 ```
 
 ## Configuration
@@ -361,7 +361,7 @@ ctx := context.Background()
 shootClient, err := client.NewClient(
     ctx,
     cfg,
-    client.WithTarget(types.ShootTarget),
+    client.WithTarget(targets.Shoot),
     client.WithLogger(logger),
 )
 if err != nil {
@@ -379,8 +379,8 @@ The `NewClient` function accepts functional options:
 Specifies whether to use Seed or Shoot configuration:
 
 ```go
-client.NewClient(ctx, cfg, client.WithTarget(types.ShootTarget))
-client.NewClient(ctx, cfg, client.WithTarget(types.SeedTarget))
+client.NewClient(ctx, cfg, client.WithTarget(targets.Shoot))
+client.NewClient(ctx, cfg, client.WithTarget(targets.Seed))
 ```
 
 #### WithLogger
@@ -471,7 +471,7 @@ The DQue Batch Processor is the core component for reliable log delivery:
                                  │ Handle(entry)
                                  ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                         OutputClient                             │
+│                            Output                               │
 │  (OTLPGRPCClient / OTLPHTTPClient / StdoutClient / NoopClient)  │
 └────────────────────────────────┬────────────────────────────────┘
                                  │ OnEmit(record)
@@ -578,7 +578,7 @@ func main() {
     logger := logr.Discard()
     
     c, err := client.NewClient(ctx, cfg,
-        client.WithTarget(types.ShootTarget),
+        client.WithTarget(targets.Shoot),
         client.WithLogger(logger),
     )
     if err != nil {
@@ -618,7 +618,7 @@ cfg := config.Config{
 }
 
 c, err := client.NewClient(ctx, cfg,
-    client.WithTarget(types.SeedTarget),
+    client.WithTarget(targets.Seed),
     client.WithLogger(logger),
 )
 ```
@@ -633,7 +633,7 @@ cfg := config.Config{
 }
 
 c, err := client.NewClient(ctx, cfg,
-    client.WithTarget(types.ShootTarget),
+    client.WithTarget(targets.Shoot),
 )
 // Logs will be written to stdout in JSON format
 ```
@@ -687,7 +687,7 @@ cfg := config.Config{
 }
 
 c, err := client.NewClient(ctx, cfg,
-    client.WithTarget(types.ShootTarget),
+    client.WithTarget(targets.Shoot),
 )
 
 // Handle throttling
@@ -704,7 +704,7 @@ if err := c.Handle(entry); err != nil {
 
 When adding new client types or modifying existing ones:
 
-1. Implement the `OutputClient` interface
+1. Implement the `Output` interface
 2. Add appropriate metrics
 3. Write unit tests using Ginkgo and Gomega
 4. Update this documentation

@@ -83,7 +83,7 @@ var _ = Describe("OTLPGRPCClient", func() {
 	})
 
 	Describe("Handle", func() {
-		var client types.OutputClient
+		var client Output
 
 		BeforeEach(func() {
 			var err error

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package types
+package targets
 
 import "strings"
 
@@ -10,33 +10,33 @@ import "strings"
 type Target int
 
 const (
-	// SeedTarget is the client target
-	SeedTarget Target = iota
-	// ShootTarget is the client target
-	ShootTarget
-	// UnknownTarget represents an unknown target
-	UnknownTarget
+	// Seed is the client target for the Gardener Seed cluster
+	Seed Target = iota
+	// Shoot is the client target for the Gardener Shoot clusters
+	Shoot
+	// Unknown represents an unknown target
+	Unknown
 )
 
 func (t Target) String() string {
 	switch t {
-	case SeedTarget:
+	case Seed:
 		return "SEED"
-	case ShootTarget:
+	case Shoot:
 		return "SHOOT"
 	default:
 		return "UNKNOWN"
 	}
 }
 
-// GetTargetFromString converts a string to a Target type
-func GetTargetFromString(target string) Target {
+// FromString converts a string to a Target type
+func FromString(target string) Target {
 	switch strings.ToUpper(target) {
 	case "SEED":
-		return SeedTarget
+		return Seed
 	case "SHOOT":
-		return ShootTarget
+		return Shoot
 	default:
-		return UnknownTarget
+		return Unknown
 	}
 }

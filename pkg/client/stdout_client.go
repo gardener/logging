@@ -18,7 +18,7 @@ import (
 
 const componentStdoutName = "stdout"
 
-// StdoutClient is an implementation of OutputClient that writes all records to stdout
+// StdoutClient is an implementation of Output that writes all records to stdout
 type StdoutClient struct {
 	ctx      context.Context
 	logger   logr.Logger
@@ -26,10 +26,10 @@ type StdoutClient struct {
 	metrics  *metrics.FluentBitGardenerMetrics
 }
 
-var _ types.OutputClient = &StdoutClient{}
+var _ Output = &StdoutClient{}
 
 // NewStdoutClient creates a new StdoutClient that writes all records to stdout
-func NewStdoutClient(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics) (types.OutputClient, error) {
+func NewStdoutClient(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics) (Output, error) {
 	client := &StdoutClient{
 		ctx:      ctx,
 		endpoint: cfg.OTLPConfig.Endpoint,

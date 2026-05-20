@@ -269,7 +269,7 @@ func processClientTypes(config *Config, configMap map[string]any) error {
 	// Keys are already normalized to lowercase by ParseConfig
 	if seedType, ok := configMap["seedtype"].(string); ok && seedType != "" {
 		t := types.GetClientTypeFromString(seedType)
-		if t == types.UnknownType {
+		if t == types.Unknown {
 			return fmt.Errorf("invalid SeedType: %s", seedType)
 		}
 		config.PluginConfig.SeedType = t.String()
@@ -277,7 +277,7 @@ func processClientTypes(config *Config, configMap map[string]any) error {
 
 	if shootType, ok := configMap["shoottype"].(string); ok && shootType != "" {
 		t := types.GetClientTypeFromString(shootType)
-		if t == types.UnknownType {
+		if t == types.Unknown {
 			return fmt.Errorf("invalid ShootType: %s", shootType)
 		}
 		config.PluginConfig.ShootType = t.String()
@@ -718,8 +718,8 @@ func defaultConfig() (*Config, error) {
 			DynamicHostRegex:            ".*",
 		},
 		PluginConfig: PluginConfig{
-			SeedType:  types.NoopType.String(),
-			ShootType: types.NoopType.String(),
+			SeedType:  types.Noop.String(),
+			ShootType: types.Noop.String(),
 			LogLevel:  defaultLevel,
 			Pprof:     false,
 

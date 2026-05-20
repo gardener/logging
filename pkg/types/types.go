@@ -13,46 +13,46 @@ import (
 type Type int
 
 const (
-	// NoopType type represents a no-operation client type
-	NoopType Type = iota
-	// StdOutType type represents a standard output client type
-	StdOutType
-	// OTLPGRPCType type represents an OTLP gRPC client type
-	OTLPGRPCType
-	// OTLPHTTPType type represents an OTLP HTTP client type
-	OTLPHTTPType
-	// UnknownType type represents an unknown client type
-	UnknownType
+	// Noop represents a no-operation client type
+	Noop Type = iota
+	// StdOut represents a standard output client type
+	StdOut
+	// OTLPGRPC represents an OTLP gRPC client type
+	OTLPGRPC
+	// OTLPHTTP represents an OTLP HTTP client type
+	OTLPHTTP
+	// Unknown represents an unknown client type
+	Unknown
 )
 
-// GetClientTypeFromString converts a string representation of client type to Type. It returns NOOP for unknown types.
+// GetClientTypeFromString converts a string representation of client type to Type. It returns Noop for unknown types.
 func GetClientTypeFromString(clientType string) Type {
 	switch strings.ToUpper(clientType) {
 	case "NOOP":
-		return NoopType
+		return Noop
 	case "STDOUT":
-		return StdOutType
+		return StdOut
 	case "OTLPGRPC", "OTLP_GRPC":
-		return OTLPGRPCType
+		return OTLPGRPC
 	case "OTLPHTTP", "OTLP_HTTP":
-		return OTLPHTTPType
+		return OTLPHTTP
 	default:
-		return NoopType
+		return Noop
 	}
 }
 
 // String returns the string representation of the client Type
 func (t Type) String() string {
 	switch t {
-	case NoopType:
+	case Noop:
 		return "noop"
-	case StdOutType:
+	case StdOut:
 		return "stdout"
-	case OTLPGRPCType:
+	case OTLPGRPC:
 		return "otlp_grpc"
-	case OTLPHTTPType:
+	case OTLPHTTP:
 		return "otlp_http"
-	case UnknownType:
+	case Unknown:
 		return "unknown"
 	default:
 		return ""
@@ -63,16 +63,4 @@ func (t Type) String() string {
 type OutputEntry struct {
 	Timestamp time.Time
 	Record    map[string]any
-}
-
-// OutputClient represents an instance which sends logs to Vali ingester
-type OutputClient interface {
-	// Handle processes logs and then sends them to Vali ingester
-	Handle(log OutputEntry) error
-	// Stop shut down the client immediately without waiting to send the saved logs
-	Stop()
-	// StopWait stops the client of receiving new logs and waits all saved logs to be sent until shutting down
-	StopWait()
-	// GetEndpoint returns the target logging backend endpoint
-	GetEndpoint() string
 }

@@ -24,7 +24,7 @@ import (
 
 var _ = Describe("StdoutClient", func() {
 	var (
-		outputClient types.OutputClient
+		outputClient Output
 		cfg          config.Config
 		logger       logr.Logger
 		oldStdout    *os.File

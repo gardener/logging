@@ -25,7 +25,7 @@ import (
 	pkgclient "github.com/gardener/logging/v1/pkg/client"
 	"github.com/gardener/logging/v1/pkg/config"
 	"github.com/gardener/logging/v1/pkg/metrics"
-	"github.com/gardener/logging/v1/pkg/types"
+	"github.com/gardener/logging/v1/pkg/targets"
 )
 
 var scheme = func() *runtime.Scheme {
@@ -44,7 +44,7 @@ func Scheme() *runtime.Scheme {
 // clusterReconciler reconciles Cluster objects using controller-runtime
 type clusterReconciler struct {
 	client.Client
-	seedClient types.OutputClient
+	seedClient pkgclient.Output
 	conf       *config.Config
 	lock       sync.RWMutex
 	clients    map[string]Client
@@ -60,16 +60,16 @@ type clusterReconciler struct {
 // It sets up a manager and reconciler for Cluster resources.
 func newClusterController(ctx context.Context, conf *config.Config, l logr.Logger, m *metrics.FluentBitGardenerMetrics) (Controller, error) {
 	var err error
-	var seedClient types.OutputClient
+	var seedClient pkgclient.Output
 
 	cfgShallowCopy := *conf
 	cfgShallowCopy.OTLPConfig.DQueConfig.DQueName = conf.OTLPConfig.DQueConfig.DQueName + "-controller"
-	opt := []pkgclient.Option{pkgclient.WithTarget(types.SeedTarget), pkgclient.WithLogger(l), pkgclient.WithMetrics(m)}
+	opt := []pkgclient.Option{pkgclient.WithTarget(targets.Seed), pkgclient.WithLogger(l), pkgclient.WithMetrics(m)}
 
 	if seedClient, err = pkgclient.NewClient(ctx, cfgShallowCopy, opt...); err != nil {
 		return nil, fmt.Errorf("failed to create seed client in controller: %w", err)
 	}
-	m.Clients.WithLabelValues(types.SeedTarget.String()).Inc()
+	m.Clients.WithLabelValues(targets.Seed.String()).Inc()
 
 	restConfig, err := getRestConfig()
 	if err != nil {
@@ -156,16 +156,16 @@ func newClusterController(ctx context.Context, conf *config.Config, l logr.Logge
 // This is useful for testing with fake clients.
 func NewControllerWithClient(ctx context.Context, c client.Client, conf *config.Config, l logr.Logger, m *metrics.FluentBitGardenerMetrics) (Controller, error) {
 	var err error
-	var seedClient types.OutputClient
+	var seedClient pkgclient.Output
 
 	cfgShallowCopy := *conf
 	cfgShallowCopy.OTLPConfig.DQueConfig.DQueName = conf.OTLPConfig.DQueConfig.DQueName + "-controller"
-	opt := []pkgclient.Option{pkgclient.WithTarget(types.SeedTarget), pkgclient.WithLogger(l), pkgclient.WithMetrics(m)}
+	opt := []pkgclient.Option{pkgclient.WithTarget(targets.Seed), pkgclient.WithLogger(l), pkgclient.WithMetrics(m)}
 
 	if seedClient, err = pkgclient.NewClient(ctx, cfgShallowCopy, opt...); err != nil {
 		return nil, fmt.Errorf("failed to create seed client in controller: %w", err)
 	}
-	m.Clients.WithLabelValues(types.SeedTarget.String()).Inc()
+	m.Clients.WithLabelValues(targets.Seed.String()).Inc()
 
 	ctlCtx, cancel := context.WithCancel(ctx)
 
@@ -287,7 +287,7 @@ func (r *clusterReconciler) Stop() {
 }
 
 // GetClient returns the client for the given cluster name.
-func (r *clusterReconciler) GetClient(name string) (types.OutputClient, bool) {
+func (r *clusterReconciler) GetClient(name string) (pkgclient.Output, bool) {
 	r.lock.RLock()
 	defer r.lock.RUnlock()
 
@@ -305,7 +305,7 @@ func (r *clusterReconciler) GetClient(name string) (types.OutputClient, bool) {
 func (r *clusterReconciler) newControllerClient(clusterName string, clientConf *config.Config) (*controllerClient, error) {
 	r.logger.V(1).Info("creating new controller client", "name", clusterName)
 
-	opt := []pkgclient.Option{pkgclient.WithTarget(types.ShootTarget), pkgclient.WithLogger(r.logger), pkgclient.WithMetrics(r.metrics)}
+	opt := []pkgclient.Option{pkgclient.WithTarget(targets.Shoot), pkgclient.WithLogger(r.logger), pkgclient.WithMetrics(r.metrics)}
 
 	shootClient, err := pkgclient.NewClient(r.ctx, *clientConf, opt...)
 	if err != nil {
@@ -361,7 +361,7 @@ func (r *clusterReconciler) createClient(clusterName string, shoot *gardenercore
 		return
 	}
 
-	r.metrics.Clients.WithLabelValues(types.ShootTarget.String()).Inc()
+	r.metrics.Clients.WithLabelValues(targets.Shoot.String()).Inc()
 	r.clients[clusterName] = c
 	r.logger.Info("added controller client",
 		"cluster", clusterName,
@@ -381,7 +381,7 @@ func (r *clusterReconciler) deleteClient(clusterName string) {
 	c, ok := r.clients[clusterName]
 	if ok && c != nil {
 		delete(r.clients, clusterName)
-		r.metrics.Clients.WithLabelValues(types.ShootTarget.String()).Dec()
+		r.metrics.Clients.WithLabelValues(targets.Shoot.String()).Dec()
 		go c.Stop() // TODO: check
 		r.logger.Info("client deleted", "cluster", clusterName)
 	}

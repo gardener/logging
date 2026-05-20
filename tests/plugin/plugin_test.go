@@ -239,8 +239,8 @@ func createPluginConfig(tmpDir string) *config.Config {
 			},
 		},
 		PluginConfig: config.PluginConfig{
-			SeedType:  types.NoopType.String(),
-			ShootType: types.NoopType.String(),
+			SeedType:  types.Noop.String(),
+			ShootType: types.Noop.String(),
 			LogLevel:  "info",
 			KubernetesMetadata: config.KubernetesMetadataExtraction{
 				FallbackToTagWhenMetadataIsMissing: false,

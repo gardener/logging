@@ -26,7 +26,7 @@ const componentOTLPGRPCName = "otlpgrpc"
 // ErrThrottled is returned when the client is throttled
 var ErrThrottled = errors.New("client throttled: rate limit exceeded")
 
-// OTLPGRPCClient is an implementation of OutputClient that sends logs via OTLP gRPC
+// OTLPGRPCClient is an implementation of Output that sends logs via OTLP gRPC
 type OTLPGRPCClient struct {
 	logger         logr.Logger
 	endpoint       string
@@ -40,10 +40,10 @@ type OTLPGRPCClient struct {
 	metrics        *metrics.FluentBitGardenerMetrics
 }
 
-var _ types.OutputClient = &OTLPGRPCClient{}
+var _ Output = &OTLPGRPCClient{}
 
 // NewOTLPGRPCClient creates a new OTLP gRPC client with dque batch processor
-func NewOTLPGRPCClient(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics) (types.OutputClient, error) {
+func NewOTLPGRPCClient(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics) (Output, error) {
 	// Use the provided context with cancel capability
 	clientCtx, cancel := context.WithCancel(ctx)
 

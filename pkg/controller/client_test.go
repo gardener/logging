@@ -445,9 +445,9 @@ var _ = Describe("Controller Client", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			testControllerClient = &fakeControllerClient{
-				OutputClient: noopClient,
-				name:         clientName,
-				state:        clusterStateCreation,
+				Output: noopClient,
+				name:   clientName,
+				state:  clusterStateCreation,
 			}
 
 			ctx, cancel := context.WithCancel(context.Background())
@@ -483,7 +483,7 @@ var _ = Describe("Controller Client", func() {
 })
 
 type fakeControllerClient struct {
-	types.OutputClient
+	client.Output
 	state clusterState
 	name  string
 }

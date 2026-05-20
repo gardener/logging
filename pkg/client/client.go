@@ -11,14 +11,27 @@ import (
 
 	"github.com/gardener/logging/v1/pkg/config"
 	"github.com/gardener/logging/v1/pkg/metrics"
+	"github.com/gardener/logging/v1/pkg/targets"
 	"github.com/gardener/logging/v1/pkg/types"
 )
 
-// NewClientFunc is a function type for creating new OutputClient instances
-type NewClientFunc func(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics) (types.OutputClient, error)
+// Output represents an instance which sends logs to the configured logging backend
+type Output interface {
+	// Handle processes logs and then sends them to the logging backend
+	Handle(log types.OutputEntry) error
+	// Stop shut down the client immediately without waiting to send the saved logs
+	Stop()
+	// StopWait stops the client of receiving new logs and waits all saved logs to be sent until shutting down
+	StopWait()
+	// GetEndpoint returns the target logging backend endpoint
+	GetEndpoint() string
+}
+
+// NewClientFunc is a function type for creating new Output instances
+type NewClientFunc func(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics) (Output, error)
 
 type clientOptions struct {
-	target  types.Target
+	target  targets.Target
 	logger  logr.Logger
 	metrics *metrics.FluentBitGardenerMetrics
 }
@@ -36,7 +49,7 @@ func WithLogger(logger logr.Logger) Option {
 }
 
 // WithTarget creates a functional option for setting the target type of the client
-func WithTarget(target types.Target) Option {
+func WithTarget(target targets.Target) Option {
 	return func(opts *clientOptions) error {
 		opts.target = target
 
@@ -54,7 +67,7 @@ func WithMetrics(m *metrics.FluentBitGardenerMetrics) Option {
 }
 
 // NewClient creates a new client based on the fluent-bit configuration.
-func NewClient(ctx context.Context, cfg config.Config, opts ...Option) (types.OutputClient, error) {
+func NewClient(ctx context.Context, cfg config.Config, opts ...Option) (Output, error) {
 	options := &clientOptions{}
 	for _, opt := range opts {
 		if err := opt(options); err != nil {
@@ -71,13 +84,13 @@ func NewClient(ctx context.Context, cfg config.Config, opts ...Option) (types.Ou
 	var nfc NewClientFunc
 	var err error
 	switch options.target {
-	case types.SeedTarget:
+	case targets.Seed:
 		t := types.GetClientTypeFromString(cfg.PluginConfig.SeedType)
 		nfc, err = getNewClientFunc(t)
 		if err != nil {
 			return nil, err
 		}
-	case types.ShootTarget:
+	case targets.Shoot:
 		t := types.GetClientTypeFromString(cfg.PluginConfig.ShootType)
 		nfc, err = getNewClientFunc(t)
 		if err != nil {
@@ -92,13 +105,13 @@ func NewClient(ctx context.Context, cfg config.Config, opts ...Option) (types.Ou
 
 func getNewClientFunc(t types.Type) (NewClientFunc, error) {
 	switch t {
-	case types.OTLPGRPCType:
+	case types.OTLPGRPC:
 		return NewOTLPGRPCClient, nil
-	case types.OTLPHTTPType:
+	case types.OTLPHTTP:
 		return NewOTLPHTTPClient, nil
-	case types.StdOutType:
+	case types.StdOut:
 		return NewStdoutClient, nil
-	case types.NoopType:
+	case types.Noop:
 		return NewNoopClient, nil
 	default:
 		return nil, fmt.Errorf("unknown client type: %v", t)

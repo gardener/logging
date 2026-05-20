@@ -22,7 +22,7 @@ import (
 
 const componentOTLPHTTPName = "otlphttp"
 
-// OTLPHTTPClient is an implementation of OutputClient that sends logs via OTLP HTTP
+// OTLPHTTPClient is an implementation of Output that sends logs via OTLP HTTP
 type OTLPHTTPClient struct {
 	logger         logr.Logger
 	endpoint       string
@@ -36,10 +36,10 @@ type OTLPHTTPClient struct {
 	metrics        *metrics.FluentBitGardenerMetrics
 }
 
-var _ types.OutputClient = &OTLPHTTPClient{}
+var _ Output = &OTLPHTTPClient{}
 
 // NewOTLPHTTPClient creates a new OTLP HTTP client with dque batch processor
-func NewOTLPHTTPClient(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics) (types.OutputClient, error) {
+func NewOTLPHTTPClient(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics) (Output, error) {
 	// Use the provided context with cancel capability
 	clientCtx, cancel := context.WithCancel(ctx)
 

@@ -17,7 +17,7 @@ import (
 
 const componentNoopName = "noop"
 
-// NoopClient is an implementation of OutputClient that discards all records
+// NoopClient is an implementation of Output that discards all records
 // but keeps metrics and increments counters
 type NoopClient struct {
 	ctx      context.Context
@@ -26,10 +26,10 @@ type NoopClient struct {
 	metrics  *metrics.FluentBitGardenerMetrics
 }
 
-var _ types.OutputClient = &NoopClient{}
+var _ Output = &NoopClient{}
 
 // NewNoopClient creates a new NoopClient that discards all records
-func NewNoopClient(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics) (types.OutputClient, error) {
+func NewNoopClient(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics) (Output, error) {
 	client := &NoopClient{
 		ctx:      ctx,
 		endpoint: cfg.OTLPConfig.Endpoint,

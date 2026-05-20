@@ -14,6 +14,7 @@ import (
 	"github.com/gardener/logging/v1/pkg/config"
 	"github.com/gardener/logging/v1/pkg/controller"
 	"github.com/gardener/logging/v1/pkg/metrics"
+	"github.com/gardener/logging/v1/pkg/targets"
 	"github.com/gardener/logging/v1/pkg/types"
 )
 
@@ -24,7 +25,7 @@ type OutputPlugin interface {
 }
 
 type logging struct {
-	seedClient                      types.OutputClient
+	seedClient                      client.Output
 	cfg                             *config.Config
 	dynamicHostRegexp               *regexp.Regexp
 	extractKubernetesMetadataRegexp *regexp.Regexp
@@ -67,7 +68,7 @@ func NewPlugin(cfg *config.Config, logger logr.Logger, m *metrics.FluentBitGarde
 		l.extractKubernetesMetadataRegexp = regexp.MustCompile(cfg.PluginConfig.KubernetesMetadata.TagPrefix + cfg.PluginConfig.KubernetesMetadata.TagExpression)
 	}
 
-	opt := []client.Option{client.WithTarget(types.SeedTarget), client.WithLogger(logger), client.WithMetrics(m)}
+	opt := []client.Option{client.WithTarget(targets.Seed), client.WithLogger(logger), client.WithMetrics(m)}
 
 	// Pass the plugin's context to the client
 	if l.seedClient, err = client.NewClient(ctx, *cfg, opt...); err != nil {
@@ -75,7 +76,7 @@ func NewPlugin(cfg *config.Config, logger logr.Logger, m *metrics.FluentBitGarde
 
 		return nil, err
 	}
-	l.metrics.Clients.WithLabelValues(types.SeedTarget.String()).Inc()
+	l.metrics.Clients.WithLabelValues(targets.Seed.String()).Inc()
 
 	logger.Info("logging plugin created",
 		"seed_client_url", redactCredentialsFromEndpoint(l.seedClient.GetEndpoint()),
@@ -109,14 +110,14 @@ func NewPluginWithController(cfg *config.Config, logger logr.Logger, m *metrics.
 		l.extractKubernetesMetadataRegexp = regexp.MustCompile(cfg.PluginConfig.KubernetesMetadata.TagPrefix + cfg.PluginConfig.KubernetesMetadata.TagExpression)
 	}
 
-	opt := []client.Option{client.WithTarget(types.SeedTarget), client.WithLogger(logger), client.WithMetrics(m)}
+	opt := []client.Option{client.WithTarget(targets.Seed), client.WithLogger(logger), client.WithMetrics(m)}
 
 	if l.seedClient, err = client.NewClient(ctx, *cfg, opt...); err != nil {
 		cancel()
 
 		return nil, err
 	}
-	l.metrics.Clients.WithLabelValues(types.SeedTarget.String()).Inc()
+	l.metrics.Clients.WithLabelValues(targets.Seed.String()).Inc()
 
 	logger.Info("logging plugin created with controller",
 		"seed_client_url", redactCredentialsFromEndpoint(l.seedClient.GetEndpoint()),
@@ -169,7 +170,7 @@ func (l *logging) SendRecord(log types.OutputEntry) error {
 		return nil
 	}
 
-	// client.OutputClient - actual client chain to send the log to.
+	// client.Output - actual client chain to send the log to.
 	// The dynamicHostName is extracted from DynamicHostPath field
 	// in the record and must match DynamicHostRegex
 	// example shoot--local--local
@@ -214,7 +215,7 @@ func (l *logging) Close() {
 	)
 }
 
-func (l *logging) getClient(dynamicHosName string) types.OutputClient {
+func (l *logging) getClient(dynamicHosName string) client.Output {
 	if l.isDynamicHost(dynamicHosName) && l.controller != nil {
 		if c, isStopped := l.controller.GetClient(dynamicHosName); !isStopped {
 			return c

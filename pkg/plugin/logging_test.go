@@ -22,6 +22,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
+	"github.com/gardener/logging/v1/pkg/client"
 	"github.com/gardener/logging/v1/pkg/config"
 	"github.com/gardener/logging/v1/pkg/controller"
 	"github.com/gardener/logging/v1/pkg/log"
@@ -571,8 +572,8 @@ var _ = Describe("OutputPlugin plugin", func() {
 					},
 				},
 				PluginConfig: config.PluginConfig{
-					SeedType:  types.NoopType.String(),
-					ShootType: types.NoopType.String(),
+					SeedType:  types.Noop.String(),
+					ShootType: types.Noop.String(),
 					LogLevel:  "info",
 				},
 				ControllerConfig: config.ControllerConfig{
@@ -801,8 +802,8 @@ var _ = Describe("OutputPlugin plugin", func() {
 					},
 				},
 				PluginConfig: config.PluginConfig{
-					SeedType:  types.NoopType.String(),
-					ShootType: types.NoopType.String(),
+					SeedType:  types.Noop.String(),
+					ShootType: types.Noop.String(),
 					LogLevel:  "info",
 				},
 				ControllerConfig: config.ControllerConfig{
@@ -847,7 +848,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 // simulating OtelCollector mode where no client exists for a given namespace.
 type noClientController struct{}
 
-func (*noClientController) GetClient(_ string) (types.OutputClient, bool) { return nil, false }
+func (*noClientController) GetClient(_ string) (client.Output, bool) { return nil, false }
 
 func (*noClientController) Stop() {}
 

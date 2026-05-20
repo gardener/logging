@@ -13,9 +13,9 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	ctrl "sigs.k8s.io/controller-runtime"
 
+	pkgclient "github.com/gardener/logging/v1/pkg/client"
 	"github.com/gardener/logging/v1/pkg/config"
 	"github.com/gardener/logging/v1/pkg/metrics"
-	"github.com/gardener/logging/v1/pkg/types"
 )
 
 const (
@@ -25,7 +25,7 @@ const (
 // Controller represent a k8s controller watching for resources and
 // create logging clients based on them
 type Controller interface {
-	GetClient(name string) (types.OutputClient, bool)
+	GetClient(name string) (pkgclient.Output, bool)
 	Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error)
 	Stop()
 }
