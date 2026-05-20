@@ -13,10 +13,10 @@ import (
 type Type int
 
 const (
-	// Noop represents a no-operation client type
-	Noop Type = iota
-	// StdOut represents a standard output client type
-	StdOut
+	// NOOP represents a no-operation client type
+	NOOP Type = iota
+	// STDOUT represents a standard output client type
+	STDOUT
 	// OTLPGRPC represents an OTLP gRPC client type
 	OTLPGRPC
 	// OTLPHTTP represents an OTLP HTTP client type
@@ -29,24 +29,24 @@ const (
 func GetClientTypeFromString(clientType string) Type {
 	switch strings.ToUpper(clientType) {
 	case "NOOP":
-		return Noop
+		return NOOP
 	case "STDOUT":
-		return StdOut
+		return STDOUT
 	case "OTLPGRPC", "OTLP_GRPC":
 		return OTLPGRPC
 	case "OTLPHTTP", "OTLP_HTTP":
 		return OTLPHTTP
 	default:
-		return Noop
+		return NOOP
 	}
 }
 
 // String returns the string representation of the client Type
 func (t Type) String() string {
 	switch t {
-	case Noop:
+	case NOOP:
 		return "noop"
-	case StdOut:
+	case STDOUT:
 		return "stdout"
 	case OTLPGRPC:
 		return "otlp_grpc"
