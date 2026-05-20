@@ -27,8 +27,8 @@ type Output interface {
 	GetEndpoint() string
 }
 
-// NewClientFunc is a function type for creating new Output instances
-type NewClientFunc func(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics) (Output, error)
+// NewFunc is a function type for creating new Output instances
+type NewFunc func(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics) (Output, error)
 
 type clientOptions struct {
 	target  targets.Target
@@ -81,18 +81,18 @@ func NewClient(ctx context.Context, cfg config.Config, opts ...Option) (Output, 
 		logger = logr.Discard() // Default no-op logger
 	}
 
-	var nfc NewClientFunc
+	var nfc NewFunc
 	var err error
 	switch options.target {
 	case targets.Seed:
 		t := types.GetClientTypeFromString(cfg.PluginConfig.SeedType)
-		nfc, err = getNewClientFunc(t)
+		nfc, err = getNewFunc(t)
 		if err != nil {
 			return nil, err
 		}
 	case targets.Shoot:
 		t := types.GetClientTypeFromString(cfg.PluginConfig.ShootType)
-		nfc, err = getNewClientFunc(t)
+		nfc, err = getNewFunc(t)
 		if err != nil {
 			return nil, err
 		}
@@ -103,7 +103,7 @@ func NewClient(ctx context.Context, cfg config.Config, opts ...Option) (Output, 
 	return nfc(ctx, cfg, logger, options.metrics)
 }
 
-func getNewClientFunc(t types.Type) (NewClientFunc, error) {
+func getNewFunc(t types.Type) (NewFunc, error) {
 	switch t {
 	case types.OTLPGRPC:
 		return NewOTLPGRPCClient, nil
