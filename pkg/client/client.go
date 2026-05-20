@@ -10,6 +10,7 @@ import (
 	"github.com/go-logr/logr"
 
 	"github.com/gardener/logging/v1/pkg/client/api"
+	noopclient "github.com/gardener/logging/v1/pkg/client/noop"
 	"github.com/gardener/logging/v1/pkg/config"
 	"github.com/gardener/logging/v1/pkg/metrics"
 	"github.com/gardener/logging/v1/pkg/targets"
@@ -101,7 +102,7 @@ func getNewFunc(t types.Type) (NewFunc, error) {
 	case types.STDOUT:
 		return NewStdoutClient, nil
 	case types.NOOP:
-		return NewNoopClient, nil
+		return noopclient.New, nil
 	default:
 		return nil, fmt.Errorf("unknown client type: %v", t)
 	}

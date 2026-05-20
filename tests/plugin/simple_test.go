@@ -10,7 +10,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/gardener/logging/v1/pkg/client"
+	noopclient "github.com/gardener/logging/v1/pkg/client/noop"
 	"github.com/gardener/logging/v1/pkg/config"
 	"github.com/gardener/logging/v1/pkg/log"
 	"github.com/gardener/logging/v1/pkg/metrics"
@@ -31,7 +31,7 @@ var _ = Describe("Simple Plugin Test", func() {
 			},
 		}
 
-		c, err := client.NewNoopClient(context.Background(), cfg, logger, testMetrics)
+		c, err := noopclient.New(context.Background(), cfg, logger, testMetrics)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(c).NotTo(BeNil())
 
