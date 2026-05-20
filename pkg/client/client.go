@@ -17,9 +17,6 @@ import (
 	"github.com/gardener/logging/v1/pkg/types"
 )
 
-// NewFunc is a function type for creating new api.Output instances
-type NewFunc func(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics) (api.Output, error)
-
 type clientOptions struct {
 	target  targets.Target
 	logger  logr.Logger
@@ -71,38 +68,25 @@ func NewClient(ctx context.Context, cfg config.Config, opts ...Option) (api.Outp
 		logger = logr.Discard() // Default no-op logger
 	}
 
-	var nf NewFunc
-	var err error
+	var t types.Type
 	switch options.target {
 	case targets.Seed:
-		t := types.GetClientTypeFromString(cfg.PluginConfig.SeedType)
-		nf, err = getNewFunc(t)
-		if err != nil {
-			return nil, err
-		}
+		t = types.GetClientTypeFromString(cfg.PluginConfig.SeedType)
 	case targets.Shoot:
-		t := types.GetClientTypeFromString(cfg.PluginConfig.ShootType)
-		nf, err = getNewFunc(t)
-		if err != nil {
-			return nil, err
-		}
+		t = types.GetClientTypeFromString(cfg.PluginConfig.ShootType)
 	default:
 		return nil, fmt.Errorf("unknown target type: %v", options.target)
 	}
 
-	return nf(ctx, cfg, logger, options.metrics)
-}
-
-func getNewFunc(t types.Type) (NewFunc, error) {
 	switch t {
 	case types.OTLPGRPC:
-		return NewOTLPGRPCClient, nil
+		return NewOTLPGRPCClient(ctx, cfg, logger, options.metrics)
 	case types.OTLPHTTP:
-		return NewOTLPHTTPClient, nil
+		return NewOTLPHTTPClient(ctx, cfg, logger, options.metrics)
 	case types.STDOUT:
-		return NewStdoutClient, nil
+		return NewStdoutClient(ctx, cfg, logger, options.metrics)
 	case types.NOOP:
-		return noopclient.New, nil
+		return noopclient.New(ctx, cfg, logger, options.metrics)
 	default:
 		return nil, fmt.Errorf("unknown client type: %v", t)
 	}

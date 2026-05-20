@@ -30,7 +30,7 @@ type Client struct {
 var _ api.Output = &Client{}
 
 // New creates a new NoopClient that discards all records
-func New(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics) (api.Output, error) {
+func New(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics) (*Client, error) {
 	client := &Client{
 		ctx:      ctx,
 		endpoint: cfg.OTLPConfig.Endpoint,
