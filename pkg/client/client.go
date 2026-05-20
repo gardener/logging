@@ -70,18 +70,18 @@ func NewClient(ctx context.Context, cfg config.Config, opts ...Option) (api.Outp
 		logger = logr.Discard() // Default no-op logger
 	}
 
-	var nfc NewFunc
+	var nf NewFunc
 	var err error
 	switch options.target {
 	case targets.Seed:
 		t := types.GetClientTypeFromString(cfg.PluginConfig.SeedType)
-		nfc, err = getNewFunc(t)
+		nf, err = getNewFunc(t)
 		if err != nil {
 			return nil, err
 		}
 	case targets.Shoot:
 		t := types.GetClientTypeFromString(cfg.PluginConfig.ShootType)
-		nfc, err = getNewFunc(t)
+		nf, err = getNewFunc(t)
 		if err != nil {
 			return nil, err
 		}
@@ -89,7 +89,7 @@ func NewClient(ctx context.Context, cfg config.Config, opts ...Option) (api.Outp
 		return nil, fmt.Errorf("unknown target type: %v", options.target)
 	}
 
-	return nfc(ctx, cfg, logger, options.metrics)
+	return nf(ctx, cfg, logger, options.metrics)
 }
 
 func getNewFunc(t types.Type) (NewFunc, error) {
