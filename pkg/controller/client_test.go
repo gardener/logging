@@ -13,8 +13,8 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 
-	"github.com/gardener/logging/v1/pkg/client"
 	"github.com/gardener/logging/v1/pkg/client/api"
+	noopclient "github.com/gardener/logging/v1/pkg/client/noop"
 	"github.com/gardener/logging/v1/pkg/config"
 	"github.com/gardener/logging/v1/pkg/log"
 	"github.com/gardener/logging/v1/pkg/metrics"
@@ -43,7 +43,7 @@ var _ = Describe("Controller Client", func() {
 		testMetrics = metrics.NewFluentBitGardenerMetrics(reg)
 
 		// Create separate NoopClient instances with different endpoints for separate metrics
-		shootClient, err := client.NewNoopClient(
+		shootClient, err := noopclient.New(
 			context.Background(),
 			config.Config{
 				OTLPConfig: config.OTLPConfig{
@@ -52,7 +52,7 @@ var _ = Describe("Controller Client", func() {
 			}, logger, testMetrics)
 		Expect(err).ToNot(HaveOccurred())
 
-		seedClient, err := client.NewNoopClient(
+		seedClient, err := noopclient.New(
 			context.Background(),
 			config.Config{
 				OTLPConfig: config.OTLPConfig{
@@ -436,7 +436,7 @@ var _ = Describe("Controller Client", func() {
 		)
 
 		BeforeEach(func() {
-			noopClient, err := client.NewNoopClient(
+			noopClient, err := noopclient.New(
 				context.Background(),
 				config.Config{
 					OTLPConfig: config.OTLPConfig{

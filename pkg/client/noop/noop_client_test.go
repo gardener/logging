@@ -1,7 +1,7 @@
 // Copyright 2025 SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
 // SPDX-License-Identifier: Apache-2.0
 
-package client
+package noop
 
 import (
 	"context"
@@ -34,7 +34,7 @@ var _ = Describe("NoopClient", func() {
 		cfg = config.Config{}
 
 		logger = log.NewNopLogger()
-		outputClient, _ = NewNoopClient(
+		outputClient, _ = New(
 			context.Background(),
 			cfg,
 			logger,
@@ -51,14 +51,14 @@ var _ = Describe("NoopClient", func() {
 				},
 			}
 
-			testClient, err := NewNoopClient(context.Background(), testCfg, logger, testMetrics)
+			testClient, err := New(context.Background(), testCfg, logger, testMetrics)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(testClient).NotTo(BeNil())
 			Expect(testClient.GetEndpoint()).To(Equal(testEndpoint))
 		})
 
 		It("should work with nil logger", func() {
-			testClient, err := NewNoopClient(context.Background(), cfg, logger, testMetrics)
+			testClient, err := New(context.Background(), cfg, logger, testMetrics)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(testClient).NotTo(BeNil())
 		})
@@ -70,7 +70,7 @@ var _ = Describe("NoopClient", func() {
 				},
 			}
 
-			testClient, err := NewNoopClient(context.Background(), testCfg, logger, testMetrics)
+			testClient, err := New(context.Background(), testCfg, logger, testMetrics)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(testClient).NotTo(BeNil())
 			Expect(testClient.GetEndpoint()).To(Equal(""))
@@ -180,7 +180,7 @@ var _ = Describe("NoopClient", func() {
 				},
 			}
 
-			testClient, err := NewNoopClient(context.Background(), testCfg, logger, testMetrics)
+			testClient, err := New(context.Background(), testCfg, logger, testMetrics)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(testClient.GetEndpoint()).To(Equal(testEndpoint))
 		})
@@ -202,9 +202,9 @@ var _ = Describe("NoopClient", func() {
 				},
 			}
 
-			client1, err := NewNoopClient(context.Background(), cfg1, logger, testMetrics)
+			client1, err := New(context.Background(), cfg1, logger, testMetrics)
 			Expect(err).NotTo(HaveOccurred())
-			client2, err := NewNoopClient(context.Background(), cfg2, logger, testMetrics)
+			client2, err := New(context.Background(), cfg2, logger, testMetrics)
 			Expect(err).NotTo(HaveOccurred())
 
 			metric1 := testMetrics.DroppedLogs.WithLabelValues(endpoint1, "noop")
