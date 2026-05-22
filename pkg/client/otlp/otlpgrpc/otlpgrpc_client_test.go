@@ -65,7 +65,7 @@ var _ = Describe("OTLPGRPCClient", func() {
 		It("should set the correct endpoint", func() {
 			client, err := otlpgrpc.New(context.Background(), cfg, logger, testMetrics, nil)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(client.GetEndpoint()).To(Equal("localhost:4317"))
+			Expect(client.Endpoint()).To(Equal("localhost:4317"))
 
 			// Clean up
 			client.Stop()

@@ -65,7 +65,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 		It("should set the correct endpoint", func() {
 			client, err := otlphttp.New(context.Background(), cfg, logger, testMetrics, nil)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(client.GetEndpoint()).To(Equal("localhost:4318"))
+			Expect(client.Endpoint()).To(Equal("localhost:4318"))
 
 			// Clean up
 			client.Stop()
@@ -391,12 +391,12 @@ var _ = Describe("OTLPHTTPClient", func() {
 		})
 	})
 
-	Describe("GetEndpoint", func() {
+	Describe("Endpoint", func() {
 		It("should return the configured endpoint", func() {
 			client, err := otlphttp.New(context.Background(), cfg, logger, testMetrics, nil)
 			Expect(err).ToNot(HaveOccurred())
 
-			endpoint := client.GetEndpoint()
+			endpoint := client.Endpoint()
 			Expect(endpoint).To(Equal("localhost:4318"))
 
 			client.Stop()
@@ -409,7 +409,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 			cfg1.OTLPConfig.DQueConfig.DQueDir = GinkgoT().TempDir()
 			client1, err := otlphttp.New(context.Background(), cfg1, logger, testMetrics, nil)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(client1.GetEndpoint()).To(Equal("otlp-collector-1:4318"))
+			Expect(client1.Endpoint()).To(Equal("otlp-collector-1:4318"))
 
 			// Second client
 			cfg2 := cfg
@@ -417,7 +417,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 			cfg2.OTLPConfig.DQueConfig.DQueDir = GinkgoT().TempDir()
 			client2, err := otlphttp.New(context.Background(), cfg2, logger, testMetrics, nil)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(client2.GetEndpoint()).To(Equal("otlp-collector-2:4318"))
+			Expect(client2.Endpoint()).To(Equal("otlp-collector-2:4318"))
 
 			// Clean up
 			client1.Stop()

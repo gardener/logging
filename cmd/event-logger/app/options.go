@@ -120,7 +120,7 @@ func (o *Options) config(seedKubeAPIServerConfig *rest.Config, seedKubeClient *k
 
 // Run runs gardener-apiserver with the given Options.
 func (o *Options) Run(stopCh <-chan struct{}) error {
-	log := pkglog.NewLogger("info")
+	log := pkglog.New("info")
 	log.Info("Starting Gardener Event Logger...", "Version", version.Get())
 
 	// Create clientset for the native Kubernetes API group

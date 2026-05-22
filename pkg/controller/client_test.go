@@ -24,7 +24,7 @@ import (
 var _ = Describe("Controller Client", func() {
 	var (
 		ctlClient   controllerClient
-		logger      = log.NewLogger("info")
+		logger      = log.New("info")
 		testMetrics *metrics.FluentBitGardenerMetrics
 		line1       = "testline1"
 		line2       = "testline2"

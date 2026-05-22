@@ -30,7 +30,7 @@ var _ = Describe("Plugin Registry", func() {
 
 	BeforeEach(func() {
 		registry = &Registry{
-			logger: log.NewNopLogger(),
+			logger: log.NewNoop(),
 		}
 	})
 

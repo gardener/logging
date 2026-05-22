@@ -81,7 +81,7 @@ func NewPlugin(cfg *config.Config, logger logr.Logger, m *metrics.FluentBitGarde
 	l.metrics.Clients.WithLabelValues(targets.Seed.String()).Inc()
 
 	logger.Info("logging plugin created",
-		"seed_client_url", redactCredentialsFromEndpoint(l.seedClient.GetEndpoint()),
+		"seed_client_url", redactCredentialsFromEndpoint(l.seedClient.Endpoint()),
 		"seed_queue_name", cfg.OTLPConfig.DQueConfig.DQueName,
 	)
 
@@ -122,7 +122,7 @@ func NewPluginWithController(cfg *config.Config, logger logr.Logger, m *metrics.
 	l.metrics.Clients.WithLabelValues(targets.Seed.String()).Inc()
 
 	logger.Info("logging plugin created with controller",
-		"seed_client_url", redactCredentialsFromEndpoint(l.seedClient.GetEndpoint()),
+		"seed_client_url", redactCredentialsFromEndpoint(l.seedClient.Endpoint()),
 		"seed_queue_name", cfg.OTLPConfig.DQueConfig.DQueName,
 	)
 
@@ -212,7 +212,7 @@ func (l *logging) Close() {
 	}
 
 	l.logger.Info("logging plugin stopped",
-		"seed_client_url", redactCredentialsFromEndpoint(l.seedClient.GetEndpoint()),
+		"seed_client_url", redactCredentialsFromEndpoint(l.seedClient.Endpoint()),
 		"seed_queue_name", l.cfg.OTLPConfig.DQueConfig.DQueName,
 	)
 }

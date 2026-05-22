@@ -31,7 +31,7 @@ type fakeOutputClient struct {
 	isStopped bool
 }
 
-func (*fakeOutputClient) GetEndpoint() string {
+func (*fakeOutputClient) Endpoint() string {
 	return "http://localhost"
 }
 

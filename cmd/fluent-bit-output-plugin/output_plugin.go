@@ -77,7 +77,7 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 	}
 
 	if cfg.PluginConfig.LogLevel != "info" {
-		logger = log.NewLogger(cfg.PluginConfig.LogLevel)
+		logger = log.New(cfg.PluginConfig.LogLevel)
 	}
 
 	dumpConfiguration(cfg)
@@ -88,7 +88,7 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 
 	id, _, _ := strings.Cut(string(uuid.NewUUID()), "-")
 
-	outputPlugin, err := plugin.NewPlugin(cfg, log.NewLogger(cfg.PluginConfig.LogLevel), a.PluginMetrics, a.OTLPMetricsSetup)
+	outputPlugin, err := plugin.NewPlugin(cfg, log.New(cfg.PluginConfig.LogLevel), a.PluginMetrics, a.OTLPMetricsSetup)
 	if err != nil {
 		a.PluginMetrics.Errors.WithLabelValues(metrics.ErrorNewPlugin).Inc()
 		logger.Error(err, "[flb-go] error creating output plugin", "id", id)

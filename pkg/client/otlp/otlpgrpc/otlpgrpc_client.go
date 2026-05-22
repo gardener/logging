@@ -54,7 +54,7 @@ func New(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.
 
 	// Add metrics instrumentation to gRPC dial options
 	if metricsSetup != nil {
-		exporterOpts = append(exporterOpts, otlploggrpc.WithDialOption(metricsSetup.GetGRPCStatsHandler()))
+		exporterOpts = append(exporterOpts, otlploggrpc.WithDialOption(metricsSetup.GRPCStatsHandler()))
 	}
 
 	// Create blocking OTLP gRPC exporter
@@ -118,7 +118,7 @@ func New(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.
 
 	logger.V(1).Info("OTLP gRPC client created",
 		"endpoint", cfg.OTLPConfig.Endpoint,
-		"processorType", otlp.GetProcessorType(cfg),
+		"processorType", otlp.ProcessorType(cfg),
 	)
 
 	return client, nil
@@ -209,8 +209,8 @@ func (c *Client) StopWait() {
 	}
 }
 
-// GetEndpoint returns the configured endpoint
-func (c *Client) GetEndpoint() string {
+// Endpoint returns the configured endpoint
+func (c *Client) Endpoint() string {
 	return c.endpoint
 }
 
@@ -221,5 +221,5 @@ func metricsSetupProvider(setup *otlp.MetricsSetup) *sdkmetric.MeterProvider {
 		return nil
 	}
 
-	return setup.GetProvider()
+	return setup.Provider()
 }

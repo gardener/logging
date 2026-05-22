@@ -29,7 +29,7 @@ var (
 func TestMain(m *testing.M) {
 	testenv = env.New()
 
-	logger := log.NewLogger("debug")
+	logger := log.New("debug")
 
 	kindClusterName := envconf.RandomName("logging", 16)
 

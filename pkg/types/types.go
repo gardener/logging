@@ -25,8 +25,8 @@ const (
 	Unknown
 )
 
-// GetClientTypeFromString converts a string representation of client type to Type. It returns Noop for unknown types.
-func GetClientTypeFromString(clientType string) Type {
+// ClientTypeFromString converts a string representation of client type to Type. It returns Noop for unknown types.
+func ClientTypeFromString(clientType string) Type {
 	switch strings.ToUpper(clientType) {
 	case "NOOP":
 		return NOOP

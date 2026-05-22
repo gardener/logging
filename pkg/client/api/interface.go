@@ -16,6 +16,6 @@ type Output interface {
 	// StopWait stops the client of receiving new logs and waits for all saved logs
 	// to be sent until shutting down.
 	StopWait()
-	// GetEndpoint returns the target logging backend endpoint.
-	GetEndpoint() string
+	// Endpoint returns the target logging backend endpoint.
+	Endpoint() string
 }

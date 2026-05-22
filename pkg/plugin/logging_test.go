@@ -41,7 +41,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 		reg := metrics.NewRegistry()
 		testMetrics = metrics.RegisterFluentBitGardenerMetrics(reg)
 
-		logger = log.NewNopLogger()
+		logger = log.NewNoop()
 
 		cfg = &config.Config{
 			OTLPConfig: config.OTLPConfig{

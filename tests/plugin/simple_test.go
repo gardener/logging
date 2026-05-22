@@ -21,7 +21,7 @@ var _ = Describe("Simple Plugin Test", func() {
 	It("should create a NoopClient with logr logger", func() {
 		reg := metrics.NewRegistry()
 		testMetrics := metrics.RegisterFluentBitGardenerMetrics(reg)
-		logger := log.NewNopLogger()
+		logger := log.NewNoop()
 		cfg := config.Config{
 			PluginConfig: config.PluginConfig{
 				SeedType: types.NOOP.String(),
@@ -49,7 +49,7 @@ var _ = Describe("Simple Plugin Test", func() {
 	})
 
 	It("should create a logger with slog backend", func() {
-		logger := log.NewLogger("info")
+		logger := log.New("info")
 		Expect(logger).NotTo(BeNil())
 
 		// Test logging calls

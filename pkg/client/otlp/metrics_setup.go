@@ -62,18 +62,18 @@ func RegisterMetricsSetup(reg *promclient.Registry) (*MetricsSetup, error) {
 	}, nil
 }
 
-// GetProvider returns the configured OpenTelemetry meter provider.
+// Provider returns the configured OpenTelemetry meter provider.
 // The provider is used for creating meters and recording metrics.
-func (m *MetricsSetup) GetProvider() *sdkmetric.MeterProvider {
+func (m *MetricsSetup) Provider() *sdkmetric.MeterProvider {
 	return m.provider
 }
 
-// GetGRPCStatsHandler returns a gRPC dial option that enables automatic
+// GRPCStatsHandler returns a gRPC dial option that enables automatic
 // metrics collection for gRPC client calls.
 //
 // The handler collects standard gRPC metrics like request count, duration,
 // and message sizes using the OpenTelemetry meter provider.
-func (m *MetricsSetup) GetGRPCStatsHandler() grpc.DialOption {
+func (m *MetricsSetup) GRPCStatsHandler() grpc.DialOption {
 	return grpc.WithStatsHandler(otelgrpc.NewClientHandler(
 		otelgrpc.WithMeterProvider(m.provider),
 	))

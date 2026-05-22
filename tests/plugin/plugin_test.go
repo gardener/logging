@@ -178,7 +178,7 @@ func setupTestContext() *testContext {
 	reg := metrics.NewRegistry()
 	testMetrics := metrics.RegisterFluentBitGardenerMetrics(reg)
 
-	logger := pkglog.NewNopLogger()
+	logger := pkglog.NewNoop()
 	cfg := createPluginConfig(tmpDir)
 
 	// Create controller-runtime fake client

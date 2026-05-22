@@ -87,9 +87,9 @@ func NewClient(ctx context.Context, cfg config.Config, opts ...Option) (api.Outp
 	var t types.Type
 	switch options.target {
 	case targets.Seed:
-		t = types.GetClientTypeFromString(cfg.PluginConfig.SeedType)
+		t = types.ClientTypeFromString(cfg.PluginConfig.SeedType)
 	case targets.Shoot:
-		t = types.GetClientTypeFromString(cfg.PluginConfig.ShootType)
+		t = types.ClientTypeFromString(cfg.PluginConfig.ShootType)
 	default:
 		return nil, fmt.Errorf("unknown target type: %v", options.target)
 	}

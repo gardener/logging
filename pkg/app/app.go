@@ -28,7 +28,7 @@ type App struct {
 
 func Init() {
 	appOnce.Do(func() {
-		logger := log.NewLogger("info")
+		logger := log.New("info")
 		logger.Info("Starting fluent-bit-gardener-output-plugin",
 			"version", version.Get().GitVersion,
 			"revision", version.Get().GitCommit,

@@ -151,7 +151,7 @@ var _ = Describe("BatchProcessorFactory", func() {
 				},
 			}
 
-			processorType := GetProcessorType(cfg)
+			processorType := ProcessorType(cfg)
 			Expect(processorType).To(Equal(BatchProcessorTypeSDK))
 		})
 
@@ -162,7 +162,7 @@ var _ = Describe("BatchProcessorFactory", func() {
 				},
 			}
 
-			processorType := GetProcessorType(cfg)
+			processorType := ProcessorType(cfg)
 			Expect(processorType).To(Equal(BatchProcessorTypeDQue))
 		})
 	})
