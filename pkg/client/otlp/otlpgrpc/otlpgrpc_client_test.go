@@ -1,7 +1,7 @@
 // Copyright 2025 SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
 // SPDX-License-Identifier: Apache-2.0
 
-package client
+package otlpgrpc_test
 
 import (
 	"context"
@@ -12,6 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/gardener/logging/v1/pkg/client/api"
+	"github.com/gardener/logging/v1/pkg/client/otlp/otlpgrpc"
 	"github.com/gardener/logging/v1/pkg/config"
 	"github.com/gardener/logging/v1/pkg/metrics"
 	"github.com/gardener/logging/v1/pkg/types"
@@ -36,7 +37,7 @@ var _ = Describe("OTLPGRPCClient", func() {
 				Timeout:     30 * time.Second,
 				Headers:     make(map[string]string),
 				DQueConfig: config.DQueConfig{
-					DQueDir:         GetTestTempDir("otlp"),
+					DQueDir:         GinkgoT().TempDir(),
 					DQueSegmentSize: config.DefaultDQueConfig.DQueSegmentSize,
 					DQueSync:        config.DefaultDQueConfig.DQueSync,
 					DQueName:        config.DefaultDQueConfig.DQueName,
@@ -51,9 +52,9 @@ var _ = Describe("OTLPGRPCClient", func() {
 		}
 	})
 
-	Describe("NewOTLPGRPCClient", func() {
+	Describe("New", func() {
 		It("should create an OTLP gRPC client", func() {
-			client, err := NewOTLPGRPCClient(context.Background(), cfg, logger, testMetrics)
+			client, err := otlpgrpc.New(context.Background(), cfg, logger, testMetrics)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(client).ToNot(BeNil())
 
@@ -62,7 +63,7 @@ var _ = Describe("OTLPGRPCClient", func() {
 		})
 
 		It("should set the correct endpoint", func() {
-			client, err := NewOTLPGRPCClient(context.Background(), cfg, logger, testMetrics)
+			client, err := otlpgrpc.New(context.Background(), cfg, logger, testMetrics)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(client.GetEndpoint()).To(Equal("localhost:4317"))
 
@@ -74,7 +75,7 @@ var _ = Describe("OTLPGRPCClient", func() {
 			cfg.OTLPConfig.Insecure = false
 			cfg.OTLPConfig.TLSConfig = nil // No TLS config, will use system defaults
 
-			client, err := NewOTLPGRPCClient(context.Background(), cfg, logger, testMetrics)
+			client, err := otlpgrpc.New(context.Background(), cfg, logger, testMetrics)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(client).ToNot(BeNil())
 
@@ -88,7 +89,7 @@ var _ = Describe("OTLPGRPCClient", func() {
 
 		BeforeEach(func() {
 			var err error
-			client, err = NewOTLPGRPCClient(context.Background(), cfg, logger, testMetrics)
+			client, err = otlpgrpc.New(context.Background(), cfg, logger, testMetrics)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -208,80 +209,11 @@ var _ = Describe("OTLPGRPCClient", func() {
 
 	Describe("Stop and StopWait", func() {
 		It("should stop the client immediately", func() {
-			client, err := NewOTLPGRPCClient(context.Background(), cfg, logger, testMetrics)
+			client, err := otlpgrpc.New(context.Background(), cfg, logger, testMetrics)
 			Expect(err).ToNot(HaveOccurred())
 
 			client.Stop()
 			// Should not panic or error
-		})
-
-		// It("should stop the client with wait", func() {
-		// 	client, err := NewOTLPGRPCClient(cfg, logger)
-		// 	Expect(err).ToNot(HaveOccurred())
-		//
-		// 	// Send a log entry
-		// 	entry := types.OutputEntry{
-		// 		Timestamp: time.Now(),
-		// 		Record: map[string]any{
-		// 			"log": "test message",
-		// 		},
-		// 	}
-		// 	err = client.Handle(entry)
-		// 	Expect(err).ToNot(HaveOccurred())
-		//
-		// 	// Stop with wait should flush logs
-		// 	client.StopWait()
-		// })
-	})
-
-	Describe("convertToKeyValue", func() {
-		It("should convert string values", func() {
-			kv := convertToKeyValue("key", "value")
-			Expect(kv.Key).To(Equal("key"))
-		})
-
-		It("should convert integer values", func() {
-			kv := convertToKeyValue("count", 42)
-			Expect(kv.Key).To(Equal("count"))
-		})
-
-		It("should convert float values", func() {
-			kv := convertToKeyValue("pi", 3.14)
-			Expect(kv.Key).To(Equal("pi"))
-		})
-
-		It("should convert boolean values", func() {
-			kv := convertToKeyValue("enabled", true)
-			Expect(kv.Key).To(Equal("enabled"))
-		})
-
-		It("should convert byte array to string", func() {
-			kv := convertToKeyValue("data", []byte("binary"))
-			Expect(kv.Key).To(Equal("data"))
-		})
-
-		It("should convert map to string representation", func() {
-			kv := convertToKeyValue("metadata", map[string]any{"pod": "test"})
-			Expect(kv.Key).To(Equal("metadata"))
-		})
-
-		It("should convert slice to string representation", func() {
-			kv := convertToKeyValue("tags", []any{"tag1", "tag2"})
-			Expect(kv.Key).To(Equal("tags"))
-		})
-	})
-
-	Describe("compressionToString", func() {
-		It("should return gzip for compression code 1", func() {
-			Expect(compressionToString(1)).To(Equal("gzip"))
-		})
-
-		It("should return none for compression code 0", func() {
-			Expect(compressionToString(0)).To(Equal("none"))
-		})
-
-		It("should return none for unknown compression codes", func() {
-			Expect(compressionToString(99)).To(Equal("none"))
 		})
 	})
 })

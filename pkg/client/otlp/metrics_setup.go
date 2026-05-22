@@ -1,10 +1,10 @@
 // Copyright 2025 SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
 // SPDX-License-Identifier: Apache-2.0
 
-// Package client provides OTLP client implementations with integrated metrics collection.
+// Package otlp provides OTLP client implementations with integrated metrics collection.
 // The metrics setup uses a singleton pattern to ensure only one Prometheus exporter
 // is created across all clients, preventing duplicate metric collection errors.
-package client
+package otlp
 
 import (
 	"context"
@@ -79,9 +79,14 @@ func (m *MetricsSetup) GetProvider() *sdkmetric.MeterProvider {
 	return m.provider
 }
 
-// getGlobalMeterProvider returns the global meter provider if available, or nil otherwise.
+// GlobalMetricsSetup returns the global metrics setup singleton, or nil if it has not been initialized.
+func GlobalMetricsSetup() *MetricsSetup {
+	return globalMetricsSetup
+}
+
+// GetGlobalMeterProvider returns the global meter provider if available, or nil otherwise.
 // This is a convenience function for safely accessing the global metrics setup.
-func getGlobalMeterProvider() *sdkmetric.MeterProvider {
+func GetGlobalMeterProvider() *sdkmetric.MeterProvider {
 	if globalMetricsSetup != nil {
 		return globalMetricsSetup.GetProvider()
 	}

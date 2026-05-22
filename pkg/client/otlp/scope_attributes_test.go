@@ -1,13 +1,13 @@
 // Copyright 2025 SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
 // SPDX-License-Identifier: Apache-2.0
 
-package client_test
+package otlp_test
 
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	. "github.com/gardener/logging/v1/pkg/client"
+	. "github.com/gardener/logging/v1/pkg/client/otlp"
 )
 
 var _ = Describe("ScopeAttributesBuilder", func() {

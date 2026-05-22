@@ -1,7 +1,7 @@
 // Copyright 2025 SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
 // SPDX-License-Identifier: Apache-2.0
 
-package client_test
+package otlp_test
 
 import (
 	"context"
@@ -17,7 +17,7 @@ import (
 	sdklog "go.opentelemetry.io/otel/sdk/log"
 	"go.opentelemetry.io/otel/sdk/log/logtest"
 
-	"github.com/gardener/logging/v1/pkg/client"
+	"github.com/gardener/logging/v1/pkg/client/otlp"
 	"github.com/gardener/logging/v1/pkg/metrics"
 )
 
@@ -47,14 +47,14 @@ var _ = Describe("DQue Batch Processor Integration", func() {
 
 		// Create processor
 		ctx := context.Background()
-		processor, err := client.NewDQueBatchProcessor(
+		processor, err := otlp.NewDQueBatchProcessor(
 			ctx,
 			exporter,
 			logger,
 			testMetrics,
-			client.WithDQueueDir(queueDir),
-			client.WithExportInterval(time.Millisecond*1),
-			client.WithEndpoint("test-endpoint"),
+			otlp.WithDQueueDir(queueDir),
+			otlp.WithExportInterval(time.Millisecond*1),
+			otlp.WithEndpoint("test-endpoint"),
 		)
 		Expect(err).NotTo(HaveOccurred())
 		defer func() {
@@ -167,19 +167,19 @@ var _ = Describe("DQue Batch Processor with Functional Options", func() {
 
 		// Create processor using functional options (new API)
 		ctx := context.Background()
-		processor, err := client.NewDQueBatchProcessor(
+		processor, err := otlp.NewDQueBatchProcessor(
 			ctx,
 			exporter,
 			logger,
 			testMetrics,
-			client.WithDQueueDir(queueDir),
-			client.WithDQueueName("test-options"),
-			client.WithMaxQueueSize(100),
-			client.WithMaxBatchSize(10),
-			client.WithExportTimeout(5*time.Second),
-			client.WithExportInterval(100*time.Millisecond),
-			client.WithDQueueSegmentSize(50),
-			client.WithEndpoint("test-endpoint"),
+			otlp.WithDQueueDir(queueDir),
+			otlp.WithDQueueName("test-options"),
+			otlp.WithMaxQueueSize(100),
+			otlp.WithMaxBatchSize(10),
+			otlp.WithExportTimeout(5*time.Second),
+			otlp.WithExportInterval(100*time.Millisecond),
+			otlp.WithDQueueSegmentSize(50),
+			otlp.WithEndpoint("test-endpoint"),
 		)
 		Expect(err).NotTo(HaveOccurred())
 		defer func() {
@@ -222,13 +222,13 @@ var _ = Describe("DQue Batch Processor with Functional Options", func() {
 
 		// Create processor with only required options
 		ctx := context.Background()
-		processor, err := client.NewDQueBatchProcessor(
+		processor, err := otlp.NewDQueBatchProcessor(
 			ctx,
 			exporter,
 			logger,
 			testMetrics,
-			client.WithDQueueDir(queueDir),
-			client.WithEndpoint("test-minimal"),
+			otlp.WithDQueueDir(queueDir),
+			otlp.WithEndpoint("test-minimal"),
 		)
 		Expect(err).NotTo(HaveOccurred())
 		defer func() {
@@ -243,13 +243,13 @@ var _ = Describe("DQue Batch Processor with Functional Options", func() {
 		ctx := context.Background()
 
 		// Missing exporter
-		_, err := client.NewDQueBatchProcessor(
+		_, err := otlp.NewDQueBatchProcessor(
 			ctx,
 			nil,
 			logger,
 			testMetrics,
-			client.WithDQueueDir(queueDir),
-			client.WithEndpoint("test-endpoint"),
+			otlp.WithDQueueDir(queueDir),
+			otlp.WithEndpoint("test-endpoint"),
 		)
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("exporter"))
@@ -274,14 +274,14 @@ var _ = Describe("DQue Batch Processor with Functional Options", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		ctx := context.Background()
-		_, err = client.NewDQueBatchProcessor(
+		_, err = otlp.NewDQueBatchProcessor(
 			ctx,
 			exporter,
 			logger,
 			testMetrics,
-			client.WithDQueueDir(queueDir),
-			client.WithDQueueName(dqueName),
-			client.WithEndpoint("test-endpoint"),
+			otlp.WithDQueueDir(queueDir),
+			otlp.WithDQueueName(dqueName),
+			otlp.WithEndpoint("test-endpoint"),
 		)
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("failed to create dque"))

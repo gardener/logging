@@ -1,7 +1,7 @@
 // Copyright 2025 SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
 // SPDX-License-Identifier: Apache-2.0
 
-package client
+package otlphttp_test
 
 import (
 	"context"
@@ -12,6 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/gardener/logging/v1/pkg/client/api"
+	"github.com/gardener/logging/v1/pkg/client/otlp/otlphttp"
 	"github.com/gardener/logging/v1/pkg/config"
 	"github.com/gardener/logging/v1/pkg/metrics"
 	"github.com/gardener/logging/v1/pkg/types"
@@ -36,7 +37,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 				Timeout:     30 * time.Second,
 				Headers:     make(map[string]string),
 				DQueConfig: config.DQueConfig{
-					DQueDir:         GetTestTempDir("otlp"),
+					DQueDir:         GinkgoT().TempDir(),
 					DQueSegmentSize: config.DefaultDQueConfig.DQueSegmentSize,
 					DQueSync:        config.DefaultDQueConfig.DQueSync,
 					DQueName:        config.DefaultDQueConfig.DQueName,
@@ -51,9 +52,9 @@ var _ = Describe("OTLPHTTPClient", func() {
 		}
 	})
 
-	Describe("NewOTLPHTTPClient", func() {
+	Describe("New", func() {
 		It("should create an OTLP HTTP client", func() {
-			client, err := NewOTLPHTTPClient(context.Background(), cfg, logger, testMetrics)
+			client, err := otlphttp.New(context.Background(), cfg, logger, testMetrics)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(client).ToNot(BeNil())
 
@@ -62,7 +63,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 		})
 
 		It("should set the correct endpoint", func() {
-			client, err := NewOTLPHTTPClient(context.Background(), cfg, logger, testMetrics)
+			client, err := otlphttp.New(context.Background(), cfg, logger, testMetrics)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(client.GetEndpoint()).To(Equal("localhost:4318"))
 
@@ -74,7 +75,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 			cfg.OTLPConfig.Insecure = false
 			cfg.OTLPConfig.TLSConfig = nil // No TLS config, will use system defaults
 
-			client, err := NewOTLPHTTPClient(context.Background(), cfg, logger, testMetrics)
+			client, err := otlphttp.New(context.Background(), cfg, logger, testMetrics)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(client).ToNot(BeNil())
 
@@ -88,7 +89,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 				"X-Custom-Hdr": "custom-value",
 			}
 
-			client, err := NewOTLPHTTPClient(context.Background(), cfg, logger, testMetrics)
+			client, err := otlphttp.New(context.Background(), cfg, logger, testMetrics)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(client).ToNot(BeNil())
 
@@ -99,7 +100,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 		It("should handle compression configuration", func() {
 			cfg.OTLPConfig.Compression = 1 // gzip
 
-			client, err := NewOTLPHTTPClient(context.Background(), cfg, logger, testMetrics)
+			client, err := otlphttp.New(context.Background(), cfg, logger, testMetrics)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(client).ToNot(BeNil())
 
@@ -114,7 +115,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 			cfg.OTLPConfig.RetryMaxElapsedTime = time.Minute
 			cfg.OTLPConfig.RetryConfig = &config.RetryConfig{}
 
-			client, err := NewOTLPHTTPClient(context.Background(), cfg, logger, testMetrics)
+			client, err := otlphttp.New(context.Background(), cfg, logger, testMetrics)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(client).ToNot(BeNil())
 
@@ -128,7 +129,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 
 		BeforeEach(func() {
 			var err error
-			client, err = NewOTLPHTTPClient(context.Background(), cfg, logger, testMetrics)
+			client, err = otlphttp.New(context.Background(), cfg, logger, testMetrics)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -334,7 +335,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 
 	Describe("Stop and StopWait", func() {
 		It("should stop the client immediately", func() {
-			client, err := NewOTLPHTTPClient(context.Background(), cfg, logger, testMetrics)
+			client, err := otlphttp.New(context.Background(), cfg, logger, testMetrics)
 			Expect(err).ToNot(HaveOccurred())
 
 			client.Stop()
@@ -342,7 +343,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 		})
 
 		It("should stop the client with wait", func() {
-			client, err := NewOTLPHTTPClient(context.Background(), cfg, logger, testMetrics)
+			client, err := otlphttp.New(context.Background(), cfg, logger, testMetrics)
 			Expect(err).ToNot(HaveOccurred())
 
 			// Send a log entry
@@ -360,7 +361,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 		})
 
 		It("should handle multiple stops gracefully", func() {
-			client, err := NewOTLPHTTPClient(context.Background(), cfg, logger, testMetrics)
+			client, err := otlphttp.New(context.Background(), cfg, logger, testMetrics)
 			Expect(err).ToNot(HaveOccurred())
 
 			client.Stop()
@@ -369,7 +370,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 		})
 
 		It("should flush pending logs on StopWait", func() {
-			client, err := NewOTLPHTTPClient(context.Background(), cfg, logger, testMetrics)
+			client, err := otlphttp.New(context.Background(), cfg, logger, testMetrics)
 			Expect(err).ToNot(HaveOccurred())
 
 			// Send multiple log entries
@@ -392,7 +393,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 
 	Describe("GetEndpoint", func() {
 		It("should return the configured endpoint", func() {
-			client, err := NewOTLPHTTPClient(context.Background(), cfg, logger, testMetrics)
+			client, err := otlphttp.New(context.Background(), cfg, logger, testMetrics)
 			Expect(err).ToNot(HaveOccurred())
 
 			endpoint := client.GetEndpoint()
@@ -405,16 +406,16 @@ var _ = Describe("OTLPHTTPClient", func() {
 			// First client
 			cfg1 := cfg
 			cfg1.OTLPConfig.Endpoint = "otlp-collector-1:4318"
-			cfg1.OTLPConfig.DQueConfig.DQueDir = GetTestTempDir("otlp-test-1")
-			client1, err := NewOTLPHTTPClient(context.Background(), cfg1, logger, testMetrics)
+			cfg1.OTLPConfig.DQueConfig.DQueDir = GinkgoT().TempDir()
+			client1, err := otlphttp.New(context.Background(), cfg1, logger, testMetrics)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(client1.GetEndpoint()).To(Equal("otlp-collector-1:4318"))
 
 			// Second client
 			cfg2 := cfg
 			cfg2.OTLPConfig.Endpoint = "otlp-collector-2:4318"
-			cfg2.OTLPConfig.DQueConfig.DQueDir = GetTestTempDir("otlp-test-2")
-			client2, err := NewOTLPHTTPClient(context.Background(), cfg2, logger, testMetrics)
+			cfg2.OTLPConfig.DQueConfig.DQueDir = GinkgoT().TempDir()
+			client2, err := otlphttp.New(context.Background(), cfg2, logger, testMetrics)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(client2.GetEndpoint()).To(Equal("otlp-collector-2:4318"))
 
@@ -424,86 +425,11 @@ var _ = Describe("OTLPHTTPClient", func() {
 		})
 	})
 
-	Describe("convertToKeyValue", func() {
-		It("should convert string values", func() {
-			kv := convertToKeyValue("key", "value")
-			Expect(kv.Key).To(Equal("key"))
-		})
-
-		It("should convert integer values", func() {
-			kv := convertToKeyValue("count", 42)
-			Expect(kv.Key).To(Equal("count"))
-		})
-
-		It("should convert int64 values", func() {
-			kv := convertToKeyValue("bignum", int64(9223372036854775807))
-			Expect(kv.Key).To(Equal("bignum"))
-		})
-
-		It("should convert float values", func() {
-			kv := convertToKeyValue("pi", 3.14159)
-			Expect(kv.Key).To(Equal("pi"))
-		})
-
-		It("should convert boolean true", func() {
-			kv := convertToKeyValue("enabled", true)
-			Expect(kv.Key).To(Equal("enabled"))
-		})
-
-		It("should convert boolean false", func() {
-			kv := convertToKeyValue("disabled", false)
-			Expect(kv.Key).To(Equal("disabled"))
-		})
-
-		It("should convert byte array to string", func() {
-			kv := convertToKeyValue("data", []byte("binary"))
-			Expect(kv.Key).To(Equal("data"))
-		})
-
-		It("should convert empty byte array", func() {
-			kv := convertToKeyValue("empty", []byte{})
-			Expect(kv.Key).To(Equal("empty"))
-		})
-
-		It("should convert map to string representation", func() {
-			kv := convertToKeyValue("metadata", map[string]any{"pod": "test", "ns": "default"})
-			Expect(kv.Key).To(Equal("metadata"))
-		})
-
-		It("should convert empty map", func() {
-			kv := convertToKeyValue("emptymap", map[string]any{})
-			Expect(kv.Key).To(Equal("emptymap"))
-		})
-
-		It("should convert slice to string representation", func() {
-			kv := convertToKeyValue("tags", []any{"tag1", "tag2", "tag3"})
-			Expect(kv.Key).To(Equal("tags"))
-		})
-
-		It("should convert empty slice", func() {
-			kv := convertToKeyValue("emptytags", []any{})
-			Expect(kv.Key).To(Equal("emptytags"))
-		})
-
-		It("should convert nil value", func() {
-			kv := convertToKeyValue("nullval", nil)
-			Expect(kv.Key).To(Equal("nullval"))
-		})
-
-		It("should convert unknown type to string", func() {
-			type CustomType struct {
-				Field string
-			}
-			kv := convertToKeyValue("custom", CustomType{Field: "value"})
-			Expect(kv.Key).To(Equal("custom"))
-		})
-	})
-
 	Describe("Integration scenarios", func() {
 		It("should handle fluent-bit typical log format", func() {
 			testCfg := cfg
-			testCfg.OTLPConfig.DQueConfig.DQueDir = GetTestTempDir("otlp-test-fb")
-			client, err := NewOTLPHTTPClient(context.Background(), testCfg, logger, testMetrics)
+			testCfg.OTLPConfig.DQueConfig.DQueDir = GinkgoT().TempDir()
+			client, err := otlphttp.New(context.Background(), testCfg, logger, testMetrics)
 			Expect(err).ToNot(HaveOccurred())
 			defer client.Stop()
 
@@ -527,8 +453,8 @@ var _ = Describe("OTLPHTTPClient", func() {
 
 		It("should handle gardener shoot log format", func() {
 			testCfg := cfg
-			testCfg.OTLPConfig.DQueConfig.DQueDir = GetTestTempDir("otlp-test-gs")
-			client, err := NewOTLPHTTPClient(context.Background(), testCfg, logger, testMetrics)
+			testCfg.OTLPConfig.DQueConfig.DQueDir = GinkgoT().TempDir()
+			client, err := otlphttp.New(context.Background(), testCfg, logger, testMetrics)
 			Expect(err).ToNot(HaveOccurred())
 			defer client.Stop()
 
