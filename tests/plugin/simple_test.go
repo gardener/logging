@@ -20,7 +20,7 @@ import (
 var _ = Describe("Simple Plugin Test", func() {
 	It("should create a NoopClient with logr logger", func() {
 		reg := metrics.NewRegistry()
-		testMetrics := metrics.NewFluentBitGardenerMetrics(reg)
+		testMetrics := metrics.RegisterFluentBitGardenerMetrics(reg)
 		logger := log.NewNopLogger()
 		cfg := config.Config{
 			PluginConfig: config.PluginConfig{

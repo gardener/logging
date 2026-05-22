@@ -39,7 +39,7 @@ type logging struct {
 }
 
 // NewPlugin returns OutputPlugin output plugin
-func NewPlugin(cfg *config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics) (OutputPlugin, error) {
+func NewPlugin(cfg *config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics, ms *otlp.MetricsSetup) (OutputPlugin, error) {
 	var err error
 
 	// Create a single context for the entire plugin lifecycle
@@ -59,7 +59,7 @@ func NewPlugin(cfg *config.Config, logger logr.Logger, m *metrics.FluentBitGarde
 		l.dynamicHostRegexp = regexp.MustCompile(cfg.ControllerConfig.DynamicHostRegex)
 
 		// Pass the plugin's context to the controller
-		if l.controller, err = controller.NewController(ctx, cfg, logger, m); err != nil {
+		if l.controller, err = controller.NewController(ctx, cfg, logger, m, ms); err != nil {
 			cancel()
 
 			return nil, err
@@ -70,7 +70,7 @@ func NewPlugin(cfg *config.Config, logger logr.Logger, m *metrics.FluentBitGarde
 		l.extractKubernetesMetadataRegexp = regexp.MustCompile(cfg.PluginConfig.KubernetesMetadata.TagPrefix + cfg.PluginConfig.KubernetesMetadata.TagExpression)
 	}
 
-	opt := []client.Option{client.WithTarget(targets.Seed), client.WithLogger(logger), client.WithMetrics(m)}
+	opt := []client.Option{client.WithTarget(targets.Seed), client.WithLogger(logger), client.WithMetrics(m), client.WithOTLPMetricsSetup(ms)}
 
 	// Pass the plugin's context to the client
 	if l.seedClient, err = client.NewClient(ctx, *cfg, opt...); err != nil {
@@ -90,7 +90,7 @@ func NewPlugin(cfg *config.Config, logger logr.Logger, m *metrics.FluentBitGarde
 
 // NewPluginWithController creates a new plugin with a pre-configured controller.
 // This is useful for testing where the controller is created with a fake client.
-func NewPluginWithController(cfg *config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics, ctl controller.Controller) (OutputPlugin, error) {
+func NewPluginWithController(cfg *config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics, ms *otlp.MetricsSetup, ctl controller.Controller) (OutputPlugin, error) {
 	var err error
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -112,7 +112,7 @@ func NewPluginWithController(cfg *config.Config, logger logr.Logger, m *metrics.
 		l.extractKubernetesMetadataRegexp = regexp.MustCompile(cfg.PluginConfig.KubernetesMetadata.TagPrefix + cfg.PluginConfig.KubernetesMetadata.TagExpression)
 	}
 
-	opt := []client.Option{client.WithTarget(targets.Seed), client.WithLogger(logger), client.WithMetrics(m)}
+	opt := []client.Option{client.WithTarget(targets.Seed), client.WithLogger(logger), client.WithMetrics(m), client.WithOTLPMetricsSetup(ms)}
 
 	if l.seedClient, err = client.NewClient(ctx, *cfg, opt...); err != nil {
 		cancel()

@@ -27,7 +27,7 @@ var _ = Describe("OTLPGRPCClient", func() {
 
 	BeforeEach(func() {
 		reg := metrics.NewRegistry()
-		testMetrics = metrics.NewFluentBitGardenerMetrics(reg)
+		testMetrics = metrics.RegisterFluentBitGardenerMetrics(reg)
 		logger = logr.Discard()
 		cfg = config.Config{
 			OTLPConfig: config.OTLPConfig{
@@ -54,7 +54,7 @@ var _ = Describe("OTLPGRPCClient", func() {
 
 	Describe("New", func() {
 		It("should create an OTLP gRPC client", func() {
-			client, err := otlpgrpc.New(context.Background(), cfg, logger, testMetrics)
+			client, err := otlpgrpc.New(context.Background(), cfg, logger, testMetrics, nil)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(client).ToNot(BeNil())
 
@@ -63,7 +63,7 @@ var _ = Describe("OTLPGRPCClient", func() {
 		})
 
 		It("should set the correct endpoint", func() {
-			client, err := otlpgrpc.New(context.Background(), cfg, logger, testMetrics)
+			client, err := otlpgrpc.New(context.Background(), cfg, logger, testMetrics, nil)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(client.GetEndpoint()).To(Equal("localhost:4317"))
 
@@ -75,7 +75,7 @@ var _ = Describe("OTLPGRPCClient", func() {
 			cfg.OTLPConfig.Insecure = false
 			cfg.OTLPConfig.TLSConfig = nil // No TLS config, will use system defaults
 
-			client, err := otlpgrpc.New(context.Background(), cfg, logger, testMetrics)
+			client, err := otlpgrpc.New(context.Background(), cfg, logger, testMetrics, nil)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(client).ToNot(BeNil())
 
@@ -89,7 +89,7 @@ var _ = Describe("OTLPGRPCClient", func() {
 
 		BeforeEach(func() {
 			var err error
-			client, err = otlpgrpc.New(context.Background(), cfg, logger, testMetrics)
+			client, err = otlpgrpc.New(context.Background(), cfg, logger, testMetrics, nil)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -209,7 +209,7 @@ var _ = Describe("OTLPGRPCClient", func() {
 
 	Describe("Stop and StopWait", func() {
 		It("should stop the client immediately", func() {
-			client, err := otlpgrpc.New(context.Background(), cfg, logger, testMetrics)
+			client, err := otlpgrpc.New(context.Background(), cfg, logger, testMetrics, nil)
 			Expect(err).ToNot(HaveOccurred())
 
 			client.Stop()

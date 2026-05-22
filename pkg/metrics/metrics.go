@@ -32,8 +32,8 @@ type FluentBitGardenerMetrics struct {
 	DqueSize *prometheus.GaugeVec
 }
 
-// NewFluentBitGardenerMetrics creates and registers all fluent-bit gardener metrics with the given registerer.
-func NewFluentBitGardenerMetrics(reg prometheus.Registerer) *FluentBitGardenerMetrics {
+// RegisterFluentBitGardenerMetrics creates and registers all fluent-bit gardener metrics with the given registerer.
+func RegisterFluentBitGardenerMetrics(reg prometheus.Registerer) *FluentBitGardenerMetrics {
 	namespace := "fluentbit_gardener"
 
 	return &FluentBitGardenerMetrics{

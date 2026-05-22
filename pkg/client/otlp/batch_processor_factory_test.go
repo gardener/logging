@@ -43,7 +43,7 @@ var _ = Describe("BatchProcessorFactory", func() {
 
 	BeforeEach(func() {
 		reg := metrics.NewRegistry()
-		testMetrics = metrics.NewFluentBitGardenerMetrics(reg)
+		testMetrics = metrics.RegisterFluentBitGardenerMetrics(reg)
 		logger = logr.Discard()
 		factory = NewBatchProcessorFactory(logger, testMetrics)
 		exporter = &mockExporter{}

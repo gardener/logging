@@ -30,7 +30,7 @@ var _ = Describe("DQue Batch Processor Integration", func() {
 
 	BeforeEach(func() {
 		reg := metrics.NewRegistry()
-		testMetrics = metrics.NewFluentBitGardenerMetrics(reg)
+		testMetrics = metrics.RegisterFluentBitGardenerMetrics(reg)
 		logger = logr.Discard()
 		tempDir = GinkgoT().TempDir()
 	})
@@ -139,7 +139,7 @@ var _ = Describe("DQue Batch Processor with Functional Options", func() {
 
 	BeforeEach(func() {
 		reg := metrics.NewRegistry()
-		testMetrics = metrics.NewFluentBitGardenerMetrics(reg)
+		testMetrics = metrics.RegisterFluentBitGardenerMetrics(reg)
 
 		var err error
 		queueDir, err = os.MkdirTemp("", "dque-processor-options-test-*")

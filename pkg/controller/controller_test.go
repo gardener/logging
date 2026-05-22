@@ -179,7 +179,7 @@ var _ = Describe("Controller", func() {
 
 		BeforeEach(func() {
 			reg := metrics.NewRegistry()
-			testMetrics = metrics.NewFluentBitGardenerMetrics(reg)
+			testMetrics = metrics.RegisterFluentBitGardenerMetrics(reg)
 			conf = &config.Config{
 				OTLPConfig: config.OTLPConfig{
 					DQueConfig: config.DefaultDQueConfig,

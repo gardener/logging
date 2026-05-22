@@ -36,7 +36,7 @@ var _ = Describe("StdoutClient", func() {
 
 	BeforeEach(func() {
 		reg := metrics.NewRegistry()
-		testMetrics = metrics.NewFluentBitGardenerMetrics(reg)
+		testMetrics = metrics.RegisterFluentBitGardenerMetrics(reg)
 
 		cfg = config.Config{}
 

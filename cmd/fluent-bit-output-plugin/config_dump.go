@@ -6,6 +6,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/gardener/logging/v1/pkg/app"
 	"github.com/gardener/logging/v1/pkg/config"
 )
 
@@ -13,6 +14,7 @@ import (
 // This is useful for troubleshooting configuration issues and verifying that
 // all configuration values are correctly parsed and applied.
 func dumpConfiguration(conf *config.Config) {
+	logger := app.Inst().Logger
 	logger.V(1).Info("[flb-go] =====   Plugin Config   =====")
 
 	logger.V(1).Info("[flb-go]", "DropLogEntryWithoutK8sMetadata", fmt.Sprintf("%+v", conf.PluginConfig.KubernetesMetadata.DropLogEntryWithoutK8sMetadata))

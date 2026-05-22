@@ -6,6 +6,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/gardener/logging/v1/pkg/app"
 	"github.com/gardener/logging/v1/pkg/metrics"
 )
 
@@ -17,8 +18,8 @@ func toOutputRecord(record map[any]any) map[string]any {
 	for k, v := range record {
 		key, ok := k.(string)
 		if !ok {
-			logger.V(2).Info("dropping record entry with non-string key", "keyType", fmt.Sprintf("%T", k))
-			metricsInst.Errors.WithLabelValues(metrics.ErrorInvalidRecordKey).Inc()
+			app.Inst().Logger.V(2).Info("dropping record entry with non-string key", "keyType", fmt.Sprintf("%T", k))
+			app.Inst().PluginMetrics.Errors.WithLabelValues(metrics.ErrorInvalidRecordKey).Inc()
 
 			continue
 		}

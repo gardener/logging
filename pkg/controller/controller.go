@@ -14,6 +14,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/gardener/logging/v1/pkg/client/api"
+	"github.com/gardener/logging/v1/pkg/client/otlp"
 	"github.com/gardener/logging/v1/pkg/config"
 	"github.com/gardener/logging/v1/pkg/metrics"
 )
@@ -34,16 +35,16 @@ type Controller interface {
 // It sets up a manager and reconciler based on the configuration:
 // - If WatchOpenTelemetryCollector is true, it watches OpenTelemetryCollector resources
 // - Otherwise (default), it watches Cluster resources
-func NewController(ctx context.Context, conf *config.Config, l logr.Logger, m *metrics.FluentBitGardenerMetrics) (Controller, error) {
+func NewController(ctx context.Context, conf *config.Config, l logr.Logger, m *metrics.FluentBitGardenerMetrics, ms *otlp.MetricsSetup) (Controller, error) {
 	if conf.ControllerConfig.WatchOpenTelemetryCollector {
 		l.Info("using OpenTelemetryCollector mode for dynamic clients")
 
-		return newOpenTelemetryCollectorController(ctx, conf, l, m)
+		return newOpenTelemetryCollectorController(ctx, conf, l, m, ms)
 	}
 
 	l.Info("using Cluster mode for dynamic clients")
 
-	return newClusterController(ctx, conf, l, m)
+	return newClusterController(ctx, conf, l, m, ms)
 }
 
 // getRestConfig returns the Kubernetes REST config.

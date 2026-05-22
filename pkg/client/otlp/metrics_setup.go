@@ -29,20 +29,9 @@ type MetricsSetup struct {
 	shutdownOnce sync.Once
 }
 
-var (
-	// globalMetricsSetup is the singleton instance shared across all OTLP clients.
-	// It is initialized during package initialization and reused for all subsequent requests.
-	globalMetricsSetup *MetricsSetup
-)
-
-// SetGlobalMetricsSetup sets the value to the glbal OTLP metrics setup.
-func SetGlobalMetricsSetup(ms *MetricsSetup) {
-	globalMetricsSetup = ms
-}
-
-// InitializeMetricsSetup creates and configures the metrics infrastructure.
+// RegisterMetricsSetup creates and configures the metrics infrastructure.
 // This function is called exactly once by the singleton pattern.
-func InitializeMetricsSetup(reg *promclient.Registry) (*MetricsSetup, error) {
+func RegisterMetricsSetup(reg *promclient.Registry) (*MetricsSetup, error) {
 	// Enable OpenTelemetry SDK observability (self-instrumentation) metrics.
 	// This is an experimental feature that emits metrics like otel.sdk.log.created,
 	// otel.sdk.exporter.* etc. The environment variable must be set before SDK initialization.
@@ -77,21 +66,6 @@ func InitializeMetricsSetup(reg *promclient.Registry) (*MetricsSetup, error) {
 // The provider is used for creating meters and recording metrics.
 func (m *MetricsSetup) GetProvider() *sdkmetric.MeterProvider {
 	return m.provider
-}
-
-// GlobalMetricsSetup returns the global metrics setup singleton, or nil if it has not been initialized.
-func GlobalMetricsSetup() *MetricsSetup {
-	return globalMetricsSetup
-}
-
-// GetGlobalMeterProvider returns the global meter provider if available, or nil otherwise.
-// This is a convenience function for safely accessing the global metrics setup.
-func GetGlobalMeterProvider() *sdkmetric.MeterProvider {
-	if globalMetricsSetup != nil {
-		return globalMetricsSetup.GetProvider()
-	}
-
-	return nil
 }
 
 // GetGRPCStatsHandler returns a gRPC dial option that enables automatic
