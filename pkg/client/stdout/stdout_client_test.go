@@ -1,7 +1,7 @@
 // Copyright 2025 SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
 // SPDX-License-Identifier: Apache-2.0
 
-package client
+package stdout
 
 import (
 	"bytes"
@@ -47,7 +47,7 @@ var _ = Describe("StdoutClient", func() {
 		r, w, _ = os.Pipe()
 		os.Stdout = w
 
-		outputClient, _ = NewStdoutClient(context.Background(), cfg, logger, testMetrics)
+		outputClient, _ = New(context.Background(), cfg, logger, testMetrics)
 	})
 
 	AfterEach(func() {
@@ -65,14 +65,14 @@ var _ = Describe("StdoutClient", func() {
 				},
 			}
 
-			testClient, err := NewStdoutClient(context.Background(), testCfg, logger, testMetrics)
+			testClient, err := New(context.Background(), testCfg, logger, testMetrics)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(testClient).NotTo(BeNil())
 			Expect(testClient.GetEndpoint()).To(Equal(testEndpoint))
 		})
 
 		It("should work with nil logger", func() {
-			testClient, err := NewStdoutClient(context.Background(), cfg, logger, testMetrics)
+			testClient, err := New(context.Background(), cfg, logger, testMetrics)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(testClient).NotTo(BeNil())
 		})
@@ -84,7 +84,7 @@ var _ = Describe("StdoutClient", func() {
 				},
 			}
 
-			testClient, err := NewStdoutClient(context.Background(), testCfg, logger, testMetrics)
+			testClient, err := New(context.Background(), testCfg, logger, testMetrics)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(testClient).NotTo(BeNil())
 			Expect(testClient.GetEndpoint()).To(Equal(""))
@@ -243,7 +243,7 @@ var _ = Describe("StdoutClient", func() {
 				},
 			}
 
-			testClient, err := NewStdoutClient(context.Background(), testCfg, logger, testMetrics)
+			testClient, err := New(context.Background(), testCfg, logger, testMetrics)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(testClient.GetEndpoint()).To(Equal(testEndpoint))
 		})
@@ -265,9 +265,9 @@ var _ = Describe("StdoutClient", func() {
 				},
 			}
 
-			client1, err := NewStdoutClient(context.Background(), cfg1, logger, testMetrics)
+			client1, err := New(context.Background(), cfg1, logger, testMetrics)
 			Expect(err).NotTo(HaveOccurred())
-			client2, err := NewStdoutClient(context.Background(), cfg2, logger, testMetrics)
+			client2, err := New(context.Background(), cfg2, logger, testMetrics)
 			Expect(err).NotTo(HaveOccurred())
 
 			metric1 := testMetrics.OutputClientLogs.WithLabelValues(endpoint1)

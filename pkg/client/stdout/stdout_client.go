@@ -1,7 +1,7 @@
 // Copyright 2025 SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
 // SPDX-License-Identifier: Apache-2.0
 
-package client
+package stdout
 
 import (
 	"context"
@@ -19,19 +19,19 @@ import (
 
 const componentStdoutName = "stdout"
 
-// StdoutClient is an implementation of Output that writes all records to stdout
-type StdoutClient struct {
+// Client is an implementation of Output that writes all records to stdout
+type Client struct {
 	ctx      context.Context
 	logger   logr.Logger
 	endpoint string
 	metrics  *metrics.FluentBitGardenerMetrics
 }
 
-var _ api.Output = &StdoutClient{}
+var _ api.Output = &Client{}
 
-// NewStdoutClient creates a new StdoutClient that writes all records to stdout
-func NewStdoutClient(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics) (api.Output, error) {
-	client := &StdoutClient{
+// New creates a new StdoutClient that writes all records to stdout
+func New(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics) (*Client, error) {
+	client := &Client{
 		ctx:      ctx,
 		endpoint: cfg.OTLPConfig.Endpoint,
 		logger:   logger.WithValues("endpoint", cfg.OTLPConfig.Endpoint),
@@ -44,7 +44,7 @@ func NewStdoutClient(ctx context.Context, cfg config.Config, logger logr.Logger,
 }
 
 // Handle processes and writes the log entry to stdout while incrementing metrics
-func (c *StdoutClient) Handle(entry types.OutputEntry) error {
+func (c *Client) Handle(entry types.OutputEntry) error {
 	// Create a map with timestamp and record fields
 	output := map[string]any{
 		"timestamp": entry.Timestamp.Format("2006-01-02T15:04:05.000000Z07:00"),
@@ -75,16 +75,16 @@ func (c *StdoutClient) Handle(entry types.OutputEntry) error {
 }
 
 // Stop shuts down the client immediately
-func (c *StdoutClient) Stop() {
+func (c *Client) Stop() {
 	c.logger.V(2).Info(fmt.Sprintf("stopping %s", componentStdoutName))
 }
 
 // StopWait stops the client - since this is a stdout client, it's the same as Stop
-func (c *StdoutClient) StopWait() {
+func (c *Client) StopWait() {
 	c.logger.V(2).Info(fmt.Sprintf("stopping %s with wait", componentStdoutName))
 }
 
 // GetEndpoint returns the configured endpoint
-func (c *StdoutClient) GetEndpoint() string {
+func (c *Client) GetEndpoint() string {
 	return c.endpoint
 }
