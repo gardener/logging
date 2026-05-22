@@ -46,7 +46,7 @@ func New(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.
 	clientCtx, cancel := context.WithCancel(ctx)
 
 	// Build blocking OTLP HTTP exporter configuration
-	configBuilder := otlp.NewOTLPHTTPConfigBuilder(cfg)
+	configBuilder := NewConfigBuilder(cfg)
 	exporterOpts := configBuilder.Build()
 
 	// Create blocking OTLP HTTP exporter

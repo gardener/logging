@@ -46,7 +46,7 @@ func New(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.
 	clientCtx, cancel := context.WithCancel(ctx)
 
 	// Build blocking OTLP gRPC exporter configuration
-	configBuilder := otlp.NewOTLPGRPCConfigBuilder(cfg, logger)
+	configBuilder := NewConfigBuilder(cfg, logger)
 
 	// Applies TLS, headers, timeout, compression, and retry configurations
 	exporterOpts := configBuilder.Build()
