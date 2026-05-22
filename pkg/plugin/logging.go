@@ -12,6 +12,7 @@ import (
 
 	"github.com/gardener/logging/v1/pkg/client"
 	"github.com/gardener/logging/v1/pkg/client/api"
+	"github.com/gardener/logging/v1/pkg/client/otlp"
 	"github.com/gardener/logging/v1/pkg/config"
 	"github.com/gardener/logging/v1/pkg/controller"
 	"github.com/gardener/logging/v1/pkg/metrics"
@@ -191,7 +192,7 @@ func (l *logging) SendRecord(log types.OutputEntry) error {
 	if err == nil {
 		return nil
 	}
-	if errors.Is(err, client.ErrThrottled) {
+	if errors.Is(err, otlp.ErrThrottled) {
 		return err
 	}
 

@@ -1,7 +1,7 @@
 // Copyright 2025 SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
 // SPDX-License-Identifier: Apache-2.0
 
-package client
+package otlpgrpc
 
 import (
 	"context"
@@ -9,22 +9,23 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
+	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"
 	otlplog "go.opentelemetry.io/otel/log"
 	sdklog "go.opentelemetry.io/otel/sdk/log"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"golang.org/x/time/rate"
 
 	"github.com/gardener/logging/v1/pkg/client/api"
+	"github.com/gardener/logging/v1/pkg/client/otlp"
 	"github.com/gardener/logging/v1/pkg/config"
 	"github.com/gardener/logging/v1/pkg/metrics"
 	"github.com/gardener/logging/v1/pkg/types"
 )
 
-const componentOTLPHTTPName = "otlphttp"
+const componentOTLPGRPCName = "otlpgrpc"
 
-// OTLPHTTPClient is an implementation of Output that sends logs via OTLP HTTP
-type OTLPHTTPClient struct {
+// Client is an implementation of Output that sends logs via OTLP gRPC
+type Client struct {
 	logger         logr.Logger
 	endpoint       string
 	config         config.Config
@@ -37,28 +38,35 @@ type OTLPHTTPClient struct {
 	metrics        *metrics.FluentBitGardenerMetrics
 }
 
-var _ api.Output = &OTLPHTTPClient{}
+var _ api.Output = &Client{}
 
-// NewOTLPHTTPClient creates a new OTLP HTTP client with dque batch processor
-func NewOTLPHTTPClient(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics) (api.Output, error) {
+// New creates a new OTLP gRPC client with dque batch processor
+func New(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics) (*Client, error) {
 	// Use the provided context with cancel capability
 	clientCtx, cancel := context.WithCancel(ctx)
 
-	// Build blocking OTLP HTTP exporter configuration
-	configBuilder := NewOTLPHTTPConfigBuilder(cfg)
+	// Build blocking OTLP gRPC exporter configuration
+	configBuilder := otlp.NewOTLPGRPCConfigBuilder(cfg, logger)
+
+	// Applies TLS, headers, timeout, compression, and retry configurations
 	exporterOpts := configBuilder.Build()
 
-	// Create blocking OTLP HTTP exporter
-	exporter, err := otlploghttp.New(clientCtx, exporterOpts...)
+	// Add metrics instrumentation to gRPC dial options
+	if globalMetricsSetup := otlp.GlobalMetricsSetup(); globalMetricsSetup != nil {
+		exporterOpts = append(exporterOpts, otlploggrpc.WithDialOption(globalMetricsSetup.GetGRPCStatsHandler()))
+	}
+
+	// Create blocking OTLP gRPC exporter
+	exporter, err := otlploggrpc.New(clientCtx, exporterOpts...)
 	if err != nil {
 		cancel()
 
-		return nil, fmt.Errorf("failed to create OTLP HTTP exporter: %w", err)
+		return nil, fmt.Errorf("failed to create OTLP gRPC exporter: %w", err)
 	}
 
 	// Create batch processor using factory
-	processorFactory := NewBatchProcessorFactory(logger, m)
-	batchProcessor, err := processorFactory.Create(clientCtx, cfg, exporter, "otlp-http")
+	processorFactory := otlp.NewBatchProcessorFactory(logger, m)
+	batchProcessor, err := processorFactory.Create(clientCtx, cfg, exporter, "otlp-grpc")
 	if err != nil {
 		cancel()
 
@@ -66,7 +74,7 @@ func NewOTLPHTTPClient(ctx context.Context, cfg config.Config, logger logr.Logge
 	}
 
 	// Build resource attributes
-	resource := NewResourceAttributesBuilder().
+	resource := otlp.NewResourceAttributesBuilder().
 		WithHostname(cfg).
 		Build()
 
@@ -77,9 +85,9 @@ func NewOTLPHTTPClient(ctx context.Context, cfg config.Config, logger logr.Logge
 	)
 
 	// Build instrumentation scope options
-	scopeOptions := NewScopeAttributesBuilder().
-		WithVersion(PluginVersion()).
-		WithSchemaURL(SchemaURL).
+	scopeOptions := otlp.NewScopeAttributesBuilder().
+		WithVersion(otlp.PluginVersion()).
+		WithSchemaURL(otlp.SchemaURL).
 		Build()
 
 	// Initialize rate limiter if throttling is enabled
@@ -93,29 +101,29 @@ func NewOTLPHTTPClient(ctx context.Context, cfg config.Config, logger logr.Logge
 			"burst", cfg.OTLPConfig.ThrottleRequestsPerSec*2)
 	}
 
-	client := &OTLPHTTPClient{
-		logger:         logger.WithValues("endpoint", cfg.OTLPConfig.Endpoint, "component", componentOTLPHTTPName),
+	client := &Client{
+		logger:         logger.WithValues("endpoint", cfg.OTLPConfig.Endpoint, "component", componentOTLPGRPCName),
 		endpoint:       cfg.OTLPConfig.Endpoint,
 		config:         cfg,
 		loggerProvider: loggerProvider,
-		meterProvider:  getGlobalMeterProvider(),
-		otlLogger:      loggerProvider.Logger(PluginName, scopeOptions...),
+		meterProvider:  otlp.GetGlobalMeterProvider(),
+		otlLogger:      loggerProvider.Logger(otlp.PluginName, scopeOptions...),
 		ctx:            clientCtx,
 		cancel:         cancel,
 		limiter:        limiter,
 		metrics:        m,
 	}
 
-	logger.V(1).Info("OTLP HTTP client created",
+	logger.V(1).Info("OTLP gRPC client created",
 		"endpoint", cfg.OTLPConfig.Endpoint,
-		"processorType", GetProcessorType(cfg),
+		"processorType", otlp.GetProcessorType(cfg),
 	)
 
 	return client, nil
 }
 
-// Handle processes and sends the log entry via OTLP HTTP
-func (c *OTLPHTTPClient) Handle(entry types.OutputEntry) error {
+// Handle processes and sends the log entry via OTLP gRPC
+func (c *Client) Handle(entry types.OutputEntry) error {
 	// Check if the client's context is cancelled
 	if c.ctx.Err() != nil {
 		return c.ctx.Err()
@@ -128,12 +136,12 @@ func (c *OTLPHTTPClient) Handle(entry types.OutputEntry) error {
 		if !c.limiter.Allow() {
 			c.metrics.ThrottledLogs.WithLabelValues(c.endpoint).Inc()
 
-			return ErrThrottled
+			return otlp.ErrThrottled
 		}
 	}
 
 	// Build log record using builder pattern
-	logRecord := NewLogRecordBuilder().
+	logRecord := otlp.NewLogRecordBuilder().
 		WithConfig(c.config).
 		WithTimestamp(entry.Timestamp).
 		WithSeverity(entry.Record).
@@ -151,8 +159,8 @@ func (c *OTLPHTTPClient) Handle(entry types.OutputEntry) error {
 }
 
 // Stop shuts down the client immediately
-func (c *OTLPHTTPClient) Stop() {
-	c.logger.V(2).Info(fmt.Sprintf("stopping %s", componentOTLPHTTPName))
+func (c *Client) Stop() {
+	c.logger.V(2).Info(fmt.Sprintf("stopping %s", componentOTLPGRPCName))
 	c.cancel()
 
 	// Create timeout context from background, not from the cancelled c.ctx
@@ -163,6 +171,8 @@ func (c *OTLPHTTPClient) Stop() {
 		c.logger.Error(err, "error during logger provider shutdown")
 	}
 
+	// Use singleton metrics setup shutdown (idempotent)
+	globalMetricsSetup := otlp.GlobalMetricsSetup()
 	if globalMetricsSetup == nil {
 		return
 	}
@@ -173,8 +183,8 @@ func (c *OTLPHTTPClient) Stop() {
 }
 
 // StopWait stops the client and waits for all logs to be sent
-func (c *OTLPHTTPClient) StopWait() {
-	c.logger.V(2).Info(fmt.Sprintf("stopping %s with wait", componentOTLPHTTPName))
+func (c *Client) StopWait() {
+	c.logger.V(2).Info(fmt.Sprintf("stopping %s with wait", componentOTLPGRPCName))
 	c.cancel()
 
 	// Create timeout context from background, not from the cancelled c.ctx
@@ -189,6 +199,7 @@ func (c *OTLPHTTPClient) StopWait() {
 		c.logger.Error(err, "error during logger provider shutdown")
 	}
 
+	globalMetricsSetup := otlp.GlobalMetricsSetup()
 	if globalMetricsSetup == nil {
 		return
 	}
@@ -199,6 +210,6 @@ func (c *OTLPHTTPClient) StopWait() {
 }
 
 // GetEndpoint returns the configured endpoint
-func (c *OTLPHTTPClient) GetEndpoint() string {
+func (c *Client) GetEndpoint() string {
 	return c.endpoint
 }

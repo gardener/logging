@@ -11,6 +11,8 @@ import (
 
 	"github.com/gardener/logging/v1/pkg/client/api"
 	noopclient "github.com/gardener/logging/v1/pkg/client/noop"
+	"github.com/gardener/logging/v1/pkg/client/otlp/otlpgrpc"
+	"github.com/gardener/logging/v1/pkg/client/otlp/otlphttp"
 	stdoutclient "github.com/gardener/logging/v1/pkg/client/stdout"
 	"github.com/gardener/logging/v1/pkg/config"
 	"github.com/gardener/logging/v1/pkg/metrics"
@@ -81,9 +83,9 @@ func NewClient(ctx context.Context, cfg config.Config, opts ...Option) (api.Outp
 
 	switch t {
 	case types.OTLPGRPC:
-		return NewOTLPGRPCClient(ctx, cfg, logger, options.metrics)
+		return otlpgrpc.New(ctx, cfg, logger, options.metrics)
 	case types.OTLPHTTP:
-		return NewOTLPHTTPClient(ctx, cfg, logger, options.metrics)
+		return otlphttp.New(ctx, cfg, logger, options.metrics)
 	case types.STDOUT:
 		return stdoutclient.New(ctx, cfg, logger, options.metrics)
 	case types.NOOP:

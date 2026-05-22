@@ -24,7 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/component-base/version"
 
-	"github.com/gardener/logging/v1/pkg/client"
+	"github.com/gardener/logging/v1/pkg/client/otlp"
 	"github.com/gardener/logging/v1/pkg/config"
 	"github.com/gardener/logging/v1/pkg/healthz"
 	"github.com/gardener/logging/v1/pkg/log"
@@ -54,8 +54,8 @@ func init() {
 	// metrics and healthz
 	reg = metrics.NewRegistry()
 	metricsInst = metrics.NewFluentBitGardenerMetrics(reg)
-	globalMetricsSetup, _ := client.InitializeMetricsSetup(reg)
-	client.SetGlobalMetricsSetup(globalMetricsSetup)
+	globalMetricsSetup, _ := otlp.InitializeMetricsSetup(reg)
+	otlp.SetGlobalMetricsSetup(globalMetricsSetup)
 	go func() {
 		http.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
 		http.Handle("/healthz", healthz.Handler("", ""))
