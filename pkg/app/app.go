@@ -3,13 +3,14 @@ package app
 import (
 	"sync"
 
+	"github.com/go-logr/logr"
+	"github.com/prometheus/client_golang/prometheus"
+	"k8s.io/component-base/version"
+
 	"github.com/gardener/logging/v1/pkg/client/otlp"
 	"github.com/gardener/logging/v1/pkg/log"
 	"github.com/gardener/logging/v1/pkg/metrics"
 	"github.com/gardener/logging/v1/pkg/plugin"
-	"github.com/go-logr/logr"
-	"github.com/prometheus/client_golang/prometheus"
-	"k8s.io/component-base/version"
 )
 
 var (
@@ -17,6 +18,8 @@ var (
 	appOnce     sync.Once
 )
 
+// App holds the shared singleton state for the fluent-bit gardener output plugin,
+// including the plugin registry, logger, and metrics setup.
 type App struct {
 	PluginsRegistry    *plugin.Registry
 	Logger             logr.Logger
@@ -26,6 +29,8 @@ type App struct {
 	PluginMetrics      *metrics.FluentBitGardenerMetrics
 }
 
+// Init initializes the app singleton exactly once, setting up the logger,
+// plugin registry, and Prometheus/OTLP metrics.
 func Init() {
 	appOnce.Do(func() {
 		logger := log.New("info")
@@ -51,6 +56,7 @@ func Init() {
 	})
 }
 
+// Inst returns the initialized app singleton. Init must be called before Inst.
 func Inst() *App {
 	return appInstance
 }
