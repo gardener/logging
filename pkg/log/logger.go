@@ -11,13 +11,13 @@ import (
 	"github.com/go-logr/logr"
 )
 
-// NewLogger creates a new logr.Logger with slog backend
-func NewLogger(level string) logr.Logger {
-	return NewLoggerWithHandler(level, os.Stderr)
+// New creates a new logr.Logger with slog backend
+func New(level string) logr.Logger {
+	return NewWithHandler(level, os.Stderr)
 }
 
-// NewLoggerWithHandler creates a new logr.Logger with custom output
-func NewLoggerWithHandler(level string, output *os.File) logr.Logger {
+// NewWithHandler creates a new logr.Logger with custom output
+func NewWithHandler(level string, output *os.File) logr.Logger {
 	slogLevel := parseSlogLevel(level)
 
 	opts := &slog.HandlerOptions{
@@ -36,8 +36,8 @@ func NewLoggerWithHandler(level string, output *os.File) logr.Logger {
 	return logr.FromSlogHandler(handler)
 }
 
-// NewNopLogger creates a no-op logger for testing
-func NewNopLogger() logr.Logger {
+// NewNoop creates a no-op logger for testing
+func NewNoop() logr.Logger {
 	return logr.Discard()
 }
 

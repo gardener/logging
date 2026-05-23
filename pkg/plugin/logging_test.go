@@ -39,9 +39,9 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 	BeforeEach(func() {
 		reg := metrics.NewRegistry()
-		testMetrics = metrics.NewFluentBitGardenerMetrics(reg)
+		testMetrics = metrics.RegisterFluentBitGardenerMetrics(reg)
 
-		logger = log.NewNopLogger()
+		logger = log.NewNoop()
 
 		cfg = &config.Config{
 			OTLPConfig: config.OTLPConfig{
@@ -62,7 +62,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 	Describe("NewPlugin", func() {
 		Context("without dynamic host configuration", func() {
 			It("should create plugin successfully", func() {
-				plugin, err := NewPlugin(cfg, logger, testMetrics)
+				plugin, err := NewPlugin(cfg, logger, testMetrics, nil)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(plugin).NotTo(BeNil())
 
@@ -71,7 +71,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 			})
 
 			It("should create plugin with seed client only", func() {
-				plugin, err := NewPlugin(cfg, logger, testMetrics)
+				plugin, err := NewPlugin(cfg, logger, testMetrics, nil)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(plugin).NotTo(BeNil())
 
@@ -88,7 +88,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 			It("should compile the metadata extraction regex", func() {
 				cfg.PluginConfig.KubernetesMetadata.FallbackToTagWhenMetadataIsMissing = true
 
-				plugin, err := NewPlugin(cfg, logger, testMetrics)
+				plugin, err := NewPlugin(cfg, logger, testMetrics, nil)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(plugin).NotTo(BeNil())
 
@@ -106,7 +106,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 		BeforeEach(func() {
 			var err error
-			plugin, err = NewPlugin(cfg, logger, testMetrics)
+			plugin, err = NewPlugin(cfg, logger, testMetrics, nil)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -210,7 +210,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 				cfg.PluginConfig.KubernetesMetadata.FallbackToTagWhenMetadataIsMissing = true
 				plugin.Close()
 				var err error
-				plugin, err = NewPlugin(cfg, logger, testMetrics)
+				plugin, err = NewPlugin(cfg, logger, testMetrics, nil)
 				Expect(err).NotTo(HaveOccurred())
 
 				entry := types.OutputEntry{
@@ -233,7 +233,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 				cfg.PluginConfig.KubernetesMetadata.FallbackToTagWhenMetadataIsMissing = true
 				plugin.Close()
 				var err error
-				plugin, err = NewPlugin(cfg, logger, testMetrics)
+				plugin, err = NewPlugin(cfg, logger, testMetrics, nil)
 				Expect(err).NotTo(HaveOccurred())
 
 				entry := types.OutputEntry{
@@ -259,7 +259,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 				cfg.PluginConfig.KubernetesMetadata.DropLogEntryWithoutK8sMetadata = true
 				plugin.Close()
 				var err error
-				plugin, err = NewPlugin(cfg, logger, testMetrics)
+				plugin, err = NewPlugin(cfg, logger, testMetrics, nil)
 				Expect(err).NotTo(HaveOccurred())
 
 				entry := types.OutputEntry{
@@ -322,7 +322,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 	Describe("Client Management", func() {
 		It("should return seed client for non-dynamic hosts", func() {
-			plugin, err := NewPlugin(cfg, logger, testMetrics)
+			plugin, err := NewPlugin(cfg, logger, testMetrics, nil)
 			Expect(err).NotTo(HaveOccurred())
 			defer plugin.Close()
 
@@ -336,7 +336,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 		})
 
 		It("should identify non-dynamic hosts correctly", func() {
-			plugin, err := NewPlugin(cfg, logger, testMetrics)
+			plugin, err := NewPlugin(cfg, logger, testMetrics, nil)
 			Expect(err).NotTo(HaveOccurred())
 			defer plugin.Close()
 
@@ -350,7 +350,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 	Describe("Graceful Shutdown", func() {
 		It("should stop seed client on Close", func() {
-			plugin, err := NewPlugin(cfg, logger, testMetrics)
+			plugin, err := NewPlugin(cfg, logger, testMetrics, nil)
 			Expect(err).NotTo(HaveOccurred())
 
 			l, ok := plugin.(*logging)
@@ -362,7 +362,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 		})
 
 		It("should handle Close with nil controller", func() {
-			plugin, err := NewPlugin(cfg, logger, testMetrics)
+			plugin, err := NewPlugin(cfg, logger, testMetrics, nil)
 			Expect(err).NotTo(HaveOccurred())
 
 			l, ok := plugin.(*logging)
@@ -374,7 +374,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 		})
 
 		It("should be safe to close multiple times", func() {
-			plugin, err := NewPlugin(cfg, logger, testMetrics)
+			plugin, err := NewPlugin(cfg, logger, testMetrics, nil)
 			Expect(err).NotTo(HaveOccurred())
 
 			// Should not panic on multiple closes
@@ -387,7 +387,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 	Describe("Concurrent Access", func() {
 		It("should handle multiple goroutines sending records simultaneously", func() {
-			plugin, err := NewPlugin(cfg, logger, testMetrics)
+			plugin, err := NewPlugin(cfg, logger, testMetrics, nil)
 			Expect(err).NotTo(HaveOccurred())
 			defer plugin.Close()
 
@@ -426,7 +426,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 		})
 
 		It("should handle concurrent sends and shutdown", func() {
-			plugin, err := NewPlugin(cfg, logger, testMetrics)
+			plugin, err := NewPlugin(cfg, logger, testMetrics, nil)
 			Expect(err).NotTo(HaveOccurred())
 
 			const numGoroutines = 5
@@ -461,7 +461,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 	Describe("Integration Tests with NoopClient", func() {
 		It("should process high volume of messages and track metrics", func() {
-			plugin, err := NewPlugin(cfg, logger, testMetrics)
+			plugin, err := NewPlugin(cfg, logger, testMetrics, nil)
 			Expect(err).NotTo(HaveOccurred())
 			defer plugin.Close()
 
@@ -494,7 +494,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 		})
 
 		It("should handle buffer overflow with 1000+ messages", func() {
-			plugin, err := NewPlugin(cfg, logger, testMetrics)
+			plugin, err := NewPlugin(cfg, logger, testMetrics, nil)
 			Expect(err).NotTo(HaveOccurred())
 			defer plugin.Close()
 
@@ -521,7 +521,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 		It("should maintain metrics accuracy across multiple test runs", func() {
 			// First run
-			plugin1, err := NewPlugin(cfg, logger, testMetrics)
+			plugin1, err := NewPlugin(cfg, logger, testMetrics, nil)
 			Expect(err).NotTo(HaveOccurred())
 
 			entry1 := types.OutputEntry{
@@ -536,7 +536,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 			// Second run with new plugin instance
 			cfg.OTLPConfig.DQueConfig.DQueName = "test-queue-2"
-			plugin2, err := NewPlugin(cfg, logger, testMetrics)
+			plugin2, err := NewPlugin(cfg, logger, testMetrics, nil)
 			Expect(err).NotTo(HaveOccurred())
 			defer plugin2.Close()
 
@@ -614,7 +614,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 			// Create controller with fake client
 			ctx := context.Background()
-			ctl, err := controller.NewControllerWithClient(ctx, fakeClient, testCfg, logger, testMetrics)
+			ctl, err := controller.NewControllerWithClient(ctx, fakeClient, testCfg, logger, testMetrics, nil)
 			Expect(err).NotTo(HaveOccurred())
 			defer ctl.Stop()
 
@@ -628,7 +628,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 			Expect(c).NotTo(BeNil(), "Shoot client should be created for namespace: "+shootNamespace)
 
 			// Create plugin with the controller
-			plugin, err := NewPluginWithController(testCfg, logger, testMetrics, ctl)
+			plugin, err := NewPluginWithController(testCfg, logger, testMetrics, nil, ctl)
 			Expect(err).NotTo(HaveOccurred())
 			defer plugin.Close()
 
@@ -691,7 +691,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 			// Create controller with fake client
 			ctx := context.Background()
-			ctl, err := controller.NewControllerWithClient(ctx, fakeClient, testCfg, logger, testMetrics)
+			ctl, err := controller.NewControllerWithClient(ctx, fakeClient, testCfg, logger, testMetrics, nil)
 			Expect(err).NotTo(HaveOccurred())
 			defer ctl.Stop()
 
@@ -708,7 +708,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 			Expect(c2).NotTo(BeNil())
 
 			// Create plugin with the controller
-			plugin, err := NewPluginWithController(testCfg, logger, testMetrics, ctl)
+			plugin, err := NewPluginWithController(testCfg, logger, testMetrics, nil, ctl)
 			Expect(err).NotTo(HaveOccurred())
 			defer plugin.Close()
 
@@ -755,7 +755,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 
 			// Create controller with fake client
 			ctx := context.Background()
-			ctl, err := controller.NewControllerWithClient(ctx, fakeClient, testCfg, logger, testMetrics)
+			ctl, err := controller.NewControllerWithClient(ctx, fakeClient, testCfg, logger, testMetrics, nil)
 			Expect(err).NotTo(HaveOccurred())
 			defer ctl.Stop()
 
@@ -770,7 +770,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 			Expect(c).NotTo(BeNil())
 
 			// Create plugin with the controller
-			plugin, err := NewPluginWithController(testCfg, logger, testMetrics, ctl)
+			plugin, err := NewPluginWithController(testCfg, logger, testMetrics, nil, ctl)
 			Expect(err).NotTo(HaveOccurred())
 			defer plugin.Close()
 
@@ -821,7 +821,7 @@ var _ = Describe("OutputPlugin plugin", func() {
 			}
 
 			ctl := &noClientController{}
-			plugin, err := NewPluginWithController(testCfg, logger, testMetrics, ctl)
+			plugin, err := NewPluginWithController(testCfg, logger, testMetrics, nil, ctl)
 			Expect(err).NotTo(HaveOccurred())
 			defer plugin.Close()
 

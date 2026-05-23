@@ -17,7 +17,7 @@ var _ = Describe("MetricsSetup Singleton", func() {
 	BeforeEach(func() {
 		reg := promclient.NewRegistry()
 		var err error
-		metricsSetup, err = InitializeMetricsSetup(reg)
+		metricsSetup, err = RegisterMetricsSetup(reg)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(metricsSetup).ToNot(BeNil())
 	})
@@ -27,8 +27,8 @@ var _ = Describe("MetricsSetup Singleton", func() {
 	})
 
 	It("should return the same meter provider instance", func() {
-		provider1 := metricsSetup.GetProvider()
-		provider2 := metricsSetup.GetProvider()
+		provider1 := metricsSetup.Provider()
+		provider2 := metricsSetup.Provider()
 
 		// Should be the exact same provider instance
 		Expect(provider1).To(BeIdenticalTo(provider2))

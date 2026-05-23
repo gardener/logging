@@ -128,8 +128,8 @@ func (f *BatchProcessorFactory) createDQueProcessor(
 	return processor, nil
 }
 
-// GetProcessorType returns the type of processor that would be created based on config
-func GetProcessorType(cfg config.Config) BatchProcessorType {
+// ProcessorType returns the type of processor that would be created based on config
+func ProcessorType(cfg config.Config) BatchProcessorType {
 	if cfg.OTLPConfig.UseSDKBatchProcessor {
 		return BatchProcessorTypeSDK
 	}

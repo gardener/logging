@@ -29,6 +29,7 @@ import (
 
 	"github.com/gardener/logging/v1/pkg/client"
 	"github.com/gardener/logging/v1/pkg/client/api"
+	"github.com/gardener/logging/v1/pkg/client/otlp"
 	"github.com/gardener/logging/v1/pkg/config"
 	"github.com/gardener/logging/v1/pkg/metrics"
 	"github.com/gardener/logging/v1/pkg/targets"
@@ -60,11 +61,12 @@ type otelCollectorReconciler struct {
 	namespaceLabelSelector labels.Selector
 	dynamicHostRegex       *regexp.Regexp
 	metrics                *metrics.FluentBitGardenerMetrics
+	metricsSetup           *otlp.MetricsSetup
 }
 
 // newOpenTelemetryCollectorController creates a new Controller for OpenTelemetryCollector resources.
 // It sets up a manager and reconciler for OpenTelemetryCollector resources.
-func newOpenTelemetryCollectorController(ctx context.Context, conf *config.Config, l logr.Logger, m *metrics.FluentBitGardenerMetrics) (Controller, error) {
+func newOpenTelemetryCollectorController(ctx context.Context, conf *config.Config, l logr.Logger, m *metrics.FluentBitGardenerMetrics, ms *otlp.MetricsSetup) (Controller, error) {
 	// Parse the label selector for OpenTelemetryCollector resources
 	labelSelector, err := parseLabelSelector(conf.ControllerConfig.OpenTelemetryCollectorLabelSelector)
 	if err != nil {
@@ -131,6 +133,7 @@ func newOpenTelemetryCollectorController(ctx context.Context, conf *config.Confi
 		namespaceLabelSelector: namespaceLabelSelector,
 		dynamicHostRegex:       dynamicHostRegex,
 		metrics:                m,
+		metricsSetup:           ms,
 	}
 
 	// Build predicate for filtering OpenTelemetryCollector resources by label
@@ -281,7 +284,7 @@ func (r *otelCollectorReconciler) isNamespaceAllowed(ctx context.Context, namesp
 func (r *otelCollectorReconciler) createClient(namespace string) {
 	clientConf := r.buildClientConfig(namespace)
 
-	opt := []client.Option{client.WithTarget(targets.Shoot), client.WithLogger(r.logger), client.WithMetrics(r.metrics)}
+	opt := []client.Option{client.WithTarget(targets.Shoot), client.WithLogger(r.logger), client.WithMetrics(r.metrics), client.WithOTLPMetricsSetup(r.metricsSetup)}
 	outputClient, err := client.NewClient(r.ctx, *clientConf, opt...)
 	if err != nil {
 		r.metrics.Errors.WithLabelValues(metrics.ErrorFailedToMakeOutputClient).Inc()

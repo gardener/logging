@@ -24,7 +24,7 @@ var _ = Describe("FluentBitGardenerMetrics", func() {
 
 	BeforeEach(func() {
 		reg = metrics.NewRegistry()
-		m = metrics.NewFluentBitGardenerMetrics(reg)
+		m = metrics.RegisterFluentBitGardenerMetrics(reg)
 	})
 
 	DescribeTable("Metric exposition via /metrics endpoint",
@@ -94,7 +94,7 @@ var _ = Describe("FluentBitGardenerMetrics", func() {
 	Describe("Isolation between registries", func() {
 		It("should not interfere between two metrics instances", func() {
 			reg2 := metrics.NewRegistry()
-			m2 := metrics.NewFluentBitGardenerMetrics(reg2)
+			m2 := metrics.RegisterFluentBitGardenerMetrics(reg2)
 
 			m.Errors.WithLabelValues("TestError").Inc()
 			m.Errors.WithLabelValues("TestError").Inc()

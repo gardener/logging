@@ -268,7 +268,7 @@ func postProcessConfig(config *Config, configMap map[string]any) error {
 func processClientTypes(config *Config, configMap map[string]any) error {
 	// Keys are already normalized to lowercase by ParseConfig
 	if seedType, ok := configMap["seedtype"].(string); ok && seedType != "" {
-		t := types.GetClientTypeFromString(seedType)
+		t := types.ClientTypeFromString(seedType)
 		if t == types.Unknown {
 			return fmt.Errorf("invalid SeedType: %s", seedType)
 		}
@@ -276,7 +276,7 @@ func processClientTypes(config *Config, configMap map[string]any) error {
 	}
 
 	if shootType, ok := configMap["shoottype"].(string); ok && shootType != "" {
-		t := types.GetClientTypeFromString(shootType)
+		t := types.ClientTypeFromString(shootType)
 		if t == types.Unknown {
 			return fmt.Errorf("invalid ShootType: %s", shootType)
 		}

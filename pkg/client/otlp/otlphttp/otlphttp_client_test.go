@@ -27,7 +27,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 
 	BeforeEach(func() {
 		reg := metrics.NewRegistry()
-		testMetrics = metrics.NewFluentBitGardenerMetrics(reg)
+		testMetrics = metrics.RegisterFluentBitGardenerMetrics(reg)
 		logger = logr.Discard()
 		cfg = config.Config{
 			OTLPConfig: config.OTLPConfig{
@@ -54,7 +54,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 
 	Describe("New", func() {
 		It("should create an OTLP HTTP client", func() {
-			client, err := otlphttp.New(context.Background(), cfg, logger, testMetrics)
+			client, err := otlphttp.New(context.Background(), cfg, logger, testMetrics, nil)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(client).ToNot(BeNil())
 
@@ -63,9 +63,9 @@ var _ = Describe("OTLPHTTPClient", func() {
 		})
 
 		It("should set the correct endpoint", func() {
-			client, err := otlphttp.New(context.Background(), cfg, logger, testMetrics)
+			client, err := otlphttp.New(context.Background(), cfg, logger, testMetrics, nil)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(client.GetEndpoint()).To(Equal("localhost:4318"))
+			Expect(client.Endpoint()).To(Equal("localhost:4318"))
 
 			// Clean up
 			client.Stop()
@@ -75,7 +75,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 			cfg.OTLPConfig.Insecure = false
 			cfg.OTLPConfig.TLSConfig = nil // No TLS config, will use system defaults
 
-			client, err := otlphttp.New(context.Background(), cfg, logger, testMetrics)
+			client, err := otlphttp.New(context.Background(), cfg, logger, testMetrics, nil)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(client).ToNot(BeNil())
 
@@ -89,7 +89,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 				"X-Custom-Hdr": "custom-value",
 			}
 
-			client, err := otlphttp.New(context.Background(), cfg, logger, testMetrics)
+			client, err := otlphttp.New(context.Background(), cfg, logger, testMetrics, nil)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(client).ToNot(BeNil())
 
@@ -100,7 +100,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 		It("should handle compression configuration", func() {
 			cfg.OTLPConfig.Compression = 1 // gzip
 
-			client, err := otlphttp.New(context.Background(), cfg, logger, testMetrics)
+			client, err := otlphttp.New(context.Background(), cfg, logger, testMetrics, nil)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(client).ToNot(BeNil())
 
@@ -115,7 +115,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 			cfg.OTLPConfig.RetryMaxElapsedTime = time.Minute
 			cfg.OTLPConfig.RetryConfig = &config.RetryConfig{}
 
-			client, err := otlphttp.New(context.Background(), cfg, logger, testMetrics)
+			client, err := otlphttp.New(context.Background(), cfg, logger, testMetrics, nil)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(client).ToNot(BeNil())
 
@@ -129,7 +129,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 
 		BeforeEach(func() {
 			var err error
-			client, err = otlphttp.New(context.Background(), cfg, logger, testMetrics)
+			client, err = otlphttp.New(context.Background(), cfg, logger, testMetrics, nil)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -335,7 +335,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 
 	Describe("Stop and StopWait", func() {
 		It("should stop the client immediately", func() {
-			client, err := otlphttp.New(context.Background(), cfg, logger, testMetrics)
+			client, err := otlphttp.New(context.Background(), cfg, logger, testMetrics, nil)
 			Expect(err).ToNot(HaveOccurred())
 
 			client.Stop()
@@ -343,7 +343,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 		})
 
 		It("should stop the client with wait", func() {
-			client, err := otlphttp.New(context.Background(), cfg, logger, testMetrics)
+			client, err := otlphttp.New(context.Background(), cfg, logger, testMetrics, nil)
 			Expect(err).ToNot(HaveOccurred())
 
 			// Send a log entry
@@ -361,7 +361,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 		})
 
 		It("should handle multiple stops gracefully", func() {
-			client, err := otlphttp.New(context.Background(), cfg, logger, testMetrics)
+			client, err := otlphttp.New(context.Background(), cfg, logger, testMetrics, nil)
 			Expect(err).ToNot(HaveOccurred())
 
 			client.Stop()
@@ -370,7 +370,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 		})
 
 		It("should flush pending logs on StopWait", func() {
-			client, err := otlphttp.New(context.Background(), cfg, logger, testMetrics)
+			client, err := otlphttp.New(context.Background(), cfg, logger, testMetrics, nil)
 			Expect(err).ToNot(HaveOccurred())
 
 			// Send multiple log entries
@@ -391,12 +391,12 @@ var _ = Describe("OTLPHTTPClient", func() {
 		})
 	})
 
-	Describe("GetEndpoint", func() {
+	Describe("Endpoint", func() {
 		It("should return the configured endpoint", func() {
-			client, err := otlphttp.New(context.Background(), cfg, logger, testMetrics)
+			client, err := otlphttp.New(context.Background(), cfg, logger, testMetrics, nil)
 			Expect(err).ToNot(HaveOccurred())
 
-			endpoint := client.GetEndpoint()
+			endpoint := client.Endpoint()
 			Expect(endpoint).To(Equal("localhost:4318"))
 
 			client.Stop()
@@ -407,17 +407,17 @@ var _ = Describe("OTLPHTTPClient", func() {
 			cfg1 := cfg
 			cfg1.OTLPConfig.Endpoint = "otlp-collector-1:4318"
 			cfg1.OTLPConfig.DQueConfig.DQueDir = GinkgoT().TempDir()
-			client1, err := otlphttp.New(context.Background(), cfg1, logger, testMetrics)
+			client1, err := otlphttp.New(context.Background(), cfg1, logger, testMetrics, nil)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(client1.GetEndpoint()).To(Equal("otlp-collector-1:4318"))
+			Expect(client1.Endpoint()).To(Equal("otlp-collector-1:4318"))
 
 			// Second client
 			cfg2 := cfg
 			cfg2.OTLPConfig.Endpoint = "otlp-collector-2:4318"
 			cfg2.OTLPConfig.DQueConfig.DQueDir = GinkgoT().TempDir()
-			client2, err := otlphttp.New(context.Background(), cfg2, logger, testMetrics)
+			client2, err := otlphttp.New(context.Background(), cfg2, logger, testMetrics, nil)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(client2.GetEndpoint()).To(Equal("otlp-collector-2:4318"))
+			Expect(client2.Endpoint()).To(Equal("otlp-collector-2:4318"))
 
 			// Clean up
 			client1.Stop()
@@ -429,7 +429,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 		It("should handle fluent-bit typical log format", func() {
 			testCfg := cfg
 			testCfg.OTLPConfig.DQueConfig.DQueDir = GinkgoT().TempDir()
-			client, err := otlphttp.New(context.Background(), testCfg, logger, testMetrics)
+			client, err := otlphttp.New(context.Background(), testCfg, logger, testMetrics, nil)
 			Expect(err).ToNot(HaveOccurred())
 			defer client.Stop()
 
@@ -454,7 +454,7 @@ var _ = Describe("OTLPHTTPClient", func() {
 		It("should handle gardener shoot log format", func() {
 			testCfg := cfg
 			testCfg.OTLPConfig.DQueConfig.DQueDir = GinkgoT().TempDir()
-			client, err := otlphttp.New(context.Background(), testCfg, logger, testMetrics)
+			client, err := otlphttp.New(context.Background(), testCfg, logger, testMetrics, nil)
 			Expect(err).ToNot(HaveOccurred())
 			defer client.Stop()
 

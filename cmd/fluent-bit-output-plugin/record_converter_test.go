@@ -6,7 +6,6 @@ package main
 import (
 	"testing"
 
-	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -17,8 +16,8 @@ func TestRecordConverter(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	// Initialize logger for tests
-	logger = logr.Discard()
+	// The package init() calls app.Init() which bootstraps the singleton
+	// (logger, registry, metrics) used by toOutputRecord. No additional setup needed.
 })
 
 var _ = Describe("toOutputRecord", func() {

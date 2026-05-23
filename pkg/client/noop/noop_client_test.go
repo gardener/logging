@@ -29,11 +29,11 @@ var _ = Describe("NoopClient", func() {
 
 	BeforeEach(func() {
 		reg := metrics.NewRegistry()
-		testMetrics = metrics.NewFluentBitGardenerMetrics(reg)
+		testMetrics = metrics.RegisterFluentBitGardenerMetrics(reg)
 
 		cfg = config.Config{}
 
-		logger = log.NewNopLogger()
+		logger = log.NewNoop()
 		outputClient, _ = New(
 			context.Background(),
 			cfg,
@@ -54,7 +54,7 @@ var _ = Describe("NoopClient", func() {
 			testClient, err := New(context.Background(), testCfg, logger, testMetrics)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(testClient).NotTo(BeNil())
-			Expect(testClient.GetEndpoint()).To(Equal(testEndpoint))
+			Expect(testClient.Endpoint()).To(Equal(testEndpoint))
 		})
 
 		It("should work with nil logger", func() {
@@ -73,13 +73,13 @@ var _ = Describe("NoopClient", func() {
 			testClient, err := New(context.Background(), testCfg, logger, testMetrics)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(testClient).NotTo(BeNil())
-			Expect(testClient.GetEndpoint()).To(Equal(""))
+			Expect(testClient.Endpoint()).To(Equal(""))
 		})
 	})
 
 	Describe("Handle", func() {
 		It("should discard log entries and increment dropped logs metric", func() {
-			initialMetric := testMetrics.DroppedLogs.WithLabelValues(outputClient.GetEndpoint(), "noop")
+			initialMetric := testMetrics.DroppedLogs.WithLabelValues(outputClient.Endpoint(), "noop")
 			beforeCount := testutil.ToFloat64(initialMetric)
 
 			entry := types.OutputEntry{
@@ -94,7 +94,7 @@ var _ = Describe("NoopClient", func() {
 		})
 
 		It("should handle multiple log entries and track count", func() {
-			initialMetric := testMetrics.DroppedLogs.WithLabelValues(outputClient.GetEndpoint(), "noop")
+			initialMetric := testMetrics.DroppedLogs.WithLabelValues(outputClient.Endpoint(), "noop")
 			beforeCount := testutil.ToFloat64(initialMetric)
 
 			numEntries := 10
@@ -112,7 +112,7 @@ var _ = Describe("NoopClient", func() {
 		})
 
 		It("should handle concurrent log entries safely", func() {
-			initialMetric := testMetrics.DroppedLogs.WithLabelValues(outputClient.GetEndpoint(), "noop")
+			initialMetric := testMetrics.DroppedLogs.WithLabelValues(outputClient.Endpoint(), "noop")
 			beforeCount := testutil.ToFloat64(initialMetric)
 
 			numGoroutines := 10
@@ -171,7 +171,7 @@ var _ = Describe("NoopClient", func() {
 		})
 	})
 
-	Describe("GetEndpoint", func() {
+	Describe("Endpoint", func() {
 		It("should return the configured endpoint", func() {
 			testEndpoint := "http://custom-endpoint:9999"
 			testCfg := config.Config{
@@ -182,7 +182,7 @@ var _ = Describe("NoopClient", func() {
 
 			testClient, err := New(context.Background(), testCfg, logger, testMetrics)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(testClient.GetEndpoint()).To(Equal(testEndpoint))
+			Expect(testClient.Endpoint()).To(Equal(testEndpoint))
 		})
 	})
 

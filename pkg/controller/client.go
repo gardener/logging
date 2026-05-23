@@ -51,8 +51,8 @@ type Client interface {
 	SetState(state clusterState)
 }
 
-func (c *controllerClient) GetEndpoint() string {
-	return c.shootTarget.client.GetEndpoint()
+func (c *controllerClient) Endpoint() string {
+	return c.shootTarget.client.Endpoint()
 }
 
 // Handle processes and sends log to the logging backend.

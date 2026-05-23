@@ -176,9 +176,9 @@ func setupTestContext() *testContext {
 	Expect(err).NotTo(HaveOccurred(), "temporary directory creation should succeed")
 
 	reg := metrics.NewRegistry()
-	testMetrics := metrics.NewFluentBitGardenerMetrics(reg)
+	testMetrics := metrics.RegisterFluentBitGardenerMetrics(reg)
 
-	logger := pkglog.NewNopLogger()
+	logger := pkglog.NewNoop()
 	cfg := createPluginConfig(tmpDir)
 
 	// Create controller-runtime fake client
@@ -188,11 +188,11 @@ func setupTestContext() *testContext {
 
 	// Create controller with fake client
 	ctx := context.Background()
-	ctl, err := controller.NewControllerWithClient(ctx, fakeClient, cfg, logger, testMetrics)
+	ctl, err := controller.NewControllerWithClient(ctx, fakeClient, cfg, logger, testMetrics, nil)
 	Expect(err).NotTo(HaveOccurred(), "controller creation should succeed")
 
 	// Create plugin with controller
-	p, err := plugin.NewPluginWithController(cfg, logger, testMetrics, ctl)
+	p, err := plugin.NewPluginWithController(cfg, logger, testMetrics, nil, ctl)
 	Expect(err).NotTo(HaveOccurred(), "plugin creation should succeed")
 	Expect(p).NotTo(BeNil(), "plugin should not be nil")
 

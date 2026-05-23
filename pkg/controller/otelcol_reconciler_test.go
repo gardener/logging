@@ -42,7 +42,7 @@ var _ = Describe("otelCollectorReconciler", func() {
 
 	BeforeEach(func() {
 		reg := metrics.NewRegistry()
-		testMetrics = metrics.NewFluentBitGardenerMetrics(reg)
+		testMetrics = metrics.RegisterFluentBitGardenerMetrics(reg)
 		ctx, cancel = context.WithCancel(context.Background())
 
 		labelSelector, err := labels.Parse(labelKey + "=" + labelValue)

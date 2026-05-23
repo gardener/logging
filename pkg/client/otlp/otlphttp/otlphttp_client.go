@@ -31,6 +31,7 @@ type Client struct {
 	config         config.Config
 	loggerProvider *sdklog.LoggerProvider
 	meterProvider  *sdkmetric.MeterProvider
+	metricsSetup   *otlp.MetricsSetup
 	otlLogger      otlplog.Logger
 	ctx            context.Context
 	cancel         context.CancelFunc
@@ -41,12 +42,12 @@ type Client struct {
 var _ api.Output = &Client{}
 
 // New creates a new OTLP HTTP client with dque batch processor
-func New(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics) (*Client, error) {
+func New(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.FluentBitGardenerMetrics, metricsSetup *otlp.MetricsSetup) (*Client, error) {
 	// Use the provided context with cancel capability
 	clientCtx, cancel := context.WithCancel(ctx)
 
 	// Build blocking OTLP HTTP exporter configuration
-	configBuilder := otlp.NewOTLPHTTPConfigBuilder(cfg)
+	configBuilder := NewConfigBuilder(cfg)
 	exporterOpts := configBuilder.Build()
 
 	// Create blocking OTLP HTTP exporter
@@ -99,7 +100,8 @@ func New(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.
 		endpoint:       cfg.OTLPConfig.Endpoint,
 		config:         cfg,
 		loggerProvider: loggerProvider,
-		meterProvider:  otlp.GetGlobalMeterProvider(),
+		meterProvider:  metricsSetupProvider(metricsSetup),
+		metricsSetup:   metricsSetup,
 		otlLogger:      loggerProvider.Logger(otlp.PluginName, scopeOptions...),
 		ctx:            clientCtx,
 		cancel:         cancel,
@@ -109,7 +111,7 @@ func New(ctx context.Context, cfg config.Config, logger logr.Logger, m *metrics.
 
 	logger.V(1).Info("OTLP HTTP client created",
 		"endpoint", cfg.OTLPConfig.Endpoint,
-		"processorType", otlp.GetProcessorType(cfg),
+		"processorType", otlp.ProcessorType(cfg),
 	)
 
 	return client, nil
@@ -164,12 +166,11 @@ func (c *Client) Stop() {
 		c.logger.Error(err, "error during logger provider shutdown")
 	}
 
-	globalMetricsSetup := otlp.GlobalMetricsSetup()
-	if globalMetricsSetup == nil {
+	if c.metricsSetup == nil {
 		return
 	}
 
-	if err := globalMetricsSetup.Shutdown(ctx); err != nil {
+	if err := c.metricsSetup.Shutdown(ctx); err != nil {
 		c.logger.Error(err, "error during meter provider shutdown")
 	}
 }
@@ -191,17 +192,26 @@ func (c *Client) StopWait() {
 		c.logger.Error(err, "error during logger provider shutdown")
 	}
 
-	globalMetricsSetup := otlp.GlobalMetricsSetup()
-	if globalMetricsSetup == nil {
+	if c.metricsSetup == nil {
 		return
 	}
 
-	if err := globalMetricsSetup.Shutdown(ctx); err != nil {
+	if err := c.metricsSetup.Shutdown(ctx); err != nil {
 		c.logger.Error(err, "error during meter provider shutdown")
 	}
 }
 
-// GetEndpoint returns the configured endpoint
-func (c *Client) GetEndpoint() string {
+// Endpoint returns the configured endpoint
+func (c *Client) Endpoint() string {
 	return c.endpoint
+}
+
+// metricsSetupProvider safely returns the meter provider from the given metrics setup,
+// or nil if the setup is not configured.
+func metricsSetupProvider(setup *otlp.MetricsSetup) *sdkmetric.MeterProvider {
+	if setup == nil {
+		return nil
+	}
+
+	return setup.Provider()
 }

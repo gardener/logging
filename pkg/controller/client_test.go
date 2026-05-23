@@ -24,7 +24,7 @@ import (
 var _ = Describe("Controller Client", func() {
 	var (
 		ctlClient   controllerClient
-		logger      = log.NewLogger("info")
+		logger      = log.New("info")
 		testMetrics *metrics.FluentBitGardenerMetrics
 		line1       = "testline1"
 		line2       = "testline2"
@@ -40,7 +40,7 @@ var _ = Describe("Controller Client", func() {
 
 	BeforeEach(func() {
 		reg := metrics.NewRegistry()
-		testMetrics = metrics.NewFluentBitGardenerMetrics(reg)
+		testMetrics = metrics.RegisterFluentBitGardenerMetrics(reg)
 
 		// Create separate NoopClient instances with different endpoints for separate metrics
 		shootClient, err := noopclient.New(

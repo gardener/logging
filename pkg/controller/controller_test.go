@@ -31,7 +31,7 @@ type fakeOutputClient struct {
 	isStopped bool
 }
 
-func (*fakeOutputClient) GetEndpoint() string {
+func (*fakeOutputClient) Endpoint() string {
 	return "http://localhost"
 }
 
@@ -179,7 +179,7 @@ var _ = Describe("Controller", func() {
 
 		BeforeEach(func() {
 			reg := metrics.NewRegistry()
-			testMetrics = metrics.NewFluentBitGardenerMetrics(reg)
+			testMetrics = metrics.RegisterFluentBitGardenerMetrics(reg)
 			conf = &config.Config{
 				OTLPConfig: config.OTLPConfig{
 					DQueConfig: config.DefaultDQueConfig,

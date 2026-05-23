@@ -11,6 +11,7 @@ import (
 
 	"github.com/gardener/logging/v1/pkg/client/api"
 	noopclient "github.com/gardener/logging/v1/pkg/client/noop"
+	"github.com/gardener/logging/v1/pkg/client/otlp"
 	"github.com/gardener/logging/v1/pkg/client/otlp/otlpgrpc"
 	"github.com/gardener/logging/v1/pkg/client/otlp/otlphttp"
 	stdoutclient "github.com/gardener/logging/v1/pkg/client/stdout"
@@ -21,9 +22,10 @@ import (
 )
 
 type clientOptions struct {
-	target  targets.Target
-	logger  logr.Logger
-	metrics *metrics.FluentBitGardenerMetrics
+	target       targets.Target
+	logger       logr.Logger
+	metrics      *metrics.FluentBitGardenerMetrics
+	metricsSetup *otlp.MetricsSetup
 }
 
 // Option defines a functional option for configuring the client
@@ -56,6 +58,17 @@ func WithMetrics(m *metrics.FluentBitGardenerMetrics) Option {
 	}
 }
 
+// WithOTLPMetricsSetup creates a functional option for setting the OTLP metrics setup.
+// This is required for OTLP gRPC/HTTP clients to wire SDK self-instrumentation into
+// the shared Prometheus registry; other client types ignore it.
+func WithOTLPMetricsSetup(ms *otlp.MetricsSetup) Option {
+	return func(opts *clientOptions) error {
+		opts.metricsSetup = ms
+
+		return nil
+	}
+}
+
 // NewClient creates a new client based on the fluent-bit configuration.
 func NewClient(ctx context.Context, cfg config.Config, opts ...Option) (api.Output, error) {
 	options := &clientOptions{}
@@ -74,18 +87,18 @@ func NewClient(ctx context.Context, cfg config.Config, opts ...Option) (api.Outp
 	var t types.Type
 	switch options.target {
 	case targets.Seed:
-		t = types.GetClientTypeFromString(cfg.PluginConfig.SeedType)
+		t = types.ClientTypeFromString(cfg.PluginConfig.SeedType)
 	case targets.Shoot:
-		t = types.GetClientTypeFromString(cfg.PluginConfig.ShootType)
+		t = types.ClientTypeFromString(cfg.PluginConfig.ShootType)
 	default:
 		return nil, fmt.Errorf("unknown target type: %v", options.target)
 	}
 
 	switch t {
 	case types.OTLPGRPC:
-		return otlpgrpc.New(ctx, cfg, logger, options.metrics)
+		return otlpgrpc.New(ctx, cfg, logger, options.metrics, options.metricsSetup)
 	case types.OTLPHTTP:
-		return otlphttp.New(ctx, cfg, logger, options.metrics)
+		return otlphttp.New(ctx, cfg, logger, options.metrics, options.metricsSetup)
 	case types.STDOUT:
 		return stdoutclient.New(ctx, cfg, logger, options.metrics)
 	case types.NOOP:
