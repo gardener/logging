@@ -66,7 +66,9 @@ type otelCollectorReconciler struct {
 
 // newOpenTelemetryCollectorController creates a new Controller for OpenTelemetryCollector resources.
 // It sets up a manager and reconciler for OpenTelemetryCollector resources.
-func newOpenTelemetryCollectorController(ctx context.Context, conf *config.Config, l logr.Logger, m *metrics.FluentBitGardenerMetrics, ms *otlp.MetricsSetup) (Controller, error) {
+func newOpenTelemetryCollectorController(ctx context.Context, conf *config.Config, l logr.Logger, m *metrics.FluentBitGardenerMetrics, ms *otlp.MetricsSetup) (<-chan Controller, error) {
+	ch := make(chan Controller, 1)
+
 	// Parse the label selector for OpenTelemetryCollector resources
 	labelSelector, err := parseLabelSelector(conf.ControllerConfig.OpenTelemetryCollectorLabelSelector)
 	if err != nil {
@@ -170,7 +172,9 @@ func newOpenTelemetryCollectorController(ctx context.Context, conf *config.Confi
 
 	l.Info("OpenTelemetryCollector controller started and cache synced")
 
-	return reconciler, nil
+	ch <- reconciler
+
+	return ch, nil
 }
 
 // buildLabelPredicate creates a predicate that filters OpenTelemetryCollector resources

@@ -61,7 +61,9 @@ type clusterReconciler struct {
 
 // newClusterController creates a new Controller for Cluster resources.
 // It sets up a manager and reconciler for Cluster resources.
-func newClusterController(ctx context.Context, conf *config.Config, l logr.Logger, m *metrics.FluentBitGardenerMetrics, ms *otlp.MetricsSetup) (Controller, error) {
+func newClusterController(ctx context.Context, conf *config.Config, l logr.Logger, m *metrics.FluentBitGardenerMetrics, ms *otlp.MetricsSetup) (<-chan Controller, error) {
+	ch := make(chan Controller, 1)
+
 	var err error
 	var seedClient api.Output
 
@@ -153,7 +155,9 @@ func newClusterController(ctx context.Context, conf *config.Config, l logr.Logge
 
 	l.Info("controller started and cache synced")
 
-	return reconciler, nil
+	ch <- reconciler
+
+	return ch, nil
 }
 
 // NewControllerWithClient creates a Controller with a pre-configured client.

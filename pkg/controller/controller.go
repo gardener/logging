@@ -35,7 +35,7 @@ type Controller interface {
 // It sets up a manager and reconciler based on the configuration:
 // - If WatchOpenTelemetryCollector is true, it watches OpenTelemetryCollector resources
 // - Otherwise (default), it watches Cluster resources
-func NewController(ctx context.Context, conf *config.Config, l logr.Logger, m *metrics.FluentBitGardenerMetrics, ms *otlp.MetricsSetup) (Controller, error) {
+func NewController(ctx context.Context, conf *config.Config, l logr.Logger, m *metrics.FluentBitGardenerMetrics, ms *otlp.MetricsSetup) (<-chan Controller, error) {
 	if conf.ControllerConfig.WatchOpenTelemetryCollector {
 		l.Info("using OpenTelemetryCollector mode for dynamic clients")
 

@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"regexp"
+	"sync"
 
 	"github.com/go-logr/logr"
 
@@ -31,6 +32,7 @@ type logging struct {
 	cfg                             *config.Config
 	dynamicHostRegexp               *regexp.Regexp
 	extractKubernetesMetadataRegexp *regexp.Regexp
+	ctrlMu                          sync.RWMutex
 	controller                      controller.Controller
 	logger                          logr.Logger
 	ctx                             context.Context
@@ -59,11 +61,27 @@ func NewPlugin(cfg *config.Config, logger logr.Logger, m *metrics.FluentBitGarde
 		l.dynamicHostRegexp = regexp.MustCompile(cfg.ControllerConfig.DynamicHostRegex)
 
 		// Pass the plugin's context to the controller
-		if l.controller, err = controller.NewController(ctx, cfg, logger, m, ms); err != nil {
+		ctlCh, err := controller.NewController(ctx, cfg, logger, m, ms)
+		if err != nil {
 			cancel()
 
 			return nil, err
 		}
+
+		// The controller is delivered asynchronously: the plugin starts without
+		// one and routes dynamic-host records to nil (dropped) until it arrives.
+		// getClient handles the nil case.
+		go func() {
+			select {
+			case c, ok := <-ctlCh:
+				if !ok {
+					return
+				}
+				l.setController(c)
+				logger.Info("controller installed in plugin")
+			case <-ctx.Done():
+			}
+		}()
 	}
 
 	if cfg.PluginConfig.KubernetesMetadata.FallbackToTagWhenMetadataIsMissing {
@@ -96,13 +114,13 @@ func NewPluginWithController(cfg *config.Config, logger logr.Logger, m *metrics.
 	ctx, cancel := context.WithCancel(context.Background())
 
 	l := &logging{
-		cfg:        cfg,
-		logger:     logger,
-		ctx:        ctx,
-		cancel:     cancel,
-		controller: ctl,
-		metrics:    m,
+		cfg:     cfg,
+		logger:  logger,
+		ctx:     ctx,
+		cancel:  cancel,
+		metrics: m,
 	}
+	l.setController(ctl)
 
 	if len(cfg.ControllerConfig.DynamicHostPath) > 0 {
 		l.dynamicHostRegexp = regexp.MustCompile(cfg.ControllerConfig.DynamicHostRegex)
@@ -207,8 +225,8 @@ func (l *logging) Close() {
 	l.cancel()
 
 	l.seedClient.StopWait()
-	if l.controller != nil {
-		l.controller.Stop()
+	if c := l.getController(); c != nil {
+		c.Stop()
 	}
 
 	l.logger.Info("logging plugin stopped",
@@ -218,15 +236,32 @@ func (l *logging) Close() {
 }
 
 func (l *logging) getClient(dynamicHosName string) api.Output {
-	if l.isDynamicHost(dynamicHosName) && l.controller != nil {
-		if c, isStopped := l.controller.GetClient(dynamicHosName); !isStopped {
-			return c
+	if l.isDynamicHost(dynamicHosName) {
+		c := l.getController()
+		if c == nil {
+			return nil
+		}
+		if out, isStopped := c.GetClient(dynamicHosName); !isStopped {
+			return out
 		}
 
 		return nil
 	}
 
 	return l.seedClient
+}
+
+func (l *logging) getController() controller.Controller {
+	l.ctrlMu.RLock()
+	defer l.ctrlMu.RUnlock()
+
+	return l.controller
+}
+
+func (l *logging) setController(c controller.Controller) {
+	l.ctrlMu.Lock()
+	defer l.ctrlMu.Unlock()
+	l.controller = c
 }
 
 func (l *logging) isDynamicHost(dynamicHostName string) bool {
