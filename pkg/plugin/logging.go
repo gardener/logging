@@ -68,9 +68,9 @@ func NewPlugin(cfg *config.Config, logger logr.Logger, m *metrics.FluentBitGarde
 			return nil, err
 		}
 
-		// The controller is delivered asynchronously: the plugin starts without
-		// one and routes dynamic-host records to nil (dropped) until it arrives.
-		// getClient handles the nil case.
+		// The controller is delivered asynchronously (it waits for its CRD to be
+		// established). Until it arrives, getClient routes dynamic-host records
+		// to the seed client as a fallback so they are not dropped.
 		go func() {
 			select {
 			case c, ok := <-ctlCh:
@@ -239,7 +239,9 @@ func (l *logging) getClient(dynamicHosName string) api.Output {
 	if l.isDynamicHost(dynamicHosName) {
 		c := l.getController()
 		if c == nil {
-			return nil
+			// Controller not yet available (e.g. CRD not installed).
+			// Fall back to the seed client so records aren't dropped.
+			return l.seedClient
 		}
 		if out, isStopped := c.GetClient(dynamicHosName); !isStopped {
 			return out
