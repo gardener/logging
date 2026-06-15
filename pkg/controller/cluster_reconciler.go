@@ -17,6 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/uuid"
+	"k8s.io/client-go/dynamic"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -28,6 +29,11 @@ import (
 	"github.com/gardener/logging/v1/pkg/config"
 	"github.com/gardener/logging/v1/pkg/metrics"
 	"github.com/gardener/logging/v1/pkg/targets"
+)
+
+const (
+	clusterCRDGroup = "extensions.gardener.cloud"
+	clusterCRDName  = "clusters.extensions.gardener.cloud"
 )
 
 var scheme = func() *runtime.Scheme {
@@ -81,6 +87,19 @@ func newClusterController(ctx context.Context, conf *config.Config, l logr.Logge
 		seedClient.StopWait()
 
 		return nil, fmt.Errorf("failed to get REST config: %w", err)
+	}
+
+	dynamicClient, err := dynamic.NewForConfig(restConfig)
+	if err != nil {
+		seedClient.StopWait()
+
+		return nil, fmt.Errorf("failed to create dynamic client: %w", err)
+	}
+
+	if err := waitForCRD(ctx, l, dynamicClient, clusterCRDGroup, clusterCRDName); err != nil {
+		seedClient.StopWait()
+
+		return nil, fmt.Errorf("failed waiting for CRD %s: %w", clusterCRDName, err)
 	}
 
 	ctlCtx, cancel := context.WithCancel(ctx)
