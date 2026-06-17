@@ -17,7 +17,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/uuid"
-	"k8s.io/client-go/dynamic"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -29,11 +28,6 @@ import (
 	"github.com/gardener/logging/v1/pkg/config"
 	"github.com/gardener/logging/v1/pkg/metrics"
 	"github.com/gardener/logging/v1/pkg/targets"
-)
-
-const (
-	clusterCRDGroup = "extensions.gardener.cloud"
-	clusterCRDName  = "clusters.extensions.gardener.cloud"
 )
 
 var scheme = func() *runtime.Scheme {
@@ -66,65 +60,88 @@ type clusterReconciler struct {
 }
 
 // newClusterController creates a new Controller for Cluster resources.
-// It sets up a manager and reconciler for Cluster resources.
-func newClusterController(ctx context.Context, conf *config.Config, l logr.Logger, m *metrics.FluentBitGardenerMetrics, ms *otlp.MetricsSetup) (<-chan Controller, error) {
-	ch := make(chan Controller, 1)
-
-	var err error
-	var seedClient api.Output
-
+//
+// The seed client is created synchronously, then awaitController is started:
+// it watches the apiextensions API and, once the Cluster CRD is Established,
+// builds the controller-runtime manager and reconciler and delivers the
+// resulting Controller on the returned channel.
+func newClusterController(
+	ctx context.Context,
+	conf *config.Config,
+	l logr.Logger,
+	m *metrics.FluentBitGardenerMetrics,
+	ms *otlp.MetricsSetup,
+) (<-chan Controller, error) {
 	cfgShallowCopy := *conf
-	cfgShallowCopy.OTLPConfig.DQueConfig.DQueName = conf.OTLPConfig.DQueConfig.DQueName + "-controller"
-	opt := []client.Option{client.WithTarget(targets.Seed), client.WithLogger(l), client.WithMetrics(m), client.WithOTLPMetricsSetup(ms)}
+	cfgShallowCopy.OTLPConfig.DQueConfig.DQueName = fmt.Sprintf(
+		"%s-controller",
+		conf.OTLPConfig.DQueConfig.DQueName,
+	)
 
-	if seedClient, err = client.NewClient(ctx, cfgShallowCopy, opt...); err != nil {
+	opt := []client.Option{
+		client.WithTarget(targets.Seed),
+		client.WithLogger(l),
+		client.WithMetrics(m),
+		client.WithOTLPMetricsSetup(ms),
+	}
+
+	seedClient, err := client.NewClient(ctx, cfgShallowCopy, opt...)
+	if err != nil {
 		return nil, fmt.Errorf("failed to create seed client in controller: %w", err)
 	}
 	m.Clients.WithLabelValues(targets.Seed.String()).Inc()
 
+	out, err := awaitController(ctx, l, scheme, &extensionsv1alpha1.Cluster{},
+		func(ctx context.Context) (Controller, error) {
+			return buildClusterReconciler(ctx, conf, l, m, ms, seedClient)
+		},
+	)
+	if err != nil {
+		seedClient.StopWait()
+		return nil, fmt.Errorf("failed to await Cluster controller: %w", err)
+	}
+	return out, nil
+}
+
+// buildClusterReconciler constructs the controller-runtime manager and the
+// clusterReconciler. It is invoked by awaitController once the Cluster CRD
+// is observed on the cluster.
+func buildClusterReconciler(
+	ctx context.Context,
+	conf *config.Config,
+	l logr.Logger,
+	m *metrics.FluentBitGardenerMetrics,
+	ms *otlp.MetricsSetup,
+	seedClient api.Output,
+) (Controller, error) {
 	restConfig, err := getRestConfig()
 	if err != nil {
-		seedClient.StopWait()
-
 		return nil, fmt.Errorf("failed to get REST config: %w", err)
-	}
-
-	dynamicClient, err := dynamic.NewForConfig(restConfig)
-	if err != nil {
-		seedClient.StopWait()
-
-		return nil, fmt.Errorf("failed to create dynamic client: %w", err)
-	}
-
-	if err := waitForCRD(ctx, l, dynamicClient, clusterCRDGroup, clusterCRDName); err != nil {
-		seedClient.StopWait()
-
-		return nil, fmt.Errorf("failed waiting for CRD %s: %w", clusterCRDName, err)
 	}
 
 	ctlCtx, cancel := context.WithCancel(ctx)
 
 	ctrl.SetLogger(l)
-
 	mgr, err := ctrl.NewManager(restConfig, ctrl.Options{
 		Scheme: scheme,
 		Logger: l,
 		Cache: cache.Options{
-			// Restrict cache to Cluster objects only; this controller does not reconcile other types.
+			// Restrict cache to Cluster objects only.
+			// This controller doesn't reconcile other types.
 			ByObject: map[k8sclient.Object]cache.ByObject{
 				&extensionsv1alpha1.Cluster{}: {},
 			},
-			// Strip managed fields from all cached objects as they are not used by the reconciler.
+			// Strip managed fields from all cached objects
+			// as they are not used by the reconciler.
 			DefaultTransform: cache.TransformStripManagedFields(),
 		},
-		// Disable metrics and health probe servers since fluent-bit plugin handles these
+		// Disable metrics and health probe servers
+		// since fluent-bit plugin handles these.
 		Metrics:                ctrl.Options{}.Metrics,
 		HealthProbeBindAddress: "",
 	})
 	if err != nil {
 		cancel()
-		seedClient.StopWait()
-
 		return nil, fmt.Errorf("failed to create manager: %w", err)
 	}
 
@@ -142,13 +159,11 @@ func newClusterController(ctx context.Context, conf *config.Config, l logr.Logge
 		metricsSetup: ms,
 	}
 
-	if err = ctrl.NewControllerManagedBy(mgr).
+	if err := ctrl.NewControllerManagedBy(mgr).
 		For(&extensionsv1alpha1.Cluster{}).
 		Named(fmt.Sprintf("cluster-%s", uuid.NewUUID())).
 		Complete(reconciler); err != nil {
 		cancel()
-		seedClient.StopWait()
-
 		return nil, fmt.Errorf("failed to create controller: %w", err)
 	}
 
@@ -167,16 +182,12 @@ func newClusterController(ctx context.Context, conf *config.Config, l logr.Logge
 
 	if !mgr.GetCache().WaitForCacheSync(syncCtx) {
 		cancel()
-		seedClient.StopWait()
-
 		return nil, errors.New("failed to wait for cache sync within timeout")
 	}
 
 	l.Info("controller started and cache synced")
 
-	ch <- reconciler
-
-	return ch, nil
+	return reconciler, nil
 }
 
 // NewControllerWithClient creates a Controller with a pre-configured client.

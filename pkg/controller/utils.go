@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
@@ -21,6 +22,8 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
 	clientgocache "k8s.io/client-go/tools/cache"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 )
 
 func shootFromCluster(cluster *extensionsv1alpha1.Cluster) (*gardencorev1beta1.Shoot, error) {
@@ -127,58 +130,86 @@ func isCRDEstablished(u *unstructured.Unstructured, group string) bool {
 	return established && namesAccepted
 }
 
-// waitForCRD blocks until the CRD identified by (group, name) is observed as
-// Established with names accepted, or until ctx is cancelled.
+// awaitController watches for the target CRD. Once that CRD is observed as
+// Established with its names accepted, it invokes `build` and delivers the
+// resulting Controller on the returned channel.
 //
-// It runs a dynamic informer on CustomResourceDefinitions and stops it as soon
-// as the CRD shows up.
-func waitForCRD(ctx context.Context, l logr.Logger, dynamicClient dynamic.Interface, group, name string) error {
+// The returned channel always closes — either after delivering the Controller,
+// or without a value if ctx is cancelled before the CRD shows up, or if `build` fails.
+func awaitController(
+	ctx context.Context,
+	l logr.Logger,
+	scheme *runtime.Scheme,
+	obj client.Object,
+	build func(ctx context.Context) (Controller, error),
+) (<-chan Controller, error) {
+	gvk, err := apiutil.GVKForObject(obj, scheme)
+	if err != nil {
+		return nil, fmt.Errorf("failed to derive GVK for %T: %w", obj, err)
+	}
+	// CRD plural follows the kubebuilder convention of lowercasing the Kind and adding "s".
+	crdName := strings.ToLower(gvk.Kind) + "s." + gvk.Group
+
+	restConfig, err := getRestConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get REST config: %w", err)
+	}
+
+	dynamicClient, err := dynamic.NewForConfig(restConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create dynamic client: %w", err)
+	}
+
 	factory := dynamicinformer.NewDynamicSharedInformerFactory(dynamicClient, 0)
 	informer := factory.ForResource(crdGVR).Informer()
 
-	// Cancellable context drives the informer's lifecycle; we cancel it once the CRD shows up.
-	informerCtx, cancelInformer := context.WithCancel(ctx)
-	defer cancelInformer()
-
-	found := make(chan struct{})
 	var once sync.Once
-
-	check := func(obj any) {
-		u, ok := obj.(*unstructured.Unstructured)
+	found := make(chan struct{})
+	check := func(o any) {
+		u, ok := o.(*unstructured.Unstructured)
 		if !ok {
 			return
 		}
-		if u.GetName() != name {
+		if u.GetName() != crdName {
 			return
 		}
-		if !isCRDEstablished(u, group) {
+		if !isCRDEstablished(u, gvk.Group) {
 			return
 		}
 		once.Do(func() {
-			l.Info("target CRD is established, stopping informer", "crd", name)
+			l.Info("target CRD is established", "crd", crdName)
 			close(found)
 		})
 	}
-
 	if _, err := informer.AddEventHandler(clientgocache.ResourceEventHandlerFuncs{
-		AddFunc:    func(obj any) { check(obj) },
-		UpdateFunc: func(_, newObj any) { check(newObj) },
+		AddFunc:    func(o any) { check(o) },
+		UpdateFunc: func(_, o any) { check(o) },
 	}); err != nil {
-		return fmt.Errorf("failed to add event handler: %w", err)
+		return nil, fmt.Errorf("failed to add event handler: %w", err)
 	}
 
-	factory.Start(informerCtx.Done())
-	if !clientgocache.WaitForCacheSync(informerCtx.Done(), informer.HasSynced) {
-		return errors.New("failed to sync CRD informer cache")
+	factory.Start(ctx.Done())
+	if !clientgocache.WaitForCacheSync(ctx.Done(), informer.HasSynced) {
+		return nil, errors.New("failed to sync CRD informer cache")
 	}
+	l.Info("waiting for CRD to become available", "crd", crdName)
 
-	l.Info("waiting for CRD to become available", "crd", name)
+	out := make(chan Controller, 1)
+	go func() {
+		defer close(out)
 
-	select {
-	case <-found:
-		// cancelInformer via defer shuts the informer down.
-		return nil
-	case <-ctx.Done():
-		return ctx.Err()
-	}
+		select {
+		case <-found:
+		case <-ctx.Done():
+			return
+		}
+
+		c, err := build(ctx)
+		if err != nil {
+			l.Error(err, "failed to build controller after CRD became available", "crd", crdName)
+			return
+		}
+		out <- c
+	}()
+	return out, nil
 }

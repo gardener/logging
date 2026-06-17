@@ -21,7 +21,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/uuid"
-	"k8s.io/client-go/dynamic"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -34,11 +33,6 @@ import (
 	"github.com/gardener/logging/v1/pkg/config"
 	"github.com/gardener/logging/v1/pkg/metrics"
 	"github.com/gardener/logging/v1/pkg/targets"
-)
-
-const (
-	otelcolCRDGroup = "opentelemetry.io"
-	otelcolCRDName  = "opentelemetrycollectors.opentelemetry.io"
 )
 
 var otelcolScheme = func() *runtime.Scheme {
@@ -71,10 +65,13 @@ type otelCollectorReconciler struct {
 }
 
 // newOpenTelemetryCollectorController creates a new Controller for OpenTelemetryCollector resources.
-// It sets up a manager and reconciler for OpenTelemetryCollector resources.
+//
+// Selectors and the DynamicHostRegex are parsed synchronously, then
+// awaitController watches the apiextensions API and, once the
+// OpenTelemetryCollector CRD is Established, builds the controller-runtime
+// manager and reconciler and delivers the resulting Controller on the
+// returned channel.
 func newOpenTelemetryCollectorController(ctx context.Context, conf *config.Config, l logr.Logger, m *metrics.FluentBitGardenerMetrics, ms *otlp.MetricsSetup) (<-chan Controller, error) {
-	ch := make(chan Controller, 1)
-
 	// Parse the label selector for OpenTelemetryCollector resources
 	labelSelector, err := parseLabelSelector(conf.ControllerConfig.OpenTelemetryCollectorLabelSelector)
 	if err != nil {
@@ -96,18 +93,32 @@ func newOpenTelemetryCollectorController(ctx context.Context, conf *config.Confi
 			conf.ControllerConfig.DynamicHostRegex, err)
 	}
 
+	return awaitController(ctx, l, otelcolScheme, &otelcolv1beta1.OpenTelemetryCollector{},
+		func(ctx context.Context) (Controller, error) {
+			return buildOpenTelemetryCollectorReconciler(
+				ctx, conf, l, m, ms,
+				labelSelector, namespaceLabelSelector, dynamicHostRegex,
+			)
+		},
+	)
+}
+
+// buildOpenTelemetryCollectorReconciler constructs the controller-runtime
+// manager and the otelCollectorReconciler. It is invoked by awaitController
+// once the OpenTelemetryCollector CRD is observed on the cluster.
+func buildOpenTelemetryCollectorReconciler(
+	ctx context.Context,
+	conf *config.Config,
+	l logr.Logger,
+	m *metrics.FluentBitGardenerMetrics,
+	ms *otlp.MetricsSetup,
+	labelSelector labels.Selector,
+	namespaceLabelSelector labels.Selector,
+	dynamicHostRegex *regexp.Regexp,
+) (Controller, error) {
 	restConfig, err := getRestConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get REST config: %w", err)
-	}
-
-	dynamicClient, err := dynamic.NewForConfig(restConfig)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create dynamic client: %w", err)
-	}
-
-	if err := waitForCRD(ctx, l, dynamicClient, otelcolCRDGroup, otelcolCRDName); err != nil {
-		return nil, fmt.Errorf("failed waiting for CRD %s: %w", otelcolCRDName, err)
 	}
 
 	ctlCtx, cancel := context.WithCancel(ctx)
@@ -187,9 +198,7 @@ func newOpenTelemetryCollectorController(ctx context.Context, conf *config.Confi
 
 	l.Info("OpenTelemetryCollector controller started and cache synced")
 
-	ch <- reconciler
-
-	return ch, nil
+	return reconciler, nil
 }
 
 // buildLabelPredicate creates a predicate that filters OpenTelemetryCollector resources
