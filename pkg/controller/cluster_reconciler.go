@@ -126,22 +126,21 @@ func buildClusterReconciler(
 		Scheme: scheme,
 		Logger: l,
 		Cache: cache.Options{
-			// Restrict cache to Cluster objects only.
-			// This controller doesn't reconcile other types.
+			// Restrict cache to Cluster objects only; this controller does not reconcile other types.
 			ByObject: map[k8sclient.Object]cache.ByObject{
 				&extensionsv1alpha1.Cluster{}: {},
 			},
-			// Strip managed fields from all cached objects
-			// as they are not used by the reconciler.
+			// Strip managed fields from all cached objects as they are not used by the reconciler.
 			DefaultTransform: cache.TransformStripManagedFields(),
 		},
-		// Disable metrics and health probe servers
-		// since fluent-bit plugin handles these.
+		// Disable metrics and health probe servers since fluent-bit plugin handles these
 		Metrics:                ctrl.Options{}.Metrics,
 		HealthProbeBindAddress: "",
 	})
 	if err != nil {
 		cancel()
+		seedClient.StopWait()
+
 		return nil, fmt.Errorf("failed to create manager: %w", err)
 	}
 
@@ -164,6 +163,8 @@ func buildClusterReconciler(
 		Named(fmt.Sprintf("cluster-%s", uuid.NewUUID())).
 		Complete(reconciler); err != nil {
 		cancel()
+		seedClient.StopWait()
+
 		return nil, fmt.Errorf("failed to create controller: %w", err)
 	}
 
@@ -182,6 +183,8 @@ func buildClusterReconciler(
 
 	if !mgr.GetCache().WaitForCacheSync(syncCtx) {
 		cancel()
+		seedClient.StopWait()
+
 		return nil, errors.New("failed to wait for cache sync within timeout")
 	}
 
