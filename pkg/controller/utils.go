@@ -130,9 +130,9 @@ func isCRDEstablished(u *unstructured.Unstructured, group string) bool {
 	return established && namesAccepted
 }
 
-// awaitController watches for the target CRD. Once that CRD is observed as
-// Established with its names accepted, it invokes `build` and delivers the
-// resulting Controller on the returned channel.
+// awaitController watches for the target CRD on the supplied dynamic client.
+// Once that CRD is observed as Established with its names accepted, it invokes
+// `build` and delivers the resulting Controller on the returned channel.
 //
 // The returned channel always closes — either after delivering the Controller,
 // or without a value if ctx is cancelled before the CRD shows up, or if `build` fails.
@@ -141,6 +141,7 @@ func awaitController(
 	l logr.Logger,
 	scheme *runtime.Scheme,
 	obj client.Object,
+	dynamicClient dynamic.Interface,
 	build func(ctx context.Context) (Controller, error),
 ) (<-chan Controller, error) {
 	gvk, err := apiutil.GVKForObject(obj, scheme)
@@ -149,16 +150,6 @@ func awaitController(
 	}
 	// CRD plural follows the kubebuilder convention of lowercasing the Kind and adding "s".
 	crdName := strings.ToLower(gvk.Kind) + "s." + gvk.Group
-
-	restConfig, err := getRestConfig()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get REST config: %w", err)
-	}
-
-	dynamicClient, err := dynamic.NewForConfig(restConfig)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create dynamic client: %w", err)
-	}
 
 	factory := dynamicinformer.NewDynamicSharedInformerFactory(dynamicClient, 0)
 	informer := factory.ForResource(crdGVR).Informer()

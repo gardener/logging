@@ -91,7 +91,13 @@ func newClusterController(
 	}
 	m.Clients.WithLabelValues(targets.Seed.String()).Inc()
 
-	out, err := awaitController(ctx, l, scheme, &extensionsv1alpha1.Cluster{},
+	dynamicClient, err := newDynamicClient()
+	if err != nil {
+		seedClient.StopWait()
+		return nil, fmt.Errorf("failed to create dynamic client: %w", err)
+	}
+
+	out, err := awaitController(ctx, l, scheme, &extensionsv1alpha1.Cluster{}, dynamicClient,
 		func(ctx context.Context) (Controller, error) {
 			return buildClusterReconciler(ctx, conf, l, m, ms, seedClient)
 		},

@@ -93,7 +93,12 @@ func newOpenTelemetryCollectorController(ctx context.Context, conf *config.Confi
 			conf.ControllerConfig.DynamicHostRegex, err)
 	}
 
-	return awaitController(ctx, l, otelcolScheme, &otelcolv1beta1.OpenTelemetryCollector{},
+	dynamicClient, err := newDynamicClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create dynamic client: %w", err)
+	}
+
+	return awaitController(ctx, l, otelcolScheme, &otelcolv1beta1.OpenTelemetryCollector{}, dynamicClient,
 		func(ctx context.Context) (Controller, error) {
 			return buildOpenTelemetryCollectorReconciler(
 				ctx, conf, l, m, ms,
