@@ -114,13 +114,13 @@ func NewPluginWithController(cfg *config.Config, logger logr.Logger, m *metrics.
 	ctx, cancel := context.WithCancel(context.Background())
 
 	l := &logging{
-		cfg:     cfg,
-		logger:  logger,
-		ctx:     ctx,
-		cancel:  cancel,
-		metrics: m,
+		cfg:        cfg,
+		logger:     logger,
+		ctx:        ctx,
+		cancel:     cancel,
+		controller: ctl,
+		metrics:    m,
 	}
-	l.setController(ctl)
 
 	if len(cfg.ControllerConfig.DynamicHostPath) > 0 {
 		l.dynamicHostRegexp = regexp.MustCompile(cfg.ControllerConfig.DynamicHostRegex)
