@@ -30,6 +30,32 @@ import (
 	"github.com/gardener/logging/v1/pkg/types"
 )
 
+// stubOutput is a no-op api.Output used to assert routing in plugin tests
+// without involving any real client machinery.
+type stubOutput struct {
+	name string
+}
+
+func (*stubOutput) Handle(_ types.OutputEntry) error { return nil }
+func (*stubOutput) Stop()                            {}
+func (*stubOutput) StopWait()                        {}
+func (s *stubOutput) Endpoint() string               { return s.name }
+
+// stubController is a controller.Controller used to verify that the plugin
+// routes dynamic-host records through the controller once it is installed.
+type stubController struct {
+	clients map[string]api.Output
+}
+
+// GetClient mirrors the real reconcilers' contract.
+func (s *stubController) GetClient(name string) (api.Output, bool) {
+	return s.clients[name], false
+}
+func (*stubController) Reconcile(_ context.Context, _ ctrl.Request) (ctrl.Result, error) {
+	return ctrl.Result{}, nil
+}
+func (*stubController) Stop() {}
+
 var _ = Describe("OutputPlugin plugin", func() {
 	var (
 		cfg         *config.Config
@@ -345,6 +371,66 @@ var _ = Describe("OutputPlugin plugin", func() {
 			Expect(l.isDynamicHost("")).To(BeFalse())
 			Expect(l.isDynamicHost("random-name")).To(BeFalse())
 			Expect(l.isDynamicHost("garden")).To(BeFalse())
+		})
+
+		// Mirrors the awaitController flow at the plugin layer: until the
+		// controller is delivered, dynamic-host records fall back to the seed
+		// client; once it arrives, the plugin routes through it.
+		It("falls back to the seed client for dynamic hosts until the controller is installed", func() {
+			cfg := &config.Config{
+				OTLPConfig: config.OTLPConfig{
+					Endpoint: "http://test-seed-endpoint:4318/v1/logs",
+					DQueConfig: config.DQueConfig{
+						DQueDir:         GinkgoT().TempDir(),
+						DQueSegmentSize: 500,
+						DQueSync:        false,
+						DQueName:        fmt.Sprintf("dque-fallback-%d", time.Now().UnixNano()),
+					},
+				},
+				PluginConfig: config.PluginConfig{
+					SeedType:  types.NOOP.String(),
+					ShootType: types.NOOP.String(),
+					LogLevel:  "info",
+				},
+				ControllerConfig: config.ControllerConfig{
+					CtlSyncTimeout:    5 * time.Second,
+					DynamicHostPrefix: "http://logging.",
+					DynamicHostSuffix: ".svc:4318/v1/logs",
+					DynamicHostRegex:  `^shoot--.*`,
+					DynamicHostPath: map[string]any{
+						"kubernetes": map[string]any{
+							"namespace_name": "namespace",
+						},
+					},
+				},
+			}
+
+			plugin, err := NewPluginWithController(cfg, logger, testMetrics, nil, nil)
+			Expect(err).NotTo(HaveOccurred())
+			defer plugin.Close()
+
+			l, ok := plugin.(*logging)
+			Expect(ok).To(BeTrue())
+			Expect(l.seedClient).NotTo(BeNil())
+			Expect(l.getController()).To(BeNil(), "no controller is installed yet")
+
+			// Phase 1: CRD not yet established, controller not installed.
+			// A dynamic-host record must be routed to the seed client rather than dropped.
+			const dynamicHost = "shoot--proj--cluster"
+			Expect(l.isDynamicHost(dynamicHost)).To(BeTrue())
+			Expect(l.getClient(dynamicHost)).To(BeIdenticalTo(l.seedClient))
+
+			// Phase 2: simulate awaitController delivering the controller.
+			shootClient := &stubOutput{name: "shoot-client"}
+			l.setController(&stubController{clients: map[string]api.Output{dynamicHost: shootClient}})
+
+			// Same dynamic host now resolves through the controller.
+			got := l.getClient(dynamicHost)
+			Expect(got).To(BeIdenticalTo(api.Output(shootClient)))
+			Expect(got).NotTo(BeIdenticalTo(l.seedClient))
+
+			// Non-dynamic hosts continue to use the seed client either way.
+			Expect(l.getClient("garden")).To(BeIdenticalTo(l.seedClient))
 		})
 	})
 

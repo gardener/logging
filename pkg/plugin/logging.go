@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"regexp"
+	"sync"
 
 	"github.com/go-logr/logr"
 
@@ -31,6 +32,7 @@ type logging struct {
 	cfg                             *config.Config
 	dynamicHostRegexp               *regexp.Regexp
 	extractKubernetesMetadataRegexp *regexp.Regexp
+	ctrlMu                          sync.RWMutex
 	controller                      controller.Controller
 	logger                          logr.Logger
 	ctx                             context.Context
@@ -59,11 +61,31 @@ func NewPlugin(cfg *config.Config, logger logr.Logger, m *metrics.FluentBitGarde
 		l.dynamicHostRegexp = regexp.MustCompile(cfg.ControllerConfig.DynamicHostRegex)
 
 		// Pass the plugin's context to the controller
-		if l.controller, err = controller.NewController(ctx, cfg, logger, m, ms); err != nil {
+		ctlCh, err := controller.NewController(ctx, cfg, logger, m, ms)
+		if err != nil {
 			cancel()
 
 			return nil, err
 		}
+
+		// The controller is delivered asynchronously (it waits for its CRD to be
+		// established). Until it arrives, getClient routes dynamic-host records
+		// to the seed client as a fallback so they are not dropped.
+		logger.Info("controller pending: dynamic-host records will fall back to the seed client until the CRD is established")
+
+		go func() {
+			select {
+			case c, ok := <-ctlCh:
+				if !ok {
+					logger.Info("controller channel closed before delivery; staying in seed-client fallback mode")
+
+					return
+				}
+				l.setController(c)
+				logger.Info("controller installed in plugin: dynamic-host records now route through the controller (fallback ended)")
+			case <-ctx.Done():
+			}
+		}()
 	}
 
 	if cfg.PluginConfig.KubernetesMetadata.FallbackToTagWhenMetadataIsMissing {
@@ -207,8 +229,8 @@ func (l *logging) Close() {
 	l.cancel()
 
 	l.seedClient.StopWait()
-	if l.controller != nil {
-		l.controller.Stop()
+	if c := l.getController(); c != nil {
+		c.Stop()
 	}
 
 	l.logger.Info("logging plugin stopped",
@@ -218,15 +240,38 @@ func (l *logging) Close() {
 }
 
 func (l *logging) getClient(dynamicHosName string) api.Output {
-	if l.isDynamicHost(dynamicHosName) && l.controller != nil {
-		if c, isStopped := l.controller.GetClient(dynamicHosName); !isStopped {
-			return c
+	if l.isDynamicHost(dynamicHosName) {
+		c := l.getController()
+		if c == nil {
+			// Controller not yet available (e.g. CRD not installed).
+			// Fall back to the seed client so records aren't dropped.
+			l.logger.Info("controller not installed yet, routing dynamic-host record to seed client",
+				"host", dynamicHosName,
+			)
+
+			return l.seedClient
+		}
+		if out, isStopped := c.GetClient(dynamicHosName); !isStopped {
+			return out
 		}
 
 		return nil
 	}
 
 	return l.seedClient
+}
+
+func (l *logging) getController() controller.Controller {
+	l.ctrlMu.RLock()
+	defer l.ctrlMu.RUnlock()
+
+	return l.controller
+}
+
+func (l *logging) setController(c controller.Controller) {
+	l.ctrlMu.Lock()
+	defer l.ctrlMu.Unlock()
+	l.controller = c
 }
 
 func (l *logging) isDynamicHost(dynamicHostName string) bool {

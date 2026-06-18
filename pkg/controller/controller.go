@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"github.com/go-logr/logr"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -35,7 +36,13 @@ type Controller interface {
 // It sets up a manager and reconciler based on the configuration:
 // - If WatchOpenTelemetryCollector is true, it watches OpenTelemetryCollector resources
 // - Otherwise (default), it watches Cluster resources
-func NewController(ctx context.Context, conf *config.Config, l logr.Logger, m *metrics.FluentBitGardenerMetrics, ms *otlp.MetricsSetup) (Controller, error) {
+func NewController(
+	ctx context.Context,
+	conf *config.Config,
+	l logr.Logger,
+	m *metrics.FluentBitGardenerMetrics,
+	ms *otlp.MetricsSetup,
+) (<-chan Controller, error) {
 	if conf.ControllerConfig.WatchOpenTelemetryCollector {
 		l.Info("using OpenTelemetryCollector mode for dynamic clients")
 
@@ -61,4 +68,16 @@ func getRestConfig() (*rest.Config, error) {
 	}
 
 	return clientcmd.BuildConfigFromFlags("", kubeconfig)
+}
+
+// newDynamicClient builds a dynamic.Interface against the in-cluster (or
+// KUBECONFIG) REST config. Extracted so reconcilers can construct one without
+// repeating the getRestConfig + dynamic.NewForConfig boilerplate.
+func newDynamicClient() (dynamic.Interface, error) {
+	restConfig, err := getRestConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get REST config: %w", err)
+	}
+
+	return dynamic.NewForConfig(restConfig)
 }
