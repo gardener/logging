@@ -244,7 +244,7 @@ func (l *logging) getClient(dynamicHosName string) api.Output {
 		if c == nil {
 			// Controller not yet available (e.g. CRD not installed).
 			// Fall back to the seed client so records aren't dropped.
-			l.logger.V(1).Info("controller not installed yet, routing dynamic-host record to seed client",
+			l.logger.Info("controller not installed yet, routing dynamic-host record to seed client",
 				"host", dynamicHosName,
 			)
 			return l.seedClient

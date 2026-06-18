@@ -376,20 +376,40 @@ var _ = Describe("OutputPlugin plugin", func() {
 		// Mirrors the awaitController flow at the plugin layer: until the
 		// controller is delivered, dynamic-host records fall back to the seed
 		// client; once it arrives, the plugin routes through it.
+		//
+		// Uses NewPluginWithController(ctl=nil) to avoid spinning up the real
+		// controller-runtime path inside NewPlugin, which needs an in-cluster
+		// or KUBECONFIG-based REST config and so fails in CI.
 		It("falls back to the seed client for dynamic hosts until the controller is installed", func() {
-			cfg.ControllerConfig = config.ControllerConfig{
-				CtlSyncTimeout:    5 * time.Second,
-				DynamicHostPrefix: "http://logging.",
-				DynamicHostSuffix: ".svc:4318/v1/logs",
-				DynamicHostRegex:  `^shoot--.*`,
-				DynamicHostPath: map[string]any{
-					"kubernetes": map[string]any{
-						"namespace_name": "namespace",
+			cfg := &config.Config{
+				OTLPConfig: config.OTLPConfig{
+					Endpoint: "http://test-seed-endpoint:4318/v1/logs",
+					DQueConfig: config.DQueConfig{
+						DQueDir:         GinkgoT().TempDir(),
+						DQueSegmentSize: 500,
+						DQueSync:        false,
+						DQueName:        fmt.Sprintf("dque-fallback-%d", time.Now().UnixNano()),
+					},
+				},
+				PluginConfig: config.PluginConfig{
+					SeedType:  types.NOOP.String(),
+					ShootType: types.NOOP.String(),
+					LogLevel:  "info",
+				},
+				ControllerConfig: config.ControllerConfig{
+					CtlSyncTimeout:    5 * time.Second,
+					DynamicHostPrefix: "http://logging.",
+					DynamicHostSuffix: ".svc:4318/v1/logs",
+					DynamicHostRegex:  `^shoot--.*`,
+					DynamicHostPath: map[string]any{
+						"kubernetes": map[string]any{
+							"namespace_name": "namespace",
+						},
 					},
 				},
 			}
 
-			plugin, err := NewPlugin(cfg, logger, testMetrics, nil)
+			plugin, err := NewPluginWithController(cfg, logger, testMetrics, nil, nil)
 			Expect(err).NotTo(HaveOccurred())
 			defer plugin.Close()
 
