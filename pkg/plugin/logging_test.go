@@ -376,10 +376,6 @@ var _ = Describe("OutputPlugin plugin", func() {
 		// Mirrors the awaitController flow at the plugin layer: until the
 		// controller is delivered, dynamic-host records fall back to the seed
 		// client; once it arrives, the plugin routes through it.
-		//
-		// Uses NewPluginWithController(ctl=nil) to avoid spinning up the real
-		// controller-runtime path inside NewPlugin, which needs an in-cluster
-		// or KUBECONFIG-based REST config and so fails in CI.
 		It("falls back to the seed client for dynamic hosts until the controller is installed", func() {
 			cfg := &config.Config{
 				OTLPConfig: config.OTLPConfig{
