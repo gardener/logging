@@ -71,14 +71,17 @@ func NewPlugin(cfg *config.Config, logger logr.Logger, m *metrics.FluentBitGarde
 		// The controller is delivered asynchronously (it waits for its CRD to be
 		// established). Until it arrives, getClient routes dynamic-host records
 		// to the seed client as a fallback so they are not dropped.
+		logger.Info("controller pending: dynamic-host records will fall back to the seed client until the CRD is established")
+
 		go func() {
 			select {
 			case c, ok := <-ctlCh:
 				if !ok {
+					logger.Info("controller channel closed before delivery; staying in seed-client fallback mode")
 					return
 				}
 				l.setController(c)
-				logger.Info("controller installed in plugin")
+				logger.Info("controller installed in plugin: dynamic-host records now route through the controller (fallback ended)")
 			case <-ctx.Done():
 			}
 		}()
@@ -241,6 +244,9 @@ func (l *logging) getClient(dynamicHosName string) api.Output {
 		if c == nil {
 			// Controller not yet available (e.g. CRD not installed).
 			// Fall back to the seed client so records aren't dropped.
+			l.logger.V(1).Info("controller not installed yet, routing dynamic-host record to seed client",
+				"host", dynamicHosName,
+			)
 			return l.seedClient
 		}
 		if out, isStopped := c.GetClient(dynamicHosName); !isStopped {
