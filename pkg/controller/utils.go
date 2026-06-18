@@ -124,6 +124,9 @@ func isCRDEstablished(u *unstructured.Unstructured, group string) bool {
 			established = c.Status == apiextensionsv1.ConditionTrue
 		case apiextensionsv1.NamesAccepted:
 			namesAccepted = c.Status == apiextensionsv1.ConditionTrue
+		default:
+			// Other condition types (e.g. Terminating, KubernetesAPIApprovalPolicyConformant)
+			// don't gate readiness for our purposes.
 		}
 	}
 
@@ -198,9 +201,11 @@ func awaitController(
 		c, err := build(ctx)
 		if err != nil {
 			l.Error(err, "failed to build controller after CRD became available", "crd", crdName)
+
 			return
 		}
 		out <- c
 	}()
+
 	return out, nil
 }

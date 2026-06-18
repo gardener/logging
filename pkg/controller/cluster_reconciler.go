@@ -94,6 +94,7 @@ func newClusterController(
 	dynamicClient, err := newDynamicClient()
 	if err != nil {
 		seedClient.StopWait()
+
 		return nil, fmt.Errorf("failed to create dynamic client: %w", err)
 	}
 
@@ -104,8 +105,10 @@ func newClusterController(
 	)
 	if err != nil {
 		seedClient.StopWait()
+
 		return nil, fmt.Errorf("failed to await Cluster controller: %w", err)
 	}
+
 	return out, nil
 }
 

@@ -45,10 +45,12 @@ func NewController(
 ) (<-chan Controller, error) {
 	if conf.ControllerConfig.WatchOpenTelemetryCollector {
 		l.Info("using OpenTelemetryCollector mode for dynamic clients")
+
 		return newOpenTelemetryCollectorController(ctx, conf, l, m, ms)
 	}
 
 	l.Info("using Cluster mode for dynamic clients")
+
 	return newClusterController(ctx, conf, l, m, ms)
 }
 
@@ -76,5 +78,6 @@ func newDynamicClient() (dynamic.Interface, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get REST config: %w", err)
 	}
+
 	return dynamic.NewForConfig(restConfig)
 }

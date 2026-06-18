@@ -78,6 +78,7 @@ func NewPlugin(cfg *config.Config, logger logr.Logger, m *metrics.FluentBitGarde
 			case c, ok := <-ctlCh:
 				if !ok {
 					logger.Info("controller channel closed before delivery; staying in seed-client fallback mode")
+
 					return
 				}
 				l.setController(c)
@@ -247,6 +248,7 @@ func (l *logging) getClient(dynamicHosName string) api.Output {
 			l.logger.Info("controller not installed yet, routing dynamic-host record to seed client",
 				"host", dynamicHosName,
 			)
+
 			return l.seedClient
 		}
 		if out, isStopped := c.GetClient(dynamicHosName); !isStopped {

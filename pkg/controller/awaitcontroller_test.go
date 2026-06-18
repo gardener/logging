@@ -30,8 +30,8 @@ type fakeController struct {
 	stopped int
 }
 
-func (f *fakeController) GetClient(_ string) (api.Output, bool) { return nil, false }
-func (f *fakeController) Reconcile(_ context.Context, _ ctrl.Request) (ctrl.Result, error) {
+func (*fakeController) GetClient(_ string) (api.Output, bool) { return nil, false }
+func (*fakeController) Reconcile(_ context.Context, _ ctrl.Request) (ctrl.Result, error) {
 	return ctrl.Result{}, nil
 }
 func (f *fakeController) Stop() { f.stopped++ }
@@ -42,22 +42,26 @@ func (f *fakeController) Stop() { f.stopped++ }
 func fakeDynamicScheme() *runtime.Scheme {
 	s := runtime.NewScheme()
 	utilruntime.Must(apiextensionsv1.AddToScheme(s))
+
 	return s
 }
 
-// crdUnstructured returns a CustomResourceDefinition as *unstructured.Unstructured
-// so the fake dynamic client can serve it. The CRD is built typed first to keep
-// the test readable, then converted.
-func crdUnstructured(name, group string, established bool) *unstructured.Unstructured {
-	conds := []apiextensionsv1.CustomResourceDefinitionCondition{}
-	status := apiextensionsv1.ConditionFalse
-	if established {
-		status = apiextensionsv1.ConditionTrue
+// establishedCRD returns a CRD whose Established/NamesAccepted conditions are
+// True. pendingCRD returns one whose conditions are False. Splitting these
+// keeps the call sites self-describing and avoids a control-flag parameter.
+func establishedCRD(name, group string) *unstructured.Unstructured {
+	return crdUnstructuredWithStatus(name, group, apiextensionsv1.ConditionTrue)
+}
+
+func pendingCRD(name, group string) *unstructured.Unstructured {
+	return crdUnstructuredWithStatus(name, group, apiextensionsv1.ConditionFalse)
+}
+
+func crdUnstructuredWithStatus(name, group string, status apiextensionsv1.ConditionStatus) *unstructured.Unstructured {
+	conds := []apiextensionsv1.CustomResourceDefinitionCondition{
+		{Type: apiextensionsv1.Established, Status: status},
+		{Type: apiextensionsv1.NamesAccepted, Status: status},
 	}
-	conds = append(conds,
-		apiextensionsv1.CustomResourceDefinitionCondition{Type: apiextensionsv1.Established, Status: status},
-		apiextensionsv1.CustomResourceDefinitionCondition{Type: apiextensionsv1.NamesAccepted, Status: status},
-	)
 
 	crd := &apiextensionsv1.CustomResourceDefinition{
 		TypeMeta: metav1.TypeMeta{
@@ -70,6 +74,7 @@ func crdUnstructured(name, group string, established bool) *unstructured.Unstruc
 	}
 	out, err := runtime.DefaultUnstructuredConverter.ToUnstructured(crd)
 	Expect(err).NotTo(HaveOccurred())
+
 	return &unstructured.Unstructured{Object: out}
 }
 
@@ -90,7 +95,7 @@ var _ = Describe("awaitController", func() {
 	It("delivers the controller for Cluster once that CRD is Established", func() {
 		fc := &fakeController{}
 		dyn := dynamicfake.NewSimpleDynamicClient(fakeDynamicScheme(),
-			crdUnstructured("clusters.extensions.gardener.cloud", "extensions.gardener.cloud", true))
+			establishedCRD("clusters.extensions.gardener.cloud", "extensions.gardener.cloud"))
 
 		out, err := awaitController(ctx, l, scheme, &extensionsv1alpha1.Cluster{}, dyn,
 			func(_ context.Context) (Controller, error) { return fc, nil },
@@ -105,7 +110,7 @@ var _ = Describe("awaitController", func() {
 	It("delivers the controller for OpenTelemetryCollector once that CRD is Established", func() {
 		fc := &fakeController{}
 		dyn := dynamicfake.NewSimpleDynamicClient(fakeDynamicScheme(),
-			crdUnstructured("opentelemetrycollectors.opentelemetry.io", "opentelemetry.io", true))
+			establishedCRD("opentelemetrycollectors.opentelemetry.io", "opentelemetry.io"))
 
 		out, err := awaitController(ctx, l, otelcolScheme, &otelcolv1beta1.OpenTelemetryCollector{}, dyn,
 			func(_ context.Context) (Controller, error) { return fc, nil },
@@ -117,12 +122,13 @@ var _ = Describe("awaitController", func() {
 
 	It("does not deliver while the CRD exists but is not yet Established", func() {
 		dyn := dynamicfake.NewSimpleDynamicClient(fakeDynamicScheme(),
-			crdUnstructured("clusters.extensions.gardener.cloud", "extensions.gardener.cloud", false))
+			pendingCRD("clusters.extensions.gardener.cloud", "extensions.gardener.cloud"))
 
 		built := false
 		out, err := awaitController(ctx, l, scheme, &extensionsv1alpha1.Cluster{}, dyn,
 			func(_ context.Context) (Controller, error) {
 				built = true
+
 				return &fakeController{}, nil
 			},
 		)
@@ -135,7 +141,7 @@ var _ = Describe("awaitController", func() {
 	It("ignores CRDs in a different group even if their name matches", func() {
 		// Same plural+name shape but a different group — must not match.
 		dyn := dynamicfake.NewSimpleDynamicClient(fakeDynamicScheme(),
-			crdUnstructured("clusters.extensions.gardener.cloud", "wrong.group.example.com", true))
+			establishedCRD("clusters.extensions.gardener.cloud", "wrong.group.example.com"))
 
 		out, err := awaitController(ctx, l, scheme, &extensionsv1alpha1.Cluster{}, dyn,
 			func(_ context.Context) (Controller, error) { return &fakeController{}, nil },
@@ -151,6 +157,7 @@ var _ = Describe("awaitController", func() {
 		out, err := awaitController(ctx, l, scheme, &extensionsv1alpha1.Cluster{}, dyn,
 			func(_ context.Context) (Controller, error) {
 				Fail("build must not run when ctx is cancelled before the CRD is established")
+
 				return nil, nil
 			},
 		)
@@ -162,7 +169,7 @@ var _ = Describe("awaitController", func() {
 
 	It("closes the channel without a value when `build` returns an error", func() {
 		dyn := dynamicfake.NewSimpleDynamicClient(fakeDynamicScheme(),
-			crdUnstructured("clusters.extensions.gardener.cloud", "extensions.gardener.cloud", true))
+			establishedCRD("clusters.extensions.gardener.cloud", "extensions.gardener.cloud"))
 
 		out, err := awaitController(ctx, l, scheme, &extensionsv1alpha1.Cluster{}, dyn,
 			func(_ context.Context) (Controller, error) {
