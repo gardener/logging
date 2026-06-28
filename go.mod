@@ -10,7 +10,7 @@ require (
 	github.com/joncrlsn/dque v0.0.0-20241024143830-7723fd131a64
 	github.com/onsi/ginkgo/v2 v2.29.0
 	github.com/onsi/gomega v1.42.1
-	github.com/open-telemetry/opentelemetry-operator v0.146.0
+	github.com/open-telemetry/opentelemetry-operator/apis v0.153.0
 	github.com/prometheus/client_golang v1.23.2
 	github.com/prometheus/otlptranslator v1.0.0
 	github.com/spf13/cobra v1.10.2
@@ -28,9 +28,9 @@ require (
 	go.opentelemetry.io/otel/trace v1.44.0
 	golang.org/x/time v0.15.0
 	google.golang.org/grpc v1.81.1
-	k8s.io/api v0.35.1
+	k8s.io/api v0.35.4
 	k8s.io/apiextensions-apiserver v0.35.1
-	k8s.io/apimachinery v0.35.1
+	k8s.io/apimachinery v0.35.4
 	k8s.io/client-go v0.35.1
 	k8s.io/component-base v0.35.1
 	k8s.io/utils v0.0.0-20260108192941-914a6e750570
@@ -39,7 +39,6 @@ require (
 )
 
 require (
-	dario.cat/mergo v1.0.2 // indirect
 	github.com/Masterminds/semver/v3 v3.4.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
@@ -80,7 +79,6 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/json-iterator/go v1.1.13-0.20220915233716-71ac16282d12 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
-	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/moby/spdystream v0.5.1 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
@@ -107,7 +105,6 @@ require (
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.40.0 // indirect
 	go.opentelemetry.io/otel/metric v1.44.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.10.0 // indirect
-	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/mod v0.36.0 // indirect
@@ -124,7 +121,6 @@ require (
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20251125145642-4e65d59e963e // indirect
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
