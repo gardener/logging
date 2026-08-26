@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 
-# Copyright 2025 SPDX-FileCopyrightText: Copyright Contributors to the Gardener project
+# Copyright 2025 SPDX-FileCopyrightText: Contributors to the Gardener project
 # SPDX-License-Identifier: Apache-2.0
 
 
 set -e
 root_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." &> /dev/null && pwd )"
-COPYRIGHT="SPDX-FileCopyrightText: Copyright Contributors to the Gardener project"
+COPYRIGHT="SPDX-FileCopyrightText: Contributors to the Gardener project"
 
 go tool -modfile=${root_dir}/tools/go.mod addlicense \
   -c "$COPYRIGHT" \

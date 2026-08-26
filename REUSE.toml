@@ -6,13 +6,13 @@ SPDX-PackageDownloadLocation = "https://github.com/gardener/logging"
 [[annotations]]
 path = "**"
 precedence = "aggregate"
-SPDX-FileCopyrightText = "Copyright Contributors to the Gardener project"
+SPDX-FileCopyrightText = "Contributors to the Gardener project"
 SPDX-License-Identifier = "Apache-2.0"
 
 [[annotations]]
 path = "**.md"
 precedence = "aggregate"
-SPDX-FileCopyrightText = "Copyright Contributors to the Gardener project"
+SPDX-FileCopyrightText = "Contributors to the Gardener project"
 SPDX-License-Identifier = "CC-BY-4.0"
 
 [[annotations]]
@@ -20,5 +20,5 @@ path = ["cmd/fluent-bit-output-plugin/output_plugin.go", "pkg/config/config.go",
 "pkg/config/client_config.go", "pkg/plugin/vali.go", "pkg/plugin/utils.go", "pkg/client/buffer_client.go",
 "pkg/client/dque.go", "pkg/client/buffer.go"]
 precedence = "aggregate"
-SPDX-FileCopyrightText = "Copyright Contributors to the Gardener project"
+SPDX-FileCopyrightText = "Contributors to the Gardener project"
 SPDX-License-Identifier = "Apache-2.0"

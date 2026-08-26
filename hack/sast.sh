@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copyright 2025 SPDX-FileCopyrightText: Copyright Contributors to the Gardener project
+# Copyright 2025 SPDX-FileCopyrightText: Contributors to the Gardener project
 # SPDX-License-Identifier: Apache-2.0
 
 set -e
