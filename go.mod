@@ -3,7 +3,7 @@ module github.com/gardener/logging/v1
 go 1.26.3
 
 require (
-	github.com/fluent/fluent-bit-go v0.0.0-20230731091245-a7a013e2473c
+	github.com/fluent/fluent-bit-go v0.0.0-20260909064720-9895046d00ce
 	github.com/gardener/gardener/pkg/apis v1.137.0
 	github.com/go-logr/logr v1.4.4
 	github.com/go-viper/mapstructure/v2 v2.5.0
