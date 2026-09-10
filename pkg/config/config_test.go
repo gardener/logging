@@ -66,7 +66,6 @@ var _ = Describe("Config", func() {
 			Expect(cfg.ControllerConfig.DynamicHostRegex).To(Equal(".*"))
 
 			// Plugin config defaults
-
 			Expect(cfg.PluginConfig.HostnameValue).To(BeEmpty())
 
 			// Kubernetes metadata defaults
@@ -108,10 +107,10 @@ var _ = Describe("Config", func() {
 
 		It("should parse config with buffer configuration", func() {
 			configMap := map[string]any{
-				"DQueDir":         "/foo/bar",
-				"DQueSegmentSize": "600",
-				"DQueSync":        "full",
-				"DQueName":        "buzz",
+				"dque_dir":          "/foo/bar",
+				"dque_segment_size": "600",
+				"dque_sync":         "full",
+				"dque_name":         "buzz",
 			}
 
 			cfg, err := config.ParseConfig(configMap)
@@ -126,7 +125,7 @@ var _ = Describe("Config", func() {
 
 		It("should parse config with hostname value", func() {
 			configMap := map[string]any{
-				"HostnameValue": "${HOST}",
+				"hostname_value": "${HOST}",
 			}
 
 			cfg, err := config.ParseConfig(configMap)
@@ -138,7 +137,7 @@ var _ = Describe("Config", func() {
 
 		It("should parse DynamicHostPath from JSON string", func() {
 			configMap := map[string]any{
-				"DynamicHostPath": `{"kubernetes": {"namespace_name": "namespace"}}`,
+				"dynamic_host_path": `{"kubernetes": {"namespace_name": "namespace"}}`,
 			}
 
 			cfg, err := config.ParseConfig(configMap)
@@ -154,24 +153,22 @@ var _ = Describe("Config", func() {
 
 		It("should parse config with OTLP retry configuration", func() {
 			configMap := map[string]any{
-				"Endpoint":             "https://otel-collector.example.com:4317",
-				"RetryEnabled":         "true",
-				"RetryInitialInterval": "1s",
-				"RetryMaxInterval":     "10s",
-				"RetryMaxElapsedTime":  "2m",
+				"endpoint":               "https://otel-collector.example.com:4317",
+				"retry_enabled":          "true",
+				"retry_initial_interval": "1s",
+				"retry_max_interval":     "10s",
+				"retry_max_elapsed_time": "2m",
 			}
 
 			cfg, err := config.ParseConfig(configMap)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(cfg).ToNot(BeNil())
 
-			// Verify retry configuration fields
 			Expect(cfg.OTLPConfig.RetryEnabled).To(BeTrue())
 			Expect(cfg.OTLPConfig.RetryInitialInterval).To(Equal(time.Second))
 			Expect(cfg.OTLPConfig.RetryMaxInterval).To(Equal(10 * time.Second))
 			Expect(cfg.OTLPConfig.RetryMaxElapsedTime).To(Equal(2 * time.Minute))
 
-			// Verify built retry configuration
 			Expect(cfg.OTLPConfig.RetryConfig).ToNot(BeNil())
 			Expect(cfg.OTLPConfig.RetryConfig.Enabled).To(BeTrue())
 			Expect(cfg.OTLPConfig.RetryConfig.InitialInterval).To(Equal(time.Second))
@@ -179,41 +176,38 @@ var _ = Describe("Config", func() {
 			Expect(cfg.OTLPConfig.RetryConfig.MaxElapsedTime).To(Equal(2 * time.Minute))
 		})
 
-		It("should disable retry configuration when RetryEnabled is false", func() {
+		It("should disable retry configuration when retry_enabled is false", func() {
 			configMap := map[string]any{
-				"Endpoint":     "https://otel-collector.example.com:4317",
-				"RetryEnabled": "false",
+				"endpoint":      "https://otel-collector.example.com:4317",
+				"retry_enabled": "false",
 			}
 
 			cfg, err := config.ParseConfig(configMap)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(cfg).ToNot(BeNil())
 
-			// Verify retry is disabled
 			Expect(cfg.OTLPConfig.RetryEnabled).To(BeFalse())
 			Expect(cfg.OTLPConfig.RetryConfig).To(BeNil())
 		})
 
 		It("should parse config with OTLP TLS configuration", func() {
 			configMap := map[string]any{
-				"Endpoint":              "https://otel-collector.example.com:4317",
-				"TLSServerName":         "otel.example.com",
-				"TLSInsecureSkipVerify": "false",
-				"TLSMinVersion":         "1.2",
-				"TLSMaxVersion":         "1.3",
+				"endpoint":                "https://otel-collector.example.com:4317",
+				"tls_server_name":         "otel.example.com",
+				"tls_insecure_skip_verify": "false",
+				"tls_min_version":         "1.2",
+				"tls_max_version":         "1.3",
 			}
 
 			cfg, err := config.ParseConfig(configMap)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(cfg).ToNot(BeNil())
 
-			// Verify TLS configuration
 			Expect(cfg.OTLPConfig.TLSServerName).To(Equal("otel.example.com"))
 			Expect(cfg.OTLPConfig.TLSInsecureSkipVerify).To(BeFalse())
 			Expect(cfg.OTLPConfig.TLSMinVersion).To(Equal("1.2"))
 			Expect(cfg.OTLPConfig.TLSMaxVersion).To(Equal("1.3"))
 
-			// TLS config should be built
 			Expect(cfg.OTLPConfig.TLSConfig).ToNot(BeNil())
 			Expect(cfg.OTLPConfig.TLSConfig.ServerName).To(Equal("otel.example.com"))
 			Expect(cfg.OTLPConfig.TLSConfig.InsecureSkipVerify).To(BeFalse())
@@ -221,33 +215,30 @@ var _ = Describe("Config", func() {
 
 		It("should parse config with OTLP configuration", func() {
 			configMap := map[string]any{
-				"Endpoint":             "otel-collector.example.com:4317",
-				"Insecure":             "false",
-				"Compression":          "1",
-				"Timeout":              "45s",
-				"Headers":              `{"authorization": "Bearer token123", "x-custom-header": "value"}`,
-				"RetryEnabled":         "true",
-				"RetryInitialInterval": "2s",
-				"RetryMaxInterval":     "60s",
-				"RetryMaxElapsedTime":  "5m",
+				"endpoint":               "otel-collector.example.com:4317",
+				"insecure":               "false",
+				"compression":            "1",
+				"timeout":                "45s",
+				"headers":                `{"authorization": "Bearer token123", "x-custom-header": "value"}`,
+				"retry_enabled":          "true",
+				"retry_initial_interval": "2s",
+				"retry_max_interval":     "60s",
+				"retry_max_elapsed_time": "5m",
 			}
 
 			cfg, err := config.ParseConfig(configMap)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(cfg).ToNot(BeNil())
 
-			// Verify OTLP configuration
 			Expect(cfg.OTLPConfig.Endpoint).To(Equal("otel-collector.example.com:4317"))
 			Expect(cfg.OTLPConfig.Insecure).To(BeFalse())
 			Expect(cfg.OTLPConfig.Compression).To(Equal(1))
 			Expect(cfg.OTLPConfig.Timeout).To(Equal(45 * time.Second))
 
-			// Verify headers parsing
 			Expect(cfg.OTLPConfig.Headers).ToNot(BeNil())
 			Expect(cfg.OTLPConfig.Headers).To(HaveKeyWithValue("authorization", "Bearer token123"))
 			Expect(cfg.OTLPConfig.Headers).To(HaveKeyWithValue("x-custom-header", "value"))
 
-			// Verify retry configuration
 			Expect(cfg.OTLPConfig.RetryEnabled).To(BeTrue())
 			Expect(cfg.OTLPConfig.RetryInitialInterval).To(Equal(2 * time.Second))
 			Expect(cfg.OTLPConfig.RetryMaxInterval).To(Equal(60 * time.Second))
@@ -255,17 +246,16 @@ var _ = Describe("Config", func() {
 		})
 
 		It("should handle errors for invalid configurations", func() {
-			// Test invalid DynamicHostPath JSON
+			// Invalid DynamicHostPath JSON
 			configMap := map[string]any{
-				"DynamicHostPath": "invalid{json",
+				"dynamic_host_path": "invalid{json",
 			}
 			_, err := config.ParseConfig(configMap)
 			Expect(err).To(HaveOccurred())
 
-			// Test invalid OTLP configuration
 			// Invalid compression value
 			configMap = map[string]any{
-				"Compression": "5", // Out of valid range (0-2)
+				"compression": "5",
 			}
 			_, err = config.ParseConfig(configMap)
 			Expect(err).To(HaveOccurred())
@@ -273,23 +263,23 @@ var _ = Describe("Config", func() {
 
 			// Invalid headers JSON
 			configMap = map[string]any{
-				"Headers": "invalid{json",
+				"headers": "invalid{json",
 			}
 			_, err = config.ParseConfig(configMap)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("failed to parse Headers JSON"))
 
-			// Invalid boolean for OTLPInsecure
+			// Invalid boolean for insecure
 			configMap = map[string]any{
-				"Insecure": "not-a-boolean",
+				"insecure": "not-a-boolean",
 			}
 			_, err = config.ParseConfig(configMap)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("strconv.ParseBool: invalid syntax"))
 
-			// Invalid duration for OTLPTimeout
+			// Invalid duration for timeout
 			configMap = map[string]any{
-				"Timeout": "invalid-duration",
+				"timeout": "invalid-duration",
 			}
 			_, err = config.ParseConfig(configMap)
 			Expect(err).To(HaveOccurred())
@@ -297,7 +287,7 @@ var _ = Describe("Config", func() {
 
 			// Invalid TLS version
 			configMap = map[string]any{
-				"TLSMinVersion": "1.5", // Invalid TLS version
+				"tls_min_version": "1.5",
 			}
 			_, err = config.ParseConfig(configMap)
 			Expect(err).To(HaveOccurred())
@@ -305,8 +295,8 @@ var _ = Describe("Config", func() {
 
 			// Invalid TLS version order
 			configMap = map[string]any{
-				"TLSMinVersion": "1.3",
-				"TLSMaxVersion": "1.2", // Min > Max
+				"tls_min_version": "1.3",
+				"tls_max_version": "1.2",
 			}
 			_, err = config.ParseConfig(configMap)
 			Expect(err).To(HaveOccurred())
@@ -314,17 +304,17 @@ var _ = Describe("Config", func() {
 
 			// Cert file without key file
 			configMap = map[string]any{
-				"TLSCertFile": "/path/to/cert.pem",
+				"tls_cert_file": "/path/to/cert.pem",
 			}
 			_, err = config.ParseConfig(configMap)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("both TLSCertFile and TLSKeyFile must be specified together"))
 
-			// Invalid retry configuration - InitialInterval > MaxInterval
+			// Invalid retry - InitialInterval > MaxInterval
 			configMap = map[string]any{
-				"RetryEnabled":         "true",
-				"RetryInitialInterval": "10s",
-				"RetryMaxInterval":     "5s", // Initial > Max
+				"retry_enabled":          "true",
+				"retry_initial_interval": "10s",
+				"retry_max_interval":     "5s",
 			}
 			_, err = config.ParseConfig(configMap)
 			Expect(err).To(HaveOccurred())
@@ -336,7 +326,7 @@ var _ = Describe("Config", func() {
 	Context("ParseConfigFromStringMap", func() {
 		It("should parse DynamicHostPath from string map", func() {
 			stringMap := map[string]string{
-				"DynamicHostPath": `{"kubernetes": {"namespace_name": "namespace"}}`,
+				"dynamic_host_path": `{"kubernetes": {"namespace_name": "namespace"}}`,
 			}
 
 			cfg, err := config.ParseConfigFromStringMap(stringMap)
@@ -351,287 +341,53 @@ var _ = Describe("Config", func() {
 		})
 
 		It("should parse comprehensive seed configuration from string map (fluent-bit format)", func() {
-			// This test mirrors the actual fluent-bit configuration format from /Users/i032870/tmp/config
 			stringMap := map[string]string{
-				// Dynamic host configuration
-				"DynamicHostPath":   `{"kubernetes": {"namespace_name": "namespace"}}`,
-				"DynamicHostPrefix": "http://logging.",
-				"DynamicHostSuffix": ".svc:3100/vali/api/v1/push",
-				"DynamicHostRegex":  "^shoot-",
+				"dynamic_host_path":   `{"kubernetes": {"namespace_name": "namespace"}}`,
+				"dynamic_host_prefix": "http://logging.",
+				"dynamic_host_suffix": ".svc:3100/vali/api/v1/push",
+				"dynamic_host_regex":  "^shoot-",
 
-				// Queue and buffer configuration
-				"DQueDir":         "/fluent-bit/buffers/seed",
-				"DQueName":        "seed-dynamic",
-				"DQueSegmentSize": "300",
-				"DQueSync":        "normal",
-				"Buffer":          "true",
-				"BufferType":      "dque",
+				"dque_dir":          "/fluent-bit/buffers/seed",
+				"dque_name":         "seed-dynamic",
+				"dque_segment_size": "300",
+				"dque_sync":         "normal",
 
-				// Controller configuration
-				"ControllerSyncTimeout": "120s",
+				"controller_sync_timeout": "120s",
 
-				// Logging configuration
-				"LogLevel": "info",
+				"log_level":      "info",
+				"hostname_value": "${NODE_NAME}",
 
-				"HostnameValue": "${NODE_NAME}",
-
-				// Kubernetes metadata extraction
-				"FallbackToTagWhenMetadataIsMissing": "true",
-				"TagKey":                             "tag",
-				"DropLogEntryWithoutK8sMetadata":     "true",
+				"fallback_to_tag_when_metadata_is_missing": "true",
+				"tag_key":                                  "tag",
+				"drop_log_entry_without_k8s_metadata":      "true",
 			}
 
 			cfg, err := config.ParseConfigFromStringMap(stringMap)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(cfg).ToNot(BeNil())
 
-			// Dynamic host configuration
-			// "DynamicHostPath": `{"kubernetes": {"namespace_name": "namespace"}}`
 			Expect(cfg.ControllerConfig.DynamicHostPath).ToNot(BeNil())
 			Expect(cfg.ControllerConfig.DynamicHostPath).To(HaveKey("kubernetes"))
 			kubernetesMap, ok := cfg.ControllerConfig.DynamicHostPath["kubernetes"].(map[string]any)
 			Expect(ok).To(BeTrue())
 			Expect(kubernetesMap).To(HaveKeyWithValue("namespace_name", "namespace"))
-			// "DynamicHostPrefix": "http://logging."
 			Expect(cfg.ControllerConfig.DynamicHostPrefix).To(Equal("http://logging."))
-			// "DynamicHostSuffix": ".svc:3100/vali/api/v1/push"
 			Expect(cfg.ControllerConfig.DynamicHostSuffix).To(Equal(".svc:3100/vali/api/v1/push"))
-			// "DynamicHostRegex": "^shoot-"
 			Expect(cfg.ControllerConfig.DynamicHostRegex).To(Equal("^shoot-"))
 
-			// Queue and buffer configuration
-			// "DQueDir": "/fluent-bit/buffers/seed"
 			Expect(cfg.OTLPConfig.DQueConfig.DQueDir).To(Equal("/fluent-bit/buffers/seed"))
-			// "DQueName": "seed-dynamic"
 			Expect(cfg.OTLPConfig.DQueConfig.DQueName).To(Equal("seed-dynamic"))
-			// "DQueSegmentSize": "300"
 			Expect(cfg.OTLPConfig.DQueConfig.DQueSegmentSize).To(Equal(300))
-			// "DQueSync": "normal"
 			Expect(cfg.OTLPConfig.DQueConfig.DQueSync).To(BeFalse())
 
-			// Controller configuration
-			// "ControllerSyncTimeout": "120s"
 			Expect(cfg.ControllerConfig.CtlSyncTimeout).To(Equal(120 * time.Second))
 
-			// Logging configuration
-			// "LogLevel": "info"
 			Expect(cfg.PluginConfig.LogLevel).To(Equal("info"))
-
-			// "HostnameValue": "${NODE_NAME}"
 			Expect(cfg.PluginConfig.HostnameValue).To(Equal("${NODE_NAME}"))
 
-			// Kubernetes metadata extraction
-			// "FallbackToTagWhenMetadataIsMissing": "true"
 			Expect(cfg.PluginConfig.KubernetesMetadata.FallbackToTagWhenMetadataIsMissing).To(BeTrue())
-			// "TagKey": "tag"
 			Expect(cfg.PluginConfig.KubernetesMetadata.TagKey).To(Equal("tag"))
-			// "DropLogEntryWithoutK8sMetadata": "true"
 			Expect(cfg.PluginConfig.KubernetesMetadata.DropLogEntryWithoutK8sMetadata).To(BeTrue())
-		})
-	})
-
-	Context("Quote Handling", func() {
-		It("should strip double quotes from string values", func() {
-			configMap := map[string]any{
-				"Endpoint": `"localhost:4317"`,
-				"LogLevel": `"debug"`,
-				"DQueName": `"my-queue"`,
-			}
-
-			cfg, err := config.ParseConfig(configMap)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(cfg).ToNot(BeNil())
-
-			// Quotes should be stripped
-			Expect(cfg.OTLPConfig.Endpoint).To(Equal("localhost:4317"))
-			Expect(cfg.PluginConfig.LogLevel).To(Equal("debug"))
-			Expect(cfg.OTLPConfig.DQueConfig.DQueName).To(Equal("my-queue"))
-		})
-
-		It("should strip single quotes from string values", func() {
-			configMap := map[string]any{
-				"Endpoint": `'localhost:4317'`,
-				"LogLevel": `'warn'`,
-				"DQueName": `'my-queue'`,
-			}
-
-			cfg, err := config.ParseConfig(configMap)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(cfg).ToNot(BeNil())
-
-			// Quotes should be stripped
-			Expect(cfg.OTLPConfig.Endpoint).To(Equal("localhost:4317"))
-			Expect(cfg.PluginConfig.LogLevel).To(Equal("warn"))
-			Expect(cfg.OTLPConfig.DQueConfig.DQueName).To(Equal("my-queue"))
-		})
-
-		It("should handle values with quotes and whitespace", func() {
-			configMap := map[string]any{
-				"Endpoint":  `  "localhost:4317"  `,
-				"DQueName":  `  'my-queue'  `,
-				"LogLevel":  `  "info"  `,
-				"SeedType":  `  "OTLPGRPC"  `,
-				"ShootType": `  'STDOUT'  `,
-				"DQueDir":   `  "/tmp/queue"  `,
-			}
-
-			cfg, err := config.ParseConfig(configMap)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(cfg).ToNot(BeNil())
-
-			// Quotes and whitespace should be stripped
-			Expect(cfg.OTLPConfig.Endpoint).To(Equal("localhost:4317"))
-			Expect(cfg.OTLPConfig.DQueConfig.DQueName).To(Equal("my-queue"))
-			Expect(cfg.PluginConfig.LogLevel).To(Equal("info"))
-			Expect(cfg.PluginConfig.SeedType).To(Equal("otlp_grpc"))
-			Expect(cfg.PluginConfig.ShootType).To(Equal("stdout"))
-			Expect(cfg.OTLPConfig.DQueConfig.DQueName).To(Equal("my-queue"))
-			Expect(cfg.OTLPConfig.DQueConfig.DQueDir).To(Equal("/tmp/queue"))
-		})
-
-		It("should handle values without quotes", func() {
-			configMap := map[string]any{
-				"Endpoint": "localhost:4317",
-				"LogLevel": "error",
-				"DQueName": "my-queue",
-			}
-
-			cfg, err := config.ParseConfig(configMap)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(cfg).ToNot(BeNil())
-
-			// Values should remain unchanged
-			Expect(cfg.OTLPConfig.Endpoint).To(Equal("localhost:4317"))
-			Expect(cfg.PluginConfig.LogLevel).To(Equal("error"))
-			Expect(cfg.OTLPConfig.DQueConfig.DQueName).To(Equal("my-queue"))
-		})
-
-		It("should handle quoted boolean values", func() {
-			configMap := map[string]any{
-				"Insecure":                           `"false"`,
-				"RetryEnabled":                       `'true'`,
-				"TLSInsecureSkipVerify":              `'false'`,
-				"FallbackToTagWhenMetadataIsMissing": `"true"`,
-				"DropLogEntryWithoutK8sMetadata":     `'false'`,
-			}
-
-			cfg, err := config.ParseConfig(configMap)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(cfg).ToNot(BeNil())
-
-			// Should parse booleans correctly after stripping quotes
-			Expect(cfg.OTLPConfig.Insecure).To(BeFalse())
-			Expect(cfg.OTLPConfig.RetryEnabled).To(BeTrue())
-			Expect(cfg.OTLPConfig.TLSInsecureSkipVerify).To(BeFalse())
-			Expect(cfg.PluginConfig.KubernetesMetadata.FallbackToTagWhenMetadataIsMissing).To(BeTrue())
-			Expect(cfg.PluginConfig.KubernetesMetadata.DropLogEntryWithoutK8sMetadata).To(BeFalse())
-		})
-
-		It("should handle quoted numeric values", func() {
-			configMap := map[string]any{
-				"DQueSegmentSize": `"500"`,
-				"Compression":     `'1'`,
-			}
-
-			cfg, err := config.ParseConfig(configMap)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(cfg).ToNot(BeNil())
-
-			// Should parse numbers correctly after stripping quotes
-			Expect(cfg.OTLPConfig.DQueConfig.DQueSegmentSize).To(Equal(500))
-			Expect(cfg.OTLPConfig.Compression).To(Equal(1))
-		})
-
-		It("should handle quoted duration values", func() {
-			configMap := map[string]any{
-				"Timeout":               `"45s"`,
-				"ControllerSyncTimeout": `'90s'`,
-				"RetryInitialInterval":  `"5s"`,
-				"RetryMaxInterval":      `'30s'`,
-			}
-
-			cfg, err := config.ParseConfig(configMap)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(cfg).ToNot(BeNil())
-
-			// Should parse durations correctly after stripping quotes
-			Expect(cfg.OTLPConfig.Timeout).To(Equal(45 * time.Second))
-			Expect(cfg.ControllerConfig.CtlSyncTimeout).To(Equal(90 * time.Second))
-			Expect(cfg.OTLPConfig.RetryInitialInterval).To(Equal(5 * time.Second))
-			Expect(cfg.OTLPConfig.RetryMaxInterval).To(Equal(30 * time.Second))
-		})
-
-		It("should handle quoted JSON values", func() {
-			configMap := map[string]any{
-				"DynamicHostPath": `"{"kubernetes": {"namespace_name": "test"}}"`,
-				"Headers":         `'{"authorization": "Bearer token"}'`,
-			}
-
-			cfg, err := config.ParseConfig(configMap)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(cfg).ToNot(BeNil())
-
-			// Should parse JSON correctly after stripping outer quotes
-			Expect(cfg.ControllerConfig.DynamicHostPath).ToNot(BeNil())
-			Expect(cfg.ControllerConfig.DynamicHostPath).To(HaveKey("kubernetes"))
-
-			Expect(cfg.OTLPConfig.Headers).ToNot(BeNil())
-			Expect(cfg.OTLPConfig.Headers).To(HaveKeyWithValue("authorization", "Bearer token"))
-		})
-
-		It("should handle mixed quoted and unquoted values", func() {
-			configMap := map[string]any{
-				"Endpoint":          `"localhost:4317"`,
-				"LogLevel":          "info",
-				"Buffer":            `'true'`,
-				"DQueSegmentSize":   500,
-				"Timeout":           `"30s"`,
-				"RetryEnabled":      "true",
-				"DynamicHostPrefix": `"http://logging."`,
-				"DynamicHostSuffix": `.svc:3100/vali/api/v1/push`,
-			}
-
-			cfg, err := config.ParseConfig(configMap)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(cfg).ToNot(BeNil())
-
-			// All values should be parsed correctly regardless of quoting
-			Expect(cfg.OTLPConfig.Endpoint).To(Equal("localhost:4317"))
-			Expect(cfg.PluginConfig.LogLevel).To(Equal("info"))
-			Expect(cfg.OTLPConfig.DQueConfig.DQueSegmentSize).To(Equal(500))
-			Expect(cfg.OTLPConfig.Timeout).To(Equal(30 * time.Second))
-			Expect(cfg.OTLPConfig.RetryEnabled).To(BeTrue())
-			Expect(cfg.ControllerConfig.DynamicHostPrefix).To(Equal("http://logging."))
-			Expect(cfg.ControllerConfig.DynamicHostSuffix).To(Equal(".svc:3100/vali/api/v1/push"))
-		})
-
-		It("should handle empty strings with quotes", func() {
-			configMap := map[string]any{
-				"TLSServerName": `""`,
-				"TLSCAFile":     `''`,
-			}
-
-			cfg, err := config.ParseConfig(configMap)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(cfg).ToNot(BeNil())
-
-			// Empty strings should remain empty after stripping quotes
-			Expect(cfg.OTLPConfig.TLSServerName).To(BeEmpty())
-			Expect(cfg.OTLPConfig.TLSCAFile).To(BeEmpty())
-		})
-
-		It("should not strip quotes from values with quotes in the middle", func() {
-			configMap := map[string]any{
-				"Headers": `{"authorization": "Bearer \"token123\""}`,
-			}
-
-			cfg, err := config.ParseConfig(configMap)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(cfg).ToNot(BeNil())
-
-			// Only outer quotes should be stripped, inner escaped quotes should remain
-			Expect(cfg.OTLPConfig.Headers).ToNot(BeNil())
-			Expect(cfg.OTLPConfig.Headers).To(HaveKeyWithValue("authorization", `Bearer "token123"`))
 		})
 	})
 })

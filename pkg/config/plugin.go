@@ -5,20 +5,20 @@ package config
 
 // PluginConfig holds configuration for the plugin
 type PluginConfig struct {
-	SeedType           string                       `mapstructure:"SeedType"`
-	ShootType          string                       `mapstructure:"ShootType"`
-	LogLevel           string                       `mapstructure:"LogLevel"`
-	Pprof              bool                         `mapstructure:"Pprof"`
+	SeedType           string                       `mapstructure:"seed_type"`
+	ShootType          string                       `mapstructure:"shoot_type"`
+	LogLevel           string                       `mapstructure:"log_level"`
+	Pprof              bool                         `mapstructure:"pprof"`
 	KubernetesMetadata KubernetesMetadataExtraction `mapstructure:",squash"`
-	HostnameValue      string                       `mapstructure:"HostnameValue"`
-	Origin             string                       `mapstructure:"Origin"`
+	HostnameValue      string                       `mapstructure:"hostname_value"`
+	Origin             string                       `mapstructure:"origin"`
 }
 
 // KubernetesMetadataExtraction holds kubernetes metadata extraction configuration
 type KubernetesMetadataExtraction struct {
-	FallbackToTagWhenMetadataIsMissing bool   `mapstructure:"FallbackToTagWhenMetadataIsMissing"`
-	DropLogEntryWithoutK8sMetadata     bool   `mapstructure:"DropLogEntryWithoutK8sMetadata"`
-	TagKey                             string `mapstructure:"TagKey"`
-	TagPrefix                          string `mapstructure:"TagPrefix"`
-	TagExpression                      string `mapstructure:"TagExpression"`
+	FallbackToTagWhenMetadataIsMissing bool   `mapstructure:"fallback_to_tag_when_metadata_is_missing"`
+	DropLogEntryWithoutK8sMetadata     bool   `mapstructure:"drop_log_entry_without_k8s_metadata"`
+	TagKey                             string `mapstructure:"tag_key"`
+	TagPrefix                          string `mapstructure:"tag_prefix"`
+	TagExpression                      string `mapstructure:"tag_expression"`
 }

@@ -45,7 +45,12 @@ func init() {
 //
 //export FLBPluginRegister
 func FLBPluginRegister(ctx unsafe.Pointer) int {
-	return output.FLBPluginRegister(ctx, "gardener", "Ship fluent-bit logs to an Output")
+	return output.FLBPluginRegisterWithOptions(
+		ctx,
+		output.WithName("gardener"),
+		output.WithDescription("Ship fluent-bit logs to an Output"),
+		output.WithConfigMap(pluginConfigSchema),
+	)
 }
 
 // FLBPluginInit is called for each plugin instance
@@ -64,8 +69,7 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 		return output.FLB_OK
 	}
 
-	pluginCfg := &pluginConfig{ctx: ctx}
-	configurationMap := pluginCfg.toStringMap()
+	configurationMap := configToStringMap(ctx)
 	logger.Info(fmt.Sprintf("plugin configuration: %v", configurationMap))
 	cfg, err := config.ParseConfigFromStringMap(configurationMap)
 
