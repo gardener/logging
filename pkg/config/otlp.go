@@ -9,10 +9,10 @@ import (
 
 // DQueConfig contains the dqueue settings
 type DQueConfig struct {
-	DQueDir         string `mapstructure:"DQueDir"`
-	DQueSegmentSize int    `mapstructure:"DQueSegmentSize"`
+	DQueDir         string `mapstructure:"dque_dir"`
+	DQueSegmentSize int    `mapstructure:"dque_segment_size"`
 	DQueSync        bool   `mapstructure:"-"` // Handled specially in postProcessConfig
-	DQueName        string `mapstructure:"DQueName"`
+	DQueName        string `mapstructure:"dque_name"`
 }
 
 // DefaultDQueConfig holds dque configurations for the buffer
@@ -25,53 +25,53 @@ var DefaultDQueConfig = DQueConfig{
 
 // OTLPConfig holds configuration for otlp endpoint
 type OTLPConfig struct {
-	Endpoint        string            `mapstructure:"Endpoint"`
-	EndpointURL     string            `mapstructure:"EndpointURL"`
-	EndpointURLPath string            `mapstructure:"EndpointURLPath"`
-	Insecure        bool              `mapstructure:"Insecure"`
-	Compression     int               `mapstructure:"Compression"`
-	Timeout         time.Duration     `mapstructure:"Timeout"`
+	Endpoint        string            `mapstructure:"endpoint"`
+	EndpointURL     string            `mapstructure:"endpoint_url"`
+	EndpointURLPath string            `mapstructure:"endpoint_url_path"`
+	Insecure        bool              `mapstructure:"insecure"`
+	Compression     int               `mapstructure:"compression"`
+	Timeout         time.Duration     `mapstructure:"timeout"`
 	Headers         map[string]string `mapstructure:"-"` // Handled manually in processOTLPConfig
 
 	DQueConfig DQueConfig `mapstructure:",squash"`
 
 	// Batch Processor configuration fields
-	DQueBatchProcessorMaxQueueSize     int           `mapstructure:"DQueBatchProcessorMaxQueueSize"`
-	DQueBatchProcessorMaxBatchSize     int           `mapstructure:"DQueBatchProcessorMaxBatchSize"`
-	DQueBatchProcessorExportTimeout    time.Duration `mapstructure:"DQueBatchProcessorExportTimeout"`
-	DQueBatchProcessorExportInterval   time.Duration `mapstructure:"DQueBatchProcessorExportInterval"`
-	DQueBatchProcessorExportBufferSize int           `mapstructure:"DQueBatchProcessorExportBufferSize"`
+	DQueBatchProcessorMaxQueueSize     int           `mapstructure:"dque_batch_processor_max_queue_size"`
+	DQueBatchProcessorMaxBatchSize     int           `mapstructure:"dque_batch_processor_max_batch_size"`
+	DQueBatchProcessorExportTimeout    time.Duration `mapstructure:"dque_batch_processor_export_timeout"`
+	DQueBatchProcessorExportInterval   time.Duration `mapstructure:"dque_batch_processor_export_interval"`
+	DQueBatchProcessorExportBufferSize int           `mapstructure:"dque_batch_processor_export_buffer_size"`
 
 	// Retry configuration fields
-	RetryEnabled         bool          `mapstructure:"RetryEnabled"`
-	RetryInitialInterval time.Duration `mapstructure:"RetryInitialInterval"`
-	RetryMaxInterval     time.Duration `mapstructure:"RetryMaxInterval"`
-	RetryMaxElapsedTime  time.Duration `mapstructure:"RetryMaxElapsedTime"`
+	RetryEnabled         bool          `mapstructure:"retry_enabled"`
+	RetryInitialInterval time.Duration `mapstructure:"retry_initial_interval"`
+	RetryMaxInterval     time.Duration `mapstructure:"retry_max_interval"`
+	RetryMaxElapsedTime  time.Duration `mapstructure:"retry_max_elapsed_time"`
 
 	// RetryConfig - processed from the above fields
 	RetryConfig *RetryConfig `mapstructure:"-"`
 
 	// Throttle configuration fields
-	ThrottleEnabled        bool `mapstructure:"ThrottleEnabled"`
-	ThrottleRequestsPerSec int  `mapstructure:"ThrottleRequestsPerSec"` // Maximum requests per second, 0 means no limit
+	ThrottleEnabled        bool `mapstructure:"throttle_enabled"`
+	ThrottleRequestsPerSec int  `mapstructure:"throttle_requests_per_sec"` // Maximum requests per second, 0 means no limit
 
 	// SDK BatchProcessor configuration fields
 	// When UseSDKBatchProcessor is true, uses OTEL SDK BatchProcessor instead of DQueBatchProcessor
 	// SDK BatchProcessor is in-memory only (no disk persistence) but follows OTEL standards
-	UseSDKBatchProcessor       bool          `mapstructure:"UseSDKBatchProcessor"`
-	SDKBatchMaxQueueSize       int           `mapstructure:"SDKBatchMaxQueueSize"`
-	SDKBatchExportTimeout      time.Duration `mapstructure:"SDKBatchExportTimeout"`
-	SDKBatchExportInterval     time.Duration `mapstructure:"SDKBatchExportInterval"`
-	SDKBatchExportMaxBatchSize int           `mapstructure:"SDKBatchExportMaxBatchSize"`
+	UseSDKBatchProcessor       bool          `mapstructure:"use_sdk_batch_processor"`
+	SDKBatchMaxQueueSize       int           `mapstructure:"sdk_batch_max_queue_size"`
+	SDKBatchExportTimeout      time.Duration `mapstructure:"sdk_batch_export_timeout"`
+	SDKBatchExportInterval     time.Duration `mapstructure:"sdk_batch_export_interval"`
+	SDKBatchExportMaxBatchSize int           `mapstructure:"sdk_batch_export_max_batch_size"`
 
 	// TLS configuration fields
-	TLSCertFile           string `mapstructure:"TLSCertFile"`
-	TLSKeyFile            string `mapstructure:"TLSKeyFile"`
-	TLSCAFile             string `mapstructure:"TLSCAFile"`
-	TLSServerName         string `mapstructure:"TLSServerName"`
-	TLSInsecureSkipVerify bool   `mapstructure:"TLSInsecureSkipVerify"`
-	TLSMinVersion         string `mapstructure:"TLSMinVersion"`
-	TLSMaxVersion         string `mapstructure:"TLSMaxVersion"`
+	TLSCertFile           string `mapstructure:"tls_cert_file"`
+	TLSKeyFile            string `mapstructure:"tls_key_file"`
+	TLSCAFile             string `mapstructure:"tls_ca_file"`
+	TLSServerName         string `mapstructure:"tls_server_name"`
+	TLSInsecureSkipVerify bool   `mapstructure:"tls_insecure_skip_verify"`
+	TLSMinVersion         string `mapstructure:"tls_min_version"`
+	TLSMaxVersion         string `mapstructure:"tls_max_version"`
 
 	// TLS configuration - processed from the above fields
 	TLSConfig *tls.Config `mapstructure:"-"`

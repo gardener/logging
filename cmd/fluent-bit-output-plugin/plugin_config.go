@@ -101,6 +101,8 @@ var pluginConfigSchema = []output.ConfigMap{
 	{Type: output.FLB_CONFIG_MAP_INT, Name: "dque_batch_processor_export_buffer_size", DefValue: "10", Desc: "DQue batch processor export buffer size"},
 
 	// OTLP HTTP specific config
+	// TODO: http_path, http_proxy, deleted_client_time_expiration are declared for schema completeness
+	// but have no backing struct fields or post-processing yet — wire them when implemented.
 	{Type: output.FLB_CONFIG_MAP_STR, Name: "http_path", DefValue: "", Desc: "OTLP HTTP path override"},
 	{Type: output.FLB_CONFIG_MAP_STR, Name: "http_proxy", DefValue: "", Desc: "OTLP HTTP proxy"},
 
@@ -121,7 +123,7 @@ func configToStringMap(ctx unsafe.Pointer) map[string]string {
 	m := make(map[string]string, len(pluginConfigSchema))
 	for _, entry := range pluginConfigSchema {
 		if v := output.FLBPluginConfigKey(ctx, entry.Name); v != "" {
-			m[strings.ToLower(strings.ReplaceAll(entry.Name, "_", ""))] = v
+			m[strings.ToLower(entry.Name)] = v
 		}
 	}
 	return m
