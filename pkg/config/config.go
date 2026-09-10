@@ -216,6 +216,8 @@ func processControllerConfigBoolFields(configMap map[string]any, config *Config)
 			SendLogsWhenIsInDeletionState,
 		"sendlogstoseedwhenshootisinrestorestate": &config.ControllerConfig.SeedControllerClientConfig.
 			SendLogsWhenIsInRestoreState,
+		"sendlogstoseedwhenshootisindeletedstate":  &config.ControllerConfig.SeedControllerClientConfig.
+			SendLogsWhenIsInDeletedState,
 		"sendlogstoseedwhenshootisinmigrationstate": &config.ControllerConfig.SeedControllerClientConfig.
 			SendLogsWhenIsInMigrationState,
 	}
