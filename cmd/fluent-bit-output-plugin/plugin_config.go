@@ -149,12 +149,12 @@ func (c *pluginConfig) toStringMap() map[string]string {
 	return configMap
 }
 
-// dumpConfiguration logs the complete plugin configuration at debug level (V(1)).
-// It walks v's fields recursively, using mapstructure tags to decide how to log each one:
-//   - ",squash" → recurse inline (flattened into the same log level)
-//   - "-" on a pointer → log "<name>: configured" when non-nil, skip when nil
-//   - "-" on any other type → log "<name>: <value>"
-//   - normal tag → log "<tagName>: <value>"
+// dumpConfiguration logs the complete plugin configuration.
+// It walks fields recursively, using mapstructure tags to decide how to log each one:
+//   - ",squash" - recurse inline (flattened into the same log level)
+//   - "-" on a pointer - log "<name>: configured" when non-nil, skip when nil
+//   - "-" on any other type - log "<name>: <value>"
+//   - normal tag - log "<tagName>: <value>"
 func dumpConfiguration(cfg reflect.Value) {
 	t := cfg.Type()
 	for i := range t.NumField() {
