@@ -10,6 +10,7 @@ import (
 	"unsafe"
 
 	"github.com/fluent/fluent-bit-go/output"
+
 	"github.com/gardener/logging/v1/pkg/app"
 )
 
