@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"net/http"
 	_ "net/http/pprof"
+	"reflect"
 	"strings"
 	"time"
 	"unsafe"
@@ -66,7 +67,6 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 
 	pluginCfg := &pluginConfig{ctx: ctx}
 	configurationMap := pluginCfg.toStringMap()
-	logger.Info(fmt.Sprintf("plugin configuration: %v", configurationMap))
 	cfg, err := config.ParseConfigFromStringMap(configurationMap)
 
 	if err != nil {
@@ -80,7 +80,7 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 		logger = log.New(cfg.PluginConfig.LogLevel)
 	}
 
-	dumpConfiguration(cfg)
+	dumpConfiguration(reflect.ValueOf(*cfg))
 
 	if cfg.PluginConfig.Pprof {
 		setPprofProfile()
