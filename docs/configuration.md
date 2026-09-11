@@ -112,7 +112,6 @@ As an alternative to the default DQue-based batch processor, you can use the OTE
 | `DynamicHostSuffix` | Suffix for dynamic host URL | `""` | string |
 | `DynamicHostRegex` | Regex to validate dynamic host | `*` | string |
 | `ControllerSyncTimeout` | Time to wait for cluster object sync | `60s` | duration |
-| `DeletedClientTimeExpiration` | Expiration time for deleted cluster clients | `1h` | duration |
 
 ### Cluster State-Based Routing
 
@@ -253,7 +252,6 @@ Route logs to different backends based on Shoot cluster namespaces:
     
     # Controller settings
     ControllerSyncTimeout 60s
-    DeletedClientTimeExpiration 1h
 ```
 
 ### Development/Debug Configuration

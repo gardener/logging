@@ -54,10 +54,9 @@ func (c *pluginConfig) toStringMap() map[string]string {
 		"DQueDir", "dqueDir", "dque_dir",
 		"DQueSegmentSize", "dqueSegmentSize", "dque_segment_size",
 		"DQueSync", "dqueSync", "dque_sync",
-		"DQueName", " dqueName", "dque_name",
+		"DQueName", "dqueName", "dque_name",
 
 		// Controller config
-		"DeletedClientTimeExpiration", "deletedClientTimeExpiration", "deleted_client_time_expiration",
 		"ControllerSyncTimeout", "controllerSyncTimeout", "controller_sync_timeout",
 
 		// OpenTelemetryCollector watching config
@@ -91,7 +90,7 @@ func (c *pluginConfig) toStringMap() map[string]string {
 		// Common OTLP configs
 		"Endpoint", "endpoint",
 		"EndpointUrl", "endpointUrl", "endpoint_url",
-		"EndpointUrlPath:", "endpointUrlPath", "endpoint_url_path",
+		"EndpointUrlPath", "endpointUrlPath", "endpoint_url_path",
 		"Insecure", "insecure",
 		"Compression", "compression",
 		"Timeout", "timeout",
@@ -104,7 +103,6 @@ func (c *pluginConfig) toStringMap() map[string]string {
 		"RetryMaxElapsedTime", "retryMaxElapsedTime", "retry_max_elapsed_time",
 
 		// OTLP HTTP specific configs
-		"HTTPPath", "httpPath", "http_path",
 		"HTTPProxy", "httpProxy", "http_proxy",
 
 		// OTLP TLS configs

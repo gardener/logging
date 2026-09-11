@@ -4,6 +4,9 @@
 package otlphttp
 
 import (
+	"net/http"
+	"net/url"
+
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
 
 	"github.com/gardener/logging/v1/pkg/config"
@@ -29,6 +32,7 @@ func (b *ConfigBuilder) Build() []otlploghttp.Option {
 	b.configureTimeout(&opts)
 	b.configureCompression(&opts)
 	b.configureRetry(&opts)
+	b.configureProxy(&opts)
 
 	return opts
 }
@@ -79,4 +83,19 @@ func (b *ConfigBuilder) configureEndpoint(opts *[]otlploghttp.Option) {
 	} else {
 		*opts = append(*opts, otlploghttp.WithEndpoint(b.cfg.OTLPConfig.Endpoint))
 	}
+}
+
+func (b *ConfigBuilder) configureProxy(opts *[]otlploghttp.Option) {
+	if b.cfg.OTLPConfig.HTTPProxy == "" {
+		return
+	}
+
+	proxyURL, err := url.Parse(b.cfg.OTLPConfig.HTTPProxy)
+	if err != nil {
+		return
+	}
+
+	*opts = append(*opts, otlploghttp.WithProxy(func(req *http.Request) (*url.URL, error) {
+		return proxyURL, nil
+	}))
 }
