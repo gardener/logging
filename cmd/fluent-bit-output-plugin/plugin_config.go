@@ -10,7 +10,7 @@ import (
 	"unsafe"
 
 	"github.com/fluent/fluent-bit-go/output"
-	"github.com/go-logr/logr"
+	"github.com/gardener/logging/v1/pkg/app"
 )
 
 type pluginConfig struct {
@@ -155,7 +155,7 @@ func (c *pluginConfig) toStringMap() map[string]string {
 //   - "-" on a pointer → log "<name>: configured" when non-nil, skip when nil
 //   - "-" on any other type → log "<name>: <value>"
 //   - normal tag → log "<tagName>: <value>"
-func dumpConfiguration(cfg reflect.Value, logger logr.Logger) {
+func dumpConfiguration(cfg reflect.Value) {
 	t := cfg.Type()
 	for i := range t.NumField() {
 		field := t.Field(i)
@@ -166,11 +166,11 @@ func dumpConfiguration(cfg reflect.Value, logger logr.Logger) {
 
 		switch {
 		case opts == "squash":
-			dumpConfiguration(fval, logger)
+			dumpConfiguration(fval)
 
 		case tagName == "-" && field.Type.Kind() == reflect.Pointer:
 			if !fval.IsNil() {
-				logger.Info("[flb-go]", field.Name, "configured")
+				app.Inst().Logger.Info("[flb-go]", field.Name, "configured")
 			}
 
 		default:
@@ -178,7 +178,7 @@ func dumpConfiguration(cfg reflect.Value, logger logr.Logger) {
 			if name == "" || name == "-" {
 				name = field.Name
 			}
-			logger.Info("[flb-go]", name, fmt.Sprintf("%+v", fval.Interface()))
+			app.Inst().Logger.Info("[flb-go]", name, fmt.Sprintf("%+v", fval.Interface()))
 		}
 	}
 }
