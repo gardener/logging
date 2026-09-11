@@ -12,7 +12,7 @@ pipeline:
   outputs:
     - name: gardener
       match: "test.*"
-      log_level: debug
+      log_level: info
       seed_type: otlp_http
       shoot_type: otlp_grpc
       endpoint: localhost:4317

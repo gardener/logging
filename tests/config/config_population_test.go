@@ -11,7 +11,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"text/template"
 	"time"
 
@@ -130,15 +129,11 @@ var _ = Describe("Config population", func() {
 
 			for _, kv := range expectedFields {
 				key, val := kv[0], kv[1]
-				// Match slog text handler (key=value or key="value") and JSON handler ("key":"value").
-				pattern := fmt.Sprintf(
-					`%s="?%s|"%s":"%s"`,
-					regexp.QuoteMeta(key),
-					regexp.QuoteMeta(val),
-					regexp.QuoteMeta(key),
-					regexp.QuoteMeta(val),
-				)
-				Expect(string(output)).To(MatchRegexp(pattern), "missing field: key=%s value=%s", key, val)
+				Expect(string(output)).
+					To(ContainSubstring(
+						fmt.Sprintf(`"%s":"%s"`, key, val)),
+						"missing field: key=%s value=%s", key, val,
+					)
 			}
 		})
 	}
