@@ -54,7 +54,7 @@ func (c *pluginConfig) toStringMap() map[string]string {
 		"DQueDir", "dqueDir", "dque_dir",
 		"DQueSegmentSize", "dqueSegmentSize", "dque_segment_size",
 		"DQueSync", "dqueSync", "dque_sync",
-		"DQueName", " dqueName", "dque_name",
+		"DQueName", "dqueName", "dque_name",
 
 		// Controller config
 		"DeletedClientTimeExpiration", "deletedClientTimeExpiration", "deleted_client_time_expiration",
@@ -91,7 +91,7 @@ func (c *pluginConfig) toStringMap() map[string]string {
 		// Common OTLP configs
 		"Endpoint", "endpoint",
 		"EndpointUrl", "endpointUrl", "endpoint_url",
-		"EndpointUrlPath:", "endpointUrlPath", "endpoint_url_path",
+		"EndpointUrlPath", "endpointUrlPath", "endpoint_url_path",
 		"Insecure", "insecure",
 		"Compression", "compression",
 		"Timeout", "timeout",
