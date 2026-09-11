@@ -407,6 +407,10 @@ func processOTLPConfig(config *Config, configMap map[string]any) error {
 		return err
 	}
 
+	if httpProxy, ok := configMap["httpproxy"].(string); ok && httpProxy != "" {
+		config.OTLPConfig.HTTPProxy = httpProxy
+	}
+
 	// Process TLS configuration fields
 	if certFile, ok := configMap["tlscertfile"].(string); ok && certFile != "" {
 		config.OTLPConfig.TLSCertFile = certFile

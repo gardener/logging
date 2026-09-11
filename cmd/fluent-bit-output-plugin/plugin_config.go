@@ -103,7 +103,6 @@ func (c *pluginConfig) toStringMap() map[string]string {
 		"RetryMaxElapsedTime", "retryMaxElapsedTime", "retry_max_elapsed_time",
 
 		// OTLP HTTP specific configs
-		"HTTPPath", "httpPath", "http_path",
 		"HTTPProxy", "httpProxy", "http_proxy",
 
 		// OTLP TLS configs

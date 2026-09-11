@@ -64,6 +64,9 @@ type OTLPConfig struct {
 	SDKBatchExportInterval     time.Duration `mapstructure:"SDKBatchExportInterval"`
 	SDKBatchExportMaxBatchSize int           `mapstructure:"SDKBatchExportMaxBatchSize"`
 
+	// HTTPProxy is the proxy URL for HTTP transport
+	HTTPProxy string `mapstructure:"HTTPProxy"`
+
 	// TLS configuration fields
 	TLSCertFile           string `mapstructure:"TLSCertFile"`
 	TLSKeyFile            string `mapstructure:"TLSKeyFile"`
