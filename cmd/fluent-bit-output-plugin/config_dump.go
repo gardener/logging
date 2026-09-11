@@ -8,7 +8,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/gardener/logging/v1/pkg/app"
+	"github.com/go-logr/logr"
 )
 
 // dumpConfiguration logs the complete plugin configuration at debug level (V(1)).
@@ -17,7 +17,7 @@ import (
 //   - "-" on a pointer → log "<name>: configured" when non-nil, skip when nil
 //   - "-" on any other type → log "<name>: <value>"
 //   - normal tag → log "<tagName>: <value>"
-func dumpConfiguration(cfg reflect.Value) {
+func dumpConfiguration(cfg reflect.Value, logger logr.Logger) {
 	t := cfg.Type()
 	for i := range t.NumField() {
 		field := t.Field(i)
@@ -28,11 +28,11 @@ func dumpConfiguration(cfg reflect.Value) {
 
 		switch {
 		case opts == "squash":
-			dumpConfiguration(fval)
+			dumpConfiguration(fval, logger)
 
 		case tagName == "-" && field.Type.Kind() == reflect.Pointer:
 			if !fval.IsNil() {
-				app.Inst().Logger.V(1).Info("[flb-go]", field.Name, "configured")
+				logger.Info("[flb-go]", field.Name, "configured")
 			}
 
 		default:
@@ -40,7 +40,7 @@ func dumpConfiguration(cfg reflect.Value) {
 			if name == "" || name == "-" {
 				name = field.Name
 			}
-			app.Inst().Logger.V(1).Info("[flb-go]", name, fmt.Sprintf("%+v", fval.Interface()))
+			logger.Info("[flb-go]", name, fmt.Sprintf("%+v", fval.Interface()))
 		}
 	}
 }

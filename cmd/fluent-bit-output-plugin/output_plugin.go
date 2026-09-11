@@ -81,7 +81,7 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 		logger = log.New(cfg.PluginConfig.LogLevel)
 	}
 
-	dumpConfiguration(reflect.ValueOf(*cfg))
+	dumpConfiguration(reflect.ValueOf(*cfg), logger)
 
 	if cfg.PluginConfig.Pprof {
 		setPprofProfile()
