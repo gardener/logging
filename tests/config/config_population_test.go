@@ -24,53 +24,78 @@ import (
 const pluginSoPath = "../../build/output_plugin.so"
 
 var expectedFields = [][2]string{
+	// Client types
 	{"SeedType", "otlp_http"},
 	{"ShootType", "otlp_grpc"},
+	// Plugin config
+	{"DynamicHostPath", "map[kubernetes:map[namespace_name:namespace]]"},
+	{"DynamicHostPrefix", "logging."},
+	{"DynamicHostSuffix", ".svc.cluster.local:4317"},
+	{"DynamicHostRegex", "^shoot-"},
+	{"HostnameValue", "test-host"},
+	{"Origin", "test-origin"},
+	// Kubernetes metadata
+	{"FallbackToTagWhenMetadataIsMissing", "true"},
+	{"DropLogEntryWithoutK8sMetadata", "true"},
+	{"TagKey", "custom_tag"},
+	{"TagPrefix", `custom\\.prefix`},
+	{"TagExpression", `\\.([^_]+)_([^_]+)_(.+)-([a-z0-9]{64})\\.log$`},
+	// DQue config
+	{"DQueDir", "/tmp/test-dque"},
+	{"DQueSegmentSize", "100"},
+	{"DQueSync", "true"},
+	{"DQueName", "test-queue"},
+	// Controller config
+	{"ControllerSyncTimeout", "2m0s"},
+	{"WatchOpenTelemetryCollector", "true"},
+	{"OpenTelemetryCollectorLabelSelector", "app=otel"},
+	{"OpenTelemetryCollectorNamespaceLabelSelector", "env=prod"},
+	// Shoot log flow config
+	{"ShootControllerClientConfig", "{SendLogsWhenIsInCreationState:true SendLogsWhenIsInReadyState:true SendLogsWhenIsInHibernatingState:false SendLogsWhenIsInHibernatedState:false SendLogsWhenIsInWakingState:true SendLogsWhenIsInDeletionState:true SendLogsWhenIsInDeletedState:false SendLogsWhenIsInRestoreState:true SendLogsWhenIsInMigrationState:false}"},
+	// Seed log flow config
+	{"SeedControllerClientConfig", "{SendLogsWhenIsInCreationState:true SendLogsWhenIsInReadyState:false SendLogsWhenIsInHibernatingState:false SendLogsWhenIsInHibernatedState:false SendLogsWhenIsInWakingState:false SendLogsWhenIsInDeletionState:true SendLogsWhenIsInDeletedState:true SendLogsWhenIsInRestoreState:true SendLogsWhenIsInMigrationState:true}"},
+	// Common OTLP config
 	{"Endpoint", "localhost:4317"},
 	{"EndpointURL", "http://localhost:4317"},
 	{"EndpointURLPath", "/v1/logs"},
 	{"Insecure", "true"},
 	{"Compression", "1"},
 	{"Timeout", "10s"},
-	{"Origin", "test-origin"},
-	{"HostnameValue", "test-host"},
-	{"FallbackToTagWhenMetadataIsMissing", "true"},
-	{"DropLogEntryWithoutK8sMetadata", "true"},
-	{"TagKey", "custom_tag"},
-	{"DynamicHostPath", "map[kubernetes:map[namespace_name:namespace]]"},
-	{"DynamicHostPrefix", "logging."},
-	{"DynamicHostSuffix", ".svc.cluster.local:4317"},
-	{"DynamicHostRegex", "^shoot-"},
-	{"ControllerSyncTimeout", "2m0s"},
-	{"WatchOpenTelemetryCollector", "true"},
-	{"OpenTelemetryCollectorLabelSelector", "app=otel"},
-	{"OpenTelemetryCollectorNamespaceLabelSelector", "env=prod"},
-	{"DQueDir", "/tmp/test-dque"},
-	{"DQueSegmentSize", "100"},
-	{"DQueSync", "true"},
-	{"DQueName", "test-queue"},
-	{"DQueBatchProcessorMaxQueueSize", "256"},
-	{"DQueBatchProcessorMaxBatchSize", "64"},
-	{"DQueBatchProcessorExportTimeout", "15s"},
-	{"DQueBatchProcessorExportInterval", "5s"},
-	{"DQueBatchProcessorExportBufferSize", "32"},
-	{"UseSDKBatchProcessor", "true"},
-	{"SDKBatchMaxQueueSize", "1024"},
-	{"SDKBatchExportTimeout", "20s"},
-	{"SDKBatchExportInterval", "3s"},
-	{"SDKBatchExportMaxBatchSize", "128"},
+	// Retry config
 	{"RetryEnabled", "true"},
 	{"RetryInitialInterval", "2s"},
 	{"RetryMaxInterval", "1m0s"},
 	{"RetryMaxElapsedTime", "5m0s"},
 	{"RetryConfig", "configured"},
-	{"ThrottleEnabled", "true"},
-	{"ThrottleRequestsPerSec", "50"},
+	// HTTP proxy
+	{"HTTPProxy", "http://proxy.example.com:8080"},
+	// TLS config
+	{"TLSCertFile", "/etc/ssl/certs/test.crt"},
+	{"TLSKeyFile", "/etc/ssl/private/test.key"},
+	{"TLSCAFile", "/etc/ssl/certs/ca.crt"},
 	{"TLSServerName", "test-server"},
 	{"TLSInsecureSkipVerify", "true"},
 	{"TLSMinVersion", "1.2"},
 	{"TLSMaxVersion", "1.3"},
 	{"TLSConfig", "configured"},
+	// Throttle config
+	{"ThrottleEnabled", "true"},
+	{"ThrottleRequestsPerSec", "50"},
+	// DQue batch processor config
+	{"DQueBatchProcessorMaxQueueSize", "256"},
+	{"DQueBatchProcessorMaxBatchSize", "64"},
+	{"DQueBatchProcessorExportTimeout", "15s"},
+	{"DQueBatchProcessorExportInterval", "5s"},
+	{"DQueBatchProcessorExportBufferSize", "32"},
+	// SDK batch processor config
+	{"UseSDKBatchProcessor", "true"},
+	{"SDKBatchMaxQueueSize", "1024"},
+	{"SDKBatchExportTimeout", "20s"},
+	{"SDKBatchExportInterval", "3s"},
+	{"SDKBatchExportMaxBatchSize", "128"},
+	// General config
+	{"LogLevel", "info"},
+	{"Pprof", "true"},
 }
 
 var _ = BeforeSuite(func() {

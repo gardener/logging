@@ -12,26 +12,23 @@ pipeline:
   outputs:
     - name: gardener
       match: "test.*"
-      log_level: info
       seed_type: otlp_http
       shoot_type: otlp_grpc
-      endpoint: localhost:4317
-      endpoint_url: http://localhost:4317
-      endpoint_url_path: /v1/logs
-      insecure: true
-      compression: 1
-      timeout: 10s
-      origin: test-origin
+      dynamic_host_path: '{"kubernetes": {"namespace_name": "namespace"}}'
+      dynamic_host_prefix: "logging."
+      dynamic_host_suffix: ".svc.cluster.local:4317"
+      dynamic_host_regex: "^shoot-"
       hostname_value: test-host
+      origin: test-origin
       fallback_to_tag_when_metadata_is_missing: true
       drop_log_entry_without_k8s_metadata: true
       tag_key: custom_tag
       tag_prefix: custom\.prefix
       tag_expression: \.([^_]+)_([^_]+)_(.+)-([a-z0-9]{64})\.log$
-      dynamic_host_path: '{"kubernetes": {"namespace_name": "namespace"}}'
-      dynamic_host_prefix: "logging."
-      dynamic_host_suffix: ".svc.cluster.local:4317"
-      dynamic_host_regex: "^shoot-"
+      dque_dir: /tmp/test-dque
+      dque_segment_size: 100
+      dque_sync: full
+      dque_name: test-queue
       controller_sync_timeout: 120s
       watch_open_telemetry_collector: true
       open_telemetry_collector_label_selector: "app=otel"
@@ -54,10 +51,26 @@ pipeline:
       send_logs_to_seed_when_shoot_is_in_deleted_state: true
       send_logs_to_seed_when_shoot_is_in_restore_state: true
       send_logs_to_seed_when_shoot_is_in_migration_state: true
-      dque_dir: /tmp/test-dque
-      dque_segment_size: 100
-      dque_sync: full
-      dque_name: test-queue
+      endpoint: localhost:4317
+      endpoint_url: http://localhost:4317
+      endpoint_url_path: /v1/logs
+      insecure: true
+      compression: 1
+      timeout: 10s
+      retry_enabled: true
+      retry_initial_interval: 2s
+      retry_max_interval: 60s
+      retry_max_elapsed_time: 5m
+      http_proxy: http://proxy.example.com:8080
+      tls_cert_file: /etc/ssl/certs/test.crt
+      tls_key_file: /etc/ssl/private/test.key
+      tls_ca_file: /etc/ssl/certs/ca.crt
+      tls_server_name: test-server
+      tls_insecure_skip_verify: true
+      tls_min_version: "1.2"
+      tls_max_version: "1.3"
+      throttle_enabled: true
+      throttle_requests_per_sec: 50
       dque_batch_processor_max_queue_size: 256
       dque_batch_processor_max_batch_size: 64
       dque_batch_processor_export_timeout: 15s
@@ -68,13 +81,5 @@ pipeline:
       sdk_batch_export_timeout: 20s
       sdk_batch_export_interval: 3s
       sdk_batch_export_max_batch_size: 128
-      retry_enabled: true
-      retry_initial_interval: 2s
-      retry_max_interval: 60s
-      retry_max_elapsed_time: 5m
-      throttle_enabled: true
-      throttle_requests_per_sec: 50
-      tls_server_name: test-server
-      tls_insecure_skip_verify: true
-      tls_min_version: "1.2"
-      tls_max_version: "1.3"
+      log_level: info
+      pprof: true

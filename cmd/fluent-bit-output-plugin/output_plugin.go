@@ -67,7 +67,6 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 
 	pluginCfg := &pluginConfig{ctx: ctx}
 	configurationMap := pluginCfg.toStringMap()
-	logger.Info(fmt.Sprintf("plugin configuration: %v", configurationMap))
 	cfg, err := config.ParseConfigFromStringMap(configurationMap)
 
 	if err != nil {
