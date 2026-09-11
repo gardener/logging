@@ -57,7 +57,6 @@ func (c *pluginConfig) toStringMap() map[string]string {
 		"DQueName", "dqueName", "dque_name",
 
 		// Controller config
-		"DeletedClientTimeExpiration", "deletedClientTimeExpiration", "deleted_client_time_expiration",
 		"ControllerSyncTimeout", "controllerSyncTimeout", "controller_sync_timeout",
 
 		// OpenTelemetryCollector watching config

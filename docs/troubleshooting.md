@@ -118,10 +118,6 @@ This document provides solutions to common issues when using the Gardener Fluent
 
 3. **Too many clients**:
    - Check for client leaks with dynamic routing
-   - Review client cleanup:
-   ```ini
-   DeletedClientTimeExpiration 30m
-   ```
 
 4. **Memory leak**:
    - Enable profiling and analyze heap:
