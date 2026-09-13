@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"text/template"
 	"time"
 
@@ -60,6 +61,7 @@ var expectedFields = [][2]string{
 	{"Insecure", "true"},
 	{"Compression", "1"},
 	{"Timeout", "10s"},
+	{"Headers", "map[]"},
 	// Retry config
 	{"RetryEnabled", "true"},
 	{"RetryInitialInterval", "2s"},
@@ -148,17 +150,42 @@ var _ = Describe("Config population", func() {
 			Expect(err).NotTo(HaveOccurred())
 			output, err := io.ReadAll(logs)
 			Expect(err).NotTo(HaveOccurred())
+			lines := strings.Split(string(output), "\n")
 			_, _ = GinkgoWriter.Write(output)
 			AddReportEntry("container logs", string(output))
 
+			// Check if the number of configuration options match.
+			var configLines []string
+			inConfig := false
+			for _, line := range lines {
+				if strings.Contains(line, "Plugin Config Start") {
+					inConfig = true
+					continue
+				}
+				if strings.Contains(line, "Plugin Config End") {
+					break
+				}
+				if inConfig && line != "" {
+					configLines = append(configLines, line)
+				}
+			}
+			Expect(len(configLines)).
+				To(
+					Equal(len(expectedFields)),
+					"number of dumped config fields (%d) does not match expectedFields (%d) — a field may be missing from the test",
+					len(configLines), len(expectedFields),
+				)
+
+			// Check if each of the configuration options match.
 			for _, kv := range expectedFields {
 				key, val := kv[0], kv[1]
 				Expect(string(output)).
-					To(ContainSubstring(
-						fmt.Sprintf(`"%s":"%s"`, key, val)),
+					To(
+						ContainSubstring(fmt.Sprintf(`"%s":"%s"`, key, val)),
 						"missing field: key=%s value=%s", key, val,
 					)
 			}
+
 		})
 	}
 })

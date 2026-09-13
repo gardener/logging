@@ -80,7 +80,9 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 		logger = log.New(cfg.PluginConfig.LogLevel)
 	}
 
+	logger.Info("[flb-go] =====   Plugin Config Start   =====")
 	dumpConfiguration(reflect.ValueOf(*cfg))
+	logger.Info("[flb-go] =====   Plugin Config End   =====")
 
 	if cfg.PluginConfig.Pprof {
 		setPprofProfile()
