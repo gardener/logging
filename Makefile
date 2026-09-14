@@ -133,6 +133,7 @@ lint: tidy
 test: tidy
 	@go tool -modfile=$(TOOLS_MODFILE) gotestsum $(REPO_ROOT)/pkg/... --v --ginkgo.v --ginkgo.no-color
 	@go tool -modfile=$(TOOLS_MODFILE) gotestsum $(REPO_ROOT)/tests/plugin
+	@go tool -modfile=$(TOOLS_MODFILE) gotestsum --format standard-verbose -- $(REPO_ROOT)/tests/config -- -v --ginkgo.v --ginkgo.no-color
 
 .PHONY: e2e-tests
 e2e-tests: tidy
