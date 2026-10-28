@@ -10,7 +10,6 @@ import (
 	"sync"
 	"time"
 
-	gardenercorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/go-logr/logr"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -157,7 +156,7 @@ func buildClusterReconciler(
 				},
 			},
 		},
-		// Disable metrics and health probe servers since fluent-bit plugin handles these
+		// Disable metrics and health probe servers since fluent-bit plugin handles these.
 		Metrics:                ctrl.Options{}.Metrics,
 		HealthProbeBindAddress: "",
 	})
@@ -397,7 +396,7 @@ func (r *clusterReconciler) newControllerClient(clusterName string, clientConf *
 	return c, nil
 }
 
-func (r *clusterReconciler) createClient(clusterName string, shoot *gardenercorev1beta1.Shoot) {
+func (r *clusterReconciler) createClient(clusterName string, shoot *shootInfo) {
 	clientConf := r.buildClientConfig(clusterName)
 
 	c, err := r.newControllerClient(clusterName, clientConf)
@@ -453,7 +452,7 @@ func (r *clusterReconciler) deleteClient(clusterName string) {
 	}
 }
 
-func (*clusterReconciler) updateClientState(c Client, shoot *gardenercorev1beta1.Shoot) {
+func (*clusterReconciler) updateClientState(c Client, shoot *shootInfo) {
 	c.SetState(getShootState(shoot))
 }
 
@@ -468,11 +467,11 @@ func (r *clusterReconciler) buildClientConfig(clusterName string) *config.Config
 	return &conf
 }
 
-func (*clusterReconciler) isAllowedShoot(shoot *gardenercorev1beta1.Shoot) bool {
+func (*clusterReconciler) isAllowedShoot(shoot *shootInfo) bool {
 	return !isTestingShoot(shoot)
 }
 
-func (*clusterReconciler) isDeletedShoot(shoot *gardenercorev1beta1.Shoot) bool {
+func (*clusterReconciler) isDeletedShoot(shoot *shootInfo) bool {
 	return shoot != nil && shoot.DeletionTimestamp != nil
 }
 

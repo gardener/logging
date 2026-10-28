@@ -114,42 +114,12 @@ var _ = Describe("Controller", func() {
 		logger := logr.Discard()
 		shootName := "shoot--dev--logging"
 
-		testingPurpose := gardencorev1beta1.ShootPurpose("testing")
-		developmentPurpose := gardencorev1beta1.ShootPurpose("development")
-		notHibernation := gardencorev1beta1.Hibernation{Enabled: new(false)}
-		hibernation := gardencorev1beta1.Hibernation{Enabled: new(true)}
-		shootObjectMeta := metav1.ObjectMeta{
-			Name: shootName,
-		}
-		testingShoot := &gardencorev1beta1.Shoot{
-			ObjectMeta: shootObjectMeta,
-			Spec: gardencorev1beta1.ShootSpec{
-				Purpose:     &testingPurpose,
-				Hibernation: &notHibernation,
-			},
-			Status: gardencorev1beta1.ShootStatus{
-				LastOperation: &gardencorev1beta1.LastOperation{
-					Type:     "Reconcile",
-					Progress: 100,
-				},
-			},
-		}
+		shootObjectMeta := metav1.ObjectMeta{Name: shootName}
+		testingShoot := makeShoot(shootObjectMeta, gardencorev1beta1.ShootPurposeTesting, boolPtr(false), false, gardencorev1beta1.LastOperationTypeReconcile, gardencorev1beta1.LastOperationStateProcessing)
 		testingShootRaw, _ := json.MarshalIndent(testingShoot, "", "  ")
-		developmentShoot := &gardencorev1beta1.Shoot{
-			ObjectMeta: shootObjectMeta,
-			Spec: gardencorev1beta1.ShootSpec{
-				Purpose:     &developmentPurpose,
-				Hibernation: &notHibernation,
-			},
-		}
+		developmentShoot := makeShoot(shootObjectMeta, gardencorev1beta1.ShootPurposeDevelopment, boolPtr(false), false, "", "")
 		developmentShootRaw, _ := json.Marshal(developmentShoot)
-		hibernatedShoot := &gardencorev1beta1.Shoot{
-			ObjectMeta: shootObjectMeta,
-			Spec: gardencorev1beta1.ShootSpec{
-				Purpose:     &developmentPurpose,
-				Hibernation: &hibernation,
-			},
-		}
+		hibernatedShoot := makeShoot(shootObjectMeta, gardencorev1beta1.ShootPurposeDevelopment, boolPtr(true), false, "", "")
 		hibernatedShootRaw, _ := json.Marshal(hibernatedShoot)
 		testingCluster := &extensionsv1alpha1.Cluster{
 			ObjectMeta: shootObjectMeta,

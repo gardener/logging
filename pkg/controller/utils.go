@@ -16,6 +16,7 @@ import (
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/go-logr/logr"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -26,56 +27,95 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 )
 
-func shootFromCluster(cluster *extensionsv1alpha1.Cluster) (*gardencorev1beta1.Shoot, error) {
+// shootInfo holds the minimal fields extracted from Cluster.Spec.Shoot.Raw
+// that the reconciler needs to determine cluster state.
+type shootInfo struct {
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Spec              struct {
+		Purpose     *gardencorev1beta1.ShootPurpose `json:"purpose,omitempty"`
+		Hibernation *struct {
+			Enabled *bool `json:"enabled,omitempty"`
+		} `json:"hibernation,omitempty"`
+	} `json:"spec,omitempty"`
+	Status struct {
+		IsHibernated  bool `json:"hibernated,omitempty"`
+		LastOperation *struct {
+			Type  gardencorev1beta1.LastOperationType  `json:"type,omitempty"`
+			State gardencorev1beta1.LastOperationState `json:"state,omitempty"`
+		} `json:"lastOperation,omitempty"`
+	} `json:"status,omitempty"`
+}
+
+func shootFromCluster(cluster *extensionsv1alpha1.Cluster) (*shootInfo, error) {
 	if cluster.Spec.Shoot.Raw == nil {
 		return nil, nil
 	}
-	shoot := &gardencorev1beta1.Shoot{}
-	if err := json.Unmarshal(cluster.Spec.Shoot.Raw, shoot); err != nil {
+
+	upstream := &gardencorev1beta1.Shoot{}
+	if err := json.Unmarshal(cluster.Spec.Shoot.Raw, upstream); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal shoot from cluster %q: %w", cluster.Name, err)
 	}
 
-	return shoot, nil
+	info := &shootInfo{}
+	info.ObjectMeta = upstream.ObjectMeta
+	info.Spec.Purpose = upstream.Spec.Purpose
+	if upstream.Spec.Hibernation != nil {
+		info.Spec.Hibernation = &struct {
+			Enabled *bool `json:"enabled,omitempty"`
+		}{Enabled: upstream.Spec.Hibernation.Enabled}
+	}
+	info.Status.IsHibernated = upstream.Status.IsHibernated
+	if upstream.Status.LastOperation != nil {
+		info.Status.LastOperation = &struct {
+			Type  gardencorev1beta1.LastOperationType  `json:"type,omitempty"`
+			State gardencorev1beta1.LastOperationState `json:"state,omitempty"`
+		}{
+			Type:  upstream.Status.LastOperation.Type,
+			State: upstream.Status.LastOperation.State,
+		}
+	}
+
+	return info, nil
 }
 
-func isShootInHibernation(shoot *gardencorev1beta1.Shoot) bool {
+func isShootInHibernation(shoot *shootInfo) bool {
 	return shoot != nil &&
 		shoot.Spec.Hibernation != nil &&
 		shoot.Spec.Hibernation.Enabled != nil &&
 		*shoot.Spec.Hibernation.Enabled
 }
 
-func isTestingShoot(shoot *gardencorev1beta1.Shoot) bool {
-	return shoot != nil && shoot.Spec.Purpose != nil && *shoot.Spec.Purpose == "testing"
+func isTestingShoot(shoot *shootInfo) bool {
+	return shoot != nil && shoot.Spec.Purpose != nil && *shoot.Spec.Purpose == gardencorev1beta1.ShootPurposeTesting
 }
 
-func isShootMarkedForMigration(shoot *gardencorev1beta1.Shoot) bool {
+func isShootMarkedForMigration(shoot *shootInfo) bool {
 	return shoot != nil && shoot.Annotations != nil && shoot.Annotations[v1beta1constants.GardenerOperation] == v1beta1constants.GardenerOperationMigrate
 }
 
-func isShootInMigration(shoot *gardencorev1beta1.Shoot) bool {
+func isShootInMigration(shoot *shootInfo) bool {
 	return shoot != nil && shoot.Status.LastOperation != nil &&
 		shoot.Status.LastOperation.Type == gardencorev1beta1.LastOperationTypeMigrate &&
 		shoot.Status.LastOperation.State != gardencorev1beta1.LastOperationStateSucceeded
 }
 
-func isShootMarkedForRestoration(shoot *gardencorev1beta1.Shoot) bool {
+func isShootMarkedForRestoration(shoot *shootInfo) bool {
 	return shoot != nil && shoot.Annotations != nil && shoot.Annotations[v1beta1constants.GardenerOperation] == v1beta1constants.GardenerOperationRestore
 }
 
-func isShootInRestoration(shoot *gardencorev1beta1.Shoot) bool {
+func isShootInRestoration(shoot *shootInfo) bool {
 	return shoot != nil && shoot.Status.LastOperation != nil &&
 		shoot.Status.LastOperation.Type == gardencorev1beta1.LastOperationTypeRestore &&
 		shoot.Status.LastOperation.State != gardencorev1beta1.LastOperationStateSucceeded
 }
 
-func isShootInCreation(shoot *gardencorev1beta1.Shoot) bool {
+func isShootInCreation(shoot *shootInfo) bool {
 	return shoot != nil && (shoot.Status.LastOperation == nil ||
 		(shoot.Status.LastOperation.Type == gardencorev1beta1.LastOperationTypeCreate &&
 			shoot.Status.LastOperation.State != gardencorev1beta1.LastOperationStateSucceeded))
 }
 
-func getShootState(shoot *gardencorev1beta1.Shoot) clusterState {
+func getShootState(shoot *shootInfo) clusterState {
 	switch {
 	case shoot != nil && shoot.DeletionTimestamp != nil:
 		return clusterStateDeletion
