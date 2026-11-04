@@ -8,7 +8,7 @@ image:
   imagePullSecrets: []
 
 fluentBit:
-  image: ghcr.io/fluent/fluent-operator/fluent-bit:v5.1.1
+  image: ghcr.io/fluent/fluent-operator/fluent-bit:v5.1.5
 
   livenessProbe:
     failureThreshold: 5
@@ -146,7 +146,7 @@ prometheus:
   volumes: [] # additional volumes to add to the StatefulSet
 
 victorialogs:
-  image: quay.io/victoriametrics/victoria-logs:v1.41.0
+  image: quay.io/victoriametrics/victoria-logs:v1.52.0
   livenessProbe:
     failureThreshold: 10
     initialDelaySeconds: 30
@@ -197,7 +197,7 @@ victorialogs:
   volumes: [] # additional volumes to add to the StatefulSet
 
 otelCollector:
-  image: otel/opentelemetry-collector-contrib:0.141.0
+  image: otel/opentelemetry-collector-contrib:0.164.1
   replicas: 1
 
   livenessProbe:
