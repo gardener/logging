@@ -95,7 +95,7 @@ func (b *ConfigBuilder) configureProxy(opts *[]otlploghttp.Option) {
 		return
 	}
 
-	*opts = append(*opts, otlploghttp.WithProxy(func(req *http.Request) (*url.URL, error) {
+	*opts = append(*opts, otlploghttp.WithProxy(func(_ *http.Request) (*url.URL, error) {
 		return proxyURL, nil
 	}))
 }

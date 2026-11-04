@@ -130,7 +130,7 @@ var _ = Describe("Config population", func() {
 
 			var df bytes.Buffer
 			Expect(template.Must(template.ParseFiles("testdata/Dockerfile")).Execute(&df, struct{ ConfigExt string }{tc.configExt})).To(Succeed())
-			Expect(os.WriteFile(filepath.Join(buildDir, "Dockerfile"), df.Bytes(), 0o644)).To(Succeed())
+			Expect(os.WriteFile(filepath.Join(buildDir, "Dockerfile"), df.Bytes(), 0o600)).To(Succeed())
 
 			container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 				ContainerRequest: testcontainers.ContainerRequest{
@@ -160,6 +160,7 @@ var _ = Describe("Config population", func() {
 			for _, line := range lines {
 				if strings.Contains(line, "Plugin Config Start") {
 					inConfig = true
+
 					continue
 				}
 				if strings.Contains(line, "Plugin Config End") {
@@ -185,13 +186,12 @@ var _ = Describe("Config population", func() {
 						"missing field: key=%s value=%s", key, val,
 					)
 			}
-
 		})
 	}
 })
 
 func copyFile(src, dst string) {
-	data, err := os.ReadFile(src)
+	data, err := os.ReadFile(src) //nolint:gosec // src is always a controlled test path, never user input
 	Expect(err).NotTo(HaveOccurred())
-	Expect(os.WriteFile(dst, data, 0o644)).To(Succeed())
+	Expect(os.WriteFile(dst, data, 0o600)).To(Succeed())
 }
