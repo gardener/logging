@@ -332,7 +332,7 @@ func recordToItem(record sdklog.Record) *logRecordItem {
 	}
 
 	// Extract body
-	if record.Body().Type() != attribute.INVALID {
+	if record.Body().Type() != attribute.EMPTY {
 		item.Body = record.Body().AsString()
 	}
 
