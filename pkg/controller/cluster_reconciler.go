@@ -17,6 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/uuid"
+	toolscache "k8s.io/client-go/tools/cache"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -137,10 +138,24 @@ func buildClusterReconciler(
 		Cache: cache.Options{
 			// Restrict cache to Cluster objects only; this controller does not reconcile other types.
 			ByObject: map[k8sclient.Object]cache.ByObject{
-				&extensionsv1alpha1.Cluster{}: {},
+				&extensionsv1alpha1.Cluster{}: {
+					// Strip ManagedFields and the unused CloudProfile/Seed raw blobs.
+					Transform: func() toolscache.TransformFunc {
+						strip := cache.TransformStripManagedFields()
+						return func(obj any) (any, error) {
+							obj, err := strip(obj)
+							if err != nil {
+								return obj, err
+							}
+							if cluster, ok := obj.(*extensionsv1alpha1.Cluster); ok {
+								cluster.Spec.CloudProfile = runtime.RawExtension{}
+								cluster.Spec.Seed = runtime.RawExtension{}
+							}
+							return obj, nil
+						}
+					}(),
+				},
 			},
-			// Strip managed fields from all cached objects as they are not used by the reconciler.
-			DefaultTransform: cache.TransformStripManagedFields(),
 		},
 		// Disable metrics and health probe servers since fluent-bit plugin handles these
 		Metrics:                ctrl.Options{}.Metrics,
