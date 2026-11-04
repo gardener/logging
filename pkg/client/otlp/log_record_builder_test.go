@@ -10,7 +10,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	otlplog "go.opentelemetry.io/otel/log"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/gardener/logging/v1/pkg/types"
 )
@@ -35,12 +35,12 @@ var _ = Describe("LogRecordBuilder", func() {
 			attrs := extractK8sResourceAttributes(entry)
 
 			Expect(attrs).To(HaveLen(6))
-			Expect(attrs).To(ContainElement(otlplog.String("k8s.namespace.name", "test-namespace")))
-			Expect(attrs).To(ContainElement(otlplog.String("k8s.pod.name", "test-pod")))
-			Expect(attrs).To(ContainElement(otlplog.String("k8s.pod.uid", "123e4567-e89b-12d3-a456-426614174000")))
-			Expect(attrs).To(ContainElement(otlplog.String("k8s.container.name", "test-container")))
-			Expect(attrs).To(ContainElement(otlplog.String("container.id", "docker://abcdef123456")))
-			Expect(attrs).To(ContainElement(otlplog.String("k8s.node.name", "node-1")))
+			Expect(attrs).To(ContainElement(attribute.String("k8s.namespace.name", "test-namespace")))
+			Expect(attrs).To(ContainElement(attribute.String("k8s.pod.name", "test-pod")))
+			Expect(attrs).To(ContainElement(attribute.String("k8s.pod.uid", "123e4567-e89b-12d3-a456-426614174000")))
+			Expect(attrs).To(ContainElement(attribute.String("k8s.container.name", "test-container")))
+			Expect(attrs).To(ContainElement(attribute.String("container.id", "docker://abcdef123456")))
+			Expect(attrs).To(ContainElement(attribute.String("k8s.node.name", "node-1")))
 		})
 
 		It("should extract partial attributes when only some fields are present", func() {
@@ -58,9 +58,9 @@ var _ = Describe("LogRecordBuilder", func() {
 			attrs := extractK8sResourceAttributes(entry)
 
 			Expect(attrs).To(HaveLen(3))
-			Expect(attrs).To(ContainElement(otlplog.String("k8s.namespace.name", "test-namespace")))
-			Expect(attrs).To(ContainElement(otlplog.String("k8s.pod.name", "test-pod")))
-			Expect(attrs).To(ContainElement(otlplog.String("k8s.container.name", "test-container")))
+			Expect(attrs).To(ContainElement(attribute.String("k8s.namespace.name", "test-namespace")))
+			Expect(attrs).To(ContainElement(attribute.String("k8s.pod.name", "test-pod")))
+			Expect(attrs).To(ContainElement(attribute.String("k8s.container.name", "test-container")))
 		})
 
 		It("should handle OutputRecord type for kubernetes field", func() {
@@ -78,9 +78,9 @@ var _ = Describe("LogRecordBuilder", func() {
 			attrs := extractK8sResourceAttributes(entry)
 
 			Expect(attrs).To(HaveLen(3))
-			Expect(attrs).To(ContainElement(otlplog.String("k8s.namespace.name", "test-namespace")))
-			Expect(attrs).To(ContainElement(otlplog.String("k8s.pod.name", "test-pod")))
-			Expect(attrs).To(ContainElement(otlplog.String("k8s.container.name", "test-container")))
+			Expect(attrs).To(ContainElement(attribute.String("k8s.namespace.name", "test-namespace")))
+			Expect(attrs).To(ContainElement(attribute.String("k8s.pod.name", "test-pod")))
+			Expect(attrs).To(ContainElement(attribute.String("k8s.container.name", "test-container")))
 		})
 
 		It("should return nil when kubernetes field is missing", func() {
@@ -125,10 +125,10 @@ var _ = Describe("LogRecordBuilder", func() {
 			attrs := extractK8sResourceAttributes(entry)
 
 			Expect(attrs).To(HaveLen(2))
-			Expect(attrs).To(ContainElement(otlplog.String("k8s.namespace.name", "test-namespace")))
-			Expect(attrs).To(ContainElement(otlplog.String("k8s.container.name", "test-container")))
-			Expect(attrs).NotTo(ContainElement(otlplog.String("k8s.pod.name", "")))
-			Expect(attrs).NotTo(ContainElement(otlplog.String("k8s.node.name", "")))
+			Expect(attrs).To(ContainElement(attribute.String("k8s.namespace.name", "test-namespace")))
+			Expect(attrs).To(ContainElement(attribute.String("k8s.container.name", "test-container")))
+			Expect(attrs).NotTo(ContainElement(attribute.String("k8s.pod.name", "")))
+			Expect(attrs).NotTo(ContainElement(attribute.String("k8s.node.name", "")))
 		})
 
 		It("should skip fields with wrong type", func() {
@@ -146,8 +146,8 @@ var _ = Describe("LogRecordBuilder", func() {
 			attrs := extractK8sResourceAttributes(entry)
 
 			Expect(attrs).To(HaveLen(2))
-			Expect(attrs).To(ContainElement(otlplog.String("k8s.namespace.name", "test-namespace")))
-			Expect(attrs).To(ContainElement(otlplog.String("k8s.container.name", "test-container")))
+			Expect(attrs).To(ContainElement(attribute.String("k8s.namespace.name", "test-namespace")))
+			Expect(attrs).To(ContainElement(attribute.String("k8s.container.name", "test-container")))
 		})
 
 		It("should handle real-world fluent-bit kubernetes metadata", func() {
@@ -168,9 +168,9 @@ var _ = Describe("LogRecordBuilder", func() {
 			attrs := extractK8sResourceAttributes(entry)
 
 			Expect(attrs).To(HaveLen(3))
-			Expect(attrs).To(ContainElement(otlplog.String("k8s.namespace.name", "fluent-bit")))
-			Expect(attrs).To(ContainElement(otlplog.String("k8s.pod.name", "fluent-bit-rvjzr")))
-			Expect(attrs).To(ContainElement(otlplog.String("k8s.container.name", "fluent-bit")))
+			Expect(attrs).To(ContainElement(attribute.String("k8s.namespace.name", "fluent-bit")))
+			Expect(attrs).To(ContainElement(attribute.String("k8s.pod.name", "fluent-bit-rvjzr")))
+			Expect(attrs).To(ContainElement(attribute.String("k8s.container.name", "fluent-bit")))
 		})
 	})
 
@@ -302,32 +302,32 @@ var _ = Describe("LogRecordBuilder", func() {
 	Describe("convertToKeyValue", func() {
 		It("should convert string values", func() {
 			kv := convertToKeyValue("key", "value")
-			Expect(kv).To(Equal(otlplog.String("key", "value")))
+			Expect(kv).To(Equal(attribute.String("key", "value")))
 		})
 
 		It("should convert int values", func() {
 			kv := convertToKeyValue("key", 123)
-			Expect(kv).To(Equal(otlplog.Int64("key", 123)))
+			Expect(kv).To(Equal(attribute.Int64("key", 123)))
 		})
 
 		It("should convert int64 values", func() {
 			kv := convertToKeyValue("key", int64(123))
-			Expect(kv).To(Equal(otlplog.Int64("key", 123)))
+			Expect(kv).To(Equal(attribute.Int64("key", 123)))
 		})
 
 		It("should convert float64 values", func() {
 			kv := convertToKeyValue("key", 123.45)
-			Expect(kv).To(Equal(otlplog.Float64("key", 123.45)))
+			Expect(kv).To(Equal(attribute.Float64("key", 123.45)))
 		})
 
 		It("should convert bool values", func() {
 			kv := convertToKeyValue("key", true)
-			Expect(kv).To(Equal(otlplog.Bool("key", true)))
+			Expect(kv).To(Equal(attribute.Bool("key", true)))
 		})
 
 		It("should convert byte slice to string", func() {
 			kv := convertToKeyValue("key", []byte("test"))
-			Expect(kv).To(Equal(otlplog.String("key", "test")))
+			Expect(kv).To(Equal(attribute.String("key", "test")))
 		})
 
 		It("should convert map to string representation", func() {
@@ -393,7 +393,7 @@ var _ = Describe("LogRecordBuilder", func() {
 			// level should be skipped if used as severity
 			attrKeys := make([]string, 0, len(attrs))
 			for _, attr := range attrs {
-				attrKeys = append(attrKeys, attr.Key)
+				attrKeys = append(attrKeys, string(attr.Key))
 			}
 
 			Expect(attrKeys).NotTo(ContainElement("kubernetes"))

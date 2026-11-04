@@ -332,41 +332,34 @@ func recordToItem(record sdklog.Record) *logRecordItem {
 	}
 
 	// Extract body
-	if record.Body().Kind() != 0 {
+	if record.Body().Type() != attribute.INVALID {
 		item.Body = record.Body().AsString()
 	}
 
 	// Extract attributes - store in explicit struct to preserve types through gob
-	record.WalkAttributes(func(kv otlplog.KeyValue) bool {
-		attr := attributeItem{Key: kv.Key}
+	record.WalkAttributes(func(kv attribute.KeyValue) bool {
+		attr := attributeItem{Key: string(kv.Key)}
 		val := kv.Value
 
-		switch val.Kind() {
-		case otlplog.KindString:
+		switch val.Type() {
+		case attribute.STRING:
 			attr.ValueType = "string"
 			attr.StrValue = val.AsString()
-		case otlplog.KindInt64:
+		case attribute.INT64:
 			attr.ValueType = "int64"
 			attr.IntValue = val.AsInt64()
-		case otlplog.KindFloat64:
+		case attribute.FLOAT64:
 			attr.ValueType = "float64"
 			attr.FltValue = val.AsFloat64()
-		case otlplog.KindBool:
+		case attribute.BOOL:
 			attr.ValueType = "bool"
 			attr.BoolValue = val.AsBool()
-		case otlplog.KindBytes:
-			attr.ValueType = "bytes"
-			attr.ByteValue = val.AsBytes()
-		case otlplog.KindMap:
-			// For maps, convert to string representation for simplicity
-			attr.ValueType = "other"
-			attr.StrValue = fmt.Sprintf("%v", val.AsMap())
-		case otlplog.KindSlice:
+		case attribute.BOOLSLICE, attribute.INT64SLICE, attribute.FLOAT64SLICE, attribute.STRINGSLICE:
 			// For slices, convert to string representation for simplicity
 			attr.ValueType = "other"
-			attr.StrValue = fmt.Sprintf("%v", val.AsSlice())
+			attr.StrValue = fmt.Sprintf("%v", val.AsInterface())
 		default:
-			// For other types, convert to string
+			// For other types (maps, etc.), convert to string
 			attr.ValueType = "other"
 			attr.StrValue = fmt.Sprintf("%v", val)
 		}
@@ -428,19 +421,19 @@ func recordToItem(record sdklog.Record) *logRecordItem {
 // itemToRecord converts a logRecordItem back to an sdklog.Record using RecordFactory
 func itemToRecord(item *logRecordItem) sdklog.Record {
 	// Build attributes from explicit attributeItem slice
-	attrs := make([]otlplog.KeyValue, 0, len(item.Attributes))
+	attrs := make([]attribute.KeyValue, 0, len(item.Attributes))
 	for _, attr := range item.Attributes {
 		switch attr.ValueType {
 		case "string":
-			attrs = append(attrs, otlplog.String(attr.Key, attr.StrValue))
+			attrs = append(attrs, attribute.String(attr.Key, attr.StrValue))
 		case "int64":
-			attrs = append(attrs, otlplog.Int64(attr.Key, attr.IntValue))
+			attrs = append(attrs, attribute.Int64(attr.Key, attr.IntValue))
 		case "float64":
-			attrs = append(attrs, otlplog.Float64(attr.Key, attr.FltValue))
+			attrs = append(attrs, attribute.Float64(attr.Key, attr.FltValue))
 		case "bool":
-			attrs = append(attrs, otlplog.Bool(attr.Key, attr.BoolValue))
+			attrs = append(attrs, attribute.Bool(attr.Key, attr.BoolValue))
 		case "bytes":
-			attrs = append(attrs, otlplog.Bytes(attr.Key, attr.ByteValue))
+			attrs = append(attrs, attribute.String(attr.Key, string(attr.ByteValue)))
 		default:
 		}
 	}
@@ -483,7 +476,7 @@ func itemToRecord(item *logRecordItem) sdklog.Record {
 		ObservedTimestamp:    item.ObservedTimestamp,
 		Severity:             otlplog.Severity(item.Severity),
 		SeverityText:         item.SeverityText,
-		Body:                 otlplog.StringValue(item.Body),
+		Body:                 attribute.StringValue(item.Body),
 		Attributes:           attrs,
 		Resource:             resource,
 		InstrumentationScope: scope,

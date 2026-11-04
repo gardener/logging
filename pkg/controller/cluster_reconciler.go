@@ -142,6 +142,7 @@ func buildClusterReconciler(
 					// Strip ManagedFields and the unused CloudProfile/Seed raw blobs.
 					Transform: func() toolscache.TransformFunc {
 						strip := cache.TransformStripManagedFields()
+
 						return func(obj any) (any, error) {
 							obj, err := strip(obj)
 							if err != nil {
@@ -151,6 +152,7 @@ func buildClusterReconciler(
 								cluster.Spec.CloudProfile = runtime.RawExtension{}
 								cluster.Spec.Seed = runtime.RawExtension{}
 							}
+
 							return obj, nil
 						}
 					}(),

@@ -193,5 +193,5 @@ var _ = Describe("Config population", func() {
 func copyFile(src, dst string) {
 	data, err := os.ReadFile(src) //nolint:gosec // src is always a controlled test path, never user input
 	Expect(err).NotTo(HaveOccurred())
-	Expect(os.WriteFile(dst, data, 0o600)).To(Succeed())
+	Expect(os.WriteFile(dst, data, 0o600)).To(Succeed()) //nolint:gosec // dst is always a controlled test path, never user input
 }
