@@ -13,6 +13,7 @@ import (
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"go.opentelemetry.io/otel/attribute"
 	otlplog "go.opentelemetry.io/otel/log"
 	sdklog "go.opentelemetry.io/otel/sdk/log"
 	"go.opentelemetry.io/otel/sdk/log/logtest"
@@ -66,12 +67,12 @@ var _ = Describe("DQue Batch Processor Integration", func() {
 			Timestamp:    time.Now(),
 			Severity:     otlplog.SeverityWarn,
 			SeverityText: "WARN",
-			Body:         otlplog.StringValue("test message through dque"),
-			Attributes: []otlplog.KeyValue{
-				otlplog.String("app", "test-app"),
-				otlplog.Int64("count", 42),
-				otlplog.Bool("success", true),
-				otlplog.Float64("duration", 1.23),
+			Body:         attribute.StringValue("test message through dque"),
+			Attributes: []attribute.KeyValue{
+				attribute.String("app", "test-app"),
+				attribute.Int64("count", 42),
+				attribute.Bool("success", true),
+				attribute.Float64("duration", 1.23),
 			},
 		}
 		record := factory.NewRecord()
@@ -97,9 +98,9 @@ var _ = Describe("DQue Batch Processor Integration", func() {
 
 			// Debug: print all attributes
 			GinkgoWriter.Printf("\n=== Exported Record Attributes ===\n")
-			exportedRecord.WalkAttributes(func(kv otlplog.KeyValue) bool {
+			exportedRecord.WalkAttributes(func(kv attribute.KeyValue) bool {
 				GinkgoWriter.Printf("  Key: %s, Kind: %v, AsString: '%s', AsInt64: %d, AsBool: %v, AsFloat64: %f\n",
-					kv.Key, kv.Value.Kind(), kv.Value.AsString(), kv.Value.AsInt64(),
+					kv.Key, kv.Value.Type(), kv.Value.AsString(), kv.Value.AsInt64(),
 					kv.Value.AsBool(), kv.Value.AsFloat64())
 
 				return true
@@ -108,7 +109,7 @@ var _ = Describe("DQue Batch Processor Integration", func() {
 
 			// Count and verify attributes
 			attrCount := 0
-			exportedRecord.WalkAttributes(func(kv otlplog.KeyValue) bool {
+			exportedRecord.WalkAttributes(func(kv attribute.KeyValue) bool {
 				attrCount++
 				switch kv.Key {
 				case "app":
@@ -191,10 +192,10 @@ var _ = Describe("DQue Batch Processor with Functional Options", func() {
 			Timestamp:    time.Now(),
 			Severity:     otlplog.SeverityInfo,
 			SeverityText: "INFO",
-			Body:         otlplog.StringValue("test message with options"),
-			Attributes: []otlplog.KeyValue{
-				otlplog.String("method", "functional_options"),
-				otlplog.Int64("version", 2),
+			Body:         attribute.StringValue("test message with options"),
+			Attributes: []attribute.KeyValue{
+				attribute.String("method", "functional_options"),
+				attribute.Int64("version", 2),
 			},
 		}
 		record := factory.NewRecord()

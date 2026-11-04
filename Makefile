@@ -14,6 +14,11 @@ SRC_DIRS                                   := $(shell go list -f '{{.Dir}}' $(RE
 LD_FLAGS                                   := -s -w $(shell $(REPO_ROOT)/hack/get-build-ld-flags.sh)
 BUILD_PLATFORM                             ?= $(shell uname -s | tr '[:upper:]' '[:lower:]')
 BUILD_ARCH                                 ?= $(shell uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
+GOCMD                                      ?= go
+SRC_ROOT                                   := $(shell git rev-parse --show-toplevel)
+TOOLS_MOD_DIR                              := $(SRC_ROOT)/tools
+TOOLS_MOD_FILE                             := $(TOOLS_MOD_DIR)/go.mod
+GO_TOOL                                    := $(GOCMD) tool -modfile $(TOOLS_MOD_FILE)
 
 GCI_OPT                                    ?= -s standard -s default -s "prefix($(shell go list -m))" --skip-generated
 
@@ -148,6 +153,25 @@ check-go-fix: tidy
 		git --no-pager diff; \
 		exit 1; \
 	fi
+
+.PHONY: govulncheck
+govulncheck:
+	@findings=$$( $(GO_TOOL) govulncheck -json ./... | \
+		jq -r '.finding | select(.trace[0].module and .fixed_version) | "\(.osv):\(.trace[0].module)@\(.fixed_version)"' | \
+		sort -u ); \
+	if [[ -n "$$findings" ]]; then \
+		echo "Fixable vulnerabilities found:"; \
+		echo "$$findings"; \
+		exit 1; \
+	fi
+
+.PHONY: govulncheck-fix
+govulncheck-fix:
+	@$(GO_TOOL) govulncheck -json ./... | \
+		jq -r '.finding | select(.trace[0].module and .fixed_version) | "\(.trace[0].module)@\(.fixed_version)"' | \
+		sort -u | \
+		xargs -I{} sh -c '$(GOCMD) get {} || true'
+	@$(GOCMD) mod tidy
 
 .PHONY: verify
 verify: check check-go-fix test
